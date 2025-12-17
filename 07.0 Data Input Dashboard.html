@@ -160,7 +160,8 @@
           “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
           <br><br>
           Your Worker must expose:
-          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, and <code>POST /publish</code>.
+          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>,
+          <code>PUT /data/master/grow.json</code>, and <code>PUT /data/master/pack.json</code>.
           Publishing requires the Worker secret <code>SUPABASE_SERVICE_ROLE_KEY</code>.
         </div>
 
@@ -186,65 +187,9 @@
   // =========================
   // CONFIG: Worker base URL
   // =========================
-  // Reads from public objects written to:
-  // campo-data/master/grow.json
-  // campo-data/master/pack.json
   const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
   const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
   const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
-
-
-  // ===== Publish to Supabase (via Worker PUT /data/master/...) =====
-  async function publishToSupabase(){
-    const growStr = localStorage.getItem(MASTER_GROW_KEY);
-    const packStr = localStorage.getItem(MASTER_PACK_KEY);
-  
-    if(!growStr && !packStr){
-      setStatus("Nothing to publish yet. Upload files first.");
-      return;
-    }
-  
-    // validate JSON (fail early with clear message)
-    try { if(growStr) JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
-    try { if(packStr) JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
-  
-    publishBtn.disabled = true;
-    setStatus("Publishing to Supabase (via Worker PUT /data/...)…");
-  
-    try{
-      const results = [];
-  
-      if(growStr){
-        const res = await fetch(WORKER_GROW_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: growStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Grow publish failed (${res.status}): ${text}`);
-        results.push("grow.json");
-      }
-  
-      if(packStr){
-        const res = await fetch(WORKER_PACK_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: packStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Pack publish failed (${res.status}): ${text}`);
-        results.push("pack.json");
-      }
-  
-      setStatus(`✅ Published: ${results.join(" + ")}`);
-    }catch(err){
-      console.error(err);
-      setStatus(`❌ Publish failed: ${err.message}`);
-    }finally{
-      publishBtn.disabled = false;
-    }
-  }
-
 
   // ===== Source keys =====
   const MASTER_GROW_KEY = "campo_master_grow_v1";
@@ -371,6 +316,16 @@
     return rowsToHeaderRows(matrix);
   }
 
+  function buildPayloadFromSingleSheet(sheetName, headerRows, meta){
+    return {
+      version: "v1",
+      updatedAt: new Date().toISOString(),
+      kind: meta?.kind || "master",
+      sourceLabel: meta?.sourceLabel || "",
+      sheets: { [sheetName]: headerRows }
+    };
+  }
+
   // ===== Save source (OVERWRITE) as JSON =====
   function saveSource(which, payload, sourceLabel){
     const now = String(Date.now());
@@ -378,18 +333,14 @@
       if(which === "grow"){
         localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(payload));
         localStorage.setItem(MASTER_GROW_PING, now);
-
         dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
         notifyParent(MSG_GROW, MASTER_GROW_KEY);
-
         setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}`);
       } else if(which === "pack"){
         localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(payload));
         localStorage.setItem(MASTER_PACK_PING, now);
-
         dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
         notifyParent(MSG_PACK, MASTER_PACK_KEY);
-
         setStatus(`Saved Master Pack (JSON overwritten): ${sourceLabel}`);
       }
     }catch(e){
@@ -425,18 +376,6 @@
       if(want.some(w => nn.includes(w))) return n;
     }
     return null;
-  }
-
-  function buildPayloadFromSingleSheet(sheetName, headerRows, meta){
-    return {
-      version: "v1",
-      updatedAt: new Date().toISOString(),
-      kind: meta?.kind || "master",
-      sourceLabel: meta?.sourceLabel || "",
-      sheets: {
-        [sheetName]: headerRows
-      }
-    };
   }
 
   // ===== File handling =====
@@ -550,7 +489,9 @@
 
   // ===== Worker helpers =====
   async function workerGetJson(url){
-    const res = await fetch(url, { method:"GET" });
+    // cache-bust to avoid stale reads
+    const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
+    const res = await fetch(bust, { method:"GET", cache:"no-store" });
     const text = await res.text();
     if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
     try { return JSON.parse(text); }
@@ -601,7 +542,7 @@
     }
   }
 
-  // ===== Publish to Supabase (via Worker POST /publish) =====
+  // ===== Publish to Supabase (via Worker PUT /data/master/...) =====
   async function publishToSupabase(){
     const growStr = localStorage.getItem(MASTER_GROW_KEY);
     const packStr = localStorage.getItem(MASTER_PACK_KEY);
@@ -611,24 +552,39 @@
       return;
     }
 
-    let grow = null, pack = null;
-    try { if(growStr) grow = JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
-    try { if(packStr) pack = JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
+    // validate JSON early
+    try { if(growStr) JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
+    try { if(packStr) JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
 
     publishBtn.disabled = true;
-    setStatus("Publishing to Supabase (via Worker /publish)…");
+    setStatus("Publishing to Supabase (via Worker PUT /data/...)…");
 
     try{
-      const res = await fetch(WORKER_PUBLISH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grow, pack })
-      });
+      const results = [];
 
-      const text = await res.text();
-      if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
+      if(growStr){
+        const res = await fetch(WORKER_GROW_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: growStr
+        });
+        const text = await res.text().catch(() => "");
+        if(!res.ok) throw new Error(`Grow publish failed (${res.status}): ${text}`);
+        results.push("grow.json");
+      }
 
-      setStatus("✅ Published: master/grow.json and master/pack.json");
+      if(packStr){
+        const res = await fetch(WORKER_PACK_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: packStr
+        });
+        const text = await res.text().catch(() => "");
+        if(!res.ok) throw new Error(`Pack publish failed (${res.status}): ${text}`);
+        results.push("pack.json");
+      }
+
+      setStatus(`✅ Published: ${results.join(" + ")}`);
     }catch(err){
       console.error(err);
       setStatus(`❌ Publish failed: ${err.message}`);
