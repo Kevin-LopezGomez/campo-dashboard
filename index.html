@@ -87,7 +87,6 @@
       box-shadow: 0 0 0 1px rgba(34,197,94,.08) inset;
     }
 
-    /* Drag visuals */
     .tab.dragging{
       cursor:grabbing;
       opacity:.98;
@@ -163,7 +162,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Data Input Dashboard</h2>
-            <p>Loads the standalone Data Input tool and writes the selected sheet to localStorage.</p>
+            <p>Loads the standalone Data Input tool and writes the selected sheet to localStorage (and can later publish to Supabase via Worker).</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>07.0 Data Input Dashboard.html</code></div>
         </div>
@@ -176,7 +175,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Seeding Dashboard</h2>
-            <p>Loads the seeding dashboard file in an iframe (and can listen for <code>SEEDING_DATA_UPDATED</code> messages).</p>
+            <p>Loads the seeding dashboard file in an iframe.</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>01.0 Seeding Dashboard.html</code></div>
         </div>
@@ -189,7 +188,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Transplant Dashboard</h2>
-            <p>Loads the transplant dashboard file in an iframe (and can listen for <code>TRANSPLANT_DATA_UPDATED</code> messages).</p>
+            <p>Loads the transplant dashboard file in an iframe.</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>02.0 Transplant Dashboard.html</code></div>
         </div>
@@ -215,7 +214,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Packing Dashboard</h2>
-            <p>Loads the packing dashboard file in an iframe (and can listen for <code>PACKING_DATA_UPDATED</code> messages).</p>
+            <p>Loads the packing dashboard file in an iframe.</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>04.0 Packing Dashboard.html</code></div>
         </div>
@@ -241,10 +240,152 @@
 
   <script>
     (function(){
+      // =========================
+      // Supabase-ready configuration
+      // =========================
+      const CONFIG = {
+        supabase: {
+          enabled: true,
+          baseUrl: "https://lxxysrhhmtjikzpmupqb.supabase.co",
+          bucket: "campo-data",
+          // These must match what you upload in Storage:
+          // campo-data / master / grow.json
+          // campo-data / master / pack.json
+          paths: {
+            grow: "master/grow.json",
+            pack: "master/pack.json",
+            test: "master/test.json"
+          }
+        }
+      };
+
+      // =========================
+      // LocalStorage keys (MUST match your dashboards)
+      // =========================
+      const MASTER_GROW_KEY  = "campo_master_grow_v1";
+      const MASTER_PACK_KEY  = "campo_master_pack_v1";
+      const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
+      const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
+
+      // Message types your dashboards already listen for
+      const MSG_GROW = "MASTER_GROW_UPDATED";
+      const MSG_PACK = "MASTER_PACK_UPDATED";
+
       const tabsWrap = document.getElementById("tabs");
       const panels = Array.from(document.querySelectorAll(".panel"));
       const LS_ORDER_KEY = "campo_unified_tabs_order_v1";
 
+      // -------------------------
+      // Small helpers
+      // -------------------------
+      function buildPublicUrl(path){
+        const s = CONFIG.supabase;
+        return `${s.baseUrl}/storage/v1/object/public/${s.bucket}/${path}`;
+      }
+
+      function upsertBadge(text, ok){
+        let badge = document.getElementById("__sb_badge");
+        if (!badge){
+          badge = document.createElement("div");
+          badge.id = "__sb_badge";
+          badge.style.position = "fixed";
+          badge.style.bottom = "12px";
+          badge.style.right = "12px";
+          badge.style.padding = "8px 12px";
+          badge.style.borderRadius = "8px";
+          badge.style.fontSize = "12px";
+          badge.style.zIndex = 9999;
+          badge.style.boxShadow = "0 10px 24px rgba(0,0,0,.35)";
+          document.body.appendChild(badge);
+        }
+        badge.textContent = text;
+        badge.style.background = ok ? "#16a34a" : "#b91c1c";
+        badge.style.color = "white";
+      }
+
+      function dispatchLocal(type, key){
+        try { window.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
+        try { document.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
+      }
+
+      function notifyIframes(type){
+        const targets = {
+          "MASTER_GROW_UPDATED": ["ifr-seeding","ifr-transplant","ifr-sanitation","ifr-harvest","ifr-packing","ifr-data"],
+          "MASTER_PACK_UPDATED": ["ifr-seeding","ifr-transplant","ifr-sanitation","ifr-harvest","ifr-packing","ifr-data"],
+        }[type] || [];
+
+        for (const id of targets){
+          const ifr = document.getElementById(id);
+          if (ifr?.contentWindow) {
+            try { ifr.contentWindow.postMessage({ type, ts: Date.now() }, "*"); } catch(e) {}
+          }
+        }
+      }
+
+      // -------------------------
+      // Supabase bootstrap -> hydrate localStorage
+      // -------------------------
+      async function tryHydrateFromSupabase(){
+        if (!CONFIG.supabase.enabled) return;
+
+        const testUrl = buildPublicUrl(CONFIG.supabase.paths.test);
+        try{
+          const tr = await fetch(testUrl, { cache: "no-store" });
+          if (!tr.ok) throw new Error(`Test fetch failed: HTTP ${tr.status}`);
+          await tr.json();
+          upsertBadge("Supabase connected", true);
+        } catch(err){
+          console.error("❌ Supabase connection test failed:", err);
+          upsertBadge("Supabase not reachable", false);
+          return; // don’t try grow/pack if test fails
+        }
+
+        // Load grow.json + pack.json and write into the SAME localStorage keys dashboards use
+        const growUrl = buildPublicUrl(CONFIG.supabase.paths.grow);
+        const packUrl = buildPublicUrl(CONFIG.supabase.paths.pack);
+
+        let wroteAny = false;
+
+        try{
+          const r = await fetch(growUrl, { cache: "no-store" });
+          if (r.ok){
+            const growJson = await r.json();
+            localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(growJson));
+            localStorage.setItem(MASTER_GROW_PING, String(Date.now()));
+            dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
+            notifyIframes(MSG_GROW);
+            wroteAny = true;
+          } else {
+            console.warn("Grow fetch failed:", r.status);
+          }
+        } catch(e){
+          console.warn("Grow fetch error:", e);
+        }
+
+        try{
+          const r = await fetch(packUrl, { cache: "no-store" });
+          if (r.ok){
+            const packJson = await r.json();
+            localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(packJson));
+            localStorage.setItem(MASTER_PACK_PING, String(Date.now()));
+            dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
+            notifyIframes(MSG_PACK);
+            wroteAny = true;
+          } else {
+            console.warn("Pack fetch failed:", r.status);
+          }
+        } catch(e){
+          console.warn("Pack fetch error:", e);
+        }
+
+        if (wroteAny){
+          console.log("✅ Hydrated localStorage from Supabase (grow/pack).");
+        } else {
+          console.log("ℹ️ Supabase connected, but grow/pack were not loaded (missing files or blocked).");
+        }
+      }
+
+      // ---------- Panel activation ----------
       function activate(id){
         const tabs = Array.from(tabsWrap.querySelectorAll(".tab"));
         tabs.forEach(t => t.classList.toggle("active", t.dataset.target === id));
@@ -276,7 +417,7 @@
 
       // ---------- Drag-to-reorder with threshold (click still works) ----------
       function makeSortable(){
-        const DRAG_THRESHOLD = 8; // px before we start dragging
+        const DRAG_THRESHOLD = 8;
 
         let downTab = null;
         let isDragging = false;
@@ -331,7 +472,6 @@
           }
           if (!inserted) tabsWrap.appendChild(placeholder);
 
-          // Auto-scroll near edges
           const wrapRect = tabsWrap.getBoundingClientRect();
           const edge = 36;
           if (x < wrapRect.left + edge) tabsWrap.scrollLeft -= 10;
@@ -416,65 +556,30 @@
       const firstActive = tabsWrap.querySelector(".tab.active") || tabsWrap.querySelector(".tab");
       if (firstActive) activate(firstActive.dataset.target);
 
-      // ---------- Bridge: forward update pings into the right iframe ----------
+      // Forward update pings into the right iframe (existing behavior)
       window.addEventListener("message", (event) => {
         const msg = event?.data || {};
         if (!msg.type) return;
 
-        if (msg.type === "HARVEST_DATA_UPDATED") {
-          const ifr = document.getElementById("ifr-harvest");
-          if (ifr?.contentWindow) ifr.contentWindow.postMessage({ type:"HARVEST_DATA_UPDATED", ts: msg.ts }, "*");
-        }
+        const map = {
+          "HARVEST_DATA_UPDATED": "ifr-harvest",
+          "PACKING_DATA_UPDATED": "ifr-packing",
+          "SANITATION_DATA_UPDATED": "ifr-sanitation",
+          "SEEDING_DATA_UPDATED": "ifr-seeding",
+          "TRANSPLANT_DATA_UPDATED": "ifr-transplant",
+          "MASTER_GROW_UPDATED": null,
+          "MASTER_PACK_UPDATED": null
+        };
 
-        if (msg.type === "PACKING_DATA_UPDATED") {
-          const ifr = document.getElementById("ifr-packing");
-          if (ifr?.contentWindow) ifr.contentWindow.postMessage({ type:"PACKING_DATA_UPDATED", ts: msg.ts }, "*");
-        }
-
-        if (msg.type === "SANITATION_DATA_UPDATED") {
-          const ifr = document.getElementById("ifr-sanitation");
-          if (ifr?.contentWindow) ifr.contentWindow.postMessage({ type:"SANITATION_DATA_UPDATED", ts: msg.ts }, "*");
-        }
-
-        if (msg.type === "SEEDING_DATA_UPDATED") {
-          const ifr = document.getElementById("ifr-seeding");
-          if (ifr?.contentWindow) ifr.contentWindow.postMessage({ type:"SEEDING_DATA_UPDATED", ts: msg.ts }, "*");
-        }
-
-        if (msg.type === "TRANSPLANT_DATA_UPDATED") {
-          const ifr = document.getElementById("ifr-transplant");
-          if (ifr?.contentWindow) ifr.contentWindow.postMessage({ type:"TRANSPLANT_DATA_UPDATED", ts: msg.ts }, "*");
+        if (map[msg.type]) {
+          const ifr = document.getElementById(map[msg.type]);
+          if (ifr?.contentWindow) ifr.contentWindow.postMessage({ type: msg.type, ts: msg.ts }, "*");
         }
       });
+
+      // IMPORTANT: hydrate localStorage from Supabase BEFORE users start clicking dashboards
+      tryHydrateFromSupabase();
     })();
   </script>
-  <script>
-  const SUPABASE_TEST_URL =
-    "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/test.json";
-
-  fetch(SUPABASE_TEST_URL)
-    .then(res => res.json())
-    .then(data => {
-      console.log("✅ Supabase connected:", data);
-
-      const badge = document.createElement("div");
-      badge.textContent = "Supabase connected";
-      badge.style.position = "fixed";
-      badge.style.bottom = "12px";
-      badge.style.right = "12px";
-      badge.style.padding = "8px 12px";
-      badge.style.background = "#16a34a";
-      badge.style.color = "white";
-      badge.style.borderRadius = "8px";
-      badge.style.fontSize = "12px";
-      badge.style.zIndex = 9999;
-
-      document.body.appendChild(badge);
-    })
-    .catch(err => {
-      console.error("❌ Supabase error:", err);
-    });
-</script>
-
 </body>
 </html>
