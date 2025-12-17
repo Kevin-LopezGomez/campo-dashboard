@@ -5,6 +5,7 @@
   <title>Data Input – Master Grow / Master Pack</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- SheetJS (Excel reader) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
@@ -72,6 +73,10 @@
       background: radial-gradient(circle at 0 0, rgba(239,68,68,.20), rgba(127,29,29,.85));
       border-color: rgba(239,68,68,.75);
     }
+    button.ghost{
+      background: rgba(2,6,23,.35);
+      border-color: rgba(55,65,81,.75);
+    }
     button[disabled]{opacity:.45;cursor:not-allowed;}
 
     .meta{
@@ -108,6 +113,15 @@
     table{width:100%;border-collapse:collapse;font-size:.75rem;min-width:900px;}
     th,td{padding:6px 10px;border-bottom:1px solid rgba(31,41,55,.75);white-space:nowrap;}
     th{color:var(--sub);text-transform:uppercase;font-size:.7rem;letter-spacing:.12em;position:sticky;top:0;background: rgba(2,6,23,.85);}
+
+    .hint{
+      margin-top:8px;
+      padding:10px 12px;
+      border:1px solid rgba(55,65,81,.75);
+      border-radius:12px;
+      background: rgba(2,6,23,.28);
+    }
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;color:#c7d2fe;}
   </style>
 </head>
 
@@ -134,6 +148,17 @@
           <button class="danger" id="clearBtn" type="button">✕ Clear Stored Sources</button>
         </div>
 
+        <div class="btnrow" style="margin-top:6px;">
+          <button class="ghost" id="downloadGrowBtn" type="button">⬇️ Download grow.json</button>
+          <button class="ghost" id="downloadPackBtn" type="button">⬇️ Download pack.json</button>
+          <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
+        </div>
+
+        <div class="hint small">
+          This tool saves JSON into <code>localStorage</code> for dashboards to read immediately.
+          The “Publish to Supabase” button is optional and only works if you set a Cloudflare Worker endpoint.
+        </div>
+
         <div id="status" class="small">Waiting for file…</div>
       </div>
 
@@ -153,6 +178,13 @@
 </div>
 
 <script>
+  // =========================
+  // CONFIG: Worker publish URL
+  // =========================
+  // If you create a Cloudflare Worker that uploads to Supabase, put its URL here:
+  // Example: "https://campo-uploader.YOURNAME.workers.dev/publish"
+  const PUBLISH_ENDPOINT = ""; // <-- paste your Worker publish URL here
+
   // ===== Source keys =====
   const MASTER_GROW_KEY = "campo_master_grow_v1";
   const MASTER_PACK_KEY = "campo_master_pack_v1";
@@ -170,6 +202,9 @@
   const assignGrowBtn = document.getElementById("assignGrowBtn");
   const assignPackBtn = document.getElementById("assignPackBtn");
   const clearBtn = document.getElementById("clearBtn");
+  const downloadGrowBtn = document.getElementById("downloadGrowBtn");
+  const downloadPackBtn = document.getElementById("downloadPackBtn");
+  const publishBtn = document.getElementById("publishBtn");
 
   const statusEl = document.getElementById("status");
   const previewEl = document.getElementById("preview");
@@ -359,7 +394,6 @@
 
     const lower = norm(file.name);
     const isCsv = lower.endsWith(".csv");
-    const isExcel = !isCsv;
 
     if(isCsv){
       setStatus("Reading CSV…");
@@ -437,6 +471,65 @@
     }
   }
 
+  // ===== Download JSON from localStorage =====
+  function downloadJsonFromLocalStorage(key, filename){
+    const s = localStorage.getItem(key);
+    if(!s) return setStatus(`Nothing stored for ${filename} yet.`);
+    try { JSON.parse(s); } catch { return setStatus(`Stored JSON is invalid for ${filename}.`); }
+
+    const blob = new Blob([s], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus(`Downloaded ${filename}.`);
+  }
+
+  // ===== Publish to Supabase via Worker (optional) =====
+  async function publishToSupabase(){
+    if(!PUBLISH_ENDPOINT){
+      setStatus("Publish endpoint not set. Paste your Worker URL into PUBLISH_ENDPOINT in this file.");
+      return;
+    }
+
+    const growStr = localStorage.getItem(MASTER_GROW_KEY);
+    const packStr = localStorage.getItem(MASTER_PACK_KEY);
+
+    if(!growStr && !packStr){
+      setStatus("Nothing to publish yet. Upload files first.");
+      return;
+    }
+
+    let grow = null, pack = null;
+    try { if(growStr) grow = JSON.parse(growStr); } catch(e) { return setStatus("Grow JSON is invalid (cannot publish)."); }
+    try { if(packStr) pack = JSON.parse(packStr); } catch(e) { return setStatus("Pack JSON is invalid (cannot publish)."); }
+
+    publishBtn.disabled = true;
+    setStatus("Publishing to Supabase…");
+
+    try{
+      const res = await fetch(PUBLISH_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grow, pack })
+      });
+
+      const text = await res.text();
+      if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
+
+      setStatus("✅ Published to Supabase successfully.");
+    }catch(err){
+      console.error(err);
+      setStatus(`❌ Publish failed: ${err.message}`);
+    }finally{
+      publishBtn.disabled = false;
+    }
+  }
+
   // ===== Events =====
   chooseBtn.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
@@ -475,6 +568,10 @@
     setStatus("Cleared stored Master Grow + Master Pack.");
     refreshBadges();
   });
+
+  downloadGrowBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_GROW_KEY, "grow.json"));
+  downloadPackBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PACK_KEY, "pack.json"));
+  publishBtn.addEventListener("click", publishToSupabase);
 
   // Drag & drop
   ["dragenter","dragover"].forEach(evt => {
