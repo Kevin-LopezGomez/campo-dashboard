@@ -194,8 +194,57 @@
   const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 
 
-  // Writes BOTH in one call (recommended)
-  const WORKER_PUBLISH_URL = `${WORKER_BASE}/publish`;
+  // ===== Publish to Supabase (via Worker PUT /data/master/...) =====
+  async function publishToSupabase(){
+    const growStr = localStorage.getItem(MASTER_GROW_KEY);
+    const packStr = localStorage.getItem(MASTER_PACK_KEY);
+  
+    if(!growStr && !packStr){
+      setStatus("Nothing to publish yet. Upload files first.");
+      return;
+    }
+  
+    // validate JSON (fail early with clear message)
+    try { if(growStr) JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
+    try { if(packStr) JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
+  
+    publishBtn.disabled = true;
+    setStatus("Publishing to Supabase (via Worker PUT /data/...)…");
+  
+    try{
+      const results = [];
+  
+      if(growStr){
+        const res = await fetch(WORKER_GROW_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: growStr
+        });
+        const text = await res.text().catch(() => "");
+        if(!res.ok) throw new Error(`Grow publish failed (${res.status}): ${text}`);
+        results.push("grow.json");
+      }
+  
+      if(packStr){
+        const res = await fetch(WORKER_PACK_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: packStr
+        });
+        const text = await res.text().catch(() => "");
+        if(!res.ok) throw new Error(`Pack publish failed (${res.status}): ${text}`);
+        results.push("pack.json");
+      }
+  
+      setStatus(`✅ Published: ${results.join(" + ")}`);
+    }catch(err){
+      console.error(err);
+      setStatus(`❌ Publish failed: ${err.message}`);
+    }finally{
+      publishBtn.disabled = false;
+    }
+  }
+
 
   // ===== Source keys =====
   const MASTER_GROW_KEY = "campo_master_grow_v1";
