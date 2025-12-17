@@ -448,5 +448,33 @@
       });
     })();
   </script>
+  <script>
+  const SUPABASE_TEST_URL =
+    "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/test.json";
+
+  fetch(SUPABASE_TEST_URL)
+    .then(res => res.json())
+    .then(data => {
+      console.log("✅ Supabase connected:", data);
+
+      const badge = document.createElement("div");
+      badge.textContent = "Supabase connected";
+      badge.style.position = "fixed";
+      badge.style.bottom = "12px";
+      badge.style.right = "12px";
+      badge.style.padding = "8px 12px";
+      badge.style.background = "#16a34a";
+      badge.style.color = "white";
+      badge.style.borderRadius = "8px";
+      badge.style.fontSize = "12px";
+      badge.style.zIndex = 9999;
+
+      document.body.appendChild(badge);
+    })
+    .catch(err => {
+      console.error("❌ Supabase error:", err);
+    });
+</script>
+
 </body>
 </html>
