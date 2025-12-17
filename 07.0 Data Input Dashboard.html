@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Data Input – Master Grow / Master Pack</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --border:#1f2937;
+      --text:#e5e7eb;
+      --sub:#9ca3af;
+      --accent:#22c55e;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color:var(--text);
+    }
+    .wrap{max-width:1200px;margin:20px auto;padding:16px;}
+    h1{margin:0;font-size:1.2rem;}
+    p{color:var(--sub);font-size:.85rem;line-height:1.35;margin:.4rem 0 0;}
+    .panel{
+      background: radial-gradient(circle at top left, rgba(15,23,42,.94), rgba(15,23,42,.98));
+      border:1px solid rgba(55,65,81,.9);
+      border-radius:16px;
+      padding:16px;
+      margin-top:16px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.55);
+    }
+    .row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+    @media(max-width:900px){.row{grid-template-columns:1fr;}}
+    .drop{
+      border:1px dashed rgba(148,163,184,.45);
+      border-radius:14px;
+      padding:18px;
+      min-height:170px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:10px;
+      background: rgba(2,6,23,.25);
+    }
+    .drop.dragover{border-color: rgba(34,197,94,.8);background: rgba(34,197,94,.08);}
+    .btnrow{display:flex;flex-wrap:wrap;gap:8px;}
+    button{
+      background: rgba(15,23,42,.95);
+      border:1px solid rgba(55,65,81,.9);
+      color:var(--text);
+      border-radius:999px;
+      padding:7px 12px;
+      cursor:pointer;
+      font-size:.8rem;
+      display:inline-flex;align-items:center;gap:8px;
+      transition: transform .06s ease, opacity .12s ease;
+    }
+    button:active{transform:scale(.99);}
+    button.primary{
+      background: radial-gradient(circle at 0 0, rgba(34,197,94,.28), rgba(22,163,74,.95));
+      border-color: rgba(34,197,94,.9);
+      box-shadow: 0 9px 26px rgba(16,185,129,.20);
+    }
+    button.danger{
+      background: radial-gradient(circle at 0 0, rgba(239,68,68,.20), rgba(127,29,29,.85));
+      border-color: rgba(239,68,68,.75);
+    }
+    button[disabled]{opacity:.45;cursor:not-allowed;}
+
+    .meta{
+      border:1px solid rgba(31,41,55,.85);
+      border-radius:14px;
+      padding:12px;
+      background: rgba(2,6,23,.25);
+      display:grid;
+      gap:10px;
+    }
+    .kv{display:flex;justify-content:space-between;gap:10px;color:var(--sub);font-size:.82rem;}
+    .kv b{color:var(--text);}
+    .tag{
+      border:1px solid rgba(148,163,184,.25);
+      border-radius:999px;
+      padding:2px 8px;
+      font-size:.72rem;
+      background: rgba(2,6,23,.35);
+      color:var(--sub);
+      display:inline-flex;align-items:center;gap:6px;
+      white-space:nowrap;
+    }
+    .dot{width:7px;height:7px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 3px rgba(34,197,94,.2);}
+    .dot.bad{background:var(--danger);box-shadow:0 0 0 3px rgba(239,68,68,.16);}
+    .small{font-size:.76rem;color:var(--sub);line-height:1.35;}
+    .preview{
+      max-height:340px;
+      overflow:auto;
+      border:1px solid rgba(31,41,55,.85);
+      border-radius:12px;
+      margin-top:12px;
+      background: rgba(2,6,23,.20);
+    }
+    table{width:100%;border-collapse:collapse;font-size:.75rem;min-width:900px;}
+    th,td{padding:6px 10px;border-bottom:1px solid rgba(31,41,55,.75);white-space:nowrap;}
+    th{color:var(--sub);text-transform:uppercase;font-size:.7rem;letter-spacing:.12em;position:sticky;top:0;background: rgba(2,6,23,.85);}
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>Data Input – Master Grow / Master Pack</h1>
+  <p>
+    Supported: <b>1 XLSX</b> containing <b>Master Grow</b> + <b>Master Pack</b>, or <b>2 CSVs</b> (one Grow, one Pack).
+    Uploading a new Grow/Pack will <b>overwrite</b> the stored version for that source only.
+  </p>
+
+  <div class="panel">
+    <div class="row">
+      <div class="drop" id="dropzone">
+        <strong>Drop .xlsx or .csv here</strong>
+        <span class="small">If CSV filename includes “grow” or “pack”, it auto-assigns. Otherwise use the assign buttons.</span>
+
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,text/csv" hidden />
+
+        <div class="btnrow">
+          <button class="primary" id="chooseBtn" type="button">📄 Choose File</button>
+          <button id="assignGrowBtn" type="button" disabled>🧩 Assign last CSV → Master Grow</button>
+          <button id="assignPackBtn" type="button" disabled>📦 Assign last CSV → Master Pack</button>
+          <button class="danger" id="clearBtn" type="button">✕ Clear Stored Sources</button>
+        </div>
+
+        <div id="status" class="small">Waiting for file…</div>
+      </div>
+
+      <div class="meta">
+        <div class="kv"><span>Master Grow</span><span class="tag" id="growTag"><span class="dot bad"></span>Missing</span></div>
+        <div class="kv"><span>Master Pack</span><span class="tag" id="packTag"><span class="dot bad"></span>Missing</span></div>
+        <div class="kv"><span>Grow updated</span><b id="growUpdated">–</b></div>
+        <div class="kv"><span>Pack updated</span><b id="packUpdated">–</b></div>
+        <div class="small" id="fileMeta">Last file: –</div>
+      </div>
+    </div>
+
+    <div class="preview" id="preview">
+      <div class="small" style="padding:10px;">Upload a file to preview data.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== Source keys =====
+  const MASTER_GROW_KEY = "campo_master_grow_v1";
+  const MASTER_PACK_KEY = "campo_master_pack_v1";
+  const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
+  const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
+
+  // Parent message types
+  const MSG_GROW = "MASTER_GROW_UPDATED";
+  const MSG_PACK = "MASTER_PACK_UPDATED";
+
+  // ===== UI =====
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("fileInput");
+  const chooseBtn = document.getElementById("chooseBtn");
+  const assignGrowBtn = document.getElementById("assignGrowBtn");
+  const assignPackBtn = document.getElementById("assignPackBtn");
+  const clearBtn = document.getElementById("clearBtn");
+
+  const statusEl = document.getElementById("status");
+  const previewEl = document.getElementById("preview");
+
+  const growTag = document.getElementById("growTag");
+  const packTag = document.getElementById("packTag");
+  const growUpdated = document.getElementById("growUpdated");
+  const packUpdated = document.getElementById("packUpdated");
+  const fileMeta = document.getElementById("fileMeta");
+
+  function setStatus(msg){ statusEl.textContent = msg; }
+  function norm(s){ return String(s||"").trim().toLowerCase(); }
+
+  function notifyParent(type, key){
+    try{ window.parent?.postMessage?.({ type, key, ts: Date.now() }, "*"); }catch(e){}
+  }
+
+  function dispatchLocal(type, key){
+    // allows dashboards in same document to listen (some do document, some do window)
+    try { window.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
+    try { document.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
+  }
+
+  function setTag(el, ok){
+    el.innerHTML = ok
+      ? `<span class="dot"></span>Loaded`
+      : `<span class="dot bad"></span>Missing`;
+  }
+
+  function fmtTs(ts){
+    if(!ts) return "–";
+    const d = new Date(Number(ts));
+    if(isNaN(d.getTime())) return "–";
+    return d.toLocaleString();
+  }
+
+  // ===== Robust CSV parsing (handles quotes) =====
+  function parseCsvToRows(text){
+    const lines = String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l => l.trim().length);
+    const rows = [];
+    for(const line of lines){
+      const delim = line.includes("\t") ? "\t" : ",";
+      const out = [];
+      let cur = "", inQ = false;
+      for(let i=0;i<line.length;i++){
+        const ch = line[i];
+        if(ch === '"'){
+          if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+          else inQ = !inQ;
+        } else if(!inQ && ch === delim){
+          out.push(cur); cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      out.push(cur);
+      rows.push(out.map(v => String(v ?? "").trim()));
+    }
+    return rows;
+  }
+
+  function previewRows(rows, label){
+    if(!rows || !rows.length){
+      previewEl.innerHTML = `<div class="small" style="padding:10px;">No data.</div>`;
+      return;
+    }
+    const head = rows.slice(0, 31);
+    const maxCols = Math.max(...head.map(r => r?.length || 0), 1);
+
+    let html = `<div class="small" style="padding:10px;">${label || "Preview"}</div>`;
+    html += `<table><thead><tr>`;
+    for(let c=0;c<maxCols;c++){
+      html += `<th>${escapeHtml(String(head[0]?.[c] ?? ""))}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+    for(const r of head.slice(1)){
+      html += `<tr>`;
+      for(let c=0;c<maxCols;c++){
+        html += `<td>${escapeHtml(String(r?.[c] ?? ""))}</td>`;
+      }
+      html += `</tr>`;
+    }
+    html += `</tbody></table>`;
+    previewEl.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  // ===== Convert rows -> {headers, rows} (strict, preserves exact header text) =====
+  function rowsToHeaderRows(matrix){
+    const headers = (matrix?.[0] || []).map(h => String(h ?? "").trim());
+    const rows = (matrix || []).slice(1).map(r => Array.isArray(r) ? r.map(v => (v === undefined ? "" : v)) : []);
+    return { headers, rows };
+  }
+
+  // ===== SheetJS worksheet -> header/rows =====
+  function sheetToHeaderRows(ws){
+    const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, blankrows: false });
+    return rowsToHeaderRows(matrix);
+  }
+
+  // ===== Save source (OVERWRITE) as JSON =====
+  function saveSource(which, payload, sourceLabel){
+    const now = String(Date.now());
+    try{
+      if(which === "grow"){
+        localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(payload));
+        localStorage.setItem(MASTER_GROW_PING, now);
+
+        dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
+        notifyParent(MSG_GROW, MASTER_GROW_KEY);
+
+        setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}`);
+      } else if(which === "pack"){
+        localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(payload));
+        localStorage.setItem(MASTER_PACK_PING, now);
+
+        dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
+        notifyParent(MSG_PACK, MASTER_PACK_KEY);
+
+        setStatus(`Saved Master Pack (JSON overwritten): ${sourceLabel}`);
+      }
+    }catch(e){
+      console.warn("localStorage write failed:", e);
+      setStatus("Failed to write to localStorage (storage full / blocked).");
+    }
+    refreshBadges();
+  }
+
+  function safeHasJson(key){
+    const s = (localStorage.getItem(key) || "").trim();
+    if(!s) return false;
+    if(!s.startsWith("{")) return false;
+    try { JSON.parse(s); return true; } catch(e) { return false; }
+  }
+
+  function refreshBadges(){
+    const hasGrow = safeHasJson(MASTER_GROW_KEY);
+    const hasPack = safeHasJson(MASTER_PACK_KEY);
+    setTag(growTag, hasGrow);
+    setTag(packTag, hasPack);
+    growUpdated.textContent = fmtTs(localStorage.getItem(MASTER_GROW_PING));
+    packUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PACK_PING));
+  }
+
+  // ===== Excel helpers =====
+  function pickSheetByName(wb, candidates){
+    const names = wb?.SheetNames || [];
+    const want = (candidates||[]).map(norm);
+    for(const n of names) if(want.includes(norm(n))) return n;
+    for(const n of names){
+      const nn = norm(n);
+      if(want.some(w => nn.includes(w))) return n;
+    }
+    return null;
+  }
+
+  function buildPayloadFromSingleSheet(sheetName, headerRows, meta){
+    return {
+      version: "v1",
+      updatedAt: new Date().toISOString(),
+      kind: meta?.kind || "master",
+      sourceLabel: meta?.sourceLabel || "",
+      sheets: {
+        [sheetName]: headerRows
+      }
+    };
+  }
+
+  // ===== File handling =====
+  let lastCsvMatrix = null;
+  let lastCsvName = "";
+
+  async function handleFile(file){
+    if(!file) return;
+
+    assignGrowBtn.disabled = true;
+    assignPackBtn.disabled = true;
+    lastCsvMatrix = null;
+    lastCsvName = "";
+
+    fileMeta.textContent = `Last file: ${file.name}`;
+
+    const lower = norm(file.name);
+    const isCsv = lower.endsWith(".csv");
+    const isExcel = !isCsv;
+
+    if(isCsv){
+      setStatus("Reading CSV…");
+      const text = await file.text();
+      const rows = parseCsvToRows(text);
+      lastCsvMatrix = rows;
+      lastCsvName = file.name;
+
+      previewRows(rows, `Preview CSV: ${file.name}`);
+
+      // Auto-assign if filename contains hints
+      if(lower.includes("grow")){
+        const hr = rowsToHeaderRows(rows);
+        const payload = buildPayloadFromSingleSheet("Master Grow", hr, { kind: "grow", sourceLabel: `CSV: ${file.name}` });
+        saveSource("grow", payload, `CSV: ${file.name}`);
+      } else if(lower.includes("pack")){
+        const hr = rowsToHeaderRows(rows);
+        const payload = buildPayloadFromSingleSheet("Master Pack", hr, { kind: "pack", sourceLabel: `CSV: ${file.name}` });
+        saveSource("pack", payload, `CSV: ${file.name}`);
+      } else {
+        assignGrowBtn.disabled = false;
+        assignPackBtn.disabled = false;
+        setStatus("CSV loaded. Assign it to Master Grow or Master Pack.");
+      }
+      return;
+    }
+
+    // Excel
+    setStatus("Reading Excel…");
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:"array" });
+    const names = wb.SheetNames || [];
+
+    const growSheet = pickSheetByName(wb, ["master grow","master_grow","grow","mg"]);
+    const packSheet = pickSheetByName(wb, ["master pack","master_pack","pack","mp"]);
+
+    let wroteAny = false;
+
+    if(growSheet){
+      const hr = sheetToHeaderRows(wb.Sheets[growSheet]);
+      const hasData = (hr.headers || []).some(h => String(h||"").trim().length) && (hr.rows || []).length;
+      if(hasData){
+        const payload = buildPayloadFromSingleSheet(growSheet, hr, { kind: "grow", sourceLabel: `XLSX sheet: ${growSheet}` });
+        saveSource("grow", payload, `XLSX sheet: ${growSheet}`);
+        wroteAny = true;
+      } else {
+        setStatus(`Found sheet "${growSheet}" but it was empty (did not overwrite Master Grow).`);
+      }
+    }
+
+    if(packSheet){
+      const hr = sheetToHeaderRows(wb.Sheets[packSheet]);
+      const hasData = (hr.headers || []).some(h => String(h||"").trim().length) && (hr.rows || []).length;
+      if(hasData){
+        const payload = buildPayloadFromSingleSheet(packSheet, hr, { kind: "pack", sourceLabel: `XLSX sheet: ${packSheet}` });
+        saveSource("pack", payload, `XLSX sheet: ${packSheet}`);
+        wroteAny = true;
+      } else {
+        setStatus(`Found sheet "${packSheet}" but it was empty (did not overwrite Master Pack).`);
+      }
+    }
+
+    // Preview grow if possible else pack else first sheet
+    const previewName = growSheet || packSheet || names[0] || null;
+    if(previewName){
+      const ws = wb.Sheets[previewName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows:false, raw:false });
+      previewRows(rows, `Preview XLSX: ${previewName}`);
+    } else {
+      previewEl.innerHTML = `<div class="small" style="padding:10px;">No sheets found.</div>`;
+    }
+
+    if(!wroteAny){
+      setStatus("Excel loaded, but Master Grow/Master Pack sheets were not found (no overwrite performed).");
+    }
+  }
+
+  // ===== Events =====
+  chooseBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
+
+  assignGrowBtn.addEventListener("click", () => {
+    if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
+    const hr = rowsToHeaderRows(lastCsvMatrix);
+    const payload = buildPayloadFromSingleSheet("Master Grow", hr, { kind: "grow", sourceLabel: `CSV (manual): ${lastCsvName}` });
+    saveSource("grow", payload, `CSV (manual): ${lastCsvName}`);
+    assignGrowBtn.disabled = true;
+    assignPackBtn.disabled = true;
+  });
+
+  assignPackBtn.addEventListener("click", () => {
+    if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
+    const hr = rowsToHeaderRows(lastCsvMatrix);
+    const payload = buildPayloadFromSingleSheet("Master Pack", hr, { kind: "pack", sourceLabel: `CSV (manual): ${lastCsvName}` });
+    saveSource("pack", payload, `CSV (manual): ${lastCsvName}`);
+    assignGrowBtn.disabled = true;
+    assignPackBtn.disabled = true;
+  });
+
+  clearBtn.addEventListener("click", () => {
+    try{
+      localStorage.removeItem(MASTER_GROW_KEY);
+      localStorage.removeItem(MASTER_PACK_KEY);
+      localStorage.removeItem(MASTER_GROW_PING);
+      localStorage.removeItem(MASTER_PACK_PING);
+    }catch(e){}
+    dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
+    dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
+    notifyParent(MSG_GROW, MASTER_GROW_KEY);
+    notifyParent(MSG_PACK, MASTER_PACK_KEY);
+
+    previewEl.innerHTML = `<div class="small" style="padding:10px;">Upload a file to preview data.</div>`;
+    setStatus("Cleared stored Master Grow + Master Pack.");
+    refreshBadges();
+  });
+
+  // Drag & drop
+  ["dragenter","dragover"].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.add("dragover");
+    });
+  });
+  ["dragleave","drop"].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.remove("dragover");
+    });
+  });
+  dropzone.addEventListener("drop", (e) => {
+    const file = e.dataTransfer?.files?.[0];
+    handleFile(file || null);
+  });
+
+  // Init
+  refreshBadges();
+  setStatus("Waiting for file…");
+</script>
+</body>
+</html>

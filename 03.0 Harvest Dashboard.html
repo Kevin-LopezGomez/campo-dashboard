@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Harvest Productivity Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-alt: #020617;
+      --panel: #020617;
+      --panel-soft: #020617;
+      --card: #020617;
+      --border: #1f2937;
+      --border-subtle: #374151;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --accent-strong: #4ade80;
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --muted: #6b7280;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1320px;
+      border-radius: 24px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .title-block { flex: 1 1 200px; min-width: 0; }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 4px;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
+    }
+
+    .title-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #34d399, #22c55e 55%, #16a34a 100%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9), 0 12px 30px rgba(16, 185, 129, 0.6);
+    }
+
+    .title-pill span {
+      font-size: 15px;
+      font-weight: 700;
+      color: #022c22;
+    }
+
+    .title-text {
+      font-weight: 620;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .title-sub {
+      font-size: 0.8rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .header-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--sub);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%);
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.35);
+    }
+
+    .chip-warn-dot {
+      background: #facc15;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.4);
+    }
+
+    .chip-danger-dot {
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.4);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 960px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .kpi-card {
+      position: relative;
+      border-radius: 16px;
+      padding: 10px 12px 11px;
+      background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.85), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      overflow: hidden;
+    }
+
+    .kpi-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--sub);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi-value {
+      font-size: 1.15rem;
+      font-weight: 650;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .kpi-unit {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .kpi-trend {
+      margin-top: 2px;
+      font-size: 0.7rem;
+      color: var(--accent-strong);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kpi-trend.muted { color: var(--muted); }
+
+    .kpi-glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background:
+        radial-gradient(circle at 15% 0, rgba(34, 197, 94, 0.4), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.4), transparent 60%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .panel {
+      border-radius: 18px;
+      padding: 12px 12px 10px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.99));
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(14px);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--sub);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .panel-title-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.45);
+    }
+
+    .panel-subtitle {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .panel-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--sub);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge-soft {
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.95));
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+    }
+
+    .badge-soft span {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(226, 232, 240, 0.95);
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.48);
+    }
+
+    .view-toggle {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 1px;
+      font-size: 0.7rem;
+    }
+
+    .view-toggle-btn {
+      border: none;
+      background: transparent;
+      color: var(--sub);
+      padding: 3px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: inherit;
+    }
+
+    .view-toggle-btn.active {
+      background: rgba(34, 197, 94, 0.18);
+      color: #bbf7d0;
+    }
+
+    .trend-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      color: var(--sub);
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+
+    .trend-toggle input { margin: 0; }
+
+    .layout-main {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 2.2fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 960px) {
+      .layout-main { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .chart-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+      flex: 1 1 auto;
+    }
+
+    .chart-row { position: relative; width: 100%; }
+    .chart-canvas-main { width: 100%; height: 230px; }
+    .chart-canvas-secondary { width: 100%; height: 200px; }
+
+    @media (max-width: 960px) {
+      .chart-canvas-main { height: 210px; }
+      .chart-canvas-secondary { height: 180px; }
+    }
+
+    .footer-note {
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-note span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-box {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+    }
+
+    .legend-box.boards { background: rgba(59, 130, 246, 0.6); }
+    .legend-box.bph { background: rgba(34, 197, 94, 0.7); }
+
+    .table-wrapper {
+      margin-top: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.95);
+      background:
+        linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.99)),
+        radial-gradient(circle at top left, rgba(51, 65, 85, 0.65), rgba(15, 23, 42, 0.96));
+      overflow: hidden;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-scroll {
+      max-height: 430px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #4b5563 rgba(15, 23, 42, 0.2);
+      flex: 1 1 auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 980px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background:
+        linear-gradient(to bottom, #020617, #020617),
+        radial-gradient(circle at top left, rgba(55, 65, 81, 0.5), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 1px 0 rgba(31, 41, 55, 0.9);
+    }
+
+    th, td {
+      text-align: right;
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.85);
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+      padding-left: 14px;
+    }
+
+    th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--sub);
+    }
+
+    tbody tr:nth-child(odd) td { background: rgba(15, 23, 42, 0.85); }
+    tbody tr:nth-child(even) td { background: rgba(17, 24, 39, 0.92); }
+
+    tfoot td {
+      background:
+        radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.12), rgba(15, 23, 42, 0.98));
+      font-weight: 600;
+      border-top: 1px solid rgba(55, 65, 81, 0.95);
+      border-bottom: none;
+    }
+
+    .cell-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cell-percent-good {
+      color: #bbf7d0;
+      border-color: rgba(74, 222, 128, 0.7);
+      background: radial-gradient(circle at 0 0, rgba(22, 163, 74, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .cell-percent-warn {
+      color: #fed7aa;
+      border-color: rgba(249, 115, 22, 0.8);
+      background: radial-gradient(circle at 0 0, rgba(251, 146, 60, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .cell-percent-low {
+      color: #fecaca;
+      border-color: rgba(248, 113, 113, 0.8);
+      background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .hidden { display: none; }
+    .hint-empty { font-size: 0.75rem; color: var(--muted); margin-top: 6px; white-space: pre-wrap; }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="container">
+      <header class="header">
+        <div class="title-block">
+          <div class="title">
+            <div class="title-pill"><span>H</span></div>
+            <div class="title-text">
+              <span>Harvest Productivity Dashboard</span>
+              <span class="title-sub">LIVE FROM DATA INPUT</span>
+            </div>
+          </div>
+          <p class="subtitle">
+            Cut-level harvest output, yield, and waste. KPIs are computed at the DAILY level using the daily span:
+            <b>earliest “Harvest Start” → latest “Harvest Finish”</b> (per date).
+          </p>
+        </div>
+
+        <div class="header-tags">
+          <div class="chip"><span class="chip-dot"></span><span id="chip-high-text">–</span></div>
+          <div class="chip"><span class="chip-warn-dot"></span><span id="chip-mid-text">–</span></div>
+          <div class="chip"><span class="chip-danger-dot"></span><span id="chip-low-text">–</span></div>
+        </div>
+      </header>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Total boards harvested</span><span id="kpi-days" class="kpi-unit"></span></div>
+          <div class="kpi-value"><span id="kpi-total-boards">–</span></div>
+          <div class="kpi-trend muted"><span>Across all recorded harvest days</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Average boards / hour</span></div>
+          <div class="kpi-value"><span id="kpi-avg-bph">–</span><span class="kpi-unit">BPH</span></div>
+          <div class="kpi-trend"><span id="kpi-bph-note">Top day: –</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Average harvest duration</span></div>
+          <div class="kpi-value"><span id="kpi-avg-hours">–</span><span class="kpi-unit">Hours</span></div>
+          <div class="kpi-trend muted"><span id="kpi-hours-note">–</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Total weight harvested</span></div>
+          <div class="kpi-value"><span id="kpi-total-cut">–</span><span class="kpi-unit">LBS</span></div>
+          <div class="kpi-trend muted"><span id="kpi-weight-note">–</span></div>
+        </article>
+      </section>
+
+      <section class="layout-main">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span>Performance over time</span></div>
+              <div class="panel-subtitle">
+                Top: Boards harvested · Middle: Cut weight & “with waste” target · Bottom: Boards per hour. View by cut, day, or harvest week.
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <div class="badge-soft"><span class="badge-dot"></span><span>Live from Data Input</span></div>
+              <div class="view-toggle">
+                <button id="view-by-cut" class="view-toggle-btn" type="button">By cut</button>
+                <button id="view-by-date" class="view-toggle-btn active" type="button">By day</button>
+                <button id="view-by-week" class="view-toggle-btn" type="button">By harvest week</button>
+              </div>
+              <label class="trend-toggle">
+                <input type="checkbox" id="trend-toggle-input" />
+                <span>Trend line</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <div class="chart-row"><canvas id="chart-boards" class="chart-canvas-main"></canvas></div>
+            <div class="chart-row"><canvas id="chart-weight" class="chart-canvas-main"></canvas></div>
+            <div class="chart-row"><canvas id="chart-bph" class="chart-canvas-secondary"></canvas></div>
+          </div>
+
+          <div class="footer-note">
+            <span><span class="legend-box boards"></span> Top: Boards harvested</span>
+            <span><span class="legend-box boards"></span> Middle: Cut lbs + With-waste target</span>
+            <span><span class="legend-box bph"></span> Bottom: Boards/hour</span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span id="harvest-table-title">Cut-level harvest log</span></div>
+              <div class="panel-subtitle" id="harvest-table-subtitle">
+                Each row is a harvest cut loaded from Master Grow. Switch view to see daily or weekly summaries.
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <span id="harvest-table-hint">Scroll to see all cuts</span>
+              <div class="view-toggle">
+                <button id="table-view-cut" class="view-toggle-btn active" type="button">By cut</button>
+                <button id="table-view-daily" class="view-toggle-btn" type="button">By day</button>
+                <button id="table-view-weekly" class="view-toggle-btn" type="button">By week</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table id="harvest-table">
+                <thead>
+                  <tr>
+                    <th>Harvest Date / Week</th>
+                    <th>Harvest Week</th>
+                    <th># Boards Harvested</th>
+                    <th>Hours (Span)</th>
+                    <th>Cut Lbs</th>
+                    <th>Waste Weight</th>
+                    <th>With Waste</th>
+                    <th>Lbs / Board</th>
+                    <th>Boards / Hour</th>
+                    <th>% Potential</th>
+                  </tr>
+                </thead>
+                <tbody id="harvest-tbody-cut"></tbody>
+                <tbody id="harvest-tbody-daily" class="hidden"></tbody>
+                <tbody id="harvest-tbody-weekly" class="hidden"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>Grand Total</td><td>–</td><td>0</td><td>0.0</td><td>0</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div id="empty-hint" class="hint-empty"></div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // STORAGE / SHEET CONTRACT
+    // =========================================================
+    const MASTER_GROW_KEY = "campo_master_grow_v1";
+    const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
+    const MASTER_GROW_SHEET_NAME = "Master Grow";
+
+    // STRICT header contract (matches your header list)
+    const HEADERS = Object.freeze({
+      DATE: "Harvest Date",
+      WEEK: "Harvest Week",
+      START: "Harvest Start",
+      FINISH: "Harvest Finish",
+      WORKERS: "Harvest # of Workers",
+      BOARDS: "# of Boards Harvested",
+      WASTE_LBS: "Total Harvest Waste Weight",
+      WITH_WASTE_LBS: "Peso de La Lechuga con Waste" // optional, if present we'll use it
+    });
+
+    // ✅ FIX: CUT LBS headers updated to match your actual header exactly
+    const CUT_LBS_HEADERS = Object.freeze([
+      "Peso de La Lechuga Cortada",
+      "Peso de la Lechuga Cortada",
+      "PESO DE LA LECHUGA CORTADA",
+      "Peso de la lechuga cortada"
+    ]);
+
+    // =========================================================
+    // STATE
+    // =========================================================
+    let boardsChart = null;
+    let weightChart = null;
+    let bphChart = null;
+
+    let chartMode = "date";   // "cut" | "date" | "week"
+    let tableMode = "cut";    // "cut" | "daily" | "weekly"
+    let showTrendLine = false;
+
+    let CUTS = [];
+    let DAILY = [];
+    let WEEKLY = [];
+
+    // =========================================================
+    // PARSERS
+    // =========================================================
+    function parseNumber(v) {
+      if (v === null || v === undefined) return 0;
+      const s = String(v).trim();
+      if (!s) return 0;
+      if (s.toUpperCase().includes("#VALUE")) return 0;
+      const cleaned = s.replace(/,/g, "");
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function parseTimeOfDayToMinutes(s) {
+      const str = String(s ?? "").trim();
+      if (!str) return NaN;
+      const m = str.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
+      if (!m) return NaN;
+      let hh = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const ap = m[3] ? m[3].toUpperCase() : "";
+      if (ap) {
+        if (hh === 12) hh = 0;
+        if (ap === "PM") hh += 12;
+      }
+      return hh * 60 + mm;
+    }
+
+    function spanHoursFromMinMax(minStartMin, maxFinishMin) {
+      if (!Number.isFinite(minStartMin) || !Number.isFinite(maxFinishMin)) return 0;
+      let diff = maxFinishMin - minStartMin;
+      if (diff < 0) diff += 24 * 60;
+      return diff / 60;
+    }
+
+    function computeTrendLine(values) {
+      const n = values.length;
+      if (n < 2) return [];
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < n; i++) {
+        const x = i + 1;
+        const y = Number(values[i]) || 0;
+        sumX += x; sumY += y; sumXY += x * y; sumXX += x * x;
+      }
+      const denom = n * sumXX - sumX * sumX;
+      if (denom === 0) return Array(n).fill(values[0] || 0);
+      const slope = (n * sumXY - sumX * sumY) / denom;
+      const intercept = (sumY - slope * sumX) / n;
+      return Array.from({ length: n }, (_, i) => slope * (i + 1) + intercept);
+    }
+
+    function setEmpty(msg) {
+      const el = document.getElementById("empty-hint");
+      if (el) el.textContent = msg || "";
+    }
+
+    // =========================================================
+    // MASTER GROW JSON -> ROW OBJECTS
+    // =========================================================
+    function loadMasterGrowPayload() {
+      const raw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const out = [];
+
+      for (const r of rows) {
+        if (!Array.isArray(r)) continue;
+        const obj = {};
+        for (let i = 0; i < headers.length; i++) {
+          const h = headers[i];
+          const key = (h === null || h === undefined) ? "" : String(h);
+          if (!key.trim()) continue;
+          obj[key] = (i < r.length) ? r[i] : "";
+        }
+        out.push(obj);
+      }
+      return out;
+    }
+
+    function getCutLbs(row) {
+      for (const h of CUT_LBS_HEADERS) {
+        if (h in row) return parseNumber(row[h]);
+      }
+      return 0;
+    }
+
+    function getWithWasteLbs(row, cut, waste) {
+      // If your sheet already has "Peso de La Lechuga con Waste", use it.
+      if (HEADERS.WITH_WASTE_LBS in row) {
+        const v = parseNumber(row[HEADERS.WITH_WASTE_LBS]);
+        if (v > 0) return v;
+      }
+      // Otherwise compute it.
+      return (cut || 0) + (waste || 0);
+    }
+
+    // =========================================================
+    // BUILD MODELS
+    // =========================================================
+    function buildModels() {
+      const payload = loadMasterGrowPayload();
+      const sheet = payload?.sheets?.[MASTER_GROW_SHEET_NAME];
+
+      if (!sheet) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty("No Master Grow sheet found. Upload Master Grow in Data Input.");
+        return;
+      }
+
+      const rows = sheetToRowObjects(sheet);
+      if (!rows.length) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty("Master Grow loaded, but the sheet has no rows.");
+        return;
+      }
+
+      // ✅ Validate REQUIRED headers against sheet.headers
+      const headerSet = new Set((sheet.headers || []).map(h => String(h || "")));
+      const required = [HEADERS.DATE, HEADERS.WEEK, HEADERS.START, HEADERS.FINISH, HEADERS.BOARDS];
+      const missing = required.filter(h => !headerSet.has(h));
+      if (missing.length) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        const preview = (sheet.headers || []).slice(0, 60).map(h => String(h || "")).join("\n- ");
+        setEmpty(
+          "Master Grow loaded, but Harvest headers are missing (strict contract).\n\nMissing:\n- " +
+          missing.join("\n- ") +
+          "\n\nHeader preview (first 60):\n- " + preview
+        );
+        return;
+      }
+
+      // ✅ Warn (but do not fail) if no CUT LBS header matches
+      const hasCutHeader = CUT_LBS_HEADERS.some(h => headerSet.has(h));
+      if (!hasCutHeader) {
+        setEmpty(
+          "Master Grow loaded. Required headers OK.\n\nBUT: No CUT LBS header matched.\n" +
+          "Add your exact cut-lbs header to CUT_LBS_HEADERS.\n\nCurrently allowed:\n- " +
+          CUT_LBS_HEADERS.join("\n- ")
+        );
+      } else {
+        setEmpty("");
+      }
+
+      // CUTS: include ALL rows, but ✅ FIX: SKIP ANY ROW WITH NO REAL DATE
+      const cuts = [];
+      for (const r of rows) {
+        if (!r || typeof r !== "object") continue;
+
+        let date = String(r[HEADERS.DATE] ?? "").trim();
+        // ✅ FIX: normalize common “no date” values
+        if (!date || date === "(no date)" || date.toLowerCase() === "n/a" || date.toLowerCase() === "null") {
+          date = "";
+        }
+        // ✅ FIX: hard-skip no-date rows (removes "(no date)" entirely)
+        if (!date) continue;
+
+        const week = String(r[HEADERS.WEEK] ?? "").trim();
+        const startStr = String(r[HEADERS.START] ?? "").trim();
+        const finishStr = String(r[HEADERS.FINISH] ?? "").trim();
+        const boards = parseNumber(r[HEADERS.BOARDS]);
+
+        const cut = getCutLbs(r);
+        const waste = (HEADERS.WASTE_LBS in r) ? parseNumber(r[HEADERS.WASTE_LBS]) : 0;
+        const workers = (HEADERS.WORKERS in r) ? parseNumber(r[HEADERS.WORKERS]) : 0;
+
+        const allBlank =
+          !week && !startStr && !finishStr &&
+          boards === 0 && cut === 0 && waste === 0 && workers === 0;
+
+        if (allBlank) continue;
+
+        const startMin = parseTimeOfDayToMinutes(startStr);
+        const finishMin = parseTimeOfDayToMinutes(finishStr);
+
+        const spanH = spanHoursFromMinMax(startMin, finishMin);
+
+        const withWaste = getWithWasteLbs(r, cut, waste);
+
+        const lbsPerBoard = boards > 0 ? (cut / boards) : 0;
+        const bph = spanH > 0 ? (boards / spanH) : 0;
+        const potential = withWaste > 0 ? (cut / withWaste) * 100 : 0;
+
+        cuts.push({
+          date, week,
+          boards,
+          cut, waste, withWaste,
+          lbsPerBoard,
+          bph,
+          potential,
+          startMin, finishMin,
+          workers
+        });
+      }
+
+      // DAILY: aggregate by Harvest Date; ✅ FIX: do NOT create "(no date)" bucket
+      const dayMap = new Map();
+      for (const c of cuts) {
+        if (!c.date) continue; // safety
+        const key = c.date;
+
+        if (!dayMap.has(key)) {
+          dayMap.set(key, {
+            date: key,
+            weekGuess: c.week || "",
+            minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
+            maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
+            boards: 0, cut: 0, waste: 0, withWaste: 0,
+            workersSum: 0, workersCount: 0
+          });
+        }
+        const d = dayMap.get(key);
+
+        if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
+        if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
+
+        d.boards += c.boards;
+        d.cut += c.cut;
+        d.waste += c.waste;
+        d.withWaste += c.withWaste;
+
+        if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
+        if (!d.weekGuess && c.week) d.weekGuess = c.week;
+      }
+
+      const daily = Array.from(dayMap.values()).map(d => {
+        const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
+        const bph = spanH > 0 ? (d.boards / spanH) : 0;
+        const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
+        const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
+        const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
+        return {
+          date: d.date,
+          week: d.weekGuess || "",
+          spanH,
+          boards: d.boards,
+          cut: d.cut,
+          waste: d.waste,
+          withWaste: d.withWaste,
+          bph,
+          lbsPerBoard,
+          potential,
+          avgWorkers
+        };
+      });
+
+      // WEEKLY: aggregate from daily by Harvest Week
+      const wkMap = new Map();
+      for (const d of daily) {
+        const wk = parseNumber(d.week);
+        if (!(wk > 0)) continue;
+        const key = String(wk);
+        if (!wkMap.has(key)) {
+          wkMap.set(key, { week: wk, spanH: 0, boards: 0, cut: 0, waste: 0, withWaste: 0 });
+        }
+        const w = wkMap.get(key);
+        w.spanH += d.spanH;
+        w.boards += d.boards;
+        w.cut += d.cut;
+        w.waste += d.waste;
+        w.withWaste += d.withWaste;
+      }
+
+      const weekly = Array.from(wkMap.values()).sort((a,b) => a.week - b.week).map(w => {
+        const bph = w.spanH > 0 ? (w.boards / w.spanH) : 0;
+        const lbsPerBoard = w.boards > 0 ? (w.cut / w.boards) : 0;
+        const potential = w.withWaste > 0 ? (w.cut / w.withWaste) * 100 : 0;
+        return { ...w, bph, lbsPerBoard, potential };
+      });
+
+      CUTS = cuts;
+      DAILY = daily;
+      WEEKLY = weekly;
+    }
+
+    // =========================================================
+    // RENDER KPIs (from DAILY span)
+    // =========================================================
+    function renderKPIs() {
+      const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+      const days = DAILY.filter(d => d.spanH > 0 || d.boards > 0 || d.cut > 0 || d.waste > 0);
+
+      if (!days.length) {
+        document.getElementById("kpi-total-boards").textContent = "–";
+        document.getElementById("kpi-avg-bph").textContent = "–";
+        document.getElementById("kpi-avg-hours").textContent = "–";
+        document.getElementById("kpi-total-cut").textContent = "–";
+        document.getElementById("kpi-days").textContent = "0 days";
+        document.getElementById("kpi-bph-note").textContent = "Top day: –";
+        document.getElementById("kpi-hours-note").textContent = "–";
+        document.getElementById("kpi-weight-note").textContent = "–";
+        document.getElementById("chip-high-text").textContent = "–";
+        document.getElementById("chip-mid-text").textContent = "–";
+        document.getElementById("chip-low-text").textContent = "–";
+        return;
+      }
+
+      const totalBoards = days.reduce((s,d)=>s+d.boards,0);
+      const totalCut = days.reduce((s,d)=>s+d.cut,0);
+      const totalWaste = days.reduce((s,d)=>s+d.waste,0);
+      const totalWithWaste = days.reduce((s,d)=>s+d.withWaste,0);
+      const totalSpanH = days.reduce((s,d)=>s+(d.spanH>0?d.spanH:0),0);
+
+      const usedSpanDays = days.filter(d => d.spanH > 0);
+      const avgBph = totalSpanH > 0 ? totalBoards / totalSpanH : 0;
+      const avgHours = usedSpanDays.length > 0 ? totalSpanH / usedSpanDays.length : 0;
+
+      const overallPotential = totalWithWaste > 0 ? (totalCut / totalWithWaste) * 100 : 0;
+      const overallWastePct = 100 - overallPotential;
+
+      let best = null, bestBph = 0;
+      for (const d of usedSpanDays) {
+        const b = d.spanH > 0 ? d.boards / d.spanH : 0;
+        if (!best || b > bestBph) { best = d; bestBph = b; }
+      }
+
+      document.getElementById("kpi-total-boards").textContent = fmtInt(totalBoards);
+      document.getElementById("kpi-avg-bph").textContent = fmt1(avgBph);
+      document.getElementById("kpi-avg-hours").textContent = fmt1(avgHours);
+      document.getElementById("kpi-total-cut").textContent = fmtInt(totalCut);
+
+      document.getElementById("kpi-days").textContent = days.length + " harvest day" + (days.length === 1 ? "" : "s");
+      document.getElementById("kpi-bph-note").textContent = best ? ("Top day: " + fmt1(bestBph) + " boards/hr (" + best.date + ")") : "Top day: –";
+      document.getElementById("kpi-hours-note").textContent = "Total hours in field: " + fmt1(totalSpanH) + " hrs";
+      document.getElementById("kpi-weight-note").textContent =
+        "Waste: " + fmtInt(totalWaste) + " lbs (" + fmt1(overallWastePct) + "% of total) · With waste: " + fmtInt(totalWithWaste) + " lbs";
+
+      let high=0, mid=0, low=0;
+      days.forEach(d => {
+        const p = d.potential || 0;
+        if (p >= 95) high++;
+        else if (p >= 85) mid++;
+        else low++;
+      });
+
+      document.getElementById("chip-high-text").textContent = high + " day" + (high===1?"":"s") + " ≥ 95% potential";
+      document.getElementById("chip-mid-text").textContent = mid + " day" + (mid===1?"":"s") + " between 85–94%";
+      document.getElementById("chip-low-text").textContent = low + " day" + (low===1?"":"s") + " below 85%";
+
+      const tfootRow = document.querySelector("#harvest-table tfoot tr");
+      if (tfootRow) {
+        const tds = tfootRow.querySelectorAll("td");
+        if (tds.length >= 10) {
+          const lbsPerBoard = totalBoards > 0 ? totalCut / totalBoards : 0;
+          tds[2].textContent = fmtInt(totalBoards);
+          tds[3].textContent = fmt1(totalSpanH);
+          tds[4].textContent = fmtInt(totalCut);
+          tds[5].textContent = fmtInt(totalWaste);
+          tds[6].textContent = fmtInt(totalWithWaste);
+          tds[7].textContent = fmt1(lbsPerBoard);
+          tds[8].textContent = fmt1(avgBph);
+          tds[9].textContent = fmt1(overallPotential) + "%";
+        }
+      }
+    }
+
+    // =========================================================
+    // TABLE
+    // =========================================================
+    function renderTable() {
+      const cutBody = document.getElementById("harvest-tbody-cut");
+      const dailyBody = document.getElementById("harvest-tbody-daily");
+      const weeklyBody = document.getElementById("harvest-tbody-weekly");
+      if (!cutBody || !dailyBody || !weeklyBody) return;
+
+      const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+      function pctClass(p) {
+        if (p >= 95) return "cell-percent-good";
+        if (p < 85) return "cell-percent-low";
+        return "cell-percent-warn";
+      }
+
+      cutBody.innerHTML = "";
+      CUTS.forEach(c => {
+        const p = c.potential || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${c.date || "–"}</td>
+          <td>${c.week || "–"}</td>
+          <td>${fmtInt(c.boards)}</td>
+          <td>${fmt1(c.startMin>=0 && c.finishMin>=0 ? spanHoursFromMinMax(c.startMin, c.finishMin) : 0)}</td>
+          <td>${fmtInt(c.cut)}</td>
+          <td>${fmtInt(c.waste)}</td>
+          <td>${fmtInt(c.withWaste)}</td>
+          <td>${fmt1(c.lbsPerBoard)}</td>
+          <td>${fmt1(c.bph)}</td>
+          <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
+        `;
+        cutBody.appendChild(tr);
+      });
+
+      dailyBody.innerHTML = "";
+      DAILY.forEach(d => {
+        const p = d.potential || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.date}</td>
+          <td>–</td>
+          <td>${fmtInt(d.boards)}</td>
+          <td>${fmt1(d.spanH)}</td>
+          <td>${fmtInt(d.cut)}</td>
+          <td>${fmtInt(d.waste)}</td>
+          <td>${fmtInt(d.withWaste)}</td>
+          <td>${fmt1(d.lbsPerBoard)}</td>
+          <td>${fmt1(d.bph)}</td>
+          <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
+        `;
+        dailyBody.appendChild(tr);
+      });
+
+      weeklyBody.innerHTML = "";
+      WEEKLY.forEach(w => {
+        const p = w.potential || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${w.week}</td>
+          <td>${w.week}</td>
+          <td>${fmtInt(w.boards)}</td>
+          <td>${fmt1(w.spanH)}</td>
+          <td>${fmtInt(w.cut)}</td>
+          <td>${fmtInt(w.waste)}</td>
+          <td>${fmtInt(w.withWaste)}</td>
+          <td>${fmt1(w.lbsPerBoard)}</td>
+          <td>${fmt1(w.bph)}</td>
+          <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
+        `;
+        weeklyBody.appendChild(tr);
+      });
+    }
+
+    // =========================================================
+    // CHARTS
+    // =========================================================
+    function renderCharts() {
+      const labelsCut = CUTS.map((_, i) => String(i + 1));
+      const boardsByCut = CUTS.map(c => c.boards);
+      const bphByCut = CUTS.map(c => c.bph);
+      const cutByCut = CUTS.map(c => c.cut);
+      const withWasteByCut = CUTS.map(c => c.withWaste);
+
+      const labelsByDate = DAILY.map(d => d.date);
+      const boardsByDate = DAILY.map(d => d.boards);
+      const bphByDate = DAILY.map(d => d.bph);
+      const cutByDate = DAILY.map(d => d.cut);
+      const withWasteByDate = DAILY.map(d => d.withWaste);
+
+      const labelsByWeek = WEEKLY.map(w => String(w.week));
+      const boardsByWeek = WEEKLY.map(w => w.boards);
+      const bphByWeek = WEEKLY.map(w => w.bph);
+      const cutByWeek = WEEKLY.map(w => w.cut);
+      const withWasteByWeek = WEEKLY.map(w => w.withWaste);
+
+      let labels, boardsValues, bphValues, weightValues, weightTargetValues;
+      if (chartMode === "cut") {
+        labels = labelsCut; boardsValues = boardsByCut; bphValues = bphByCut;
+        weightValues = cutByCut; weightTargetValues = withWasteByCut;
+      } else if (chartMode === "week") {
+        labels = labelsByWeek; boardsValues = boardsByWeek; bphValues = bphByWeek;
+        weightValues = cutByWeek; weightTargetValues = withWasteByWeek;
+      } else {
+        labels = labelsByDate; boardsValues = boardsByDate; bphValues = bphByDate;
+        weightValues = cutByDate; weightTargetValues = withWasteByDate;
+      }
+
+      const ctxBoards = document.getElementById("chart-boards")?.getContext("2d");
+      const ctxWeight = document.getElementById("chart-weight")?.getContext("2d");
+      const ctxBph = document.getElementById("chart-bph")?.getContext("2d");
+      if (!ctxBoards || !ctxWeight || !ctxBph) return;
+
+      if (boardsChart) boardsChart.destroy();
+      if (weightChart) weightChart.destroy();
+      if (bphChart) bphChart.destroy();
+
+      boardsChart = new Chart(ctxBoards, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: chartMode === "cut" ? "Boards per cut" : chartMode === "week" ? "Boards per week" : "Boards per day",
+            data: boardsValues,
+            borderWidth: 0,
+            borderRadius: 4,
+            backgroundColor: "rgba(59, 130, 246, 0.85)"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
+            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+          }
+        }
+      });
+
+      weightChart = new Chart(ctxWeight, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Cut lbs", data: weightValues, borderWidth: 0, borderRadius: 4, backgroundColor: "rgba(234, 179, 8, 0.9)" },
+            { label: "With waste (target)", data: weightTargetValues, type: "line", tension: 0.35, borderWidth: 2, pointRadius: 2.8, fill: false, borderColor: "rgba(148, 163, 184, 0.9)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, labels: { color: "rgba(209, 213, 219, 0.9)", font: { size: 10 } } } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)" } },
+            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+          }
+        }
+      });
+
+      const bphDatasets = [{
+        label: "Boards / hour",
+        data: bphValues,
+        tension: 0.35,
+        borderWidth: 2.2,
+        pointRadius: 2.8,
+        fill: false,
+        borderColor: "rgba(34, 197, 94, 0.9)"
+      }];
+
+      if (showTrendLine) {
+        const trend = computeTrendLine(bphValues);
+        if (trend.length === bphValues.length) {
+          bphDatasets.push({
+            label: "Trend",
+            data: trend,
+            tension: 0,
+            borderWidth: 1.8,
+            pointRadius: 0,
+            fill: false,
+            borderDash: [5, 4],
+            borderColor: "rgba(148, 163, 184, 0.8)"
+          });
+        }
+      }
+
+      bphChart = new Chart(ctxBph, {
+        type: "line",
+        data: { labels, datasets: bphDatasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)" } },
+            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+          }
+        }
+      });
+    }
+
+    // =========================================================
+    // MODE TOGGLES
+    // =========================================================
+    function setChartMode(mode, opts = {}) {
+      const { fromTable = false } = opts;
+      chartMode = mode;
+
+      document.getElementById("view-by-cut")?.classList.toggle("active", mode === "cut");
+      document.getElementById("view-by-date")?.classList.toggle("active", mode === "date");
+      document.getElementById("view-by-week")?.classList.toggle("active", mode === "week");
+
+      if (!fromTable) {
+        setTableMode(mode === "date" ? "daily" : mode === "week" ? "weekly" : "cut", { fromChart: true });
+        renderCharts();
+      } else {
+        renderCharts();
+      }
+    }
+
+    function setTableMode(mode, opts = {}) {
+      const { fromChart = false } = opts;
+      tableMode = mode;
+
+      const isCut = mode === "cut";
+      const isDaily = mode === "daily";
+      const isWeekly = mode === "weekly";
+
+      document.getElementById("harvest-tbody-cut")?.classList.toggle("hidden", !isCut);
+      document.getElementById("harvest-tbody-daily")?.classList.toggle("hidden", !isDaily);
+      document.getElementById("harvest-tbody-weekly")?.classList.toggle("hidden", !isWeekly);
+
+      document.getElementById("table-view-cut")?.classList.toggle("active", isCut);
+      document.getElementById("table-view-daily")?.classList.toggle("active", isDaily);
+      document.getElementById("table-view-weekly")?.classList.toggle("active", isWeekly);
+
+      const titleEl = document.getElementById("harvest-table-title");
+      const subEl = document.getElementById("harvest-table-subtitle");
+      const hintEl = document.getElementById("harvest-table-hint");
+
+      if (titleEl) titleEl.textContent = isCut ? "Cut-level harvest log" : isDaily ? "Daily harvest summary" : "Weekly harvest summary";
+      if (subEl) subEl.textContent = isCut
+        ? "Each row is a harvest cut loaded from Master Grow."
+        : isDaily
+          ? "Daily totals aggregated from cuts (span uses earliest start → latest finish per day)."
+          : "Aggregated by harvest week (built from daily totals).";
+      if (hintEl) hintEl.textContent = isCut ? "Scroll to see all cuts" : isDaily ? "Scroll to see all days" : "Scroll to see all weeks";
+
+      if (!fromChart) setChartMode(isDaily ? "date" : isWeekly ? "week" : "cut", { fromTable: true });
+      else renderTable();
+    }
+
+    function setupUI() {
+      document.getElementById("view-by-cut")?.addEventListener("click", () => setChartMode("cut"));
+      document.getElementById("view-by-date")?.addEventListener("click", () => setChartMode("date"));
+      document.getElementById("view-by-week")?.addEventListener("click", () => setChartMode("week"));
+
+      document.getElementById("table-view-cut")?.addEventListener("click", () => setTableMode("cut"));
+      document.getElementById("table-view-daily")?.addEventListener("click", () => setTableMode("daily"));
+      document.getElementById("table-view-weekly")?.addEventListener("click", () => setTableMode("weekly"));
+
+      document.getElementById("trend-toggle-input")?.addEventListener("change", (e) => {
+        showTrendLine = !!e.target.checked;
+        renderCharts();
+      });
+
+      setChartMode(chartMode);
+      setTableMode(tableMode);
+    }
+
+    // =========================================================
+    // WIRING (matches fixed seeding/transplant)
+    // =========================================================
+    function reloadAll() {
+      buildModels();
+      renderKPIs();
+      renderTable();
+      renderCharts();
+    }
+
+    function setupListeners() {
+      window.addEventListener("storage", (e) => {
+        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll();
+      });
+
+      window.addEventListener("MASTER_GROW_UPDATED", (e) => {
+        const key = e?.detail?.key;
+        if (!key || key === MASTER_GROW_KEY) reloadAll();
+      });
+      document.addEventListener("MASTER_GROW_UPDATED", (e) => {
+        const key = e?.detail?.key;
+        if (!key || key === MASTER_GROW_KEY) reloadAll();
+      });
+
+      window.addEventListener("message", (event) => {
+        const msg = event?.data;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === "MASTER_GROW_UPDATED") reloadAll();
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupUI();
+      setupListeners();
+      reloadAll();
+    });
+  </script>
+</body>
+</html>

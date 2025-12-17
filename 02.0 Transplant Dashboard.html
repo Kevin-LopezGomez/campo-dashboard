@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Transplant Productivity Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-alt: #020617;
+      --panel: #020617;
+      --panel-soft: #020617;
+      --card: #020617;
+      --border: #1f2937;
+      --border-subtle: #374151;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --accent-strong: #4ade80;
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --muted: #6b7280;
+      --warn: #f97316;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1320px;
+      border-radius: 24px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .title-block { flex: 1 1 200px; min-width: 0; }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 4px;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
+    }
+
+    .title-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #34d399, #22c55e 55%, #16a34a 100%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9), 0 12px 30px rgba(16, 185, 129, 0.6);
+    }
+    .title-pill span { font-size: 15px; font-weight: 700; color: #022c22; }
+
+    .title-text { font-weight: 620; display: flex; align-items: baseline; gap: 8px; }
+    .title-sub { font-size: 0.8rem; color: var(--sub); text-transform: uppercase; letter-spacing: 0.18em; }
+
+    .subtitle { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+    .header-tags { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--sub);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%);
+    }
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.35);
+    }
+    .chip-danger-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.4);
+    }
+
+    .layout-main {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 2.2fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 960px) {
+      .container { border-radius: 18px; padding: 14px 12px 14px; }
+      .layout-main { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 960px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .kpi-card {
+      position: relative;
+      border-radius: 16px;
+      padding: 10px 12px 11px;
+      background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.85), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(15, 23, 42, 0.9);
+      overflow: hidden;
+    }
+
+    .kpi-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--sub);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-value {
+      font-size: 1.15rem;
+      font-weight: 650;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .kpi-unit { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; }
+
+    .kpi-trend {
+      margin-top: 2px;
+      font-size: 0.7rem;
+      color: var(--accent-strong);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kpi-glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background:
+        radial-gradient(circle at 15% 0, rgba(34, 197, 94, 0.4), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.4), transparent 60%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .panel {
+      border-radius: 18px;
+      padding: 12px 12px 10px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.99));
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(14px);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--sub);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .panel-title-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.45);
+    }
+
+    .panel-subtitle { font-size: 0.75rem; color: var(--muted); }
+
+    .panel-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--sub);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge-soft {
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.95));
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+    }
+    .badge-soft span {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(226, 232, 240, 0.95);
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.48);
+    }
+
+    .chart-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+      flex: 1 1 auto;
+    }
+
+    .chart-row { position: relative; width: 100%; }
+    .chart-canvas-main { width: 100%; height: 230px; }
+    .chart-canvas-secondary { width: 100%; height: 200px; }
+    @media (max-width: 960px) {
+      .chart-canvas-main { height: 210px; }
+      .chart-canvas-secondary { height: 180px; }
+    }
+
+    .table-wrapper {
+      margin-top: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.95);
+      background:
+        linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.99)),
+        radial-gradient(circle at top left, rgba(51, 65, 85, 0.65), rgba(15, 23, 42, 0.96));
+      overflow: hidden;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-scroll {
+      max-height: 430px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #4b5563 rgba(15, 23, 42, 0.2);
+      flex: 1 1 auto;
+    }
+
+    .table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .table-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.8); }
+    .table-scroll::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 999px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 680px; }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background:
+        linear-gradient(to bottom, #020617, #020617),
+        radial-gradient(circle at top left, rgba(55, 65, 81, 0.5), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 1px 0 rgba(31, 41, 55, 0.9);
+    }
+
+    th, td {
+      text-align: right;
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.85);
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child { text-align: left; padding-left: 14px; }
+    th:last-child, td:last-child { padding-right: 12px; }
+    th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--sub);
+      background: transparent;
+    }
+    tbody tr:nth-child(odd) td { background: rgba(15, 23, 42, 0.85); }
+    tbody tr:nth-child(even) td { background: rgba(17, 24, 39, 0.92); }
+    tbody tr:hover td { background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.08), rgba(15, 23, 42, 0.98)); }
+    tfoot td {
+      background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.12), rgba(15, 23, 42, 0.98));
+      font-weight: 600;
+      border-top: 1px solid rgba(55, 65, 81, 0.95);
+      border-bottom: none;
+    }
+
+    .cell-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cell-percent-good {
+      color: #bbf7d0;
+      border-color: rgba(74, 222, 128, 0.7);
+      background: radial-gradient(circle at 0 0, rgba(22, 163, 74, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .cell-percent-warn {
+      color: #fed7aa;
+      border-color: rgba(249, 115, 22, 0.8);
+      background: radial-gradient(circle at 0 0, rgba(251, 146, 60, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .cell-percent-bad {
+      color: #fecaca;
+      border-color: rgba(248, 113, 113, 0.9);
+      background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .footer-note {
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-note span { display: inline-flex; align-items: center; gap: 4px; }
+
+    .legend-box {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+    }
+    .legend-box.flats { background: rgba(59, 130, 246, 0.5); }
+    .legend-box.fpph { background: rgba(34, 197, 94, 0.7); }
+
+    .view-toggle {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 1px;
+      font-size: 0.7rem;
+    }
+
+    .view-toggle-btn {
+      border: none;
+      background: transparent;
+      color: var(--sub);
+      padding: 3px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: inherit;
+    }
+    .view-toggle-btn.active { background: rgba(34, 197, 94, 0.18); color: #bbf7d0; }
+
+    .trend-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      color: var(--sub);
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+    .trend-toggle input { margin: 0; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="container">
+      <header class="header">
+        <div class="title-block">
+          <div class="title">
+            <div class="title-pill"><span>T</span></div>
+            <div class="title-text">
+              <span>Transplant Productivity Dashboard</span>
+              <span class="title-sub" id="title-range">–</span>
+            </div>
+          </div>
+          <p class="subtitle">Daily transplant output, labor utilization, and speed (boards per person per hour).</p>
+        </div>
+
+        <div class="header-tags">
+          <div class="chip">
+            <span class="chip-dot"></span>
+            <span id="chip-high-text">–</span>
+          </div>
+          <div class="chip">
+            <span class="chip-danger-dot"></span>
+            <span id="chip-low-text">–</span>
+          </div>
+
+          <!-- Error / mapping status -->
+          <div class="chip" id="error-banner" style="display:none; border-color: rgba(248,113,113,.65);">
+            <span class="chip-danger-dot"></span>
+            <span id="error-text">–</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Total boards transplanted</div>
+          <div class="kpi-value"><span id="kpi-total-boards">–</span><span class="kpi-unit">boards</span></div>
+          <div class="kpi-trend"><span>Expected: <span id="kpi-expected-boards">–</span> · Gap: <span id="kpi-gap-boards">–</span> boards</span></div>
+          <div class="kpi-trend"><span>Overall completion: <span id="kpi-overall-pct">–</span></span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Average crew size</div>
+          <div class="kpi-value"><span id="kpi-avg-workers">–</span><span class="kpi-unit">workers</span></div>
+          <div class="kpi-trend"><span>Total hours in field: <span id="kpi-total-hours">–</span> hrs</span></div>
+          <div class="kpi-trend"><span>Peak crew: <span id="kpi-peak-crew">–</span> workers</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Average productivity</div>
+          <div class="kpi-value"><span id="kpi-avg-bph">–</span><span class="kpi-unit">boards / person / hour</span></div>
+          <div class="kpi-trend"><span id="kpi-best-day">Best day: –</span></div>
+          <div class="kpi-trend"><span>Peak rate: <span id="kpi-peak-bph">–</span> boards/p-hr</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Schedule window</div>
+          <div class="kpi-value"><span id="kpi-date-range">–</span></div>
+          <div class="kpi-trend"><span>Days transplanted: <span id="kpi-days-count">–</span></span></div>
+          <div class="kpi-trend"><span id="kpi-days-high">–</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span id="kpi-days-low">–</span></div>
+        </article>
+      </section>
+
+      <section class="layout-main">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span>Performance over time</span></div>
+              <div class="panel-subtitle">Top: Boards transplanted · Bottom: Boards / person / hour. View by date or transplant week.</div>
+            </div>
+            <div class="panel-header-right">
+              <div class="badge-soft"><span class="badge-dot"></span><span>Live from table below</span></div>
+              <div class="view-toggle">
+                <button id="view-by-date" class="view-toggle-btn active" type="button">By date</button>
+                <button id="view-by-week" class="view-toggle-btn" type="button">By transplant week</button>
+              </div>
+              <label class="trend-toggle">
+                <input type="checkbox" id="trend-toggle-input" />
+                <span>Trend line</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <div class="chart-row"><canvas id="chart-boards" class="chart-canvas-main"></canvas></div>
+            <div class="chart-row"><canvas id="chart-bph" class="chart-canvas-secondary"></canvas></div>
+          </div>
+
+          <div class="footer-note">
+            <span><span class="legend-box flats"></span> Top chart: Boards transplanted (bars) + target boards (line)</span>
+            <span><span class="legend-box fpph"></span> Bottom chart: Boards / person / hour (line + optional trend)</span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span>Transplant log & weekly summary</span></div>
+              <div class="panel-subtitle">Source data and automated weekly roll-up. <span id="log-range"></span></div>
+            </div>
+            <div class="panel-header-right">
+              <div class="view-toggle">
+                <button id="table-view-daily" class="view-toggle-btn active" type="button">Daily</button>
+                <button id="table-view-weekly" class="view-toggle-btn" type="button">Weekly</button>
+              </div>
+              <span>Scroll to see all rows</span>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-scroll" id="daily-table-wrapper">
+              <table id="data-table">
+                <thead>
+                  <tr>
+                    <th>Transplant Date</th>
+                    <th>Transplant Week</th>
+                    <th># of Workers</th>
+                    <th>Hours Elapsed</th>
+                    <th>Boards Transplant</th>
+                    <th>Target Boards</th>
+                    <th>% Complete</th>
+                    <th>Boards / Person / Hour</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                  <tr>
+                    <td>Grand Total</td>
+                    <td>–</td>
+                    <td>0.0</td>
+                    <td>0.0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0%</td>
+                    <td>0.0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="table-scroll hidden" id="weekly-table-wrapper">
+              <table id="weekly-table">
+                <thead>
+                  <tr>
+                    <th>Transplant Week</th>
+                    <th>Days Transplanted</th>
+                    <th>Total Boards</th>
+                    <th>Total Target Boards</th>
+                    <th>% Complete</th>
+                    <th>Avg Crew Size</th>
+                    <th>Total Hours</th>
+                    <th>Boards / Person / Hour</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                  <tr>
+                    <td>Grand Total</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0%</td>
+                    <td>0.0</td>
+                    <td>0.0</td>
+                    <td>0.0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ✅ Master dataset key (JSON written by Data Input)
+    const MASTER_GROW_KEY = "campo_master_grow_v1";
+
+    // ✅ The dashboard expects these EXACT headers to exist in Master Grow sheet headers:
+    // (You said to assume they match; these are the ones you provided earlier.)
+    const EXPECTED_HEADERS = {
+      date:     "TRANSPLANT DATE",
+      week:     "TRANSPLANT WEEK",
+      workers:  "TRANSPLANT TOTAL # OF WORKERS",
+      start:    "TRANSPLANT START TIME",
+      finish:   "TRANSPLANT FINISH TIME",
+      boards:   "BOARDS TRANSPLANT",
+      expected: "EXPECTED BOARDS TRANSPLANTED"
+    };
+
+    let boardsChart = null;
+    let bphChart = null;
+    let chartMode = "date"; // "date" or "week"
+    let showTrendLine = false;
+
+    // fallback sample data (used only if master is missing/invalid)
+    const defaultTransplantData = [
+      { date:"2025-10-15", label:"10/15", displayDate:"10/15/2025", week:"42", workers:22.0, hours:20.0, boards:825, expected:960,  percent:86, bph:1.88 },
+      { date:"2025-10-16", label:"10/16", displayDate:"10/16/2025", week:"42", workers:12.0, hours:7.0,  boards:669, expected:960,  percent:70, bph:7.96 },
+      { date:"2025-10-17", label:"10/17", displayDate:"10/17/2025", week:"42", workers:15.25, hours:13.1, boards:555, expected:960,  percent:58, bph:2.78 }
+    ];
+
+    let transplantData = [];
+
+    function showError(msg) {
+      const banner = document.getElementById("error-banner");
+      const text = document.getElementById("error-text");
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.style.display = "inline-flex";
+    }
+    function clearError() {
+      const banner = document.getElementById("error-banner");
+      if (banner) banner.style.display = "none";
+    }
+
+    function computeTrendLine(values) {
+      const n = values.length;
+      if (!n || n < 2) return [];
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < n; i++) {
+        const x = i + 1;
+        const y = Number(values[i]) || 0;
+        sumX += x; sumY += y; sumXY += x * y; sumXX += x * x;
+      }
+      const denom = n * sumXX - sumX * sumX;
+      if (denom === 0) return Array(n).fill(values[0] || 0);
+      const slope = (n * sumXY - sumX * sumY) / denom;
+      const intercept = (sumY - slope * sumX) / n;
+      const trend = [];
+      for (let i = 0; i < n; i++) trend.push(slope * (i + 1) + intercept);
+      return trend;
+    }
+
+    function fmt0(n){ return (Number(n)||0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+    function fmt1(n){ return (Number(n)||0).toLocaleString(undefined, { maximumFractionDigits: 1 }); }
+    function fmt2(n){ return (Number(n)||0).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+
+    // ISO week
+    function computeISOWeekFromISODate(isoDate) {
+      const d = new Date(isoDate + "T00:00:00Z");
+      const day = (d.getUTCDay() + 6) % 7; // Monday=0
+      d.setUTCDate(d.getUTCDate() - day + 3);
+      const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+      const diff = d - firstThursday;
+      const week = 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+      return week;
+    }
+
+    function normHeader(s){
+      return String(s||"")
+        .trim()
+        .toLowerCase()
+        .replace(/[\u200B-\u200D\uFEFF]/g,"")
+        .replace(/[_\-]+/g," ")
+        .replace(/\s+/g," ")
+        .replace(/[^\w\s#]/g,"");
+    }
+
+    function parseDateToISO(dateStr){
+      const s = String(dateStr||"").trim();
+      if (!s) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+      const m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+      if (m){
+        const mm = m[1].padStart(2,"0");
+        const dd = m[2].padStart(2,"0");
+        let yy = m[3];
+        if (yy.length === 2) yy = "20" + yy;
+        return `${yy}-${mm}-${dd}`;
+      }
+
+      const d = new Date(s);
+      if (!isNaN(d.getTime())){
+        const y = d.getFullYear();
+        const mm = String(d.getMonth()+1).padStart(2,"0");
+        const dd = String(d.getDate()).padStart(2,"0");
+        return `${y}-${mm}-${dd}`;
+      }
+      return "";
+    }
+
+    function isoToLabel(iso){
+      const m = parseInt(iso.slice(5,7),10);
+      const d = parseInt(iso.slice(8,10),10);
+      return `${m}/${d}`;
+    }
+
+    function isoToDisplay(iso){
+      const mm = iso.slice(5,7);
+      const dd = iso.slice(8,10);
+      const yy = iso.slice(0,4);
+      return `${mm}/${dd}/${yy}`;
+    }
+
+    function parseTimeToMinutes(t){
+      // accepts: "7:30", "7:30 AM", "19:05", Excel time as fraction, datetime string
+      if (t === null || t === undefined) return NaN;
+
+      if (typeof t === "number" && isFinite(t)){
+        return Math.round((t % 1) * 24 * 60);
+      }
+
+      const s = String(t).trim();
+      if (!s) return NaN;
+
+      if (/^\d+(\.\d+)?$/.test(s)){
+        const num = parseFloat(s);
+        if (isFinite(num)) return Math.round((num % 1) * 24 * 60);
+      }
+
+      const dt = new Date(s);
+      if (!isNaN(dt.getTime())){
+        return dt.getHours()*60 + dt.getMinutes();
+      }
+
+      const mm = s.match(/(\d{1,2})\s*:\s*(\d{2})(?:\s*:\s*(\d{2}))?\s*(am|pm)?/i);
+      if (mm){
+        let h = parseInt(mm[1],10);
+        const m = parseInt(mm[2],10);
+        const ap = (mm[4]||"").toLowerCase();
+        if (ap === "pm" && h < 12) h += 12;
+        if (ap === "am" && h === 12) h = 0;
+        return h*60 + m;
+      }
+
+      return NaN;
+    }
+
+    // --- FIX: Read JSON master, NOT TSV ---
+    function readMasterGrowJSON() {
+      const raw = localStorage.getItem(MASTER_GROW_KEY) || "";
+      if (!raw.trim()) return null;
+
+      // Try JSON format (Data Input dashboard format)
+      try {
+        const obj = JSON.parse(raw);
+        if (obj && typeof obj === "object" && obj.sheets) return obj;
+      } catch (_) {}
+
+      return null;
+    }
+
+    function getMasterGrowSheet(masterObj) {
+      if (!masterObj?.sheets) return null;
+
+      // Prefer "Master Grow"
+      const sheet = masterObj.sheets["Master Grow"] || masterObj.sheets["MASTER GROW"];
+      if (!sheet) return null;
+
+      const headers = Array.isArray(sheet.headers) ? sheet.headers : null;
+      const rows = Array.isArray(sheet.rows) ? sheet.rows : null;
+      if (!headers || !rows) return null;
+
+      return { headers, rows };
+    }
+
+    function buildHeaderIndexMapFromHeaders(headers){
+      const map = new Map();
+      headers.forEach((h, idx) => map.set(normHeader(h), idx));
+
+      const getIdx = (h) => map.has(normHeader(h)) ? map.get(normHeader(h)) : -1;
+
+      return {
+        idxDate:     getIdx(EXPECTED_HEADERS.date),
+        idxWeek:     getIdx(EXPECTED_HEADERS.week),
+        idxWorkers:  getIdx(EXPECTED_HEADERS.workers),
+        idxStart:    getIdx(EXPECTED_HEADERS.start),
+        idxFinish:   getIdx(EXPECTED_HEADERS.finish),
+        idxBoards:   getIdx(EXPECTED_HEADERS.boards),
+        idxExpected: getIdx(EXPECTED_HEADERS.expected),
+      };
+    }
+
+    function parseFromMasterSheet(headers, rows){
+      clearError();
+
+      const idx = buildHeaderIndexMapFromHeaders(headers);
+
+      const required = [
+        ["TRANSPLANT DATE", idx.idxDate],
+        ["TRANSPLANT TOTAL # OF WORKERS", idx.idxWorkers],
+        ["TRANSPLANT START TIME", idx.idxStart],
+        ["TRANSPLANT FINISH TIME", idx.idxFinish],
+        ["BOARDS TRANSPLANT", idx.idxBoards],
+        ["EXPECTED BOARDS TRANSPLANTED", idx.idxExpected],
+      ];
+      const missing = required.filter(([_, i]) => i < 0).map(([name]) => name);
+
+      if (missing.length){
+        showError(
+          "Missing required header(s): " + missing.join(", ") +
+          ". (Master Grow is JSON; headers must match exactly.)"
+        );
+        return { data: [], error: "Missing headers." };
+      }
+
+      // Group by date
+      const byDate = new Map();
+
+      for (let r = 0; r < rows.length; r++){
+        const row = rows[r];
+        if (!row || !Array.isArray(row)) continue;
+
+        const iso = parseDateToISO(row[idx.idxDate]);
+        if (!iso) continue;
+
+        const weekRaw = idx.idxWeek >= 0 ? String(row[idx.idxWeek] || "").trim() : "";
+        const workers = parseFloat(String(row[idx.idxWorkers]).replace(/,/g,"")) || 0;
+
+        const startMin = parseTimeToMinutes(row[idx.idxStart]);
+        const finishMin = parseTimeToMinutes(row[idx.idxFinish]);
+
+        const boards = parseFloat(String(row[idx.idxBoards]).replace(/,/g,"")) || 0;
+        const expected = parseFloat(String(row[idx.idxExpected]).replace(/,/g,"")) || 0;
+
+        if (!byDate.has(iso)){
+          byDate.set(iso, {
+            iso,
+            weekRaw,
+            workersSum: 0,
+            workersCount: 0,
+            startMin: isNaN(startMin) ? Infinity : startMin,
+            finishMin: isNaN(finishMin) ? -Infinity : finishMin,
+            boardsSum: 0,
+            expectedSum: 0
+          });
+        }
+
+        const g = byDate.get(iso);
+        if (weekRaw && !g.weekRaw) g.weekRaw = weekRaw;
+
+        g.workersSum += workers;
+        g.workersCount += 1;
+
+        if (!isNaN(startMin)) g.startMin = Math.min(g.startMin, startMin);
+        if (!isNaN(finishMin)) g.finishMin = Math.max(g.finishMin, finishMin);
+
+        g.boardsSum += boards;
+        g.expectedSum += expected;
+      }
+
+      const out = [];
+      for (const g of byDate.values()){
+        const hoursElapsed =
+          (isFinite(g.startMin) && isFinite(g.finishMin) && g.startMin !== Infinity && g.finishMin !== -Infinity)
+            ? Math.max((g.finishMin - g.startMin) / 60, 0)
+            : 0;
+
+        const avgWorkers = g.workersCount ? (g.workersSum / g.workersCount) : 0;
+        const percent = g.expectedSum ? (g.boardsSum / g.expectedSum) * 100 : 0;
+        const weekVal = (g.weekRaw && String(g.weekRaw).trim())
+          ? String(g.weekRaw).replace(/^Wk\s*/i,"")
+          : String(computeISOWeekFromISODate(g.iso));
+        const bph = (avgWorkers > 0 && hoursElapsed > 0) ? (g.boardsSum / (avgWorkers * hoursElapsed)) : 0;
+
+        out.push({
+          date: g.iso,
+          label: isoToLabel(g.iso),
+          displayDate: isoToDisplay(g.iso),
+          week: weekVal,
+          workers: avgWorkers,
+          hours: hoursElapsed,
+          boards: g.boardsSum,
+          expected: g.expectedSum,
+          percent,
+          bph
+        });
+      }
+
+      out.sort((a,b) => a.date.localeCompare(b.date));
+      return { data: out, error: "" };
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector("#data-table tbody");
+      const tfootRow = document.querySelector("#data-table tfoot tr");
+      if (!tbody || !tfootRow) return;
+
+      tbody.innerHTML = "";
+
+      let sumWorkers = 0;
+      let sumHours = 0;
+      let sumBoards = 0;
+      let sumExpected = 0;
+      let sumBPH = 0;
+
+      data.forEach(d => {
+        sumWorkers += d.workers;
+        sumHours += d.hours;
+        sumBoards += d.boards;
+        sumExpected += d.expected;
+        sumBPH += d.bph;
+
+        const tr = document.createElement("tr");
+
+        function tdText(text) {
+          const td = document.createElement("td");
+          td.textContent = text;
+          return td;
+        }
+
+        tr.appendChild(tdText(d.displayDate || d.label));
+        tr.appendChild(tdText(d.week || "–"));
+        tr.appendChild(tdText(d.workers.toFixed(1).replace(/\.0$/, "")));
+        tr.appendChild(tdText(d.hours.toFixed(2).replace(/0+$/,"").replace(/\.$/,"")));
+        tr.appendChild(tdText(fmt0(d.boards)));
+        tr.appendChild(tdText(fmt0(d.expected)));
+
+        const tdPct = document.createElement("td");
+        const span = document.createElement("span");
+        span.classList.add("cell-pill");
+        if (d.percent >= 95) span.classList.add("cell-percent-good");
+        else if (d.percent >= 85) span.classList.add("cell-percent-warn");
+        else span.classList.add("cell-percent-bad");
+        span.textContent = (Number(d.percent)||0).toFixed(0) + "%";
+        tdPct.appendChild(span);
+        tr.appendChild(tdPct);
+
+        tr.appendChild(tdText((Number(d.bph)||0).toFixed(2)));
+
+        tbody.appendChild(tr);
+      });
+
+      const avgWorkers = data.length ? sumWorkers / data.length : 0;
+      const avgBPH = data.length ? sumBPH / data.length : 0;
+      const overallPct = sumExpected ? (sumBoards / sumExpected) * 100 : 0;
+
+      const tds = tfootRow.querySelectorAll("td");
+      if (tds.length >= 8) {
+        tds[0].textContent = "Grand Total";
+        tds[1].textContent = "–";
+        tds[2].textContent = fmt1(avgWorkers);
+        tds[3].textContent = fmt2(sumHours);
+        tds[4].textContent = fmt0(sumBoards);
+        tds[5].textContent = fmt0(sumExpected);
+        tds[6].textContent = overallPct.toLocaleString(undefined, { maximumFractionDigits: 0 }) + "%";
+        tds[7].textContent = fmt2(avgBPH);
+      }
+    }
+
+    function computeWeeklyAggregation(data) {
+      const weekMap = new Map();
+      data.forEach(d => {
+        const key = d.week || "N/A";
+        if (!weekMap.has(key)) {
+          weekMap.set(key, {
+            week: key,
+            totalBoards: 0,
+            totalExpected: 0,
+            totalWorkerHours: 0,
+            totalWorkers: 0,
+            totalHours: 0,
+            days: 0
+          });
+        }
+        const agg = weekMap.get(key);
+        agg.totalBoards += d.boards;
+        agg.totalExpected += d.expected;
+        agg.totalWorkerHours += d.workers * d.hours;
+        agg.totalWorkers += d.workers;
+        agg.totalHours += d.hours;
+        agg.days += 1;
+      });
+
+      return Array.from(weekMap.values()).sort((a, b) => {
+        const aw = parseFloat(a.week);
+        const bw = parseFloat(b.week);
+        if (isNaN(aw) || isNaN(bw)) return String(a.week).localeCompare(String(b.week));
+        return aw - bw;
+      });
+    }
+
+    function renderWeeklyTable(data) {
+      const weekAgg = computeWeeklyAggregation(data);
+      const tbody = document.querySelector("#weekly-table tbody");
+      const tfootRow = document.querySelector("#weekly-table tfoot tr");
+      if (!tbody || !tfootRow) return;
+
+      tbody.innerHTML = "";
+
+      let totalBoards = 0;
+      let totalExpected = 0;
+      let totalWorkerHours = 0;
+      let totalWorkers = 0;
+      let totalHours = 0;
+      let totalDays = 0;
+
+      weekAgg.forEach(w => {
+        totalBoards += w.totalBoards;
+        totalExpected += w.totalExpected;
+        totalWorkerHours += w.totalWorkerHours;
+        totalWorkers += w.totalWorkers;
+        totalHours += w.totalHours;
+        totalDays += w.days;
+
+        const tr = document.createElement("tr");
+
+        function tdText(text) {
+          const td = document.createElement("td");
+          td.textContent = text;
+          return td;
+        }
+
+        const pct = w.totalExpected ? (w.totalBoards / w.totalExpected) * 100 : 0;
+        const avgCrew = w.days ? w.totalWorkers / w.days : 0;
+        const weeklyBPH = w.totalWorkerHours ? w.totalBoards / w.totalWorkerHours : 0;
+
+        tr.appendChild(tdText("Wk " + w.week));
+        tr.appendChild(tdText(w.days));
+        tr.appendChild(tdText(fmt0(w.totalBoards)));
+        tr.appendChild(tdText(fmt0(w.totalExpected)));
+
+        const tdPct = document.createElement("td");
+        const span = document.createElement("span");
+        span.classList.add("cell-pill");
+        if (pct >= 95) span.classList.add("cell-percent-good");
+        else if (pct >= 85) span.classList.add("cell-percent-warn");
+        else span.classList.add("cell-percent-bad");
+        span.textContent = pct.toFixed(0) + "%";
+        tdPct.appendChild(span);
+        tr.appendChild(tdPct);
+
+        tr.appendChild(tdText(avgCrew.toFixed(1)));
+        tr.appendChild(tdText(fmt2(w.totalHours)));
+        tr.appendChild(tdText(fmt2(weeklyBPH)));
+
+        tbody.appendChild(tr);
+      });
+
+      const overallPct = totalExpected ? (totalBoards / totalExpected) * 100 : 0;
+      const avgCrewAll = totalDays ? totalWorkers / totalDays : 0;
+      const overallBPH = totalWorkerHours ? totalBoards / totalWorkerHours : 0;
+
+      const tds = tfootRow.querySelectorAll("td");
+      if (tds.length >= 8) {
+        tds[0].textContent = "Grand Total";
+        tds[1].textContent = totalDays;
+        tds[2].textContent = fmt0(totalBoards);
+        tds[3].textContent = fmt0(totalExpected);
+        tds[4].textContent = overallPct.toLocaleString(undefined, { maximumFractionDigits: 0 }) + "%";
+        tds[5].textContent = fmt1(avgCrewAll);
+        tds[6].textContent = fmt2(totalHours);
+        tds[7].textContent = fmt2(overallBPH);
+      }
+    }
+
+    function renderCharts(data) {
+      if (!data.length) return;
+
+      const weekAgg = computeWeeklyAggregation(data);
+
+      const labelsByDate = data.map(d => d.label);
+      const boardsByDate = data.map(d => d.boards);
+      const targetByDate = data.map(d => d.expected);
+      const bphByDate = data.map(d => d.bph);
+
+      const labelsByWeek = weekAgg.map(w => "Wk " + w.week);
+      const boardsByWeek = weekAgg.map(w => w.totalBoards);
+      const targetByWeek = weekAgg.map(w => w.totalExpected);
+      const bphByWeek = weekAgg.map(w => (w.totalWorkerHours ? w.totalBoards / w.totalWorkerHours : 0));
+
+      const labels = chartMode === "week" ? labelsByWeek : labelsByDate;
+      const boardsValues = chartMode === "week" ? boardsByWeek : boardsByDate;
+      const targetValues = chartMode === "week" ? targetByWeek : targetByDate;
+      const bphValues = chartMode === "week" ? bphByWeek : bphByDate;
+
+      const ctxBoards = document.getElementById("chart-boards").getContext("2d");
+      const ctxBPH = document.getElementById("chart-bph").getContext("2d");
+
+      if (boardsChart) boardsChart.destroy();
+      if (bphChart) bphChart.destroy();
+
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: "#e5e7eb", font: { size: 10 } } },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            backgroundColor: "rgba(15, 23, 42, 0.96)",
+            borderColor: "rgba(51, 65, 85, 0.9)",
+            borderWidth: 1,
+            titleColor: "#e5e7eb",
+            bodyColor: "#e5e7eb",
+            padding: 8
+          }
+        },
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 }
+          },
+          y: {
+            grid: { color: "rgba(31, 41, 55, 0.8)" },
+            ticks: { color: "rgba(148, 163, 184, 0.9)" }
+          }
+        }
+      };
+
+      boardsChart = new Chart(ctxBoards, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Boards transplanted",
+              data: boardsValues,
+              borderWidth: 0,
+              borderRadius: 4,
+              backgroundColor: "rgba(59, 130, 246, 0.8)"
+            },
+            {
+              label: "Target boards",
+              data: targetValues,
+              type: "line",
+              borderWidth: 1.8,
+              tension: 0.25,
+              pointRadius: 1.5,
+              borderDash: [4, 3],
+              borderColor: "rgba(148, 163, 184, 1)",
+              backgroundColor: "rgba(148, 163, 184, 0.1)"
+            }
+          ]
+        },
+        options: {
+          ...commonOptions,
+          scales: {
+            ...commonOptions.scales,
+            y: {
+              ...commonOptions.scales.y,
+              title: { display: true, text: "Boards transplanted", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            }
+          }
+        }
+      });
+
+      const bphDatasets = [{
+        label: "Boards / person / hour",
+        data: bphValues,
+        tension: 0.35,
+        borderWidth: 2.2,
+        pointRadius: 2.8,
+        pointHoverRadius: 4,
+        fill: false,
+        borderColor: "rgba(34, 197, 94, 0.9)",
+        backgroundColor: "rgba(22, 163, 74, 0.25)"
+      }];
+
+      if (showTrendLine) {
+        const trend = computeTrendLine(bphValues);
+        if (trend.length === bphValues.length) {
+          bphDatasets.push({
+            label: "Trend",
+            data: trend,
+            tension: 0,
+            borderWidth: 1.8,
+            pointRadius: 0,
+            fill: false,
+            borderDash: [5, 4],
+            borderColor: "rgba(148, 163, 184, 0.8)"
+          });
+        }
+      }
+
+      bphChart = new Chart(ctxBPH, {
+        type: "line",
+        data: { labels, datasets: bphDatasets },
+        options: {
+          ...commonOptions,
+          scales: {
+            ...commonOptions.scales,
+            y: {
+              ...commonOptions.scales.y,
+              title: { display: true, text: "Boards / person / hour", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    function recomputeDashboard() {
+      if (!transplantData.length) return;
+
+      transplantData.sort((a, b) => a.date.localeCompare(b.date));
+      const data = transplantData;
+
+      const totalBoards = data.reduce((s, d) => s + (Number(d.boards)||0), 0);
+      const totalExpected = data.reduce((s, d) => s + (Number(d.expected)||0), 0);
+      const totalHours = data.reduce((s, d) => s + (Number(d.hours)||0), 0);
+      const totalWorkers = data.reduce((s, d) => s + (Number(d.workers)||0), 0);
+      const totalWorkerHours = data.reduce((s, d) => s + ((Number(d.workers)||0) * (Number(d.hours)||0)), 0);
+
+      const avgWorkers = data.length ? totalWorkers / data.length : 0;
+      const overallBPH = totalWorkerHours ? totalBoards / totalWorkerHours : 0;
+      const completionRatio = totalExpected ? (totalBoards / totalExpected) * 100 : 0;
+
+      const bestDay = data.reduce((best, d) => ((Number(d.bph)||0) > (Number(best.bph)||0) ? d : best), data[0]);
+      const peakCrew = data.reduce((max, d) => Math.max(max, Number(d.workers)||0), 0);
+
+      const daysHigh = data.filter(d => (Number(d.percent)||0) >= 95).length;
+      const daysLow = data.filter(d => (Number(d.percent)||0) < 85).length;
+
+      const first = data[0];
+      const last = data[data.length - 1];
+
+      const rangeShort = `${first.label} – ${last.label}`;
+      const firstDisplay = first.displayDate || first.label;
+      const lastDisplay = last.displayDate || last.label;
+      const rangeLong = `(${firstDisplay} – ${lastDisplay})`;
+
+      document.getElementById("kpi-total-boards").textContent = fmt0(totalBoards);
+      document.getElementById("kpi-expected-boards").textContent = fmt0(totalExpected);
+      document.getElementById("kpi-gap-boards").textContent = fmt0(totalExpected - totalBoards);
+      document.getElementById("kpi-overall-pct").textContent = completionRatio.toLocaleString(undefined, { maximumFractionDigits: 1 }) + "%";
+
+      document.getElementById("kpi-avg-workers").textContent = fmt1(avgWorkers);
+      document.getElementById("kpi-total-hours").textContent = fmt2(totalHours);
+      document.getElementById("kpi-peak-crew").textContent = peakCrew.toFixed(1).replace(/\.0$/, "");
+
+      document.getElementById("kpi-avg-bph").textContent = fmt2(overallBPH);
+      document.getElementById("kpi-best-day").textContent =
+        "Best day: " + (bestDay.displayDate || bestDay.label) + " (" + (Number(bestDay.bph)||0).toFixed(2) + " bds/p-hr)";
+      document.getElementById("kpi-peak-bph").textContent = (Number(bestDay.bph)||0).toFixed(2);
+
+      document.getElementById("kpi-date-range").textContent = rangeShort;
+      document.getElementById("kpi-days-count").textContent = data.length;
+      document.getElementById("kpi-days-high").textContent = `${daysHigh} day(s) ≥ 95%`;
+      document.getElementById("kpi-days-low").textContent = `${daysLow} day(s) < 85%`;
+
+      document.getElementById("chip-high-text").textContent = `${daysHigh} day(s) at or above target (≥95%)`;
+      document.getElementById("chip-low-text").textContent = daysLow ? `${daysLow} day(s) below 85% target` : "No days below 85% target";
+
+      document.getElementById("log-range").textContent = rangeLong;
+      document.getElementById("title-range").textContent = `${firstDisplay} – ${lastDisplay}`;
+
+      renderTable(data);
+      renderWeeklyTable(data);
+      renderCharts(data);
+    }
+
+    function setTableViewMode(mode) {
+      const btnDaily = document.getElementById("table-view-daily");
+      const btnWeekly = document.getElementById("table-view-weekly");
+      const dailyWrapper = document.getElementById("daily-table-wrapper");
+      const weeklyWrapper = document.getElementById("weekly-table-wrapper");
+      if (!btnDaily || !btnWeekly || !dailyWrapper || !weeklyWrapper) return;
+
+      if (mode === "daily") {
+        dailyWrapper.classList.remove("hidden");
+        weeklyWrapper.classList.add("hidden");
+        btnDaily.classList.add("active");
+        btnWeekly.classList.remove("active");
+      } else {
+        dailyWrapper.classList.add("hidden");
+        weeklyWrapper.classList.remove("hidden");
+        btnDaily.classList.remove("active");
+        btnWeekly.classList.add("active");
+      }
+    }
+
+    function setDashboardView(mode) {
+      chartMode = mode;
+
+      const btnDate = document.getElementById("view-by-date");
+      const btnWeek = document.getElementById("view-by-week");
+      if (btnDate && btnWeek) {
+        btnDate.classList.toggle("active", mode === "date");
+        btnWeek.classList.toggle("active", mode === "week");
+      }
+
+      if (mode === "date") setTableViewMode("daily");
+      else setTableViewMode("weekly");
+
+      recomputeDashboard();
+    }
+
+    function setupViewToggle() {
+      const btnDate = document.getElementById("view-by-date");
+      const btnWeek = document.getElementById("view-by-week");
+      if (!btnDate || !btnWeek) return;
+
+      btnDate.addEventListener("click", () => setDashboardView("date"));
+      btnWeek.addEventListener("click", () => setDashboardView("week"));
+    }
+
+    function setupTrendToggle() {
+      const chk = document.getElementById("trend-toggle-input");
+      if (!chk) return;
+      chk.addEventListener("change", () => {
+        showTrendLine = chk.checked;
+        recomputeDashboard();
+      });
+    }
+
+    function setupTableViewToggle() {
+      const btnDaily = document.getElementById("table-view-daily");
+      const btnWeekly = document.getElementById("table-view-weekly");
+      if (!btnDaily || !btnWeekly) return;
+      btnDaily.addEventListener("click", () => setDashboardView("date"));
+      btnWeekly.addEventListener("click", () => setDashboardView("week"));
+    }
+
+    function tryLoadIntoDashboard() {
+      clearError();
+
+      const master = readMasterGrowJSON();
+      if (master) {
+        const sheet = getMasterGrowSheet(master);
+        if (sheet) {
+          const parsed = parseFromMasterSheet(sheet.headers, sheet.rows);
+          if (parsed.data.length) {
+            transplantData = parsed.data;
+            return true;
+          }
+          // If mapping failed, keep UI alive (fallback) but show error banner already set.
+          transplantData = [...defaultTransplantData];
+          return true;
+        }
+        showError("Master Grow JSON found, but could not locate sheets['Master Grow'].headers/rows.");
+        transplantData = [...defaultTransplantData];
+        return true;
+      }
+
+      showError("No master dataset found in localStorage['campo_master_grow_v1']. Using fallback sample data.");
+      transplantData = [...defaultTransplantData];
+      return true;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupViewToggle();
+      setupTrendToggle();
+      setupTableViewToggle();
+
+      tryLoadIntoDashboard();
+      setDashboardView(chartMode);
+
+      // Auto-refresh when Data Input overwrites the master key
+      window.addEventListener("storage", (e) => {
+        if (!e) return;
+        if (e.key === MASTER_GROW_KEY) {
+          tryLoadIntoDashboard();
+          setDashboardView(chartMode);
+        }
+      });
+
+      // Also listen for postMessage ping (if hosted in iframes/unified dashboard)
+      window.addEventListener("message", (event) => {
+        const msg = event?.data;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === "MASTER_GROW_UPDATED") {
+          tryLoadIntoDashboard();
+          setDashboardView(chartMode);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
