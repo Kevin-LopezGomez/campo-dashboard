@@ -151,12 +151,13 @@
         <div class="btnrow" style="margin-top:6px;">
           <button class="ghost" id="downloadGrowBtn" type="button">⬇️ Download grow.json</button>
           <button class="ghost" id="downloadPackBtn" type="button">⬇️ Download pack.json</button>
+          <button class="ghost" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
           <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
         </div>
 
         <div class="hint small">
-          This tool saves JSON into <code>localStorage</code> for dashboards to read immediately.
-          The “Publish to Supabase” button is optional and only works if you set a Cloudflare Worker endpoint.
+          Uploads (CSV/XLSX) save JSON into <code>localStorage</code> for dashboards to read immediately.
+          “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
@@ -179,11 +180,13 @@
 
 <script>
   // =========================
-  // CONFIG: Worker publish URL
+  // CONFIG: Worker base URL
   // =========================
-  // If you create a Cloudflare Worker that uploads to Supabase, put its URL here:
-  // Example: "https://campo-uploader.YOURNAME.workers.dev/publish"
-  const PUBLISH_ENDPOINT = ""; // <-- paste your Worker publish URL here
+  // Your worker is already live here:
+  const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+  // Files in Supabase bucket: campo-data/master/grow.json and pack.json
+  const WORKER_GROW_URL = `${WORKER_BASE}/data/grow.json`;
+  const WORKER_PACK_URL = `${WORKER_BASE}/data/pack.json`;
 
   // ===== Source keys =====
   const MASTER_GROW_KEY = "campo_master_grow_v1";
@@ -205,6 +208,7 @@
   const downloadGrowBtn = document.getElementById("downloadGrowBtn");
   const downloadPackBtn = document.getElementById("downloadPackBtn");
   const publishBtn = document.getElementById("publishBtn");
+  const pullBtn = document.getElementById("pullBtn");
 
   const statusEl = document.getElementById("status");
   const previewEl = document.getElementById("preview");
@@ -223,7 +227,6 @@
   }
 
   function dispatchLocal(type, key){
-    // allows dashboards in same document to listen (some do document, some do window)
     try { window.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
     try { document.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
   }
@@ -404,7 +407,6 @@
 
       previewRows(rows, `Preview CSV: ${file.name}`);
 
-      // Auto-assign if filename contains hints
       if(lower.includes("grow")){
         const hr = rowsToHeaderRows(rows);
         const payload = buildPayloadFromSingleSheet("Master Grow", hr, { kind: "grow", sourceLabel: `CSV: ${file.name}` });
@@ -456,7 +458,6 @@
       }
     }
 
-    // Preview grow if possible else pack else first sheet
     const previewName = growSheet || packSheet || names[0] || null;
     if(previewName){
       const ws = wb.Sheets[previewName];
@@ -489,13 +490,73 @@
     setStatus(`Downloaded ${filename}.`);
   }
 
-  // ===== Publish to Supabase via Worker (optional) =====
-  async function publishToSupabase(){
-    if(!PUBLISH_ENDPOINT){
-      setStatus("Publish endpoint not set. Paste your Worker URL into PUBLISH_ENDPOINT in this file.");
-      return;
-    }
+  // ===== Worker helpers =====
+  async function workerGetJson(url){
+    const res = await fetch(url, { method:"GET" });
+    const text = await res.text();
+    if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
+    try { return JSON.parse(text); }
+    catch { throw new Error("Worker returned non-JSON."); }
+  }
 
+  async function workerPutJson(url, obj){
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(obj)
+    });
+    const text = await res.text();
+    if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
+    // Worker may return JSON or text; either is fine.
+    return text;
+  }
+
+  // ===== Pull from Supabase (via Worker) =====
+  async function pullFromSupabase(){
+    pullBtn.disabled = true;
+    setStatus("Pulling from Supabase (via Worker)…");
+
+    try{
+      let gotAny = false;
+
+      // Grow
+      try{
+        const grow = await workerGetJson(WORKER_GROW_URL);
+        localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(grow));
+        localStorage.setItem(MASTER_GROW_PING, String(Date.now()));
+        dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
+        notifyParent(MSG_GROW, MASTER_GROW_KEY);
+        gotAny = true;
+      }catch(e){
+        console.warn("Grow pull failed:", e);
+      }
+
+      // Pack
+      try{
+        const pack = await workerGetJson(WORKER_PACK_URL);
+        localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pack));
+        localStorage.setItem(MASTER_PACK_PING, String(Date.now()));
+        dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
+        notifyParent(MSG_PACK, MASTER_PACK_KEY);
+        gotAny = true;
+      }catch(e){
+        console.warn("Pack pull failed:", e);
+      }
+
+      refreshBadges();
+
+      if(gotAny) setStatus("✅ Pulled latest grow/pack JSON into localStorage.");
+      else setStatus("⚠️ Nothing pulled. (Worker returned errors / files missing.)");
+    }catch(err){
+      console.error(err);
+      setStatus(`❌ Pull failed: ${err.message}`);
+    }finally{
+      pullBtn.disabled = false;
+    }
+  }
+
+  // ===== Publish to Supabase (via Worker) =====
+  async function publishToSupabase(){
     const growStr = localStorage.getItem(MASTER_GROW_KEY);
     const packStr = localStorage.getItem(MASTER_PACK_KEY);
 
@@ -505,23 +566,25 @@
     }
 
     let grow = null, pack = null;
-    try { if(growStr) grow = JSON.parse(growStr); } catch(e) { return setStatus("Grow JSON is invalid (cannot publish)."); }
-    try { if(packStr) pack = JSON.parse(packStr); } catch(e) { return setStatus("Pack JSON is invalid (cannot publish)."); }
+    try { if(growStr) grow = JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
+    try { if(packStr) pack = JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
 
     publishBtn.disabled = true;
-    setStatus("Publishing to Supabase…");
+    setStatus("Publishing to Supabase (via Worker)…");
 
     try{
-      const res = await fetch(PUBLISH_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grow, pack })
-      });
+      const results = [];
 
-      const text = await res.text();
-      if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
+      if(grow){
+        await workerPutJson(WORKER_GROW_URL, grow);
+        results.push("grow.json");
+      }
+      if(pack){
+        await workerPutJson(WORKER_PACK_URL, pack);
+        results.push("pack.json");
+      }
 
-      setStatus("✅ Published to Supabase successfully.");
+      setStatus(`✅ Published: ${results.join(", ")}`);
     }catch(err){
       console.error(err);
       setStatus(`❌ Publish failed: ${err.message}`);
@@ -572,6 +635,7 @@
   downloadGrowBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_GROW_KEY, "grow.json"));
   downloadPackBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PACK_KEY, "pack.json"));
   publishBtn.addEventListener("click", publishToSupabase);
+  pullBtn.addEventListener("click", pullFromSupabase);
 
   // Drag & drop
   ["dragenter","dragover"].forEach(evt => {
