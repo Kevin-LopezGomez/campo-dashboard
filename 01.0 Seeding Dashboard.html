@@ -671,23 +671,28 @@
 
   <script>
     // =========================================================
-    // STORAGE CONTRACT (same as Transplant fix)
+    // STORAGE CONTRACT
     // =========================================================
     const MASTER_GROW_KEY = "campo_master_grow_v1";
-    // optional extra ping key (kept for backward compatibility)
     const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
     const MASTER_GROW_SHEET_NAME = "Master Grow";
 
-    // Exact column names expected in Master Grow for seeding
+    // Parent/index message types
+    const MSG_GROW = "MASTER_GROW_UPDATED";
+
+    // BroadcastChannel (same-origin only; harmless if unsupported)
+    const BC_NAME = "campo_master_bus_v1";
+    const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
+
+    // Canonical (meaning) column names expected (but we allow aliases)
     const SEED = Object.freeze({
       DATE: "Seed Date",
       WEEK: "Seed Week",
-      VARIETY: "Veriaty",
+      VARIETY: "Variety",
       FLATS: "Flats Seeded",
       TARGET: "Target Flats to Seed",
       WORKERS: "Seed # of Workers",
-      HOURS: "Semilla Tiempo Transcurido",
-      PCT: "Seed % Complete",
+      HOURS: "Semilla Tiempo Transcurido"
     });
 
     // =========================================================
@@ -695,11 +700,11 @@
     // =========================================================
     let flatsChart = null;
     let fpphChart = null;
-    let viewMode = "daily"; // "daily" or "weekly"
+    let viewMode = "daily";  // "daily" or "weekly"
     let showTrendLine = false;
 
     // =========================================================
-    // HELPERS
+    // UI HELPERS
     // =========================================================
     function setEmpty(msg) {
       const el = document.getElementById("empty-hint");
@@ -711,8 +716,67 @@
       if (el) el.textContent = text;
     }
 
+    function chipWarn(msg) { setChip("chip-warn", msg || "–"); }
+
+    // =========================================================
+    // TOLERANT PARSERS
+    // =========================================================
+    function normHeader(s){
+      return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    // Header aliases: tolerate typos/case/spacing/Spanish variants.
+    // NOTE: keep "meaning" stable by mapping to canonical names.
+    const HEADER_ALIASES = new Map([
+      ["seed date", SEED.DATE],
+      ["seeddate", SEED.DATE],
+      ["fecha de semilla", SEED.DATE],
+      ["fecha semilla", SEED.DATE],
+
+      ["seed week", SEED.WEEK],
+      ["seedweek", SEED.WEEK],
+
+      ["veriaty", SEED.VARIETY],  // common typo
+      ["variety", SEED.VARIETY],
+      ["variedad", SEED.VARIETY],
+
+      ["flats seeded", SEED.FLATS],
+      ["flats", SEED.FLATS],
+
+      ["target flats to seed", SEED.TARGET],
+      ["target flats", SEED.TARGET],
+      ["target", SEED.TARGET],
+
+      ["seed # of workers", SEED.WORKERS],
+      ["seed # workers", SEED.WORKERS],
+      ["seed workers", SEED.WORKERS],
+      ["workers", SEED.WORKERS],
+      ["# of workers", SEED.WORKERS],
+
+      ["semilla tiempo transcurido", SEED.HOURS],
+      ["tiempo transcurido", SEED.HOURS],
+      ["hours elapsed", SEED.HOURS],
+      ["hours", SEED.HOURS]
+    ]);
+
+    function canonicalizeHeaders(headersRaw){
+      const canonHeaders = [];
+      const canonIndexByName = new Map();
+
+      headersRaw.forEach((h, idx) => {
+        const raw = String(h ?? "");
+        const key = normHeader(raw);
+        const canon = HEADER_ALIASES.get(key) || raw.trim();
+        canonHeaders[idx] = canon;
+        if (canon && !canonIndexByName.has(canon)) canonIndexByName.set(canon, idx);
+      });
+
+      return { canonHeaders, canonIndexByName };
+    }
+
     function parseNumber(v) {
       if (v === null || v === undefined) return 0;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
       const s = String(v).trim();
       if (!s) return 0;
       if (s.toUpperCase().includes("#VALUE")) return 0;
@@ -721,24 +785,58 @@
       return Number.isFinite(n) ? n : 0;
     }
 
-    // Parse "Wednesday, October 1, 2025" or "October 1, 2025"
-    function parseLongSeedDate(str) {
-      if (!str) return null;
-      let s = String(str).trim();
-      const parts = s.split(",");
-      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) {
-        s = parts.slice(1).join(",").trim();
+    // Handles: Date obj, MM/DD/YYYY, ISO, long-form, Excel serial number
+    function parseAnyDate(v){
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+
+      // Excel serial (as number)
+      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + v * 86400000);
+        return isNaN(d.getTime()) ? null : d;
       }
+
+      const s0 = String(v).trim();
+      if (!s0) return null;
+
+      // Excel serial (as string)
+      const n = Number(s0);
+      if (Number.isFinite(n) && n > 20000 && n < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + n * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Strip weekday prefix: "Wednesday, October 1, 2025"
+      let s = s0;
+      const parts = s.split(",");
+      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
+
+      // ISO
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // US MM/DD/YYYY
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
+        const [mm, dd, yy] = s.split("/").map(Number);
+        const yyyy = yy < 100 ? 2000 + yy : yy;
+        const d = new Date(yyyy, mm - 1, dd);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Fallback
       const d = new Date(s);
-      if (isNaN(d.getTime())) return null;
-      return d;
+      return isNaN(d.getTime()) ? null : d;
     }
 
     function formatDateMMDDYYYY(date) {
       const mm = String(date.getMonth() + 1).padStart(2, "0");
       const dd = String(date.getDate()).padStart(2, "0");
       const yyyy = date.getFullYear();
-      return mm + "/" + dd + "/" + yyyy;
+      return `${mm}/${dd}/${yyyy}`;
     }
 
     function computeTrendLine(values) {
@@ -758,7 +856,7 @@
     }
 
     // =========================================================
-    // MASTER GROW JSON -> ROW OBJECTS
+    // PAYLOAD LOADING
     // =========================================================
     function loadMasterGrowPayload() {
       const raw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
@@ -767,17 +865,18 @@
     }
 
     function sheetToRowObjects(sheetObj) {
-      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
       const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
-      const out = [];
 
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
+
+      const out = [];
       for (const r of rows) {
         if (!Array.isArray(r)) continue;
         const obj = {};
-        for (let i = 0; i < headers.length; i++) {
-          const h = headers[i];
-          const key = (h === null || h === undefined) ? "" : String(h);
-          if (!key.trim()) continue;
+        for (let i = 0; i < canonHeaders.length; i++) {
+          const key = String(canonHeaders[i] ?? "").trim();
+          if (!key) continue;
           obj[key] = (i < r.length) ? r[i] : "";
         }
         out.push(obj);
@@ -786,7 +885,7 @@
     }
 
     // =========================================================
-    // BUILD DAILY + WEEKLY TABLES FROM MASTER GROW
+    // BUILD DAILY + WEEKLY
     // =========================================================
     function buildFromMasterGrow() {
       const payload = loadMasterGrowPayload();
@@ -798,40 +897,53 @@
       if (weeklyBody) weeklyBody.innerHTML = "";
 
       if (!sheet) {
-        setEmpty("No Master Grow sheet found. Upload Master Grow in Data Input.");
+        setEmpty("No Master Grow sheet found.\n\nFix: Upload Master Grow in Data Input.\nAlso verify Data Input writes sheets[\"Master Grow\"].");
         setChip("chip-ok", "Master Grow missing");
-        setChip("chip-warn", "Upload Master Grow CSV/XLSX");
+        chipWarn("Upload Master Grow CSV/XLSX");
         return { daily: [], weekly: [] };
       }
+
+      const headersRaw = Array.isArray(sheet.headers) ? sheet.headers : [];
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
 
       const rows = sheetToRowObjects(sheet);
       if (!rows.length) {
         setEmpty("Master Grow loaded, but the sheet has no rows.");
         setChip("chip-ok", "Master Grow loaded (0 rows)");
-        setChip("chip-warn", "No seeding rows found");
+        chipWarn("No seeding rows found");
         return { daily: [], weekly: [] };
       }
 
-      // Validate required headers exist at least in the header list
-      const headerSet = new Set((sheet.headers || []).map(h => String(h || "")));
+      // Required canonical headers (tolerant input via alias mapping)
+      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
       const required = [SEED.DATE, SEED.WEEK, SEED.FLATS, SEED.TARGET, SEED.WORKERS, SEED.HOURS];
       const missing = required.filter(h => !headerSet.has(h));
+
       if (missing.length) {
-        setEmpty("Master Grow loaded, but Seeding headers are missing (strict contract):\n- " + missing.join("\n- "));
-        setChip("chip-ok", "Master Grow loaded (bad headers)");
-        setChip("chip-warn", "Fix header names in Master Grow");
+        setEmpty(
+          "Master Grow loaded, but Seeding headers are missing (bulletproof mode).\n\n" +
+          "Missing:\n- " + missing.join("\n- ") + "\n\n" +
+          "Found headers (canonicalized):\n- " + Array.from(headerSet).slice(0, 60).join("\n- ") +
+          (headerSet.size > 60 ? "\n- …" : "")
+        );
+        setChip("chip-ok", "Master Grow loaded (missing headers)");
+        chipWarn("Fix header names (or add alias)");
         return { daily: [], weekly: [] };
       }
 
       // Aggregate DAILY from batch rows
       const dailyMap = new Map();
 
+      let droppedNoDate = 0;
+      let droppedBlank = 0;
+
       for (const r of rows) {
         if (!r || typeof r !== "object") continue;
 
-        const seedDateRaw = String(r[SEED.DATE] ?? "").trim();
+        const seedDateRaw = r[SEED.DATE];
         const seedWeekRaw = String(r[SEED.WEEK] ?? "").trim();
-        const flats = parseNumber(r[SEED.FLATS]);
+
+        const flats  = parseNumber(r[SEED.FLATS]);
         const target = parseNumber(r[SEED.TARGET]);
         const workers = parseNumber(r[SEED.WORKERS]);
         const hours = parseNumber(r[SEED.HOURS]);
@@ -840,13 +952,13 @@
         const varietyKey = varietyRaw ? varietyRaw.toLowerCase() : "";
 
         const allBlank =
-          !seedDateRaw && !seedWeekRaw &&
+          !String(seedDateRaw ?? "").trim() && !seedWeekRaw &&
           flats === 0 && target === 0 && workers === 0 && hours === 0 && !varietyKey;
 
-        if (allBlank) continue;
+        if (allBlank) { droppedBlank++; continue; }
 
-        const dateObj = parseLongSeedDate(seedDateRaw);
-        if (!dateObj) continue;
+        const dateObj = parseAnyDate(seedDateRaw);
+        if (!dateObj) { droppedNoDate++; continue; }
 
         const dateKey = formatDateMMDDYYYY(dateObj);
         const workerHours = (workers > 0 && hours > 0) ? (workers * hours) : 0;
@@ -877,6 +989,7 @@
 
       // Populate DAILY table
       const pctClass = (pct) => (pct >= 100 ? "cell-percent-good" : "cell-percent-warn");
+
       if (tbody) {
         dailyRows.forEach((d) => {
           const avgWorkers = d.totalHours > 0 ? (d.totalWorkerHours / d.totalHours) : 0;
@@ -899,11 +1012,12 @@
         });
       }
 
-      // WEEKLY aggregation
+      // WEEKLY aggregation (from daily rows)
       const weekMap = new Map();
       dailyRows.forEach((d) => {
         const wk = (d.seedWeek || "").trim();
         if (!wk) return;
+
         if (!weekMap.has(wk)) {
           weekMap.set(wk, {
             week: wk,
@@ -921,6 +1035,7 @@
         w.totalTarget += d.totalTarget;
         w.totalHours += d.totalHours;
         w.totalWorkerHours += d.totalWorkerHours;
+
         const dayAvgWorkers = d.totalHours > 0 ? (d.totalWorkerHours / d.totalHours) : 0;
         w.totalWorkersSum += dayAvgWorkers;
       });
@@ -953,9 +1068,19 @@
         });
       }
 
-      setEmpty("");
       setChip("chip-ok", `Master Grow loaded (${rows.length.toLocaleString()} rows)`);
-      setChip("chip-warn", dailyRows.length ? "–" : "No daily seeding rows built");
+      chipWarn(dailyRows.length ? "–" : "No daily seeding rows built");
+
+      // Show drop diagnostics if needed
+      if (!dailyRows.length) {
+        setEmpty(
+          "No daily rows were built.\n\n" +
+          `Diagnostics:\n- Dropped blank rows: ${droppedBlank}\n- Dropped rows w/ unparseable date: ${droppedNoDate}\n\n` +
+          "Fix: ensure Seed Date is present (MM/DD/YYYY, ISO, long-form, or Excel serial)."
+        );
+      } else {
+        setEmpty("");
+      }
 
       return { daily: dailyRows, weekly: weeklyRows };
     }
@@ -1140,7 +1265,9 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: true, labels: { color: "rgba(209, 213, 219, 0.9)", font: { size: 10 } } } },
+          plugins: {
+            legend: { display: true, labels: { color: "rgba(209, 213, 219, 0.9)", font: { size: 10 } } }
+          },
           interaction: { mode: "index", intersect: false },
           scales: {
             x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
@@ -1248,34 +1375,66 @@
     }
 
     // =========================================================
-    // LIVE REFRESH (NOW MATCHES TRANSPLANT)
+    // LIVE REFRESH (bulletproof)
     // =========================================================
-    function reloadAll() {
-      buildFromMasterGrow();
-      recomputeDashboard();
+    let reloadTimer = null;
+    function reloadAll(reason){
+      // Debounce to avoid multi-fire storms (storage + message + bc)
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        buildFromMasterGrow();
+        recomputeDashboard();
+        // Optional debug:
+        // console.log("🔄 Reloaded seeding dashboard", reason || "");
+      }, 60);
     }
 
     function setupLiveListeners() {
-      // Same as Transplant: reload when the master key changes
+      // 1) storage events (cross-tab / sometimes iframe)
       window.addEventListener("storage", (e) => {
         if (!e) return;
-        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll();
+        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll("storage");
       });
 
-      // Same as Transplant: accept { type:"MASTER_GROW_UPDATED" } with or without key
+      // 2) postMessage from index/data-input
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
-        if (msg.type === "MASTER_GROW_UPDATED") {
-          reloadAll();
+        if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") {
+          reloadAll("message");
         }
       });
+
+      // 3) CustomEvent in same frame (Data Input sometimes dispatches these)
+      window.addEventListener(MSG_GROW, () => reloadAll("customevent"));
+
+      // 4) BroadcastChannel (same-origin only)
+      if (bc) {
+        bc.onmessage = (ev) => {
+          const msg = ev?.data;
+          if (msg?.type === MSG_GROW) reloadAll("broadcast");
+        };
+      }
+
+      // 5) Safety poll: catch cases where none of the events fire (Safari iframe oddities)
+      let lastLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+      setInterval(() => {
+        const curLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+        if (curLen !== lastLen) {
+          lastLen = curLen;
+          reloadAll("poll");
+        }
+      }, 1500);
     }
 
+    // =========================================================
+    // INIT
+    // =========================================================
     document.addEventListener("DOMContentLoaded", () => {
       setupToggles();
       setupLiveListeners();
-      reloadAll();
+      reloadAll("init");
       setViewMode("daily");
     });
   </script>
