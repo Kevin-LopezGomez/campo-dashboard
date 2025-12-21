@@ -13,6 +13,7 @@
       --text:#e5e7eb;
       --sub:#9ca3af;
       --accent:#22c55e;
+      --danger:#ef4444;
       --shadow: 0 24px 80px rgba(0,0,0,0.75);
     }
     *{box-sizing:border-box;}
@@ -136,6 +137,26 @@
     iframe{width:100%;height:100%;border:0;background: transparent;}
 
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+
+    .toast{
+      position:fixed;
+      left:12px;
+      bottom:12px;
+      z-index:99999;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.25);
+      background: rgba(15,23,42,.92);
+      color: var(--text);
+      box-shadow: 0 18px 40px rgba(0,0,0,.55);
+      font-size:12px;
+      max-width:min(560px, calc(100vw - 24px));
+      white-space:pre-wrap;
+      display:none;
+    }
+    .toast .t-sub{color:var(--sub);margin-top:4px;font-size:11px;}
+    .toast.ok{border-color: rgba(34,197,94,.4);}
+    .toast.bad{border-color: rgba(239,68,68,.45);}
   </style>
 </head>
 
@@ -176,7 +197,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Seeding Dashboard</h2>
-            <p>Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+            <p>Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets["Master Grow"]</code>.</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>01.0 Seeding Dashboard.html</code></div>
         </div>
@@ -215,7 +236,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Packing Dashboard</h2>
-            <p>Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code>.</p>
+            <p>Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets["Master Pack"]</code>.</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>04.0 Packing Dashboard.html</code></div>
         </div>
@@ -239,71 +260,81 @@
     </div>
   </div>
 
+  <div class="toast" id="toast">
+    <div id="toastText">–</div>
+    <div class="t-sub" id="toastSub">–</div>
+  </div>
+
   <script>
     (function(){
-      // =========================
+      // =========================================================
       // Worker (source of truth)
-      // =========================
+      // =========================================================
       const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
       const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
       const WORKER_GROW_URL   = `${WORKER_BASE}/data/master/grow.json`;
       const WORKER_PACK_URL   = `${WORKER_BASE}/data/master/pack.json`;
 
-      // =========================
+      // =========================================================
       // LocalStorage keys (MUST match dashboards)
-      // =========================
+      // =========================================================
       const MASTER_GROW_KEY  = "campo_master_grow_v1";
       const MASTER_PACK_KEY  = "campo_master_pack_v1";
       const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
       const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
 
+      // Contract: dashboards (Seeding) expect sheets["Master Grow"] and sheets["Master Pack"]
+      const CANON_GROW_SHEET = "Master Grow";
+      const CANON_PACK_SHEET = "Master Pack";
+
       // Events dashboards should listen for
       const MSG_GROW = "MASTER_GROW_UPDATED";
       const MSG_PACK = "MASTER_PACK_UPDATED";
 
-      // =========================
+      // BroadcastChannel (same-origin only; optional)
+      const BC_NAME = "campo_updates_v1";
+      const bc = (() => {
+        try { return ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null; }
+        catch { return null; }
+      })();
+
+      // =========================================================
       // DOM refs
-      // =========================
+      // =========================================================
       const tabsWrap = document.getElementById("tabs");
       const panels = Array.from(document.querySelectorAll(".panel"));
       const LS_ORDER_KEY = "campo_unified_tabs_order_v1";
+      const toast = document.getElementById("toast");
+      const toastText = document.getElementById("toastText");
+      const toastSub = document.getElementById("toastSub");
 
       if (!tabsWrap) {
-        // If you ever see this again, it means the tabs div got removed/renamed.
         console.error("FATAL: #tabs not found. Index HTML is missing the tabs container.");
         document.body.innerHTML = "<div style='padding:20px;font-family:system-ui;color:#111'>FATAL: #tabs not found. Restore index.html markup.</div>";
         return;
       }
 
-      // -------------------------
-      // Badge (bottom-right)
-      // -------------------------
-      function upsertBadge(text, ok){
-        let badge = document.getElementById("__sb_badge");
-        if (!badge){
-          badge = document.createElement("div");
-          badge.id = "__sb_badge";
-          badge.style.position = "fixed";
-          badge.style.bottom = "12px";
-          badge.style.right = "12px";
-          badge.style.padding = "8px 12px";
-          badge.style.borderRadius = "8px";
-          badge.style.fontSize = "12px";
-          badge.style.zIndex = 9999;
-          badge.style.boxShadow = "0 10px 24px rgba(0,0,0,.35)";
-          document.body.appendChild(badge);
-        }
-        badge.textContent = text;
-        badge.style.background = ok ? "#16a34a" : "#b91c1c";
-        badge.style.color = "white";
+      // =========================================================
+      // Toast helper (replaces badge, more informative)
+      // =========================================================
+      let toastTimer = null;
+      function showToast(msg, sub, ok){
+        if (!toast || !toastText || !toastSub) return;
+        toast.classList.remove("ok","bad");
+        toast.classList.add(ok ? "ok" : "bad");
+        toastText.textContent = msg || "";
+        toastSub.textContent = sub || "";
+        toast.style.display = "block";
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.style.display = "none"; }, ok ? 2200 : 4200);
       }
 
-      // -------------------------
-      // iFrame notify helper
-      // -------------------------
+      // =========================================================
+      // iFrame notify helper (bulletproof)
+      // =========================================================
+      const IFRAME_IDS = ["ifr-seeding","ifr-transplant","ifr-harvest","ifr-packing","ifr-sanitation","ifr-data"];
       function notifyIframes(type){
-        const ids = ["ifr-seeding","ifr-transplant","ifr-harvest","ifr-packing","ifr-sanitation","ifr-data"];
-        for (const id of ids){
+        for (const id of IFRAME_IDS){
           const ifr = document.getElementById(id);
           if (ifr?.contentWindow){
             try { ifr.contentWindow.postMessage({ type, ts: Date.now() }, "*"); } catch(e) {}
@@ -311,9 +342,14 @@
         }
       }
 
-      // -------------------------
+      function broadcast(type){
+        // BroadcastChannel (same-origin)
+        try { bc?.postMessage?.({ type, ts: Date.now() }); } catch(e){}
+      }
+
+      // =========================================================
       // Worker fetch helper
-      // -------------------------
+      // =========================================================
       async function workerGetJson(url){
         const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
         const r = await fetch(bust, { cache:"no-store" });
@@ -322,51 +358,140 @@
         return JSON.parse(t);
       }
 
-      // -------------------------
-      // Hydrate localStorage from Worker
-      // -------------------------
+      // =========================================================
+      // Contract normalizer (bulletproof)
+      // - Ensures sheets["Master Grow"] / sheets["Master Pack"] exist.
+      // - If worker returns sheets under different keys, remap.
+      // =========================================================
+      function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
+
+      function normalizeMasterPayload(raw, kind){
+        if (!isObject(raw)) return raw;
+
+        // If it already has the canonical sheet, keep it
+        const sheets = raw.sheets;
+        if (isObject(sheets)) {
+          const want = (kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET;
+          if (sheets[want]) return raw;
+
+          // Try to find an equivalent sheet key
+          const keys = Object.keys(sheets);
+          const wantLower = want.toLowerCase();
+          let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
+
+          if (!match && kind === "grow") {
+            match = keys.find(k => String(k).toLowerCase().includes("grow"));
+          }
+          if (!match && kind === "pack") {
+            match = keys.find(k => String(k).toLowerCase().includes("pack"));
+          }
+
+          if (match) {
+            const clone = JSON.parse(JSON.stringify(raw));
+            clone.sheets = clone.sheets || {};
+            clone.sheets[want] = clone.sheets[match];
+            // keep original too (harmless)
+            return clone;
+          }
+        }
+
+        // If payload looks like a single-sheet object (headers/rows at top-level), wrap it
+        if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
+          const wrapped = {
+            version: raw.version || "v1",
+            updatedAt: raw.updatedAt || new Date().toISOString(),
+            kind: raw.kind || (kind === "grow" ? "grow" : "pack"),
+            sourceLabel: raw.sourceLabel || "worker",
+            sheets: {
+              [(kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET]: { headers: raw.headers, rows: raw.rows }
+            }
+          };
+          return wrapped;
+        }
+
+        // If none apply, return as-is
+        return raw;
+      }
+
+      function storageContractOk(){
+        // Grow contract
+        const growRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+        if (growRaw) {
+          try {
+            const g = JSON.parse(growRaw);
+            if (!g?.sheets?.[CANON_GROW_SHEET]) return false;
+          } catch { return false; }
+        }
+        // Pack contract (only if present)
+        const packRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+        if (packRaw) {
+          try {
+            const p = JSON.parse(packRaw);
+            if (!p?.sheets?.[CANON_PACK_SHEET]) return false;
+          } catch { return false; }
+        }
+        return true;
+      }
+
+      // =========================================================
+      // Hydrate localStorage from Worker (bulletproof + normalized)
+      // =========================================================
       async function tryHydrateFromWorker(){
+        // Health check
         try{
           const hr = await fetch(WORKER_HEALTH_URL, { cache:"no-store" });
           if (!hr.ok) throw new Error(`Health HTTP ${hr.status}`);
-          upsertBadge("Worker connected", true);
+          showToast("Worker connected", "Hydrating localStorage…", true);
         } catch(err){
           console.error("❌ Worker not reachable:", err);
-          upsertBadge("Worker not reachable", false);
+          showToast("Worker not reachable", "Using whatever is already in localStorage.", false);
           return;
         }
 
         let wroteAny = false;
+        const now = Date.now();
 
+        // Grow
         try{
           const growJson = await workerGetJson(WORKER_GROW_URL);
-          localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(growJson));
-          localStorage.setItem(MASTER_GROW_PING, String(Date.now()));
-          window.dispatchEvent(new CustomEvent(MSG_GROW, { detail:{ key: MASTER_GROW_KEY, ts: Date.now() } }));
+          const normalizedGrow = normalizeMasterPayload(growJson, "grow");
+          localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(normalizedGrow));
+          localStorage.setItem(MASTER_GROW_PING, String(now));
+          window.dispatchEvent(new CustomEvent(MSG_GROW, { detail:{ key: MASTER_GROW_KEY, ts: now } }));
           notifyIframes(MSG_GROW);
+          broadcast(MSG_GROW);
           wroteAny = true;
         } catch(e){
           console.warn("Grow load failed:", e);
         }
 
+        // Pack
         try{
           const packJson = await workerGetJson(WORKER_PACK_URL);
-          localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(packJson));
-          localStorage.setItem(MASTER_PACK_PING, String(Date.now()));
-          window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: Date.now() } }));
+          const normalizedPack = normalizeMasterPayload(packJson, "pack");
+          localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(normalizedPack));
+          localStorage.setItem(MASTER_PACK_PING, String(now));
+          window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } }));
           notifyIframes(MSG_PACK);
+          broadcast(MSG_PACK);
           wroteAny = true;
         } catch(e){
           console.warn("Pack load failed:", e);
         }
 
-        if (wroteAny) console.log("✅ Hydrated localStorage from Worker (grow/pack).");
-        else console.log("ℹ️ Worker connected, but grow/pack were not loaded.");
+        if (wroteAny) {
+          const ok = storageContractOk();
+          showToast("Hydrated from Worker", ok ? "Contract OK (Master Grow/Pack sheets present)" : "⚠️ Contract warning: missing canonical sheet keys", ok);
+          console.log("✅ Hydrated localStorage from Worker (grow/pack).");
+        } else {
+          showToast("Worker connected", "No grow/pack loaded (files missing or errors).", false);
+          console.log("ℹ️ Worker connected, but grow/pack were not loaded.");
+        }
       }
 
-      // -------------------------
-      // Panel activation
-      // -------------------------
+      // =========================================================
+      // Panel activation (lazy iframe src)
+      // =========================================================
       function activate(id){
         const tabs = Array.from(tabsWrap.querySelectorAll(".tab"));
         tabs.forEach(t => t.classList.toggle("active", t.dataset.target === id));
@@ -377,9 +502,9 @@
         if (iframe && !iframe.src) iframe.src = iframe.getAttribute("data-src");
       }
 
-      // -------------------------
+      // =========================================================
       // Restore / save tab order
-      // -------------------------
+      // =========================================================
       function loadOrder(){
         try { return JSON.parse(localStorage.getItem(LS_ORDER_KEY) || "[]"); }
         catch(e){ return []; }
@@ -398,9 +523,9 @@
         });
       }
 
-      // -------------------------
-      // Drag-to-reorder with threshold
-      // -------------------------
+      // =========================================================
+      // Drag-to-reorder with threshold (bulletproof)
+      // =========================================================
       function makeSortable(){
         const DRAG_THRESHOLD = 8;
 
@@ -534,26 +659,52 @@
         tabsWrap.addEventListener("touchstart", onDown, { passive:true });
       }
 
-      // -------------------------
-      // Init
-      // -------------------------
+      // =========================================================
+      // Message bridge (bulletproof)
+      // - Any iframe (data-input or dashboards) can send MASTER_*_UPDATED
+      // - Index forwards to all iframes + BroadcastChannel
+      // =========================================================
+      window.addEventListener("message", (event) => {
+        const msg = event?.data || {};
+        if (!msg.type) return;
+        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED") {
+          notifyIframes(msg.type);
+          broadcast(msg.type);
+          showToast("Update received", msg.type, true);
+        }
+      });
+
+      if (bc) {
+        bc.onmessage = (ev) => {
+          const msg = ev?.data || {};
+          if (!msg.type) return;
+          if (msg.type === MSG_GROW || msg.type === MSG_PACK) {
+            notifyIframes(msg.type);
+          }
+        };
+      }
+
+      // Safety poll: if a browser fails to deliver events to iframes, ping occasionally
+      let lastGrowPing = localStorage.getItem(MASTER_GROW_PING) || "";
+      let lastPackPing = localStorage.getItem(MASTER_PACK_PING) || "";
+      setInterval(() => {
+        const g = localStorage.getItem(MASTER_GROW_PING) || "";
+        const p = localStorage.getItem(MASTER_PACK_PING) || "";
+        if (g !== lastGrowPing) { lastGrowPing = g; notifyIframes(MSG_GROW); broadcast(MSG_GROW); }
+        if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
+      }, 1500);
+
+      // =========================================================
+      // INIT
+      // =========================================================
       applySavedOrder();
       makeSortable();
 
       const firstActive = tabsWrap.querySelector(".tab.active") || tabsWrap.querySelector(".tab");
       if (firstActive) activate(firstActive.dataset.target);
 
-      // Hydrate from Worker immediately
+      // Hydrate from Worker immediately (and normalize contract)
       tryHydrateFromWorker();
-
-      // Forward update pings between iframes (optional, keeps existing behavior)
-      window.addEventListener("message", (event) => {
-        const msg = event?.data || {};
-        if (!msg.type) return;
-        if (msg.type === MSG_GROW || msg.type === MSG_PACK) {
-          notifyIframes(msg.type);
-        }
-      });
     })();
   </script>
 </body>
