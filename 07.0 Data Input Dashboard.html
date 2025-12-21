@@ -122,6 +122,7 @@
       background: rgba(2,6,23,.28);
     }
     code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;color:#c7d2fe;}
+    .warnline{color:#fbbf24;}
   </style>
 </head>
 
@@ -156,16 +157,20 @@
         </div>
 
         <div class="hint small">
-          Uploads (CSV/XLSX) save JSON into <code>localStorage</code> for dashboards to read immediately.
+          <b>Bulletproof contract:</b> this tool always saves Excel/CSV into:
+          <br>
+          <code>payload.sheets["Master Grow"]</code> and <code>payload.sheets["Master Pack"]</code>
+          <br><br>
+          Uploads save JSON into <code>localStorage</code> so dashboards read immediately.
           “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
           <br><br>
-          Your Worker must expose:
+          Worker endpoints:
           <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>,
           <code>PUT /data/master/grow.json</code>, and <code>PUT /data/master/pack.json</code>.
-          Publishing requires the Worker secret <code>SUPABASE_SERVICE_ROLE_KEY</code>.
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
+        <div id="contractWarn" class="small warnline" style="display:none;"></div>
       </div>
 
       <div class="meta">
@@ -184,24 +189,37 @@
 </div>
 
 <script>
-  // =========================
-  // CONFIG: Worker base URL
-  // =========================
+  // =========================================================
+  // CONFIG
+  // =========================================================
   const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
   const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
   const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 
-  // ===== Source keys =====
+  // Storage keys (must match dashboards)
   const MASTER_GROW_KEY = "campo_master_grow_v1";
   const MASTER_PACK_KEY = "campo_master_pack_v1";
   const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
   const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
 
-  // Parent message types
+  // Canonical sheet keys required by dashboards (esp. Seeding)
+  const CANON_GROW_SHEET = "Master Grow";
+  const CANON_PACK_SHEET = "Master Pack";
+
+  // Message types
   const MSG_GROW = "MASTER_GROW_UPDATED";
   const MSG_PACK = "MASTER_PACK_UPDATED";
 
-  // ===== UI =====
+  // BroadcastChannel for same-origin pages (index + dashboards)
+  const BC_NAME = "campo_updates_v1";
+  const bc = (() => {
+    try { return ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null; }
+    catch { return null; }
+  })();
+
+  // =========================================================
+  // UI REFS
+  // =========================================================
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   const chooseBtn = document.getElementById("chooseBtn");
@@ -212,49 +230,150 @@
   const downloadPackBtn = document.getElementById("downloadPackBtn");
   const publishBtn = document.getElementById("publishBtn");
   const pullBtn = document.getElementById("pullBtn");
-
   const statusEl = document.getElementById("status");
   const previewEl = document.getElementById("preview");
-
   const growTag = document.getElementById("growTag");
   const packTag = document.getElementById("packTag");
   const growUpdated = document.getElementById("growUpdated");
   const packUpdated = document.getElementById("packUpdated");
   const fileMeta = document.getElementById("fileMeta");
+  const contractWarn = document.getElementById("contractWarn");
 
   function setStatus(msg){ statusEl.textContent = msg; }
   function norm(s){ return String(s||"").trim().toLowerCase(); }
 
-  function notifyParent(type, key){
-    try{ window.parent?.postMessage?.({ type, key, ts: Date.now() }, "*"); }catch(e){}
+  function showContractWarning(msg){
+    if (!contractWarn) return;
+    if (!msg){
+      contractWarn.style.display = "none";
+      contractWarn.textContent = "";
+      return;
+    }
+    contractWarn.style.display = "block";
+    contractWarn.textContent = msg;
   }
 
-  function dispatchLocal(type, key){
-    try { window.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
-    try { document.dispatchEvent(new CustomEvent(type, { detail: { key, ts: Date.now() } })); } catch(e) {}
+  // =========================================================
+  // EVENTS (bulletproof propagation)
+  // =========================================================
+  function emit(type, key){
+    const payload = { type, key, ts: Date.now() };
+
+    // 1) postMessage to parent (index iframe wrapper)
+    try { window.parent?.postMessage?.(payload, "*"); } catch(e){}
+
+    // 2) BroadcastChannel (same-origin only)
+    try { bc?.postMessage?.(payload); } catch(e){}
+
+    // 3) CustomEvent in this frame (some dashboards listen)
+    try { window.dispatchEvent(new CustomEvent(type, { detail: payload })); } catch(e){}
+    try { document.dispatchEvent(new CustomEvent(type, { detail: payload })); } catch(e){}
   }
 
+  // =========================================================
+  // BADGES
+  // =========================================================
   function setTag(el, ok){
     el.innerHTML = ok
       ? `<span class="dot"></span>Loaded`
       : `<span class="dot bad"></span>Missing`;
   }
-
   function fmtTs(ts){
     if(!ts) return "–";
     const d = new Date(Number(ts));
     if(isNaN(d.getTime())) return "–";
     return d.toLocaleString();
   }
+  function safeHasJson(key){
+    const s = (localStorage.getItem(key) || "").trim();
+    if(!s) return false;
+    if(!s.startsWith("{")) return false;
+    try { JSON.parse(s); return true; } catch(e) { return false; }
+  }
 
-  // ===== Robust CSV parsing (handles quotes) =====
+  function validateStorageContract(){
+    // This is the "bulletproof" check for Seeding compatibility.
+    // Seeding requires: JSON.parse(localStorage[campo_master_grow_v1]).sheets["Master Grow"]
+    const raw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+    if(!raw) return { ok:true, msg:"" };
+    try{
+      const obj = JSON.parse(raw);
+      const has = !!obj?.sheets?.[CANON_GROW_SHEET];
+      if(!has){
+        const keys = obj?.sheets ? Object.keys(obj.sheets) : [];
+        return {
+          ok:false,
+          msg:`⚠️ Contract warning: Grow JSON exists, but sheets["${CANON_GROW_SHEET}"] is missing. Found sheet keys: ${keys.length ? keys.join(", ") : "(none)"}`
+        };
+      }
+      return { ok:true, msg:"" };
+    } catch {
+      return { ok:false, msg:"⚠️ Contract warning: Grow JSON in localStorage is invalid JSON." };
+    }
+  }
+
+  function refreshBadges(){
+    const hasGrow = safeHasJson(MASTER_GROW_KEY);
+    const hasPack = safeHasJson(MASTER_PACK_KEY);
+    setTag(growTag, hasGrow);
+    setTag(packTag, hasPack);
+    growUpdated.textContent = fmtTs(localStorage.getItem(MASTER_GROW_PING));
+    packUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PACK_PING));
+
+    const v = validateStorageContract();
+    showContractWarning(v.ok ? "" : v.msg);
+  }
+
+  // =========================================================
+  // PREVIEW (safe)
+  // =========================================================
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  function previewRows(rows, label){
+    if(!rows || !rows.length){
+      previewEl.innerHTML = `<div class="small" style="padding:10px;">No data.</div>`;
+      return;
+    }
+    const head = rows.slice(0, 31);
+    const maxCols = Math.max(...head.map(r => r?.length || 0), 1);
+
+    let html = `<div class="small" style="padding:10px;">${escapeHtml(label || "Preview")}</div>`;
+    html += `<table><thead><tr>`;
+    for(let c=0;c<maxCols;c++){
+      html += `<th>${escapeHtml(String(head[0]?.[c] ?? ""))}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+    for(const r of head.slice(1)){
+      html += `<tr>`;
+      for(let c=0;c<maxCols;c++){
+        html += `<td>${escapeHtml(String(r?.[c] ?? ""))}</td>`;
+      }
+      html += `</tr>`;
+    }
+    html += `</tbody></table>`;
+    previewEl.innerHTML = html;
+  }
+
+  // =========================================================
+  // CSV (robust quotes)
+  // =========================================================
   function parseCsvToRows(text){
-    const lines = String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l => l.trim().length);
+    const lines = String(text||"")
+      .replace(/\r\n/g,"\n")
+      .replace(/\r/g,"\n")
+      .split("\n")
+      .filter(l => l.trim().length);
+
     const rows = [];
     for(const line of lines){
       const delim = line.includes("\t") ? "\t" : ",";
       const out = [];
       let cur = "", inQ = false;
+
       for(let i=0;i<line.length;i++){
         const ch = line[i];
         if(ch === '"'){
@@ -272,105 +391,83 @@
     return rows;
   }
 
-  function previewRows(rows, label){
-    if(!rows || !rows.length){
-      previewEl.innerHTML = `<div class="small" style="padding:10px;">No data.</div>`;
-      return;
-    }
-    const head = rows.slice(0, 31);
-    const maxCols = Math.max(...head.map(r => r?.length || 0), 1);
-
-    let html = `<div class="small" style="padding:10px;">${label || "Preview"}</div>`;
-    html += `<table><thead><tr>`;
-    for(let c=0;c<maxCols;c++){
-      html += `<th>${escapeHtml(String(head[0]?.[c] ?? ""))}</th>`;
-    }
-    html += `</tr></thead><tbody>`;
-    for(const r of head.slice(1)){
-      html += `<tr>`;
-      for(let c=0;c<maxCols;c++){
-        html += `<td>${escapeHtml(String(r?.[c] ?? ""))}</td>`;
-      }
-      html += `</tr>`;
-    }
-    html += `</tbody></table>`;
-    previewEl.innerHTML = html;
-  }
-
-  function escapeHtml(s){
-    return String(s)
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
-  }
-
-  // ===== Convert rows -> {headers, rows} (strict, preserves exact header text) =====
+  // =========================================================
+  // MATRIX -> {headers, rows} (preserve exact header text)
+  // =========================================================
   function rowsToHeaderRows(matrix){
     const headers = (matrix?.[0] || []).map(h => String(h ?? "").trim());
     const rows = (matrix || []).slice(1).map(r => Array.isArray(r) ? r.map(v => (v === undefined ? "" : v)) : []);
     return { headers, rows };
   }
 
-  // ===== SheetJS worksheet -> header/rows =====
   function sheetToHeaderRows(ws){
+    // raw:false gives formatted strings; that’s fine and consistent for dashboards
     const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, blankrows: false });
     return rowsToHeaderRows(matrix);
   }
 
-  function buildPayloadFromSingleSheet(sheetName, headerRows, meta){
+  // =========================================================
+  // PAYLOAD BUILDER (bulletproof canonical sheet keys)
+  // =========================================================
+  function buildPayloadSingleCanonical(canonicalSheetName, headerRows, meta){
     return {
       version: "v1",
       updatedAt: new Date().toISOString(),
       kind: meta?.kind || "master",
       sourceLabel: meta?.sourceLabel || "",
-      sheets: { [sheetName]: headerRows }
+      // *** CRITICAL: canonical keys only ***
+      sheets: { [canonicalSheetName]: headerRows }
     };
   }
 
-  // ===== Save source (OVERWRITE) as JSON =====
+  function isNonEmptySheet(hr){
+    const hasAnyHeader = (hr?.headers || []).some(h => String(h||"").trim().length);
+    const hasAnyRow = (hr?.rows || []).some(r => Array.isArray(r) && r.some(v => String(v ?? "").trim().length));
+    return !!(hasAnyHeader && hasAnyRow);
+  }
+
+  // =========================================================
+  // SAVE (overwrite) with contract guarantees + update signals
+  // =========================================================
   function saveSource(which, payload, sourceLabel){
     const now = String(Date.now());
     try{
       if(which === "grow"){
+        // Contract hardening: ensure canonical sheet exists
+        if (!payload?.sheets?.[CANON_GROW_SHEET]) {
+          throw new Error(`Grow payload missing sheets["${CANON_GROW_SHEET}"]`);
+        }
         localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(payload));
         localStorage.setItem(MASTER_GROW_PING, now);
-        dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
-        notifyParent(MSG_GROW, MASTER_GROW_KEY);
+        emit(MSG_GROW, MASTER_GROW_KEY);
         setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}`);
       } else if(which === "pack"){
+        if (!payload?.sheets?.[CANON_PACK_SHEET]) {
+          throw new Error(`Pack payload missing sheets["${CANON_PACK_SHEET}"]`);
+        }
         localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(payload));
         localStorage.setItem(MASTER_PACK_PING, now);
-        dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
-        notifyParent(MSG_PACK, MASTER_PACK_KEY);
+        emit(MSG_PACK, MASTER_PACK_KEY);
         setStatus(`Saved Master Pack (JSON overwritten): ${sourceLabel}`);
       }
     }catch(e){
-      console.warn("localStorage write failed:", e);
-      setStatus("Failed to write to localStorage (storage full / blocked).");
+      console.warn("Save failed:", e);
+      setStatus("Failed to write to localStorage (blocked/full) or payload contract violated.");
     }
     refreshBadges();
   }
 
-  function safeHasJson(key){
-    const s = (localStorage.getItem(key) || "").trim();
-    if(!s) return false;
-    if(!s.startsWith("{")) return false;
-    try { JSON.parse(s); return true; } catch(e) { return false; }
-  }
-
-  function refreshBadges(){
-    const hasGrow = safeHasJson(MASTER_GROW_KEY);
-    const hasPack = safeHasJson(MASTER_PACK_KEY);
-    setTag(growTag, hasGrow);
-    setTag(packTag, hasPack);
-    growUpdated.textContent = fmtTs(localStorage.getItem(MASTER_GROW_PING));
-    packUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PACK_PING));
-  }
-
-  // ===== Excel helpers =====
+  // =========================================================
+  // EXCEL SHEET PICKING (tolerant)
+  // =========================================================
   function pickSheetByName(wb, candidates){
     const names = wb?.SheetNames || [];
     const want = (candidates||[]).map(norm);
+
+    // exact
     for(const n of names) if(want.includes(norm(n))) return n;
+
+    // substring
     for(const n of names){
       const nn = norm(n);
       if(want.some(w => nn.includes(w))) return n;
@@ -378,7 +475,14 @@
     return null;
   }
 
-  // ===== File handling =====
+  function pickFallbackSheet(wb){
+    const names = wb?.SheetNames || [];
+    return names.length ? names[0] : null;
+  }
+
+  // =========================================================
+  // FILE HANDLING
+  // =========================================================
   let lastCsvMatrix = null;
   let lastCsvName = "";
 
@@ -391,10 +495,14 @@
     lastCsvName = "";
 
     fileMeta.textContent = `Last file: ${file.name}`;
+    showContractWarning("");
 
     const lower = norm(file.name);
     const isCsv = lower.endsWith(".csv");
 
+    // -------------------------
+    // CSV
+    // -------------------------
     if(isCsv){
       setStatus("Reading CSV…");
       const text = await file.text();
@@ -404,13 +512,14 @@
 
       previewRows(rows, `Preview CSV: ${file.name}`);
 
+      // Auto-assign
       if(lower.includes("grow")){
         const hr = rowsToHeaderRows(rows);
-        const payload = buildPayloadFromSingleSheet("Master Grow", hr, { kind: "grow", sourceLabel: `CSV: ${file.name}` });
+        const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `CSV: ${file.name}` });
         saveSource("grow", payload, `CSV: ${file.name}`);
       } else if(lower.includes("pack")){
         const hr = rowsToHeaderRows(rows);
-        const payload = buildPayloadFromSingleSheet("Master Pack", hr, { kind: "pack", sourceLabel: `CSV: ${file.name}` });
+        const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `CSV: ${file.name}` });
         saveSource("pack", payload, `CSV: ${file.name}`);
       } else {
         assignGrowBtn.disabled = false;
@@ -420,22 +529,26 @@
       return;
     }
 
+    // -------------------------
     // Excel
+    // -------------------------
     setStatus("Reading Excel…");
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type:"array" });
     const names = wb.SheetNames || [];
 
-    const growSheet = pickSheetByName(wb, ["master grow","master_grow","grow","mg"]);
-    const packSheet = pickSheetByName(wb, ["master pack","master_pack","pack","mp"]);
+    // Tolerant picks
+    const growSheet = pickSheetByName(wb, ["master grow","master_grow","grow","mg","01","1"]);
+    const packSheet = pickSheetByName(wb, ["master pack","master_pack","pack","mp","04","4"]);
 
     let wroteAny = false;
 
+    // Grow
     if(growSheet){
       const hr = sheetToHeaderRows(wb.Sheets[growSheet]);
-      const hasData = (hr.headers || []).some(h => String(h||"").trim().length) && (hr.rows || []).length;
-      if(hasData){
-        const payload = buildPayloadFromSingleSheet(growSheet, hr, { kind: "grow", sourceLabel: `XLSX sheet: ${growSheet}` });
+      if(isNonEmptySheet(hr)){
+        // *** CRITICAL FIX: ALWAYS SAVE UNDER "Master Grow" ***
+        const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `XLSX sheet: ${growSheet}` });
         saveSource("grow", payload, `XLSX sheet: ${growSheet}`);
         wroteAny = true;
       } else {
@@ -443,11 +556,12 @@
       }
     }
 
+    // Pack
     if(packSheet){
       const hr = sheetToHeaderRows(wb.Sheets[packSheet]);
-      const hasData = (hr.headers || []).some(h => String(h||"").trim().length) && (hr.rows || []).length;
-      if(hasData){
-        const payload = buildPayloadFromSingleSheet(packSheet, hr, { kind: "pack", sourceLabel: `XLSX sheet: ${packSheet}` });
+      if(isNonEmptySheet(hr)){
+        // *** ALWAYS SAVE UNDER "Master Pack" ***
+        const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `XLSX sheet: ${packSheet}` });
         saveSource("pack", payload, `XLSX sheet: ${packSheet}`);
         wroteAny = true;
       } else {
@@ -455,7 +569,8 @@
       }
     }
 
-    const previewName = growSheet || packSheet || names[0] || null;
+    // Preview: whichever is present, otherwise first sheet
+    const previewName = growSheet || packSheet || pickFallbackSheet(wb);
     if(previewName){
       const ws = wb.Sheets[previewName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows:false, raw:false });
@@ -466,10 +581,17 @@
 
     if(!wroteAny){
       setStatus("Excel loaded, but Master Grow/Master Pack sheets were not found (no overwrite performed).");
+      // Add a helpful warning about canonical keys
+      showContractWarning(
+        `Tip: Your dashboards require the canonical keys: sheets["${CANON_GROW_SHEET}"] and sheets["${CANON_PACK_SHEET}"]. ` +
+        `This tool will save canonically only if it can identify Grow/Pack sheets in the Excel file.`
+      );
     }
   }
 
-  // ===== Download JSON from localStorage =====
+  // =========================================================
+  // DOWNLOAD JSON
+  // =========================================================
   function downloadJsonFromLocalStorage(key, filename){
     const s = localStorage.getItem(key);
     if(!s) return setStatus(`Nothing stored for ${filename} yet.`);
@@ -487,9 +609,10 @@
     setStatus(`Downloaded ${filename}.`);
   }
 
-  // ===== Worker helpers =====
+  // =========================================================
+  // WORKER HELPERS
+  // =========================================================
   async function workerGetJson(url){
-    // cache-bust to avoid stale reads
     const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
     const res = await fetch(bust, { method:"GET", cache:"no-store" });
     const text = await res.text();
@@ -498,10 +621,10 @@
     catch { throw new Error("Worker returned non-JSON."); }
   }
 
-  // ===== Pull from Supabase (via Worker GET /data/master/...) =====
   async function pullFromSupabase(){
     pullBtn.disabled = true;
     setStatus("Pulling from Supabase (via Worker)…");
+    showContractWarning("");
 
     try{
       let gotAny = false;
@@ -511,8 +634,7 @@
         const grow = await workerGetJson(WORKER_GROW_URL);
         localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(grow));
         localStorage.setItem(MASTER_GROW_PING, String(Date.now()));
-        dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
-        notifyParent(MSG_GROW, MASTER_GROW_KEY);
+        emit(MSG_GROW, MASTER_GROW_KEY);
         gotAny = true;
       }catch(e){
         console.warn("Grow pull failed:", e);
@@ -523,8 +645,7 @@
         const pack = await workerGetJson(WORKER_PACK_URL);
         localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pack));
         localStorage.setItem(MASTER_PACK_PING, String(Date.now()));
-        dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
-        notifyParent(MSG_PACK, MASTER_PACK_KEY);
+        emit(MSG_PACK, MASTER_PACK_KEY);
         gotAny = true;
       }catch(e){
         console.warn("Pack pull failed:", e);
@@ -534,6 +655,9 @@
 
       if(gotAny) setStatus("✅ Pulled latest master grow/pack JSON into localStorage.");
       else setStatus("⚠️ Nothing pulled. (Worker returned errors / files missing.)");
+
+      const v = validateStorageContract();
+      if (!v.ok) showContractWarning(v.msg);
     }catch(err){
       console.error(err);
       setStatus(`❌ Pull failed: ${err.message}`);
@@ -542,7 +666,6 @@
     }
   }
 
-  // ===== Publish to Supabase (via Worker PUT /data/master/...) =====
   async function publishToSupabase(){
     const growStr = localStorage.getItem(MASTER_GROW_KEY);
     const packStr = localStorage.getItem(MASTER_PACK_KEY);
@@ -555,6 +678,10 @@
     // validate JSON early
     try { if(growStr) JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
     try { if(packStr) JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
+
+    // Contract check (warn but allow publish if you want)
+    const v = validateStorageContract();
+    if (!v.ok) showContractWarning(v.msg);
 
     publishBtn.disabled = true;
     setStatus("Publishing to Supabase (via Worker PUT /data/...)…");
@@ -590,17 +717,20 @@
       setStatus(`❌ Publish failed: ${err.message}`);
     }finally{
       publishBtn.disabled = false;
+      refreshBadges();
     }
   }
 
-  // ===== Events =====
+  // =========================================================
+  // WIRE EVENTS
+  // =========================================================
   chooseBtn.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
 
   assignGrowBtn.addEventListener("click", () => {
     if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
     const hr = rowsToHeaderRows(lastCsvMatrix);
-    const payload = buildPayloadFromSingleSheet("Master Grow", hr, { kind: "grow", sourceLabel: `CSV (manual): ${lastCsvName}` });
+    const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `CSV (manual): ${lastCsvName}` });
     saveSource("grow", payload, `CSV (manual): ${lastCsvName}`);
     assignGrowBtn.disabled = true;
     assignPackBtn.disabled = true;
@@ -609,7 +739,7 @@
   assignPackBtn.addEventListener("click", () => {
     if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
     const hr = rowsToHeaderRows(lastCsvMatrix);
-    const payload = buildPayloadFromSingleSheet("Master Pack", hr, { kind: "pack", sourceLabel: `CSV (manual): ${lastCsvName}` });
+    const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `CSV (manual): ${lastCsvName}` });
     saveSource("pack", payload, `CSV (manual): ${lastCsvName}`);
     assignGrowBtn.disabled = true;
     assignPackBtn.disabled = true;
@@ -622,13 +752,13 @@
       localStorage.removeItem(MASTER_GROW_PING);
       localStorage.removeItem(MASTER_PACK_PING);
     }catch(e){}
-    dispatchLocal(MSG_GROW, MASTER_GROW_KEY);
-    dispatchLocal(MSG_PACK, MASTER_PACK_KEY);
-    notifyParent(MSG_GROW, MASTER_GROW_KEY);
-    notifyParent(MSG_PACK, MASTER_PACK_KEY);
+
+    emit(MSG_GROW, MASTER_GROW_KEY);
+    emit(MSG_PACK, MASTER_PACK_KEY);
 
     previewEl.innerHTML = `<div class="small" style="padding:10px;">Upload a file to preview data.</div>`;
     setStatus("Cleared stored Master Grow + Master Pack.");
+    showContractWarning("");
     refreshBadges();
   });
 
@@ -655,7 +785,17 @@
     handleFile(file || null);
   });
 
-  // Init
+  // Keep badges fresh if something else updates localStorage
+  window.addEventListener("storage", (e) => {
+    if (!e) return;
+    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_GROW_PING, MASTER_PACK_PING].includes(e.key)) {
+      refreshBadges();
+    }
+  });
+
+  // =========================================================
+  // INIT
+  // =========================================================
   refreshBadges();
   setStatus("Waiting for file…");
 </script>
