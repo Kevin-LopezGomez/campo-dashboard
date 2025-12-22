@@ -62,11 +62,11 @@
       box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9), 0 12px 30px rgba(16, 185, 129, 0.6);
     }
     .title-pill span { font-size: 15px; font-weight: 700; color: #022c22; }
-    .title-text { font-weight: 620; display: flex; align-items: baseline; gap: 8px; }
+    .title-text { font-weight: 620; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
     .title-sub { font-size: 0.8rem; color: var(--sub); text-transform: uppercase; letter-spacing: 0.18em; }
     .subtitle { margin: 0; font-size: 0.85rem; color: var(--muted); }
 
-    .header-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .header-tags { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
       border-radius: 999px; padding: 4px 9px; font-size: 0.72rem;
@@ -75,7 +75,7 @@
       background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%);
     }
     .chip-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.35); }
-    .chip-danger-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--danger); box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.4); }
+    .chip-danger-dot { background: var(--danger); box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.4); }
 
     .layout-main {
       display: grid;
@@ -149,6 +149,60 @@
     }
     .badge-soft span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(226, 232, 240, 0.95); }
     .badge-dot { width: 7px; height: 7px; border-radius: 999px; background: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.48); }
+
+    .input-panel { margin-bottom: 6px; }
+    .input-panel-body { margin-top: 6px; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 10px; }
+    .input-panel-body.collapsed { display: none; }
+    @media (max-width: 900px) { .input-panel-body { grid-template-columns: minmax(0, 1fr); } }
+
+    .input-panel textarea {
+      width: 100%;
+      min-height: 90px;
+      max-height: 180px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      font-size: 0.78rem;
+      padding: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .input-panel textarea::placeholder { color: rgba(148, 163, 184, 0.8); }
+
+    .input-panel-help { font-size: 0.74rem; color: var(--muted); line-height: 1.35; }
+    .input-panel-help ul { margin: 6px 0 0; padding-left: 16px; }
+    .input-panel-help li { margin-bottom: 3px; }
+
+    .btn-row { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn {
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 5px 12px;
+      font-size: 0.74rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text);
+      transition: background 0.12s ease, transform 0.05s ease, box-shadow 0.12s ease;
+    }
+    .btn-primary {
+      background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.95));
+      border-color: rgba(34, 197, 94, 0.9);
+      box-shadow: 0 7px 20px rgba(16, 185, 129, 0.45);
+    }
+    .btn-primary:hover {
+      background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.4), rgba(21, 128, 61, 1));
+      transform: translateY(-0.5px);
+      box-shadow: 0 9px 26px rgba(16, 185, 129, 0.55);
+    }
+    .btn-ghost { background: rgba(15, 23, 42, 0.9); }
+    .btn-ghost:hover { background: rgba(31, 41, 55, 0.95); }
+    .btn span.icon { font-size: 0.8rem; opacity: 0.9; }
+    .btn-toggle { padding: 4px 9px; font-size: 0.7rem; }
+    .btn-toggle span.icon { font-size: 0.75rem; }
 
     .view-toggle {
       display: inline-flex;
@@ -286,6 +340,7 @@
       display: flex;
       flex-direction: column;
     }
+    .table-wrapper.collapsed { display: none; }
     .table-scroll { max-height: 380px; overflow: auto; scrollbar-width: thin; scrollbar-color: #4b5563 rgba(15, 23, 42, 0.2); flex: 1 1 auto; }
     .table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
     .table-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.8); }
@@ -304,6 +359,7 @@
     th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid rgba(31, 41, 55, 0.85); white-space: nowrap; }
     th:first-child, td:first-child { text-align: left; padding-left: 14px; }
     th:last-child, td:last-child { padding-right: 12px; }
+
     th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--sub); background: transparent; }
 
     tbody tr:nth-child(odd) td { background: rgba(15, 23, 42, 0.85); }
@@ -326,15 +382,7 @@
       gap: 12px;
       flex-wrap: wrap;
     }
-
     .panel-footer-note span { display: inline-flex; align-items: center; gap: 4px; }
-
-    .hint-empty {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-top: 10px;
-      white-space: pre-wrap;
-    }
   </style>
 </head>
 
@@ -344,13 +392,13 @@
       <header class="header">
         <div class="title-block">
           <div class="title">
-            <div class="title-pill"><span>📦</span></div>
+            <div class="title-pill"><span>🚚</span></div>
             <div class="title-text">
-              <span>S&amp;H Inventory Dashboard</span>
-              <span class="title-sub">LIVE FROM MASTER PACK</span>
+              <span>Inventory Dashboard</span>
+              <span class="title-sub">S&amp;H · LIVE FROM DATA INPUT</span>
             </div>
           </div>
-          <p class="subtitle">Warehouse inventory snapshot by SKU and batch (inventory, reserved, available) sourced from Pack Data.</p>
+          <p class="subtitle">Daily warehouse inventory snapshot by SKU and batch (cases in stock, reserved, and available). Source: <strong>Master Pack</strong> (fallback to paste).</p>
         </div>
 
         <div class="header-tags">
@@ -358,6 +406,42 @@
           <div class="chip"><span class="chip-danger-dot"></span><span id="chip-warn">–</span></div>
         </div>
       </header>
+
+      <!-- Optional fallback paste input -->
+      <section class="panel input-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title"><span class="panel-title-dot"></span><span>Data input (fallback)</span></div>
+            <div class="panel-subtitle">If Master Pack is not available, paste rows from Excel / Sheets to refresh the dashboard.</div>
+          </div>
+          <div class="panel-header-right">
+            <span>Cols: Date · Batch · Location · Inv · Reserved · Avail · Customer · Obs · Pack Date · Age · SKU</span>
+            <button class="btn btn-ghost btn-toggle" id="toggle-input-panel-btn" type="button">
+              <span class="icon" id="toggle-input-icon">▸</span>
+              <span id="toggle-input-label">Show</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="input-panel-body collapsed" id="input-panel-body">
+          <div>
+            <textarea id="paste-area" placeholder="Paste tab-separated rows here (copied from Excel)..."></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="apply-data-btn" type="button"><span class="icon">⏵</span><span>Apply data to table</span></button>
+              <button class="btn btn-ghost" id="clear-data-btn" type="button"><span class="icon">✕</span><span>Clear paste box</span></button>
+            </div>
+          </div>
+          <div class="input-panel-help">
+            <strong>Instructions:</strong>
+            <ul>
+              <li>Prefer: upload Master Pack in Data Input (this page will auto-refresh).</li>
+              <li>Fallback: paste the inventory table (no grand total row).</li>
+              <li>Blank rows/columns are ignored; mapping prefers header names when present.</li>
+              <li><strong>SKU is taken from column titled: “Warehouse SKU”.</strong></li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <section class="panel" style="margin-bottom: 10px;">
         <div class="panel-header">
@@ -457,14 +541,22 @@
         <div class="panel-header">
           <div>
             <div class="panel-title"><span class="panel-title-dot"></span><span>Raw inventory table</span></div>
-            <div class="panel-subtitle">Full data set across all dates from Master Pack. Filter by date using selector above.</div>
+            <div class="panel-subtitle">Built from Master Pack (preferred). Toggle: show selected day only, or all rows.</div>
           </div>
           <div class="panel-header-right">
-            <span>Rows auto-update when Pack Data updates.</span>
+            <span>Total rows update when Master Pack updates (or when you paste fallback).</span>
+            <button class="btn btn-ghost btn-toggle" id="toggle-raw-view-btn" type="button">
+              <span class="icon" id="toggle-raw-view-icon">◴</span>
+              <span id="toggle-raw-view-label">Show all raw inventory</span>
+            </button>
+            <button class="btn btn-ghost btn-toggle" id="toggle-table-panel-btn" type="button">
+              <span class="icon" id="toggle-table-icon">▾</span>
+              <span id="toggle-table-label">Hide</span>
+            </button>
           </div>
         </div>
 
-        <div class="table-wrapper">
+        <div class="table-wrapper" id="table-panel-body">
           <div class="table-scroll">
             <table id="inventory-table">
               <thead>
@@ -485,7 +577,7 @@
               <tbody></tbody>
               <tfoot>
                 <tr>
-                  <td>Totals (selected day)</td>
+                  <td>Totals (all rows)</td>
                   <td>–</td>
                   <td>–</td>
                   <td>0.0</td>
@@ -502,30 +594,105 @@
           </div>
         </div>
 
-        <div id="empty-hint" class="hint-empty"></div>
-        <div class="panel-footer-note"><span>Source: localStorage <code>campo_master_pack_v1</code> → sheets["Master Pack"]</span></div>
+        <div class="panel-footer-note">
+          <span>Preferred source: <strong>Master Pack</strong> from Data Input.</span>
+          <span>Fallback: paste rows above.</span>
+        </div>
       </section>
     </div>
   </div>
 
   <script>
     // =========================================================
-    // STORAGE CONTRACT (same style as Seeding)
+    // PIPELINE CONTRACT (matches index + data input)
     // =========================================================
-    const MASTER_PACK_KEY = "campo_master_pack_v1";
+    const MASTER_PACK_KEY      = "campo_master_pack_v1";
     const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
-    const MASTER_PACK_SHEET_NAME = "Master Pack";
+    const MASTER_PACK_SHEET    = "Master Pack";
+    const MSG_PACK             = "MASTER_PACK_UPDATED";
 
-    // Index/parent message types
-    const MSG_PACK = "MASTER_PACK_UPDATED";
-
-    // BroadcastChannel (same-origin)
     const BC_NAME = "campo_master_bus_v1";
     const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
 
+    // Fallback paste storage
+    const INVENTORY_FALLBACK_STORAGE_KEY = "campo_inventory_daily_inventory_v2";
+
     // =========================================================
-    // INVENTORY CANONICAL FIELD NAMES
+    // STATE
     // =========================================================
+    let currentSnapshotDate = null;
+    let cardsViewMode = "sku"; // "sku" or "size"
+    let rawTableShowAll = false;
+
+    // =========================================================
+    // UI helpers
+    // =========================================================
+    function setChip(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+    function chipWarn(msg) { setChip("chip-warn", msg || "–"); }
+
+    // =========================================================
+    // Robust parsing helpers
+    // =========================================================
+    function fmt0(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+    function fmt1(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }); }
+
+    function toNumber(v) {
+      if (v == null) return 0;
+      const s = String(v).trim();
+      if (!s) return 0;
+      if (/^#(VALUE|REF|NAME|DIV\/0|N\/A)!?$/i.test(s)) return 0;
+      const n = parseFloat(s.replace(/,/g, ""));
+      return isNaN(n) ? 0 : n;
+    }
+
+    function parseAnyDate(v){
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+
+      // Excel serial (as number or numeric string)
+      const s0 = String(v).trim();
+      const n = Number(s0);
+      if (Number.isFinite(n) && n > 20000 && n < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + n * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // ignore Excel errors
+      if (/^#(VALUE|REF|NAME|DIV\/0|N\/A)!?$/i.test(s0)) return null;
+
+      // Strip weekday prefix: "Friday, December 19, 2025"
+      let s = s0;
+      const parts = s.split(",");
+      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
+
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function getSizeKeyFromSku(sku) {
+      if (!sku) return "(unknown)";
+      const parts = String(sku).split("-");
+      return parts[parts.length - 1];
+    }
+
+    function prettySizeLabel(sizeKey) {
+      const m = String(sizeKey).match(/^0*([0-9]+)([A-Z]+)$/);
+      if (!m) return sizeKey;
+      return m[1] + " " + m[2].toUpperCase();
+    }
+
+    function normHeader(h) {
+      return String(h || "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    // Canonical column names (meaning stable)
     const INV = Object.freeze({
       DATE: "Warehouse Date",
       BATCH: "W-Batch Run Code",
@@ -537,103 +704,73 @@
       OBS: "Warehouse Observations",
       PACK_DATE: "Warehouse Pack Date",
       AGE: "Warehouse Age",
-      SKU: "Warehouse SKU",
+      SKU: "Warehouse SKU", // ✅ MUST use this column for SKU
     });
 
-    // =========================================================
-    // UI STATE
-    // =========================================================
-    let currentSnapshotDate = null;
-    let cardsViewMode = "sku"; // "sku" or "size"
-
-    // =========================================================
-    // UI HELPERS
-    // =========================================================
-    function setEmpty(msg) {
-      const el = document.getElementById("empty-hint");
-      if (el) el.textContent = msg || "";
-    }
-
-    function setChip(id, text) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = text;
-    }
-
-    function chipWarn(msg) { setChip("chip-warn", msg || "–"); }
-
-    // =========================================================
-    // TOLERANT PARSERS
-    // =========================================================
-    function normHeader(s){
-      return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
-    }
-
-    // Add/extend aliases here if your Pack sheet uses different names.
+    // Tolerant aliases -> canonical names
     const HEADER_ALIASES = new Map([
       // Date
       ["warehouse date", INV.DATE],
       ["date", INV.DATE],
-      ["fecha", INV.DATE],
-      ["fecha de warehouse", INV.DATE],
-      ["fecha de almacen", INV.DATE],
-      ["fecha almacén", INV.DATE],
+      ["warehousedate", INV.DATE],
 
       // Batch
       ["w-batch run code", INV.BATCH],
       ["w batch run code", INV.BATCH],
+      ["wbatch run code", INV.BATCH],
+      ["wbatchruncode", INV.BATCH],
       ["batch", INV.BATCH],
-      ["batch run code", INV.BATCH],
-      ["lote", INV.BATCH],
-      ["codigo de lote", INV.BATCH],
 
       // Location
       ["warehouse location", INV.LOCATION],
+      ["warehouselocation", INV.LOCATION],
       ["location", INV.LOCATION],
-      ["ubicacion", INV.LOCATION],
-      ["ubicación", INV.LOCATION],
 
-      // Inventory numbers
+      // Inventory
       ["cases in inventory", INV.CASES_INV],
+      ["casesininventory", INV.CASES_INV],
       ["inventory", INV.CASES_INV],
-      ["cases inventory", INV.CASES_INV],
-      ["in inventory", INV.CASES_INV],
-      ["inv", INV.CASES_INV],
+      ["cases inv", INV.CASES_INV],
+      ["casesinv", INV.CASES_INV],
 
+      // Reserved
       ["cases reserved", INV.CASES_RES],
+      ["casesreserved", INV.CASES_RES],
       ["reserved", INV.CASES_RES],
-      ["res", INV.CASES_RES],
-      ["reservado", INV.CASES_RES],
 
+      // Available
       ["cases available", INV.CASES_AVAIL],
+      ["casesavailable", INV.CASES_AVAIL],
       ["available", INV.CASES_AVAIL],
       ["avail", INV.CASES_AVAIL],
-      ["disponible", INV.CASES_AVAIL],
 
       // Customer
       ["customer reserved", INV.CUSTOMER],
+      ["cutomer reserved", INV.CUSTOMER],
       ["customer", INV.CUSTOMER],
-      ["cliente", INV.CUSTOMER],
+      ["customerreserved", INV.CUSTOMER],
 
       // Observations
       ["warehouse observations", INV.OBS],
+      ["warehousobservations", INV.OBS],
       ["observations", INV.OBS],
       ["obs", INV.OBS],
-      ["observaciones", INV.OBS],
 
-      // Pack date / age
+      // Pack Date
       ["warehouse pack date", INV.PACK_DATE],
       ["pack date", INV.PACK_DATE],
-      ["fecha de empaque", INV.PACK_DATE],
-      ["fecha empaque", INV.PACK_DATE],
+      ["warehousepackdate", INV.PACK_DATE],
 
+      // Age
       ["warehouse age", INV.AGE],
       ["age", INV.AGE],
-      ["edad", INV.AGE],
+      ["warehouseage", INV.AGE],
 
-      // SKU
+      // SKU (IMPORTANT)
       ["warehouse sku", INV.SKU],
+      ["warehousesku", INV.SKU],
       ["sku", INV.SKU],
-      ["producto", INV.SKU],
+      ["product sku", INV.SKU],
     ]);
 
     function canonicalizeHeaders(headersRaw){
@@ -651,107 +788,24 @@
       return { canonHeaders, canonIndexByName };
     }
 
-    function parseNumber(v) {
-      if (v === null || v === undefined) return 0;
-      if (typeof v === "number" && Number.isFinite(v)) return v;
-      const s = String(v).trim();
-      if (!s) return 0;
-      if (/^#(VALUE|REF|NAME|DIV\/0|N\/A)!?$/i.test(s)) return 0;
-      const cleaned = s.replace(/,/g, "");
-      const n = parseFloat(cleaned);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function parseAnyDate(v){
-      if (v === null || v === undefined) return null;
-      if (v instanceof Date && !isNaN(v.getTime())) return v;
-
-      // Excel serial
-      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
-        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-        const d = new Date(excelEpoch.getTime() + v * 86400000);
-        return isNaN(d.getTime()) ? null : d;
-      }
-
-      const s0 = String(v).trim();
-      if (!s0) return null;
-
-      // Excel serial string
-      const n = Number(s0);
-      if (Number.isFinite(n) && n > 20000 && n < 60000) {
-        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-        const d = new Date(excelEpoch.getTime() + n * 86400000);
-        return isNaN(d.getTime()) ? null : d;
-      }
-
-      // Strip weekday prefix: "Monday, Dec 22, 2025"
-      let s = s0;
-      const parts = s.split(",");
-      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
-
-      // ISO
-      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-        const d = new Date(s);
-        return isNaN(d.getTime()) ? null : d;
-      }
-
-      // US MM/DD/YYYY
-      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
-        const [mm, dd, yy] = s.split("/").map(Number);
-        const yyyy = yy < 100 ? 2000 + yy : yy;
-        const d = new Date(yyyy, mm - 1, dd);
-        return isNaN(d.getTime()) ? null : d;
-      }
-
-      const d = new Date(s);
-      return isNaN(d.getTime()) ? null : d;
-    }
-
-    function formatDateMMDDYYYY(date) {
-      const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const dd = String(date.getDate()).padStart(2, "0");
-      const yyyy = date.getFullYear();
-      return `${mm}/${dd}/${yyyy}`;
-    }
-
-    function daysBetween(a, b){
-      const ms = 86400000;
-      return Math.max(0, Math.round((a.getTime() - b.getTime()) / ms));
-    }
-
-    function fmt0(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
-    function fmt1(n) { return (n || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }); }
-
-    function getSizeKeyFromSku(sku) {
-      if (!sku) return "(unknown)";
-      const parts = String(sku).split("-");
-      return parts[parts.length - 1];
-    }
-
-    function prettySizeLabel(sizeKey) {
-      const m = String(sizeKey).match(/^0*([0-9]+)([A-Z]+)$/);
-      if (!m) return sizeKey;
-      return m[1] + " " + m[2].toUpperCase();
-    }
-
     function isMeaningfulRow(r) {
       const hasDate = !!(r.date && String(r.date).trim());
       const hasOther =
         !!(r.batch && String(r.batch).trim()) ||
         !!(r.location && String(r.location).trim()) ||
         !!(r.sku && String(r.sku).trim()) ||
-        (r.casesInventory || 0) > 0 ||
-        (r.casesReserved || 0) > 0 ||
-        (r.casesAvailable || 0) > 0 ||
+        r.casesInventory > 0 ||
+        r.casesReserved > 0 ||
+        r.casesAvailable > 0 ||
         !!(r.customer && String(r.customer).trim()) ||
         !!(r.packDate && String(r.packDate).trim()) ||
-        (r.age || 0) > 0 ||
+        r.age > 0 ||
         !!(r.observations && String(r.observations).trim());
       return hasDate && hasOther;
     }
 
     // =========================================================
-    // LOAD MASTER PACK
+    // LOAD FROM MASTER PACK (preferred)
     // =========================================================
     function loadMasterPackPayload() {
       const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
@@ -762,7 +816,6 @@
     function sheetToRowObjects(sheetObj) {
       const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
       const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
-
       const { canonHeaders } = canonicalizeHeaders(headersRaw);
 
       const out = [];
@@ -779,159 +832,234 @@
       return out;
     }
 
-    // =========================================================
-    // BUILD TABLE FROM MASTER PACK
-    // =========================================================
-    function buildFromMasterPack() {
+    function buildFromMasterPackToTable() {
       const payload = loadMasterPackPayload();
-      const sheet = payload?.sheets?.[MASTER_PACK_SHEET_NAME];
+      const sheet = payload?.sheets?.[MASTER_PACK_SHEET];
 
       const tbody = document.querySelector("#inventory-table tbody");
       if (tbody) tbody.innerHTML = "";
 
       if (!sheet) {
-        setEmpty(
-          "No Master Pack sheet found.\n\nFix: Upload Master Pack in Data Input.\nVerify Data Input writes sheets[\"Master Pack\"]."
-        );
         setChip("chip-ok", "Master Pack missing");
-        chipWarn("Upload Master Pack");
-        return [];
+        chipWarn("Upload Master Pack in Data Input (preferred) or paste fallback");
+        return { ok:false, rows:0 };
       }
 
       const headersRaw = Array.isArray(sheet.headers) ? sheet.headers : [];
       const { canonHeaders } = canonicalizeHeaders(headersRaw);
 
+      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
+      const required = [INV.DATE, INV.BATCH, INV.LOCATION, INV.CASES_INV, INV.CASES_RES, INV.CASES_AVAIL, INV.SKU];
+      const missing = required.filter(h => !headerSet.has(h));
+
       const rows = sheetToRowObjects(sheet);
       if (!rows.length) {
-        setEmpty("Master Pack loaded, but the sheet has no rows.");
         setChip("chip-ok", "Master Pack loaded (0 rows)");
-        chipWarn("No inventory rows found");
-        return [];
+        chipWarn("No pack rows found");
+        return { ok:true, rows:0, missing };
       }
 
-      // Require at least DATE + SKU OR DATE + (Inv/Avail/Res)
-      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
-      const missingDate = !headerSet.has(INV.DATE);
-      const missingSku = !headerSet.has(INV.SKU);
-      const missingAllQty = !headerSet.has(INV.CASES_INV) && !headerSet.has(INV.CASES_AVAIL) && !headerSet.has(INV.CASES_RES);
-
-      if (missingDate || (missingSku && missingAllQty)) {
-        setEmpty(
-          "Master Pack loaded, but required inventory headers are missing.\n\n" +
-          "Needs:\n- " + INV.DATE + "\n- plus either " + INV.SKU + " or quantity columns\n\n" +
-          "Found headers (canonicalized):\n- " + Array.from(headerSet).slice(0, 80).join("\n- ") +
-          (headerSet.size > 80 ? "\n- …" : "")
-        );
-        setChip("chip-ok", "Master Pack loaded (missing headers)");
-        chipWarn("Fix Pack headers or add alias mapping");
-        return [];
+      // If missing critical headers, still attempt best-effort, but warn.
+      if (missing.length) {
+        setChip("chip-ok", `Master Pack loaded (${rows.length.toLocaleString()} rows)`);
+        chipWarn("Missing headers: " + missing.join(", "));
+      } else {
+        setChip("chip-ok", `Master Pack loaded (${rows.length.toLocaleString()} rows)`);
+        chipWarn("–");
       }
 
-      let droppedBlank = 0;
-      let droppedNoDate = 0;
-      let kept = 0;
-
-      const outRows = [];
+      let added = 0;
 
       for (const r of rows) {
-        if (!r || typeof r !== "object") continue;
+        const dateStr = String(r[INV.DATE] ?? "").trim();
+        if (!dateStr || /^#(VALUE|REF|NAME|DIV\/0|N\/A)!?$/i.test(dateStr)) continue;
 
-        const dateRaw = r[INV.DATE];
-        const dateObj = parseAnyDate(dateRaw);
-        if (!dateObj) { droppedNoDate++; continue; }
-        const dateStr = formatDateMMDDYYYY(dateObj);
+        // IMPORTANT: use Warehouse SKU (canonical) for SKU
+        const skuStr = String(r[INV.SKU] ?? "").trim();
 
-        const batch = String(r[INV.BATCH] ?? "").trim();
-        const location = String(r[INV.LOCATION] ?? "").trim();
-
-        const invVal = parseNumber(r[INV.CASES_INV]);
-        const resVal = parseNumber(r[INV.CASES_RES]);
-        let availVal = parseNumber(r[INV.CASES_AVAIL]);
-
-        // If available missing but inv/res present, compute
-        if ((!r[INV.CASES_AVAIL] || String(r[INV.CASES_AVAIL]).trim() === "") && (invVal || resVal)) {
-          availVal = Math.max(0, invVal - resVal);
-        }
-
-        const customer = String(r[INV.CUSTOMER] ?? "").trim();
-        const obs = String(r[INV.OBS] ?? "").trim();
-
-        const packDateRaw = r[INV.PACK_DATE];
-        const packDateObj = parseAnyDate(packDateRaw);
-        const packDateStr = packDateObj ? formatDateMMDDYYYY(packDateObj) : String(packDateRaw ?? "").trim();
-
-        let ageVal = parseNumber(r[INV.AGE]);
-        if ((!r[INV.AGE] || String(r[INV.AGE]).trim() === "") && packDateObj && dateObj) {
-          ageVal = daysBetween(dateObj, packDateObj);
-        }
-
-        const sku = String(r[INV.SKU] ?? "").trim();
-
-        const rowObj = {
+        const dataObj = {
           date: dateStr,
-          batch,
-          location,
-          casesInventory: invVal,
-          casesReserved: resVal,
-          casesAvailable: availVal,
-          customer,
-          observations: obs,
-          packDate: packDateStr,
-          age: ageVal,
-          sku
+          batch: String(r[INV.BATCH] ?? "").trim(),
+          location: String(r[INV.LOCATION] ?? "").trim(),
+          casesInventory: toNumber(r[INV.CASES_INV]),
+          casesReserved: toNumber(r[INV.CASES_RES]),
+          casesAvailable: toNumber(r[INV.CASES_AVAIL]),
+          customer: String(r[INV.CUSTOMER] ?? "").trim(),
+          observations: String(r[INV.OBS] ?? "").trim(),
+          packDate: String(r[INV.PACK_DATE] ?? "").trim(),
+          age: toNumber(r[INV.AGE]),
+          sku: skuStr
         };
 
-        const allBlank =
-          !dateStr && !batch && !location && !sku &&
-          invVal === 0 && resVal === 0 && availVal === 0 &&
-          !customer && !obs && !packDateStr && ageVal === 0;
+        // Skip date-only filler rows
+        if (!isMeaningfulRow(dataObj)) continue;
 
-        if (allBlank) { droppedBlank++; continue; }
-        if (!isMeaningfulRow(rowObj)) { droppedBlank++; continue; }
-
-        outRows.push(rowObj);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${dataObj.date}</td>
+          <td>${dataObj.batch}</td>
+          <td>${dataObj.location}</td>
+          <td>${fmt1(dataObj.casesInventory)}</td>
+          <td>${fmt1(dataObj.casesReserved)}</td>
+          <td>${fmt1(dataObj.casesAvailable)}</td>
+          <td>${dataObj.customer}</td>
+          <td>${dataObj.observations}</td>
+          <td>${dataObj.packDate}</td>
+          <td>${fmt1(dataObj.age)}</td>
+          <td>${dataObj.sku}</td>
+        `;
+        tbody.appendChild(tr);
+        added++;
       }
 
-      // Render table
-      if (tbody) {
-        outRows.forEach((d) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${d.date}</td>
-            <td>${d.batch}</td>
-            <td>${d.location}</td>
-            <td>${d.casesInventory}</td>
-            <td>${d.casesReserved}</td>
-            <td>${d.casesAvailable}</td>
-            <td>${d.customer}</td>
-            <td>${d.observations}</td>
-            <td>${d.packDate}</td>
-            <td>${d.age}</td>
-            <td>${d.sku}</td>
-          `;
-          tbody.appendChild(tr);
-          kept++;
-        });
-      }
-
-      setChip("chip-ok", `Master Pack loaded (${rows.length.toLocaleString()} rows)`);
-      chipWarn(kept ? "–" : "No inventory rows built");
-
-      if (!kept) {
-        setEmpty(
-          "No inventory rows were built.\n\n" +
-          `Diagnostics:\n- Dropped blank/meaningless rows: ${droppedBlank}\n- Dropped rows w/ unparseable date: ${droppedNoDate}\n\n` +
-          "Fix: ensure Pack Data contains a Warehouse Date and at least SKU or inventory quantities."
-        );
-      } else {
-        setEmpty("");
-      }
-
-      return outRows;
+      return { ok:true, rows:added, missing };
     }
 
     // =========================================================
-    // DASHBOARD COMPUTE (reads table like your original)
+    // FALLBACK paste parsing (same as your base)
+    // =========================================================
+    function buildHeaderIndex(headerCells) {
+      const idx = new Map();
+      headerCells.forEach((h, i) => idx.set(normHeader(h).replace(/\s+/g,""), i));
+
+      const pick = (aliases) => {
+        for (const a of aliases) {
+          const k = normHeader(a).replace(/\s+/g,"");
+          if (idx.has(k)) return idx.get(k);
+        }
+        return -1;
+      };
+
+      return {
+        date: pick([INV.DATE, "Date", "WarehouseDate"]),
+        batch: pick([INV.BATCH, "Batch", "WBatchRunCode", "WBatch Run Code"]),
+        location: pick([INV.LOCATION, "Location", "WarehouseLocation"]),
+        inv: pick([INV.CASES_INV, "Inventory", "CasesInInventory"]),
+        res: pick([INV.CASES_RES, "Reserved", "CasesReserved"]),
+        avail: pick([INV.CASES_AVAIL, "Available", "CasesAvailable"]),
+        customer: pick([INV.CUSTOMER, "Customer", "CustomerReserved"]),
+        obs: pick([INV.OBS, "Observations", "WarehouseObservations"]),
+        packDate: pick([INV.PACK_DATE, "Pack Date", "WarehousePackDate"]),
+        age: pick([INV.AGE, "Age", "WarehouseAge"]),
+        sku: pick([INV.SKU, "SKU", "WarehouseSKU"]) // ✅ MUST map to Warehouse SKU
+      };
+    }
+
+    function applyPastedData() {
+      const textarea = document.getElementById("paste-area");
+      const text = textarea.value;
+      if (!text || !text.trim()) return;
+
+      try { localStorage.setItem(INVENTORY_FALLBACK_STORAGE_KEY, text); } catch (e) {}
+
+      const tbody = document.querySelector("#inventory-table tbody");
+      tbody.innerHTML = "";
+
+      const rawLines = text.replace(/\r/g, "").split("\n");
+      const lines = rawLines.filter((l) => l.replace(/\t/g, "").trim().length > 0);
+      if (!lines.length) { recomputeDashboard(); return; }
+
+      let headerLineIndex = -1;
+      for (let i = 0; i < Math.min(2, lines.length); i++) {
+        const chk = lines[i].toLowerCase();
+        if (chk.includes("warehouse date") && chk.includes("cases")) { headerLineIndex = i; break; }
+      }
+
+      let headerMap = null;
+      let startIndex = 0;
+
+      if (headerLineIndex >= 0) {
+        const headerCells = lines[headerLineIndex].split("\t");
+        headerMap = buildHeaderIndex(headerCells);
+        startIndex = headerLineIndex + 1;
+      }
+
+      const safeGet = (arr, i) => (i >= 0 && i < arr.length ? arr[i] : "");
+
+      let added = 0;
+      for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line) continue;
+
+        let parts = line.split("\t");
+        if (parts.length < 3 && line.includes(",")) parts = line.split(",");
+
+        let row = null;
+        if (headerMap && headerMap.date >= 0) {
+          row = {
+            dateStr: safeGet(parts, headerMap.date).trim(),
+            batchStr: safeGet(parts, headerMap.batch).trim(),
+            locStr: safeGet(parts, headerMap.location).trim(),
+            invStr: safeGet(parts, headerMap.inv).trim(),
+            resStr: safeGet(parts, headerMap.res).trim(),
+            availStr: safeGet(parts, headerMap.avail).trim(),
+            custStr: safeGet(parts, headerMap.customer).trim(),
+            obsStr: safeGet(parts, headerMap.obs).trim(),
+            packDateStr: safeGet(parts, headerMap.packDate).trim(),
+            ageStr: safeGet(parts, headerMap.age).trim(),
+            skuStr: safeGet(parts, headerMap.sku).trim(),
+          };
+        } else {
+          while (parts.length < 11) parts.push("");
+          const p = parts.slice(0, 11).map((x) => String(x ?? ""));
+          row = {
+            dateStr: p[0].trim(),
+            batchStr: p[1].trim(),
+            locStr: p[2].trim(),
+            invStr: p[3].trim(),
+            resStr: p[4].trim(),
+            availStr: p[5].trim(),
+            custStr: p[6].trim(),
+            obsStr: p[7].trim(),
+            packDateStr: p[8].trim(),
+            ageStr: p[9].trim(),
+            skuStr: p[10].trim(),
+          };
+        }
+
+        if (!row.dateStr || /^#(VALUE|REF|NAME|DIV\/0|N\/A)!?$/i.test(row.dateStr)) continue;
+
+        const dataObj = {
+          date: row.dateStr,
+          batch: row.batchStr,
+          location: row.locStr,
+          casesInventory: toNumber(row.invStr),
+          casesReserved: toNumber(row.resStr),
+          casesAvailable: toNumber(row.availStr),
+          customer: row.custStr,
+          observations: row.obsStr,
+          packDate: row.packDateStr,
+          age: toNumber(row.ageStr),
+          sku: row.skuStr, // ✅ SKU comes from Warehouse SKU mapping above
+        };
+
+        if (!isMeaningfulRow(dataObj)) continue;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.dateStr}</td>
+          <td>${row.batchStr}</td>
+          <td>${row.locStr}</td>
+          <td>${row.invStr}</td>
+          <td>${row.resStr}</td>
+          <td>${row.availStr}</td>
+          <td>${row.custStr}</td>
+          <td>${row.obsStr}</td>
+          <td>${row.packDateStr}</td>
+          <td>${row.ageStr}</td>
+          <td>${row.skuStr}</td>
+        `;
+        tbody.appendChild(tr);
+        added++;
+      }
+
+      setChip("chip-ok", `Fallback paste loaded (${added.toLocaleString()} rows)`);
+      chipWarn("Master Pack missing (using paste)");
+      recomputeDashboard();
+    }
+
+    // =========================================================
+    // COMPUTE (reads current table)
     // =========================================================
     function recomputeDashboard() {
       const tbodyRows = Array.from(document.querySelectorAll("#inventory-table tbody tr"));
@@ -943,6 +1071,7 @@
         const snapshotSelect = document.getElementById("snapshot-date");
         if (snapshotSelect) snapshotSelect.innerHTML = "";
         document.getElementById("sku-grid").innerHTML = "";
+        document.getElementById("snapshot-subtitle").textContent = "No data loaded yet.";
         return;
       }
 
@@ -957,14 +1086,14 @@
           batch: (cells[1]?.textContent || "").trim(),
           batchCode: (cells[1]?.textContent || "").trim(),
           location: (cells[2]?.textContent || "").trim(),
-          casesInventory: parseNumber(cells[3]?.textContent),
-          casesReserved: parseNumber(cells[4]?.textContent),
-          casesAvailable: parseNumber(cells[5]?.textContent),
+          casesInventory: toNumber(cells[3]?.textContent),
+          casesReserved: toNumber(cells[4]?.textContent),
+          casesAvailable: toNumber(cells[5]?.textContent),
           customer: (cells[6]?.textContent || "").trim(),
           observations: (cells[7]?.textContent || "").trim(),
           packDate: (cells[8]?.textContent || "").trim(),
-          age: parseNumber(cells[9]?.textContent),
-          sku: (cells[10]?.textContent || "").trim(),
+          age: toNumber(cells[9]?.textContent),
+          sku: (cells[10]?.textContent || "").trim(), // ✅ Column 11 is Warehouse SKU
         };
       });
 
@@ -1005,6 +1134,8 @@
       let dayData = allData.filter((d) => d.date === currentSnapshotDate);
       if (!dayData.length) dayData = allData;
 
+      const tableData = rawTableShowAll ? allData : dayData;
+
       const totalInventory = dayData.reduce((sum, d) => sum + d.casesInventory, 0);
       const totalAvailable = dayData.reduce((sum, d) => sum + d.casesAvailable, 0);
       const totalReserved = dayData.reduce((sum, d) => sum + d.casesReserved, 0);
@@ -1026,14 +1157,11 @@
       document.getElementById("kpi-location-note").textContent = "Locations: " + (locSet.size || "–");
       document.getElementById("kpi-age-note").textContent = maxAge > 0 ? ("Oldest lot: " + fmt1(maxAge) + " days") : "Oldest lot: –";
 
-      const snapshotSubtitle = document.getElementById("snapshot-subtitle");
-      if (snapshotSubtitle) {
-        snapshotSubtitle.textContent =
-          "Inventory snapshot for " + currentSnapshotDate +
-          " (" + skuSet.size + " SKUs, " + fmt0(totalInventory) + " cases in inventory).";
-      }
+      document.getElementById("snapshot-subtitle").textContent =
+        "Inventory snapshot for " + currentSnapshotDate +
+        " (" + skuSet.size + " SKUs, " + fmt0(totalInventory) + " cases in inventory).";
 
-      // Cards
+      // Cards aggregation (SKU)
       const skuMap = new Map();
       dayData.forEach((d) => {
         const key = d.sku || "(no SKU)";
@@ -1062,6 +1190,7 @@
       const skuAgg = Array.from(skuMap.values()).sort((a, b) => a.sku.localeCompare(b.sku));
       skuAgg.forEach((s) => (s.avgAge = s.ageCount ? s.ageSum / s.ageCount : 0));
 
+      // Cards aggregation (Size)
       const sizeMap = new Map();
       dayData.forEach((d) => {
         const size = getSizeKeyFromSku(d.sku);
@@ -1092,6 +1221,7 @@
 
       const dataForCards = cardsViewMode === "size" ? sizeAgg : skuAgg;
 
+      // Cards UI labels
       const cardsPanelTitle = document.getElementById("cards-panel-title");
       const cardsPanelSubtitle = document.getElementById("cards-panel-subtitle");
       const cardsSummaryLabel = document.getElementById("cards-summary-label");
@@ -1099,15 +1229,16 @@
       if (cardsPanelTitle && cardsPanelSubtitle && cardsSummaryLabel) {
         if (cardsViewMode === "size") {
           cardsPanelTitle.textContent = "Inventory by size (selected day)";
-          cardsPanelSubtitle.textContent = "Aggregated size inventory for the day.";
+          cardsPanelSubtitle.textContent = "Aggregated 05OZ / 10OZ / 1LB / 3LB / 16OZ inventory for the day.";
           cardsSummaryLabel.textContent = dataForCards.length + " size groups displayed";
         } else {
           cardsPanelTitle.textContent = "Inventory by SKU (selected day)";
-          cardsPanelSubtitle.textContent = "One card per SKU.";
+          cardsPanelSubtitle.textContent = "One card per SKU (SKU read from “Warehouse SKU”).";
           cardsSummaryLabel.textContent = dataForCards.length + " SKUs displayed";
         }
       }
 
+      // Render cards
       const skuGrid = document.getElementById("sku-grid");
       if (skuGrid) {
         skuGrid.innerHTML = "";
@@ -1174,7 +1305,7 @@
               if (!d.sku) return false;
               return getSizeKeyFromSku(d.sku) === s.sizeKey;
             }
-            return d.sku === s.sku;
+            return (d.sku || "(no SKU)") === s.sku;
           });
 
           card.addEventListener("click", () => {
@@ -1185,6 +1316,14 @@
           skuGrid.appendChild(card);
         });
       }
+
+      // Raw table visibility
+      const rawRows = document.querySelectorAll("#inventory-table tbody tr");
+      rawRows.forEach((row) => {
+        const dateCell = row.querySelector("td");
+        const rowDate = (dateCell?.textContent || "").trim();
+        row.style.display = (rawTableShowAll || rowDate === currentSnapshotDate) ? "" : "none";
+      });
 
       // Issues
       const oldestList = document.getElementById("issues-oldest");
@@ -1249,18 +1388,18 @@
         }
       }
 
-      // Totals footer (selected day)
-      const totalInvAll = dayData.reduce((sum, d) => sum + d.casesInventory, 0);
-      const totalResAll = dayData.reduce((sum, d) => sum + d.casesReserved, 0);
-      const totalAvailAll = dayData.reduce((sum, d) => sum + d.casesAvailable, 0);
-      const ageAll = dayData.map((d) => d.age).filter((a) => a > 0);
+      // Totals footer
+      const totalInvAll = tableData.reduce((sum, d) => sum + d.casesInventory, 0);
+      const totalResAll = tableData.reduce((sum, d) => sum + d.casesReserved, 0);
+      const totalAvailAll = tableData.reduce((sum, d) => sum + d.casesAvailable, 0);
+      const ageAll = tableData.map((d) => d.age).filter((a) => a > 0);
       const avgAgeAll = ageAll.length ? ageAll.reduce((s, v) => s + v, 0) / ageAll.length : 0;
 
       const tfootRow = document.querySelector("#inventory-table tfoot tr");
       if (tfootRow) {
         const tds = tfootRow.querySelectorAll("td");
         if (tds.length >= 11) {
-          tds[0].textContent = "Totals (selected day)";
+          tds[0].textContent = rawTableShowAll ? "Totals (all rows)" : "Totals (selected day)";
           tds[3].textContent = fmt1(totalInvAll);
           tds[4].textContent = fmt1(totalResAll);
           tds[5].textContent = fmt1(totalAvailAll);
@@ -1269,6 +1408,9 @@
       }
     }
 
+    // =========================================================
+    // Modal
+    // =========================================================
     function openLotModal(label, rowsForCard) {
       const existing = document.getElementById("lot-modal-backdrop");
       if (existing) existing.remove();
@@ -1285,7 +1427,7 @@
 
       const title = document.createElement("div");
       title.className = "modal-title";
-      title.textContent = "Lot details · " + label;
+      title.textContent = "Lot details · " + (label || "(no SKU)");
 
       const closeBtn = document.createElement("button");
       closeBtn.className = "modal-close-btn";
@@ -1349,11 +1491,69 @@
       document.body.appendChild(backdrop);
     }
 
+    // =========================================================
+    // Controls
+    // =========================================================
+    function setupInputPanelToggle() {
+      const btn = document.getElementById("toggle-input-panel-btn");
+      const body = document.getElementById("input-panel-body");
+      const icon = document.getElementById("toggle-input-icon");
+      const label = document.getElementById("toggle-input-label");
+      if (!btn || !body || !icon || !label) return;
+
+      let collapsed = true;
+      body.classList.add("collapsed");
+      label.textContent = "Show";
+      icon.textContent = "▸";
+
+      btn.addEventListener("click", () => {
+        collapsed = !collapsed;
+        if (collapsed) { body.classList.add("collapsed"); label.textContent = "Show"; icon.textContent = "▸"; }
+        else { body.classList.remove("collapsed"); label.textContent = "Hide"; icon.textContent = "▾"; }
+      });
+    }
+
     function setupSnapshotSelector() {
       const select = document.getElementById("snapshot-date");
       if (!select) return;
       select.addEventListener("change", () => {
         currentSnapshotDate = select.value;
+        recomputeDashboard();
+      });
+    }
+
+    function setupTablePanelToggle() {
+      const btn = document.getElementById("toggle-table-panel-btn");
+      const body = document.getElementById("table-panel-body");
+      const icon = document.getElementById("toggle-table-icon");
+      const label = document.getElementById("toggle-table-label");
+      if (!btn || !body || !icon || !label) return;
+
+      let collapsed = false;
+      body.classList.remove("collapsed");
+      label.textContent = "Hide";
+      icon.textContent = "▾";
+
+      btn.addEventListener("click", () => {
+        collapsed = !collapsed;
+        if (collapsed) { body.classList.add("collapsed"); label.textContent = "Show"; icon.textContent = "▸"; }
+        else { body.classList.remove("collapsed"); label.textContent = "Hide"; icon.textContent = "▾"; }
+      });
+    }
+
+    function setupRawTableViewToggle() {
+      const btn = document.getElementById("toggle-raw-view-btn");
+      const label = document.getElementById("toggle-raw-view-label");
+      if (!btn || !label) return;
+
+      const updateLabel = () => {
+        label.textContent = rawTableShowAll ? "Show selected day only" : "Show all raw inventory";
+      };
+      updateLabel();
+
+      btn.addEventListener("click", () => {
+        rawTableShowAll = !rawTableShowAll;
+        updateLabel();
         recomputeDashboard();
       });
     }
@@ -1378,22 +1578,37 @@
     }
 
     // =========================================================
-    // LIVE REFRESH (bulletproof, like Seeding)
+    // LIVE REFRESH (same pattern as Seeding)
     // =========================================================
     let reloadTimer = null;
-
     function reloadAll(reason){
       if (reloadTimer) clearTimeout(reloadTimer);
       reloadTimer = setTimeout(() => {
         reloadTimer = null;
-        buildFromMasterPack();
+
+        // Preferred: build from Master Pack
+        const res = buildFromMasterPackToTable();
+
+        // If Master Pack is missing/empty, try fallback paste auto-load
+        if (!res.ok || res.rows === 0) {
+          try {
+            const saved = localStorage.getItem(INVENTORY_FALLBACK_STORAGE_KEY);
+            if (saved && saved.trim()) {
+              const textarea = document.getElementById("paste-area");
+              if (textarea) textarea.value = saved;
+              applyPastedData();
+              return;
+            }
+          } catch {}
+        }
+
         recomputeDashboard();
-        // console.log("🔄 Reloaded S&H inventory:", reason || "");
+        // console.log("🔄 Reloaded S&H inventory", reason || "");
       }, 60);
     }
 
     function setupLiveListeners() {
-      // 1) storage events (cross-tab)
+      // 1) storage events
       window.addEventListener("storage", (e) => {
         if (!e) return;
         if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) reloadAll("storage");
@@ -1406,7 +1621,7 @@
         if (msg.type === MSG_PACK || msg.type === "MASTER_PACK_UPDATED") reloadAll("message");
       });
 
-      // 3) CustomEvent (same frame)
+      // 3) CustomEvent
       window.addEventListener(MSG_PACK, () => reloadAll("customevent"));
 
       // 4) BroadcastChannel
@@ -1417,14 +1632,11 @@
         };
       }
 
-      // 5) Safety poll
+      // 5) Safety poll (Safari/iframe oddities)
       let lastLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
       setInterval(() => {
         const curLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
-        if (curLen !== lastLen) {
-          lastLen = curLen;
-          reloadAll("poll");
-        }
+        if (curLen !== lastLen) { lastLen = curLen; reloadAll("poll"); }
       }, 1500);
     }
 
@@ -1432,9 +1644,26 @@
     // INIT
     // =========================================================
     document.addEventListener("DOMContentLoaded", () => {
+      // Buttons
+      document.getElementById("apply-data-btn")?.addEventListener("click", applyPastedData);
+      document.getElementById("clear-data-btn")?.addEventListener("click", () => {
+        const textarea = document.getElementById("paste-area");
+        if (textarea) textarea.value = "";
+        try { localStorage.removeItem(INVENTORY_FALLBACK_STORAGE_KEY); } catch {}
+        const tbody = document.querySelector("#inventory-table tbody");
+        if (tbody) tbody.innerHTML = "";
+        setChip("chip-ok", "Waiting for Master Pack…");
+        chipWarn("–");
+        recomputeDashboard();
+      });
+
+      setupInputPanelToggle();
       setupSnapshotSelector();
       setupCardsViewToggle();
+      setupTablePanelToggle();
+      setupRawTableViewToggle();
       setupLiveListeners();
+
       reloadAll("init");
     });
   </script>
