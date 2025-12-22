@@ -124,7 +124,7 @@
       min-width:160px;
     }
 
-    /* ======= NEW: HIGHLIGHTS ======= */
+    /* ======= HIGHLIGHTS ======= */
     .kpi-grid{
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -343,7 +343,6 @@
         </div>
       </header>
 
-      <!-- NEW: highlights + callouts -->
       <section class="kpi-grid" id="highlights">
         <article class="kpi-card">
           <div class="kpi-glow"></div>
@@ -427,24 +426,11 @@
     const CANON_PACK_SHEET = "Master Pack";
 
     // =========================================================
-    // PACK CONFIG (from your screenshot)
+    // PACK CONFIG
     // =========================================================
-    const PACKS_PER_CASE = {
-      "5OZ": 18,
-      "10OZ": 12,
-      "16OZ": 8,
-      "1LB": 10,
-      "3LB": 3
-    };
-    const LB_PER_UNIT = {
-      "5OZ": 0.3125,
-      "10OZ": 0.625,
-      "16OZ": 1,
-      "1LB": 1,
-      "3LB": 3
-    };
+    const PACKS_PER_CASE = { "5OZ":18, "10OZ":12, "16OZ":8, "1LB":10, "3LB":3 };
+    const LB_PER_UNIT    = { "5OZ":0.3125, "10OZ":0.625, "16OZ":1, "1LB":1, "3LB":3 };
 
-    // SKU detection: contains these tokens
     function skuType(sku){
       const s = String(sku||"").toUpperCase();
       if (!s) return "";
@@ -456,7 +442,6 @@
       return "";
     }
 
-    // Shipping classification
     const DONATION_LOCATIONS = new Set([
       "DONACIÓN - MANATIES",
       "DONACIÓN - EQUIPO",
@@ -468,15 +453,13 @@
     const WASTE_LOCATION = "BASURA";
 
     // =========================================================
-    // HEADERS (canonical names used in logic)
+    // HEADERS
     // =========================================================
     const H = Object.freeze({
-      // Seeding
       SEED_WEEK: "Seed Week",
       FLATS_SEEDED: "Flats Seeded",
       TARGET_FLATS: "Target Flats to Seed",
 
-      // Transplant
       TRANS_WEEK: "Transplant Week",
       BOARDS_TRANS: "Boards Transplant",
       EXPECT_BOARDS: "Expected Boards Transplanted",
@@ -485,39 +468,32 @@
       TRANS_FINISH: "Transplant Finish Time",
       TRANS_DATE: "Transplant Date",
 
-      // Harvest
       HARV_WEEK: "Harvest Week",
       HARV_BOARDS: "# of Boards Harvested",
       HARV_CUT: "Peso de La Lechuga Cortada",
       HARV_WITH_WASTE: "Peso de La Lechuga con Waste",
 
-      // Cleaning / boards (NOTE: Cleaned is by Sanitation Week)
       SAN_WEEK: "Sanitation Week",
       CLEAN_BOARDS: "Total # of Boards Cleaned",
       BROKEN_BOARDS: "Total # of Broken Boards Production",
 
-      // Pack
       PACK_WEEK: "Pack Week",
       SKU: "SKU Packed",
       CASES: "Quantity of Cases Packed",
 
-      // Shipping (Pack)
       LBS_SHIPPED: "# Lbs Shipped",
       LOC_SHIPPED: "Location Shipped",
 
-      // Common date fallback
       DATE: "Harvest Date"
     });
 
     function normHeader(s){ return String(s ?? "").replace(/\s+/g," ").trim().toLowerCase(); }
 
     const HEADER_ALIASES = new Map([
-      // Seeding
       ["seed week", H.SEED_WEEK],
       ["flats seeded", H.FLATS_SEEDED],
       ["target flats to seed", H.TARGET_FLATS],
 
-      // Transplant
       ["transplant week", H.TRANS_WEEK],
       ["boards transplant", H.BOARDS_TRANS],
       ["expected boards transplanted", H.EXPECT_BOARDS],
@@ -526,30 +502,25 @@
       ["transplant finish time", H.TRANS_FINISH],
       ["transplant date", H.TRANS_DATE],
 
-      // Harvest
       ["harvest week", H.HARV_WEEK],
       ["# of boards harvested", H.HARV_BOARDS],
       ["peso de la lechuga cortada", H.HARV_CUT],
       ["peso de la lechuga con waste", H.HARV_WITH_WASTE],
 
-      // Sanitation / boards
       ["sanitation week", H.SAN_WEEK],
       ["semana de sanitation", H.SAN_WEEK],
       ["semana sanitation", H.SAN_WEEK],
       ["total # of boards cleaned", H.CLEAN_BOARDS],
       ["total # of broken boards production", H.BROKEN_BOARDS],
 
-      // Pack
       ["pack week", H.PACK_WEEK],
       ["sku packed", H.SKU],
       ["quantity of cases packed", H.CASES],
 
-      // Shipping
       ["# lbs shipped", H.LBS_SHIPPED],
       ["lbs shipped", H.LBS_SHIPPED],
       ["location shipped", H.LOC_SHIPPED],
 
-      // Date
       ["harvest date", H.DATE],
       ["date", H.DATE]
     ]);
@@ -566,7 +537,7 @@
     }
 
     // =========================================================
-    // PARSERS
+    // PARSERS / HELPERS
     // =========================================================
     function parseNumber(v){
       if (v === null || v === undefined) return 0;
@@ -583,7 +554,6 @@
       if (v === null || v === undefined) return null;
       if (v instanceof Date && !isNaN(v.getTime())) return v;
 
-      // Excel serial
       if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
         const excelEpoch = new Date(Date.UTC(1899,11,30));
         const d = new Date(excelEpoch.getTime() + v * 86400000);
@@ -594,9 +564,8 @@
       if (!s0) return null;
 
       const s0n = s0.toLowerCase();
-      if (["(no date)","no date","n/a","na","null","undefined"].includes(s0n)) return null;
+      if (["(no date)","no date","n/a","na","null","undefined","#value!"].includes(s0n)) return null;
 
-      // numeric string serial
       const n = Number(s0);
       if (Number.isFinite(n) && n > 20000 && n < 60000) {
         const excelEpoch = new Date(Date.UTC(1899,11,30));
@@ -604,18 +573,15 @@
         return isNaN(d.getTime()) ? null : d;
       }
 
-      // strip weekday prefix "Tuesday, December 16, 2025"
       let s = s0;
       const parts = s.split(",");
       if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
 
-      // ISO
       if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
         const d = new Date(s);
         return isNaN(d.getTime()) ? null : d;
       }
 
-      // US MM/DD/YYYY
       if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
         const [mm,dd,yy] = s.split("/").map(Number);
         const yyyy = yy < 100 ? 2000 + yy : yy;
@@ -637,9 +603,7 @@
     function parseTimeToMinutes(v){
       if (v === null || v === undefined) return NaN;
 
-      // Excel time fraction
       if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1) return Math.round(v * 24 * 60);
-      // decimal hours
       if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 24) return Math.round(v * 60);
 
       const str = String(v ?? "").trim();
@@ -668,6 +632,22 @@
       let diff = maxFinish - minStart;
       if (diff < 0) diff += 24 * 60;
       return diff / 60;
+    }
+
+    // IMPORTANT: only accept real week numbers, kill "#VALUE!" / blanks / garbage
+    function weekNumFromCell(v){
+      const raw = String(v ?? "").trim();
+      if (!raw) return null;
+      const u = raw.toUpperCase();
+      if (u.includes("#VALUE")) return null;
+      if (u === "N/A" || u === "NA" || u === "NULL" || u === "UNDEFINED") return null;
+
+      const m = raw.match(/(\d{1,3})/);
+      if (!m) return null;
+      const n = parseInt(m[1],10);
+      // keep reasonable bounds (prevents weird IDs)
+      if (!Number.isFinite(n) || n <= 0 || n > 60) return null;
+      return String(n);
     }
 
     // =========================================================
@@ -699,23 +679,21 @@
     }
 
     // =========================================================
-    // WEEK DISCOVERY
+    // WEEK DISCOVERY (filters out #VALUE!, blanks, etc.)
     // =========================================================
     function collectWeeks(growRows, packRows){
       const weeks = new Set();
 
       const addWeek = (v) => {
-        const s = String(v ?? "").trim();
-        if (!s) return;
-        const m = s.match(/(\d{1,3})/);
-        weeks.add(m ? m[1] : s);
+        const w = weekNumFromCell(v);
+        if (w) weeks.add(w);
       };
 
       for (const r of (growRows||[])){
         addWeek(r[H.SEED_WEEK]);
         addWeek(r[H.TRANS_WEEK]);
         addWeek(r[H.HARV_WEEK]);
-        addWeek(r[H.SAN_WEEK]); // NEW: include sanitation weeks
+        addWeek(r[H.SAN_WEEK]);
       }
       for (const r of (packRows||[])){
         addWeek(r[H.PACK_WEEK]);
@@ -730,22 +708,19 @@
     // COMPUTE WEEK SUMMARY
     // =========================================================
     function computeWeekSummary(week, growRows, packRows){
-      const wk = String(week ?? "").trim();
-      const wkNum = (wk.match(/(\d{1,3})/)||[])[1] || wk;
+      const wkNum = weekNumFromCell(week);
+      if (!wkNum) {
+        return { wkNum:null, empty:true, reason:"Invalid week selection." };
+      }
 
-      const isWeek = (val) => {
-        const s = String(val ?? "").trim();
-        if (!s) return false;
-        const m = s.match(/(\d{1,3})/);
-        return (m ? m[1] : s) === wkNum;
-      };
+      const isWeek = (val) => weekNumFromCell(val) === wkNum;
 
-      // ---- SEEDING (SUM across rows for the week) ----
+      // ---- SEEDING ----
       const seedRows = growRows.filter(r => isWeek(r[H.SEED_WEEK]));
       const flatsCompleted = seedRows.reduce((s,r)=>s+parseNumber(r[H.FLATS_SEEDED]),0);
       const flatsTarget = seedRows.reduce((s,r)=>s+parseNumber(r[H.TARGET_FLATS]),0);
 
-      // ---- TRANSPLANT (plugs) ----
+      // ---- TRANSPLANT ----
       const transRows = growRows.filter(r => isWeek(r[H.TRANS_WEEK]));
       const boardsTrans = transRows.reduce((s,r)=>s+parseNumber(r[H.BOARDS_TRANS]),0);
       const boardsExpected = transRows.reduce((s,r)=>s+parseNumber(r[H.EXPECT_BOARDS]),0);
@@ -771,27 +746,14 @@
         const startMin = parseTimeToMinutes(r[H.TRANS_START]);
         const finishMin = parseTimeToMinutes(r[H.TRANS_FINISH]);
         const workers = parseNumber(r[H.TRANS_WORKERS]);
-        const boards = parseNumber(r[H.BOARDS_TRANS]);
-        const expBoards = parseNumber(r[H.EXPECT_BOARDS]);
 
         const key = dayKey || "__NO_DATE__";
         if (!dayMap.has(key)) {
-          dayMap.set(key, {
-            hasDate: !!dayKey,
-            minStart: Number.isFinite(startMin) ? startMin : NaN,
-            maxFinish: Number.isFinite(finishMin) ? finishMin : NaN,
-            boardsSum: 0,
-            expectedBoardsSum: 0,
-            workersSum: 0,
-            workersCount: 0
-          });
+          dayMap.set(key, { minStart: NaN, maxFinish: NaN });
         }
         const d = dayMap.get(key);
         if (Number.isFinite(startMin)) d.minStart = Number.isFinite(d.minStart) ? Math.min(d.minStart, startMin) : startMin;
         if (Number.isFinite(finishMin)) d.maxFinish = Number.isFinite(d.maxFinish) ? Math.max(d.maxFinish, finishMin) : finishMin;
-        d.boardsSum += boards;
-        d.expectedBoardsSum += expBoards;
-        if (workers > 0) { d.workersSum += workers; d.workersCount += 1; }
       }
 
       let weekHours = 0;
@@ -806,13 +768,10 @@
       const workersCount = transRows.reduce((s,r)=> s + (parseNumber(r[H.TRANS_WORKERS])>0 ? 1 : 0), 0);
       const avgWorkers = workersCount > 0 ? (workersSum / workersCount) : 0;
 
-      // ---- TRANSPLANT Boards/Person/Hour (Completed) ----
       const boardsPerPersonPerHour_completed = (weekHours > 0 && avgWorkers > 0)
         ? (boardsTrans / (avgWorkers * weekHours))
         : NaN;
 
-      // ---- TRANSPLANT Boards/Person/Hour (Target) ----
-      // your rule: reuse same people + hours, but use SUM(Expected Boards) for week as "target boards"
       const boardsPerPersonPerHour_target = (weekHours > 0 && avgWorkers > 0)
         ? (boardsExpected / (avgWorkers * weekHours))
         : NaN;
@@ -826,7 +785,6 @@
       // ---- CLEANED (Sanitation Week) / BROKEN (Harvest Week) ----
       const sanRows = growRows.filter(r => isWeek(r[H.SAN_WEEK]));
       const cleanedBoards = sanRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
-
       const brokenBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
 
       // ---- PACKING (Pack) ----
@@ -839,10 +797,8 @@
         const t = skuType(r[H.SKU]);
         const cases = parseNumber(r[H.CASES]);
         if (!t || !cases) continue;
-        const ppc = PACKS_PER_CASE[t] || 0;
-        const lbpu = LB_PER_UNIT[t] || 0;
-        const units = cases * ppc;
-        const lbs = units * lbpu;
+        const units = cases * (PACKS_PER_CASE[t] || 0);
+        const lbs = units * (LB_PER_UNIT[t] || 0);
 
         lbsAll += lbs;
         if (t === "5OZ"){ cases5 += cases; units5 += units; lbs5 += lbs; }
@@ -864,8 +820,15 @@
         else shipSales += lbs;
       }
 
+      // If the user picks a week that exists, but there is literally no data across all sources, mark empty
+      const hasAny =
+        seedRows.length || transRows.length || harvRows.length || sanRows.length || packRowsW.length;
+
       return {
         wkNum,
+        empty: !hasAny,
+        counts: { seed: seedRows.length, trans: transRows.length, harv: harvRows.length, san: sanRows.length, pack: packRowsW.length },
+
         seeding: { completed: flatsCompleted, target: flatsTarget, unit:"Flats" },
         transplant: { completed: plugsCompleted, target: plugsTarget, unit:"Plugs" },
 
@@ -924,10 +887,22 @@
     }
 
     function renderHighlights(summary){
-      // Week card
-      safeText("hi-week", `Week ${summary.wkNum}`);
+      if (!summary || !summary.wkNum || summary.empty){
+        safeText("hi-week", "—");
+        safeText("hi-range", "—");
+        safeText("hi-best", "—");
+        safeText("hi-best-label", "—");
+        safeText("hi-worst", "—");
+        safeText("hi-worst-label", "—");
+        safeText("hi-sales", "—");
+        safeText("hi-ship-note", "—");
+        renderCallouts(summary);
+        return;
+      }
 
-      // Best/Worst among the rows where target exists: Seeding + Transplant plugs + Transplant rate
+      safeText("hi-week", `Week ${summary.wkNum}`);
+      safeText("hi-range", `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`);
+
       const candidates = [
         { label:"Seeding", pct: pctValue(summary.seeding.completed, summary.seeding.target) },
         { label:"Transplant (Plugs)", pct: pctValue(summary.transplant.completed, summary.transplant.target) },
@@ -948,9 +923,6 @@
       safeText("hi-sales", fmtInt(summary.ship.sales));
       safeText("hi-ship-note", `Received: ${fmtInt(summary.ship.received)} • Donation: ${fmtInt(summary.ship.donation)}`);
 
-      // optional date range (not available without reliable per-row dates)
-      safeText("hi-range", `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`);
-
       renderCallouts(summary);
     }
 
@@ -958,40 +930,44 @@
       const wrap = $("callouts");
       if (!wrap) return;
 
+      // If nothing selected / empty week, show a single clean callout (no "#VALUE!", no nonsense)
+      if (!summary || !summary.wkNum){
+        wrap.innerHTML = `
+          <div class="callout warn"><span class="dot"></span><span>No valid weeks found. Check week columns for blanks/#VALUE!</span></div>
+        `;
+        return;
+      }
+
+      if (summary.empty){
+        wrap.innerHTML = `
+          <div class="callout warn"><span class="dot"></span><span>No data for Week ${summary.wkNum}.</span></div>
+        `;
+        return;
+      }
+
       const items = [];
 
-      // Seeding status
       if (summary.seeding.target > 0){
         const p = (summary.seeding.completed/summary.seeding.target)*100;
-        items.push({
-          cls: p >= 100 ? "" : p >= 90 ? "warn" : "bad",
-          text: p >= 100 ? `Seeding hit target (${Math.round(p)}%)` : `Seeding at ${Math.round(p)}%`
-        });
+        items.push({ cls: p >= 100 ? "" : p >= 90 ? "warn" : "bad", text: `Seeding: ${Math.round(p)}%` });
       }
 
-      // Transplant plugs status
       if (summary.transplant.target > 0){
         const p = (summary.transplant.completed/summary.transplant.target)*100;
-        items.push({
-          cls: p >= 100 ? "" : p >= 90 ? "warn" : "bad",
-          text: p >= 100 ? `Transplant hit target (${Math.round(p)}%)` : `Transplant at ${Math.round(p)}%`
-        });
+        items.push({ cls: p >= 100 ? "" : p >= 90 ? "warn" : "bad", text: `Transplant: ${Math.round(p)}%` });
       }
 
-      // Cleaned boards highlight
       if (summary.cleanedBoards > 0){
         items.push({ cls:"", text:`Cleaned boards: ${fmtInt(summary.cleanedBoards)} (Sanitation Week)` });
-      } else {
-        items.push({ cls:"warn", text:`No cleaned boards recorded for Sanitation Week ${summary.wkNum}` });
       }
 
-      // Broken boards highlight
       if (summary.brokenBoards > 0){
         items.push({ cls:"warn", text:`Broken boards: ${fmtInt(summary.brokenBoards)} (Harvest Week)` });
       }
 
-      // Shipping breakdown
-      items.push({ cls:"", text:`Shipping Sales: ${fmtInt(summary.ship.sales)} lbs` });
+      if (summary.ship.sales > 0){
+        items.push({ cls:"", text:`Shipping Sales: ${fmtInt(summary.ship.sales)} lbs` });
+      }
 
       wrap.innerHTML = items.slice(0,6).map(i => `
         <div class="callout ${i.cls}">
@@ -999,83 +975,133 @@
           <span>${i.text}</span>
         </div>
       `).join("");
+
+      if (!wrap.innerHTML.trim()){
+        wrap.innerHTML = `<div class="callout warn"><span class="dot"></span><span>Week ${summary.wkNum}: Nothing to highlight yet.</span></div>`;
+      }
     }
 
+    // Hide rows that are meaningless (all zeros with no underlying rows)
     function renderTable(summary){
       const tbody = $("tbody");
       if (!tbody) return;
 
+      if (!summary || !summary.wkNum){
+        tbody.innerHTML = "";
+        return;
+      }
+
+      if (summary.empty){
+        tbody.innerHTML = `
+          <tr>
+            <td class="row-label">No data for Week ${summary.wkNum}</td>
+            <td>—</td><td>—</td><td>—</td><td><span class="pill muted">—</span></td>
+          </tr>
+        `;
+        return;
+      }
+
       const rows = [];
 
-      // Seeding
-      rows.push({
+      const pushIfMeaningful = (obj, isMeaningful) => { if (isMeaningful) rows.push(obj); };
+
+      // Seeding (only show if we actually have seed rows OR totals nonzero)
+      pushIfMeaningful({
         label:"Seeding",
         completed: fmtInt(summary.seeding.completed),
         target: fmtInt(summary.seeding.target),
         units: summary.seeding.unit,
         pct: pctPill(summary.seeding.completed, summary.seeding.target)
-      });
+      }, (summary.counts.seed > 0) || (summary.seeding.completed !== 0) || (summary.seeding.target !== 0));
 
       // Transplant (plugs)
-      rows.push({
+      pushIfMeaningful({
         label:"Transplant",
         completed: fmtInt(summary.transplant.completed),
         target: fmtInt(summary.transplant.target),
         units: summary.transplant.unit,
         pct: pctPill(summary.transplant.completed, summary.transplant.target)
-      });
+      }, (summary.counts.trans > 0) || (summary.transplant.completed !== 0) || (summary.transplant.target !== 0));
 
-      // Transplant rate (completed + target)
+      // Transplant rate (only show if we can compute something OR there were transplant rows)
       const rateC = summary.transplantRate.completed;
       const rateT = summary.transplantRate.target;
       const rateOkC = Number.isFinite(rateC) && rateC > 0;
       const rateOkT = Number.isFinite(rateT) && rateT > 0;
 
-      rows.push({
+      pushIfMeaningful({
         label:"Transplant - Boards/Person/Hour",
         completed: rateOkC ? fmt1(rateC) : "—",
         target: rateOkT ? fmt1(rateT) : "—",
         units: "Boards",
         pct: (rateOkC && rateOkT) ? pctPill(rateC, rateT) : `<span class="pill muted">—</span>`
-      });
+      }, (summary.counts.trans > 0) || rateOkC || rateOkT);
 
-      // Harvest
-      rows.push({ label:"Harvest", completed: fmtInt(summary.harvestBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
-      rows.push({ label:"Harvest - Lechuga", completed: fmtInt(summary.harvestCut), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
-      rows.push({ label:"Harvest - Lechuga Con Waste", completed: fmtInt(summary.harvestWithWaste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+      // Harvest (only if harvest rows or values)
+      pushIfMeaningful({ label:"Harvest", completed: fmtInt(summary.harvestBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.harv > 0) || summary.harvestBoards !== 0);
 
-      // Packing
-      rows.push({
+      pushIfMeaningful({ label:"Harvest - Lechuga", completed: fmtInt(summary.harvestCut), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.harv > 0) || summary.harvestCut !== 0);
+
+      pushIfMeaningful({ label:"Harvest - Lechuga Con Waste", completed: fmtInt(summary.harvestWithWaste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.harv > 0) || summary.harvestWithWaste !== 0);
+
+      // Packing (only if pack rows or any totals)
+      pushIfMeaningful({
         label:"Pack - 5OZ",
         completed: fmtInt(summary.pack5.cases),
         target:"—",
         units: `${fmtInt(summary.pack5.units)} Units · ${fmtInt(summary.pack5.lbs)} Lbs`,
         pct:`<span class="pill muted">—</span>`
-      });
-      rows.push({
+      }, (summary.counts.pack > 0) || summary.pack5.cases !== 0 || summary.pack5.units !== 0 || summary.pack5.lbs !== 0);
+
+      pushIfMeaningful({
         label:"Pack - 10OZ",
         completed: fmtInt(summary.pack10.cases),
         target:"—",
         units: `${fmtInt(summary.pack10.units)} Units · ${fmtInt(summary.pack10.lbs)} Lbs`,
         pct:`<span class="pill muted">—</span>`
-      });
-      rows.push({
+      }, (summary.counts.pack > 0) || summary.pack10.cases !== 0 || summary.pack10.units !== 0 || summary.pack10.lbs !== 0);
+
+      pushIfMeaningful({
         label:"Pack - All",
         completed: fmtInt(summary.packAllLbs),
         target:"—",
         units:"Lbs",
         pct:`<span class="pill muted">—</span>`
-      });
+      }, (summary.counts.pack > 0) || summary.packAllLbs !== 0);
 
-      // Shipping
-      rows.push({ label:"Shipping - Received", completed: fmtInt(summary.ship.received), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
-      rows.push({ label:"Shipping - Sales", completed: fmtInt(summary.ship.sales), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
-      rows.push({ label:"Shipping - Donation", completed: fmtInt(summary.ship.donation), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
-      rows.push({ label:"Shipping - Waste", completed: fmtInt(summary.ship.waste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+      // Shipping (only show lines that are nonzero or there were pack rows)
+      pushIfMeaningful({ label:"Shipping - Received", completed: fmtInt(summary.ship.received), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.pack > 0) || summary.ship.received !== 0);
 
-      // Boards (Cleaned uses Sanitation Week)
-      rows.push({ label:"# of Cleaned Boards", completed: fmtInt(summary.cleanedBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
-      rows.push({ label:"# of Broken Boards", completed: fmtInt(summary.brokenBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
+      pushIfMeaningful({ label:"Shipping - Sales", completed: fmtInt(summary.ship.sales), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.pack > 0) || summary.ship.sales !== 0);
+
+      pushIfMeaningful({ label:"Shipping - Donation", completed: fmtInt(summary.ship.donation), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.pack > 0) || summary.ship.donation !== 0);
+
+      pushIfMeaningful({ label:"Shipping - Waste", completed: fmtInt(summary.ship.waste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.pack > 0) || summary.ship.waste !== 0);
+
+      // Boards (Cleaned uses sanitation rows; broken uses harvest rows)
+      pushIfMeaningful({ label:"# of Cleaned Boards", completed: fmtInt(summary.cleanedBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.san > 0) || summary.cleanedBoards !== 0);
+
+      pushIfMeaningful({ label:"# of Broken Boards", completed: fmtInt(summary.brokenBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` },
+        (summary.counts.harv > 0) || summary.brokenBoards !== 0);
+
+      // Safety: never render empty table
+      if (!rows.length){
+        rows.push({
+          label:`Week ${summary.wkNum}`,
+          completed:"—",
+          target:"—",
+          units:"—",
+          pct:`<span class="pill muted">—</span>`
+        });
+      }
 
       tbody.innerHTML = rows.map(r => `
         <tr>
@@ -1140,9 +1166,13 @@
       }
 
       WEEKS = collectWeeks(GROW_ROWS, PACK_ROWS);
+
+      // If current selection is invalid, clear it
+      if (selectedWeek && !weekNumFromCell(selectedWeek)) selectedWeek = "";
+
       if (!WEEKS.length){
         setHint(
-          "No weeks found yet.\n\nFix:\n- Open Data Input\n- Upload Master Grow + Master Pack\n- Confirm week columns exist (Seed Week / Transplant Week / Harvest Week / Pack Week / Sanitation Week)"
+          "No valid weeks found.\n\nFix:\n- In the week columns, remove blanks/#VALUE!\n- Confirm the week cells are numbers like 51 (or 'Week 51')\n- Columns: Seed Week / Transplant Week / Harvest Week / Pack Week / Sanitation Week"
         );
       } else {
         setHint("");
@@ -1153,11 +1183,14 @@
       const sel = $("weekSelect");
       if (!sel) return;
 
-      const current = selectedWeek;
+      const current = weekNumFromCell(selectedWeek);
+
       sel.innerHTML = WEEKS.map(w => `<option value="${String(w)}">Week ${String(w)}</option>`).join("");
 
-      if (current && WEEKS.includes(current)) sel.value = current;
-      else {
+      if (current && WEEKS.includes(current)) {
+        selectedWeek = current;
+        sel.value = current;
+      } else {
         const last = WEEKS[WEEKS.length-1];
         selectedWeek = last || "";
         sel.value = selectedWeek;
@@ -1165,45 +1198,53 @@
     }
 
     function render(){
-      if (!selectedWeek){
-        const title = $("panelTitle");
+      const wk = weekNumFromCell(selectedWeek);
+
+      const title = $("panelTitle");
+      if (!wk){
         if (title) title.textContent = "Week –";
-        $("tbody").innerHTML = "";
+        renderHighlights({ wkNum:null });
+        renderTable({ wkNum:null });
+        setDebug("");
         return;
       }
 
-      const summary = computeWeekSummary(selectedWeek, GROW_ROWS, PACK_ROWS);
+      const summary = computeWeekSummary(wk, GROW_ROWS, PACK_ROWS);
 
-      const title = $("panelTitle");
-      if (title) title.textContent = "Week " + summary.wkNum;
+      if (title) title.textContent = "Week " + wk;
 
       renderHighlights(summary);
       renderTable(summary);
 
-      setDebug(
-        `Transplant diagnostics:\n` +
-        `- rows in week: ${summary.aux.transRowsCount}\n` +
-        `- boards transplanted (sum): ${summary.aux.boardsTrans.toLocaleString()}\n` +
-        `- expected boards (sum): ${summary.aux.boardsExpected.toLocaleString()}\n` +
-        `- avg workers (week): ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"}\n` +
-        `- total hours (sum of daily spans): ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
-        `\nNote: If transplant date is missing in the sheet, time will fallback to a single span bucket for the week.`
-      );
+      if (!summary.empty){
+        setDebug(
+          `Transplant diagnostics:\n` +
+          `- rows in week: ${summary.aux.transRowsCount}\n` +
+          `- boards transplanted (sum): ${summary.aux.boardsTrans.toLocaleString()}\n` +
+          `- expected boards (sum): ${summary.aux.boardsExpected.toLocaleString()}\n` +
+          `- avg workers (week): ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"}\n` +
+          `- total hours (sum of daily spans): ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
+          `\nNote: If transplant date is missing, time collapses into one bucket for the week.`
+        );
+      } else {
+        setDebug("");
+      }
     }
 
     // =========================================================
     // LIVE REFRESH
     // =========================================================
     let reloadTimer = null;
-    function reloadAll(reason){
+    function reloadAll(){
       if (reloadTimer) clearTimeout(reloadTimer);
       reloadTimer = setTimeout(() => {
         reloadTimer = null;
-        const prevWeeks = WEEKS.slice();
         loadData();
         renderWeekOptions();
 
-        if (selectedWeek && !WEEKS.includes(selectedWeek)) {
+        // If week disappeared, choose latest
+        const wk = weekNumFromCell(selectedWeek);
+        if (wk && !WEEKS.includes(wk)) {
           selectedWeek = WEEKS[WEEKS.length-1] || "";
         }
 
@@ -1214,26 +1255,26 @@
     function setupListeners(){
       window.addEventListener("storage", (e) => {
         if (!e) return;
-        if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_GROW_PING_KEY, MASTER_PACK_PING_KEY].includes(e.key)) reloadAll("storage");
+        if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_GROW_PING_KEY, MASTER_PACK_PING_KEY].includes(e.key)) reloadAll();
       });
 
-      window.addEventListener(MSG_GROW, () => reloadAll("customevent-grow"));
-      window.addEventListener(MSG_PACK, () => reloadAll("customevent-pack"));
-      document.addEventListener(MSG_GROW, () => reloadAll("customevent-grow-doc"));
-      document.addEventListener(MSG_PACK, () => reloadAll("customevent-pack-doc"));
+      window.addEventListener(MSG_GROW, () => reloadAll());
+      window.addEventListener(MSG_PACK, () => reloadAll());
+      document.addEventListener(MSG_GROW, () => reloadAll());
+      document.addEventListener(MSG_PACK, () => reloadAll());
 
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
-        if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") reloadAll("message-grow");
-        if (msg.type === MSG_PACK || msg.type === "MASTER_PACK_UPDATED") reloadAll("message-pack");
+        if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") reloadAll();
+        if (msg.type === MSG_PACK || msg.type === "MASTER_PACK_UPDATED") reloadAll();
       });
 
       if (bc){
         bc.onmessage = (ev) => {
           const msg = ev?.data;
-          if (msg?.type === MSG_GROW) reloadAll("broadcast-grow");
-          if (msg?.type === MSG_PACK) reloadAll("broadcast-pack");
+          if (msg?.type === MSG_GROW) reloadAll();
+          if (msg?.type === MSG_PACK) reloadAll();
         };
       }
 
@@ -1244,7 +1285,7 @@
         const pl = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
         if (gl !== lastGrowLen || pl !== lastPackLen) {
           lastGrowLen = gl; lastPackLen = pl;
-          reloadAll("poll");
+          reloadAll();
         }
       }, 1500);
     }
@@ -1256,11 +1297,12 @@
 
       const sel = $("weekSelect");
       sel?.addEventListener("change", () => {
-        selectedWeek = sel.value;
+        selectedWeek = weekNumFromCell(sel.value) || "";
+        if (selectedWeek) sel.value = selectedWeek; // normalize
         render();
       });
 
-      reloadAll("init");
+      reloadAll();
     });
   </script>
 </body>
