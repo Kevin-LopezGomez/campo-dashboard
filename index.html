@@ -111,7 +111,6 @@
       border-radius:18px;
       border:1px solid rgba(148,163,184,.25);
       background:
-        radial-gradient(circle at top right, rgba(34,163,184,0.06), transparent 60%),
         radial-gradient(circle at top right, rgba(34,197,94,0.08), transparent 60%),
         linear-gradient(135deg, rgba(15,23,42,0.92), rgba(15,23,42,0.98));
       box-shadow: var(--shadow);
@@ -166,22 +165,18 @@
     <div class="topbar">
       <div class="brand">
         <div class="title">Campo Caribe Operations</div>
-        <div class="subtitle">Unified testing harness (Data Input + Seeding + Transplant + Harvest + Packing + Sanitation). Drag tabs to reorder (saved to localStorage).</div>
+        <div class="subtitle">Unified testing harness (Data Input + Weekly Summary + Seeding + Transplant + Harvest + Packing + Sanitation). Drag tabs to reorder (saved to localStorage).</div>
       </div>
     </div>
 
-    <!-- IMPORTANT: id="tabs" must exist -->
     <div class="tabs" id="tabs" aria-label="Dashboards">
       <button class="tab active" data-target="p-data" data-tab="data">📥 <span>Data Input</span></button>
+      <button class="tab" data-target="p-weekly" data-tab="weekly">📊 <span>Weekly Summary</span></button>
       <button class="tab" data-target="p-seeding" data-tab="seeding">🌱 <span>Seeding</span></button>
       <button class="tab" data-target="p-transplant" data-tab="transplant">🪴 <span>Transplant</span></button>
       <button class="tab" data-target="p-harvest" data-tab="harvest">✂️ <span>Harvest</span></button>
       <button class="tab" data-target="p-packing" data-tab="packing">📦 <span>Packing</span></button>
       <button class="tab" data-target="p-sanitation" data-tab="sanitation">🧼 <span>Sanitation</span></button>
-      <!-- Add future dashboards here (Weekly Summary, etc.) -->
-      <!-- Example:
-      <button class="tab" data-target="p-weekly" data-tab="weekly">📊 <span>Weekly Summary</span></button>
-      -->
     </div>
 
     <div class="main">
@@ -189,12 +184,25 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Data Input Dashboard</h2>
-            <p>Loads the standalone Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
+            <p>Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
           </div>
           <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>07.0 Data Input Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-data" data-src="07.0 Data Input Dashboard.html?v=refresh1"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-weekly">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Weekly Summary Dashboard</h2>
+            <p>Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
+          </div>
+          <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>06.0 Weekly Summary Dashboard.html</code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-weekly" data-src="06.0 Weekly Summary Dashboard.html"></iframe>
         </div>
       </section>
 
@@ -262,21 +270,6 @@
           <iframe id="ifr-sanitation" data-src="05.0 Sanitation Dashboard.html"></iframe>
         </div>
       </section>
-
-      <!-- Future:
-      <section class="panel" id="p-weekly">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Weekly Summary Dashboard</h2>
-            <p>Reads Master Grow + Master Pack and builds the Week Summary table (targets + % completed).</p>
-          </div>
-          <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>06.0 Weekly Summary Dashboard.html</code></div>
-        </div>
-        <div class="iframe-wrap">
-          <iframe id="ifr-weekly" data-src="06.0 Weekly Summary Dashboard.html"></iframe>
-        </div>
-      </section>
-      -->
     </div>
   </div>
 
@@ -319,9 +312,7 @@
       const BC_NAMES = ["campo_master_bus_v1", "campo_updates_v1"];
       const bcs = [];
       for (const name of BC_NAMES) {
-        try {
-          if ("BroadcastChannel" in window) bcs.push(new BroadcastChannel(name));
-        } catch {}
+        try { if ("BroadcastChannel" in window) bcs.push(new BroadcastChannel(name)); } catch {}
       }
 
       // =========================================================
@@ -335,8 +326,8 @@
       const toastSub = document.getElementById("toastSub");
 
       if (!tabsWrap) {
-        console.error("FATAL: #tabs not found. Index HTML is missing the tabs container.");
-        document.body.innerHTML = "<div style='padding:20px;font-family:system-ui;color:#111'>FATAL: #tabs not found. Restore index.html markup.</div>";
+        console.error("FATAL: #tabs not found.");
+        document.body.innerHTML = "<div style='padding:20px;font-family:system-ui;color:#111'>FATAL: #tabs not found.</div>";
         return;
       }
 
@@ -358,12 +349,21 @@
       // =========================================================
       // iFrame notify helper
       // =========================================================
-      const IFRAME_IDS = ["ifr-seeding","ifr-transplant","ifr-harvest","ifr-packing","ifr-sanitation","ifr-data"/*,"ifr-weekly"*/];
+      const IFRAME_IDS = [
+        "ifr-data",
+        "ifr-weekly",
+        "ifr-seeding",
+        "ifr-transplant",
+        "ifr-harvest",
+        "ifr-packing",
+        "ifr-sanitation"
+      ];
+
       function notifyIframes(type){
         for (const id of IFRAME_IDS){
           const ifr = document.getElementById(id);
           if (ifr?.contentWindow){
-            try { ifr.contentWindow.postMessage({ type, ts: Date.now() }, "*"); } catch(e) {}
+            try { ifr.contentWindow.postMessage({ type, ts: Date.now() }, "*"); } catch {}
           }
         }
       }
@@ -387,20 +387,16 @@
       }
 
       // =========================================================
-      // Contract normalizer (bulletproof)
-      // - Ensures sheets["Master Grow"] / sheets["Master Pack"] exist.
+      // Contract normalizer
       // =========================================================
       function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
 
       function normalizeMasterPayload(raw, kind){
         if (!isObject(raw)) return raw;
-
         const want = (kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET;
 
-        // Already canonical
         if (isObject(raw.sheets) && raw.sheets[want]) return raw;
 
-        // Try to remap existing sheet key
         if (isObject(raw.sheets)) {
           const keys = Object.keys(raw.sheets);
           const wantLower = want.toLowerCase();
@@ -417,7 +413,6 @@
           }
         }
 
-        // If it's a top-level {headers, rows}, wrap it
         if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
           return {
             version: raw.version || "v1",
@@ -432,30 +427,21 @@
       }
 
       function storageContractOk(){
-        // Grow contract
         const growRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
         if (growRaw) {
-          try {
-            const g = JSON.parse(growRaw);
-            if (!g?.sheets?.[CANON_GROW_SHEET]) return false;
-          } catch { return false; }
+          try { if (!JSON.parse(growRaw)?.sheets?.[CANON_GROW_SHEET]) return false; } catch { return false; }
         }
-        // Pack contract (only if present)
         const packRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
         if (packRaw) {
-          try {
-            const p = JSON.parse(packRaw);
-            if (!p?.sheets?.[CANON_PACK_SHEET]) return false;
-          } catch { return false; }
+          try { if (!JSON.parse(packRaw)?.sheets?.[CANON_PACK_SHEET]) return false; } catch { return false; }
         }
         return true;
       }
 
       // =========================================================
-      // Hydrate localStorage from Worker (normalized + emits updates)
+      // Hydrate localStorage from Worker
       // =========================================================
       async function tryHydrateFromWorker(){
-        // Health check
         try{
           const hr = await fetch(WORKER_HEALTH_URL, { cache:"no-store" });
           if (!hr.ok) throw new Error(`Health HTTP ${hr.status}`);
@@ -469,43 +455,33 @@
         let wroteAny = false;
         const now = Date.now();
 
-        // Grow
         try{
           const growJson = await workerGetJson(WORKER_GROW_URL);
           const normalizedGrow = normalizeMasterPayload(growJson, "grow");
           localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(normalizedGrow));
           localStorage.setItem(MASTER_GROW_PING, String(now));
-
           try { window.dispatchEvent(new CustomEvent(MSG_GROW, { detail:{ key: MASTER_GROW_KEY, ts: now } })); } catch {}
           notifyIframes(MSG_GROW);
           broadcast(MSG_GROW);
           wroteAny = true;
-        } catch(e){
-          console.warn("Grow load failed:", e);
-        }
+        } catch(e){ console.warn("Grow load failed:", e); }
 
-        // Pack
         try{
           const packJson = await workerGetJson(WORKER_PACK_URL);
           const normalizedPack = normalizeMasterPayload(packJson, "pack");
           localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(normalizedPack));
           localStorage.setItem(MASTER_PACK_PING, String(now));
-
           try { window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } })); } catch {}
           notifyIframes(MSG_PACK);
           broadcast(MSG_PACK);
           wroteAny = true;
-        } catch(e){
-          console.warn("Pack load failed:", e);
-        }
+        } catch(e){ console.warn("Pack load failed:", e); }
 
         if (wroteAny) {
           const ok = storageContractOk();
           showToast("Hydrated from Worker", ok ? "Contract OK (canonical Master Grow/Pack sheets present)" : "⚠️ Contract warning: missing canonical sheet keys", ok);
-          console.log("✅ Hydrated localStorage from Worker (grow/pack).");
         } else {
           showToast("Worker connected", "No grow/pack loaded (files missing or errors).", false);
-          console.log("ℹ️ Worker connected, but grow/pack were not loaded.");
         }
       }
 
@@ -526,12 +502,12 @@
       // Restore / save tab order
       // =========================================================
       function loadOrder(){
-        try { return JSON.parse(localStorage.getItem(LS_ORDER_KEY) || "[]"); }
-        catch(e){ return []; }
+        try { return JSON.parse(localStorage.getItem("campo_unified_tabs_order_v1") || "[]"); }
+        catch { return []; }
       }
       function saveOrder(){
         const ids = Array.from(tabsWrap.querySelectorAll(".tab")).map(t => t.dataset.tab);
-        try { localStorage.setItem(LS_ORDER_KEY, JSON.stringify(ids)); } catch(e){}
+        try { localStorage.setItem("campo_unified_tabs_order_v1", JSON.stringify(ids)); } catch {}
       }
       function applySavedOrder(){
         const order = loadOrder();
@@ -583,9 +559,9 @@
           tab.style.cursor = "grabbing";
         }
 
-        function moveDrag(tab, x, y){
+        function moveDrag(tab, x){
           tab.style.left = (x - offsetX) + "px";
-          tab.style.top  = (y - offsetY) + "px";
+          tab.style.top  = (startY - offsetY) + "px";
 
           const tabs = Array.from(tabsWrap.querySelectorAll(".tab"))
             .filter(t => t !== tab && t !== placeholder);
@@ -626,7 +602,7 @@
           isDragging = false;
         }
 
-        function cleanupListeners(){
+        function cleanup(){
           window.removeEventListener("mousemove", onMove);
           window.removeEventListener("mouseup", onUp);
           window.removeEventListener("touchmove", onMove);
@@ -650,7 +626,6 @@
 
         function onMove(e){
           if (!downTab) return;
-
           const {x,y} = pointerXY(e);
           const dx = x - startX;
           const dy = y - startY;
@@ -661,12 +636,12 @@
             startDrag(downTab, x, y);
           } else {
             e.preventDefault();
-            moveDrag(downTab, x, y);
+            moveDrag(downTab, x);
           }
         }
 
         function onUp(){
-          cleanupListeners();
+          cleanup();
           if (!downTab) return;
 
           if (isDragging) endDrag(downTab);
@@ -680,10 +655,7 @@
       }
 
       // =========================================================
-      // Message bridge (bulletproof)
-      // - Any iframe can send MASTER_*_UPDATED
-      // - Index forwards to all iframes + BroadcastChannel
-      // - Index also "touches" ping keys so poll-based dashboards refresh too
+      // Message bridge + ping touch
       // =========================================================
       function touchPing(type){
         const now = String(Date.now());
@@ -707,7 +679,6 @@
         }
       });
 
-      // Listen on ALL BC channels and forward to iframes
       for (const ch of bcs) {
         ch.onmessage = (ev) => {
           const msg = ev?.data || {};
@@ -719,7 +690,7 @@
         };
       }
 
-      // Safety poll: if a browser fails to deliver events to iframes, ping occasionally
+      // Safety poll (ping keys)
       let lastGrowPing = localStorage.getItem(MASTER_GROW_PING) || "";
       let lastPackPing = localStorage.getItem(MASTER_PACK_PING) || "";
       setInterval(() => {
@@ -738,7 +709,6 @@
       const firstActive = tabsWrap.querySelector(".tab.active") || tabsWrap.querySelector(".tab");
       if (firstActive) activate(firstActive.dataset.target);
 
-      // Hydrate from Worker immediately (and normalize contract)
       tryHydrateFromWorker();
     })();
   </script>
