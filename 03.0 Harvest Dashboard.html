@@ -827,7 +827,37 @@
       return Number.isFinite(n) ? n : 0;
     }
 
-    // Handles: Date obj, MM/DD/YYYY, ISO, long-form, Excel serial number
+    // --- Robust month-name date parsing (CSV format like: "Friday, December 19, 2025")
+    function parseMonthNameDate(s) {
+      const raw = String(s || "").trim();
+      if (!raw) return null;
+
+      const parts = raw.split(",");
+      const cleaned = (parts.length >= 2) ? parts.slice(1).join(",").trim() : raw;
+
+      const m = cleaned.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+      if (!m) return null;
+
+      const monthName = m[1].toLowerCase();
+      const day = parseInt(m[2], 10);
+      const year = parseInt(m[3], 10);
+
+      const months = {
+        january:0,february:1,march:2,april:3,may:4,june:5,
+        july:6,august:7,september:8,october:9,november:10,december:11
+      };
+      if (!(monthName in months)) return null;
+
+      // Build in UTC to avoid timezone day-shifts
+      const d = new Date(Date.UTC(year, months[monthName], day));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function normalizeToUTCMidnight(d) {
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    }
+
+    // Handles: Date obj, MM/DD/YYYY, ISO, long-form, Excel serial number, Month-name (with optional weekday)
     function parseAnyDate(v){
       if (v === null || v === undefined) return null;
       if (v instanceof Date && !isNaN(v.getTime())) return v;
@@ -845,6 +875,10 @@
       // common "no date" tokens
       const s0n = s0.toLowerCase();
       if (s0n === "(no date)" || s0n === "no date" || s0n === "n/a" || s0n === "na" || s0n === "null" || s0n === "undefined") return null;
+
+      // Month-name (robust for CSV)
+      const monthNameParsed = parseMonthNameDate(s0);
+      if (monthNameParsed) return monthNameParsed;
 
       // Excel serial number (string)
       const n = Number(s0);
@@ -869,19 +903,20 @@
       if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
         const [mm, dd, yy] = s.split("/").map(Number);
         const yyyy = yy < 100 ? 2000 + yy : yy;
-        const d = new Date(yyyy, mm - 1, dd);
+        const d = new Date(Date.UTC(yyyy, mm - 1, dd));
         return isNaN(d.getTime()) ? null : d;
       }
 
-      // Fallback
+      // Fallback (least reliable; but last resort)
       const d = new Date(s);
       return isNaN(d.getTime()) ? null : d;
     }
 
     function formatDateMMDDYYYY(date) {
-      const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const dd = String(date.getDate()).padStart(2, "0");
-      const yyyy = date.getFullYear();
+      // IMPORTANT: UTC getters to avoid timezone day-shifts
+      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(date.getUTCDate()).padStart(2, "0");
+      const yyyy = date.getUTCFullYear();
       return `${mm}/${dd}/${yyyy}`;
     }
 
@@ -1076,8 +1111,10 @@
       for (const r of rows) {
         if (!r || typeof r !== "object") continue;
 
-        const dateObj = parseAnyDate(r[H.DATE]);
-        if (!dateObj) { droppedNoDate++; continue; }
+        // --- FIX: normalize dates to UTC-midnight and format using UTC getters
+        const rawDate = parseAnyDate(r[H.DATE]);
+        if (!rawDate) { droppedNoDate++; continue; }
+        const dateObj = normalizeToUTCMidnight(rawDate);
         const date = formatDateMMDDYYYY(dateObj);
 
         const week = String(r[H.WEEK] ?? "").trim();
@@ -1158,7 +1195,7 @@
       }
 
       const daily = Array.from(dayMap.values())
-        .sort((a,b) => a.dateObj - b.dateObj)
+        .sort((a,b) => a.dateObj - b.dateObj) // chronological for charts
         .map(d => {
           const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
           const bph = spanH > 0 ? (d.boards / spanH) : 0;
@@ -1218,7 +1255,7 @@
           "No harvest cuts were built.\n\nDiagnostics:\n" +
           `- Dropped blank rows: ${droppedBlank}\n` +
           `- Dropped rows w/ unparseable date: ${droppedNoDate}\n\n` +
-          "Fix:\n- Ensure Harvest Date is present (MM/DD/YYYY, ISO, long-form, or Excel serial)\n- Ensure headers match (or add alias in HEADER_ALIASES)"
+          "Fix:\n- Ensure Harvest Date is present (MM/DD/YYYY, ISO, long-form, Month-name, or Excel serial)\n- Ensure headers match (or add alias in HEADER_ALIASES)"
         );
       }
     }
@@ -1362,8 +1399,10 @@
         cutBody.appendChild(tr);
       });
 
+      // --- FIX: daily table should show newest first (human-friendly)
       dailyBody.innerHTML = "";
-      DAILY.forEach(d => {
+      const dailySorted = [...DAILY].sort((a,b) => b.dateObj - a.dateObj);
+      dailySorted.forEach(d => {
         const p = d.potential || 0;
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -1411,11 +1450,13 @@
       const cutByCut = CUTS.map(c => c.cut);
       const withWasteByCut = CUTS.map(c => c.withWaste);
 
-      const labelsByDate = DAILY.map(d => d.date);
-      const boardsByDate = DAILY.map(d => d.boards);
-      const bphByDate = DAILY.map(d => d.bph);
-      const cutByDate = DAILY.map(d => d.cut);
-      const withWasteByDate = DAILY.map(d => d.withWaste);
+      // --- FIX: always force daily chart data to be chronological (oldest -> newest)
+      const dailyChrono = [...DAILY].sort((a,b) => a.dateObj - b.dateObj);
+      const labelsByDate = dailyChrono.map(d => d.date);
+      const boardsByDate = dailyChrono.map(d => d.boards);
+      const bphByDate = dailyChrono.map(d => d.bph);
+      const cutByDate = dailyChrono.map(d => d.cut);
+      const withWasteByDate = dailyChrono.map(d => d.withWaste);
 
       const labelsByWeek = WEEKLY.map(w => String(w.week));
       const boardsByWeek = WEEKLY.map(w => w.boards);
