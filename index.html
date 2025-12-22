@@ -165,7 +165,7 @@
     <div class="topbar">
       <div class="brand">
         <div class="title">Campo Caribe Operations</div>
-        <div class="subtitle">Unified testing harness (Data Input + Weekly Summary + Seeding + Transplant + Harvest + Packing + Sanitation). Drag tabs to reorder (saved to localStorage).</div>
+        <div class="subtitle">Unified testing harness (Data Input + Weekly Summary + Seeding + Transplant + Harvest + Packing + Sanitation + Inventory). Drag tabs to reorder (saved to localStorage).</div>
       </div>
     </div>
 
@@ -177,6 +177,9 @@
       <button class="tab" data-target="p-harvest" data-tab="harvest">✂️ <span>Harvest</span></button>
       <button class="tab" data-target="p-packing" data-tab="packing">📦 <span>Packing</span></button>
       <button class="tab" data-target="p-sanitation" data-tab="sanitation">🧼 <span>Sanitation</span></button>
+
+      <!-- ✅ NEW TAB PILL -->
+      <button class="tab" data-target="p-inventory" data-tab="inventory">📦 <span>S&amp;H Inventory</span></button>
     </div>
 
     <div class="main">
@@ -270,6 +273,20 @@
           <iframe id="ifr-sanitation" data-src="05.0 Sanitation Dashboard.html"></iframe>
         </div>
       </section>
+
+      <!-- ✅ NEW PANEL -->
+      <section class="panel" id="p-inventory">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>S&amp;H Inventory Dashboard</h2>
+            <p>Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.</p>
+          </div>
+          <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>08.0 S&amp;H Inventory Dashboard.html</code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-inventory" data-src="08.0 S&amp;H Inventory Dashboard.html"></iframe>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -356,7 +373,8 @@
         "ifr-transplant",
         "ifr-harvest",
         "ifr-packing",
-        "ifr-sanitation"
+        "ifr-sanitation",
+        "ifr-inventory" // ✅ NEW
       ];
 
       function notifyIframes(type){
