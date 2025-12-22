@@ -8,24 +8,22 @@
   <style>
     :root{
       --bg:#020617;
-      --panel:#0b1222;
-      --card:#0b1222;
+      --bg-alt:#020617;
+      --panel:#020617;
+      --panel-soft:#020617;
+      --card:#020617;
       --border:#1f2937;
+      --border-subtle:#374151;
       --text:#e5e7eb;
       --sub:#9ca3af;
-      --muted:#6b7280;
       --accent:#22c55e;
+      --accent-soft:rgba(34,197,94,.15);
+      --accent-strong:#4ade80;
       --danger:#ef4444;
-      --warn:#f59e0b;
-
-      --row-seeding:#d9f7c8;
-      --row-transplant:#e9cbb7;
-      --row-harvest:#bfe7ff;
-      --row-pack:#ead4f6;
-      --row-ship:#fbf6b5;
-      --row-san:#9fd3ff;
-
-      --table-border:#111827;
+      --danger-soft:rgba(239,68,68,.15);
+      --muted:#6b7280;
+      --blue:rgba(59,130,246,.85);
+      --amber:rgba(234,179,8,.9);
     }
 
     *{box-sizing:border-box;}
@@ -33,230 +31,264 @@
     body{
       margin:0;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
       color:var(--text);
     }
 
-    .page{
-      min-height:100vh;
-      padding:16px;
-      display:flex;
-      justify-content:center;
-    }
-
+    .page{min-height:100vh;padding:16px;display:flex;justify-content:center;}
     .container{
       width:100%;
-      max-width:1180px;
+      max-width:1320px;
       border-radius:24px;
-      padding:18px 18px 14px;
+      padding:20px 20px 16px;
       background:
-        radial-gradient(circle at top right, rgba(34,197,94,0.08), transparent 60%),
-        radial-gradient(circle at bottom left, rgba(59,130,246,0.09), transparent 55%),
-        linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
-      border:1px solid rgba(148,163,184,0.35);
-      box-shadow: 0 24px 80px rgba(0,0,0,0.75);
-      backdrop-filter: blur(16px);
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border:1px solid rgba(148,163,184,.35);
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.8),
+        0 0 0 1px rgba(15,23,42,.8);
+      backdrop-filter:blur(20px);
     }
 
-    header{
+    .header{
       display:flex;
       flex-wrap:wrap;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:12px;
-    }
-
-    .title{
-      display:flex;
       align-items:center;
-      gap:10px;
-      margin:0;
-      font-size:1.25rem;
-      font-weight:700;
-      letter-spacing:.02em;
+      gap:12px;
+      margin-bottom:14px;
     }
 
-    .pill{
-      width:28px;height:28px;border-radius:999px;
-      background: radial-gradient(circle at 30% 20%, #34d399, #22c55e 55%, #16a34a 100%);
+    .title-block{flex:1 1 380px;min-width:0;}
+    .title{
+      display:flex;align-items:center;gap:10px;
+      margin:0 0 4px;
+      font-size:1.3rem;letter-spacing:.02em;
+    }
+    .title-pill{
+      width:26px;height:26px;border-radius:999px;
+      background: radial-gradient(circle at 30% 20%, #93c5fd, #22c55e 55%, #16a34a 100%);
       display:inline-flex;align-items:center;justify-content:center;
       box-shadow: 0 0 0 2px rgba(15,23,42,.9), 0 12px 30px rgba(16,185,129,.55);
-      color:#022c22;font-weight:900;
     }
-
-    .subtitle{
-      margin:4px 0 0;
-      color:var(--sub);
-      font-size:.86rem;
-      max-width:720px;
-      line-height:1.35;
+    .title-pill span{font-size:15px;font-weight:800;color:#052e2b;}
+    .title-text{font-weight:650;display:flex;align-items:baseline;gap:8px;}
+    .title-sub{
+      font-size:.8rem;color:var(--sub);
+      text-transform:uppercase;letter-spacing:.18em;
     }
+    .subtitle{margin:0;font-size:.85rem;color:var(--muted);line-height:1.35;}
 
-    .controls{
+    .header-right{
       display:flex;
       align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
       justify-content:flex-end;
+      gap:10px;
+      flex:1 1 320px;
+      min-width:280px;
     }
 
-    .control{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:14px;
-      border:1px solid rgba(55,65,81,0.9);
-      background: rgba(2,6,23,.35);
-    }
-
-    .control label{
-      font-size:.74rem;
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;
+      border-radius:999px;padding:4px 9px;
+      font-size:.72rem;border:1px solid rgba(148,163,184,.5);
       color:var(--sub);
-      letter-spacing:.12em;
-      text-transform:uppercase;
+      background: radial-gradient(circle at top left, rgba(148,163,184,.18), transparent 55%);
       white-space:nowrap;
     }
+    .chip-dot{width:6px;height:6px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 3px rgba(34,197,94,.35);}
+    .chip-danger-dot{background:var(--danger);box-shadow:0 0 0 3px rgba(248,113,113,.35);}
 
-    select, input[type="number"]{
-      background: rgba(15,23,42,.95);
-      color: var(--text);
+    .week-picker{
+      display:flex;align-items:center;gap:10px;
       border:1px solid rgba(55,65,81,.9);
-      border-radius:10px;
-      padding:7px 10px;
-      font-size:.85rem;
-      outline:none;
+      background: rgba(15,23,42,.9);
+      border-radius:16px;
+      padding:10px 12px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.35);
     }
-
-    .small-note{
-      font-size:.72rem;
-      color:var(--muted);
-      margin:8px 0 10px;
-      white-space:pre-wrap;
+    .week-label{
+      font-size:.75rem;color:var(--sub);
+      text-transform:uppercase;letter-spacing:.14em;
+    }
+    select{
+      background: rgba(2,6,23,.65);
+      border:1px solid rgba(55,65,81,.9);
+      color:var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      font-size:.9rem;
+      outline:none;
+      min-width:160px;
     }
 
     .panel{
       border-radius:18px;
-      padding:12px;
-      background: rgba(2,6,23,.28);
-      border:1px solid rgba(55,65,81,0.9);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.65);
-      overflow:hidden;
+      padding:12px 12px 10px;
+      background: radial-gradient(circle at top left, rgba(15,23,42,.97), rgba(15,23,42,.99));
+      border:1px solid rgba(55,65,81,.9);
+      box-shadow:
+        0 18px 40px rgba(0,0,0,.85),
+        0 0 0 1px rgba(15,23,42,.9);
+      backdrop-filter: blur(14px);
+      min-height:0;
+      display:flex;
+      flex-direction:column;
     }
 
+    .panel-header{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:8px;flex-wrap:wrap;
+    }
+    .panel-title{
+      font-size:.82rem;text-transform:uppercase;letter-spacing:.16em;color:var(--sub);
+      display:flex;align-items:center;gap:7px;
+    }
+    .panel-title-dot{
+      width:7px;height:7px;border-radius:999px;background:var(--accent);
+      box-shadow:0 0 0 3px rgba(34,197,94,.45);
+    }
+    .panel-subtitle{font-size:.75rem;color:var(--muted);}
+
+    .table-wrapper{
+      margin-top:8px;
+      border-radius:14px;
+      border:1px solid rgba(55,65,81,.95);
+      background:
+        linear-gradient(135deg, rgba(17,24,39,.96), rgba(15,23,42,.99)),
+        radial-gradient(circle at top left, rgba(51,65,85,.55), rgba(15,23,42,.96));
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .table-scroll{
+      max-height:640px;
+      overflow:auto;
+      scrollbar-width:thin;
+      scrollbar-color:#4b5563 rgba(15,23,42,.2);
+    }
     table{
       width:100%;
       border-collapse:collapse;
-      border:2px solid rgba(15,23,42,.85);
-      background: rgba(255,255,255,.02);
+      font-size:.82rem;
+      min-width:920px;
+    }
+    thead{
+      position:sticky;top:0;z-index:2;
+      background:
+        linear-gradient(to bottom, #020617, #020617),
+        radial-gradient(circle at top left, rgba(55,65,81,.5), rgba(15,23,42,.95));
+      box-shadow:0 1px 0 rgba(31,41,55,.9);
+    }
+    th,td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(31,41,55,.85);
+      white-space:nowrap;
+      text-align:right;
+    }
+    th:first-child, td:first-child{ text-align:left; padding-left:14px; }
+    th{
+      font-size:.72rem;text-transform:uppercase;letter-spacing:.15em;color:var(--sub);
+    }
+    tbody tr:nth-child(odd) td{ background: rgba(15,23,42,.85); }
+    tbody tr:nth-child(even) td{ background: rgba(17,24,39,.92); }
+
+    .row-label{
+      font-weight:650;
+      letter-spacing:.01em;
     }
 
-    thead th{
-      background: rgba(226,232,240,.95);
-      color:#0b1222;
-      font-weight:800;
-      font-size:.84rem;
-      padding:10px 10px;
-      border:2px solid rgba(15,23,42,.7);
-      text-align:center;
+    .pill{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(55,65,81,.9);
+      background: rgba(2,6,23,.35);
+      font-variant-numeric: tabular-nums;
     }
+    .pill.good{ border-color: rgba(74,222,128,.65); color:#bbf7d0; background: rgba(22,163,74,.12); }
+    .pill.warn{ border-color: rgba(251,146,60,.7); color:#fed7aa; background: rgba(251,146,60,.12); }
+    .pill.bad{ border-color: rgba(248,113,113,.75); color:#fecaca; background: rgba(239,68,68,.12); }
+    .pill.muted{ border-color: rgba(148,163,184,.35); color: rgba(209,213,219,.9); background: rgba(148,163,184,.06); }
 
-    tbody td{
-      border:2px solid rgba(15,23,42,.65);
-      padding:10px 10px;
-      font-size:.92rem;
-      color:#0b1222;
-      font-weight:700;
+    .hint{
+      margin-top:10px;
+      font-size:.75rem;
+      color:var(--muted);
+      white-space:pre-wrap;
     }
-
-    tbody td:first-child{
-      width:38%;
-      font-weight:900;
-    }
-
-    tbody td:nth-child(2),
-    tbody td:nth-child(3),
-    tbody td:nth-child(4),
-    tbody td:nth-child(5){
-      text-align:center;
-      width:15.5%;
-    }
-
-    .row-seeding td{ background: var(--row-seeding); }
-    .row-transplant td{ background: var(--row-transplant); }
-    .row-harvest td{ background: var(--row-harvest); }
-    .row-pack td{ background: var(--row-pack); }
-    .row-ship td{ background: var(--row-ship); }
-    .row-san td{ background: var(--row-san); }
-
-    .muted{
-      color:#334155 !important;
-      font-weight:700;
-      opacity:.85;
-    }
-
-    .pct{
-      font-weight:900;
-    }
-
-    .pct.good{ color:#065f46; }
-    .pct.warn{ color:#92400e; }
-    .pct.bad{ color:#7f1d1d; }
-
-    .diagnostics{
+    .debug{
       margin-top:10px;
       padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(55,65,81,0.9);
+      border-radius:12px;
+      border:1px solid rgba(55,65,81,.9);
       background: rgba(2,6,23,.35);
-      color: var(--sub);
       font-size:.74rem;
+      color:var(--sub);
       display:none;
       white-space:pre-wrap;
     }
-
-    .hidden{display:none;}
   </style>
 </head>
 
 <body>
   <div class="page">
     <div class="container">
-      <header>
-        <div>
-          <div class="title"><span class="pill">W</span> Weekly Summary Dashboard</div>
-          <div class="subtitle">
-            Weekly rollup across Grow + Pack. Reads from localStorage (Data Input is the compiler).
-            Select a week to match the “Week ##” summary format.
+      <header class="header">
+        <div class="title-block">
+          <div class="title">
+            <div class="title-pill"><span>W</span></div>
+            <div class="title-text">
+              <span>Weekly Summary Dashboard</span>
+              <span class="title-sub">LIVE FROM DATA INPUT</span>
+            </div>
           </div>
+          <p class="subtitle">
+            Weekly rollup across <b>Grow + Pack</b>. Reads from localStorage (Data Input is the compiler).
+            Select a week to match the “Week ##” summary format.
+          </p>
         </div>
 
-        <div class="controls">
-          <div class="control">
-            <label for="week-select">Week</label>
-            <select id="week-select"></select>
+        <div class="header-right">
+          <div class="chip" id="chip-grow"><span class="chip-dot"></span><span>Grow: –</span></div>
+          <div class="chip" id="chip-pack"><span class="chip-dot"></span><span>Pack: –</span></div>
+          <div class="chip" id="chip-warn" style="display:none;"><span class="chip-danger-dot"></span><span>Warnings</span></div>
+
+          <div class="week-picker">
+            <div class="week-label">Week</div>
+            <select id="weekSelect"></select>
           </div>
         </div>
       </header>
 
-      <div id="note" class="small-note"></div>
-
       <section class="panel">
-        <table>
-          <thead>
-            <tr>
-              <th id="week-header">Week –</th>
-              <th>Completed</th>
-              <th>Target to Reach</th>
-              <th>Units</th>
-              <th>% Completed</th>
-            </tr>
-          </thead>
-          <tbody id="summary-body"></tbody>
-        </table>
+        <div class="panel-header">
+          <div>
+            <div class="panel-title"><span class="panel-title-dot"></span><span id="panelTitle">Week –</span></div>
+            <div class="panel-subtitle" id="panelSubtitle">Targets + actuals + % (when applicable).</div>
+          </div>
+          <div class="panel-subtitle" id="lastUpdated">–</div>
+        </div>
 
-        <div id="diag" class="diagnostics"></div>
+        <div class="table-wrapper">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width:280px;">Category</th>
+                  <th>Completed</th>
+                  <th>Target to Reach</th>
+                  <th>Units</th>
+                  <th>% Completed</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="hint" class="hint"></div>
+        <div id="debug" class="debug"></div>
       </section>
     </div>
   </div>
@@ -266,45 +298,65 @@
     // STORAGE CONTRACT
     // =========================================================
     const MASTER_GROW_KEY = "campo_master_grow_v1";
-    const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
     const MASTER_PACK_KEY = "campo_master_pack_v1";
+    const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
     const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
 
     const MSG_GROW = "MASTER_GROW_UPDATED";
     const MSG_PACK = "MASTER_PACK_UPDATED";
 
-    const BC_NAME = "campo_master_bus_v1";
+    const BC_NAME = "campo_updates_v1";
     const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
 
-    // =========================================================
-    // SHEET CANDIDATES
-    // =========================================================
-    const GROW_SHEET_CANDIDATES = ["Master Grow","master grow","MASTER GROW","Grow","grow","MG","mg"];
-    const PACK_SHEET_CANDIDATES = ["Master Pack","master pack","MASTER PACK","Pack","pack","MP","mp"];
+    const CANON_GROW_SHEET = "Master Grow";
+    const CANON_PACK_SHEET = "Master Pack";
 
     // =========================================================
     // PACK CONFIG (from your screenshot)
     // =========================================================
-    const PACKS_PER_CASE = Object.freeze({
+    const PACKS_PER_CASE = {
       "5OZ": 18,
       "10OZ": 12,
       "16OZ": 8,
       "1LB": 10,
       "3LB": 3
-    });
-
-    const WEIGHT_PER_UNIT_LB = Object.freeze({
+    };
+    const LB_PER_UNIT = {
       "5OZ": 0.3125,
       "10OZ": 0.625,
       "16OZ": 1,
       "1LB": 1,
       "3LB": 3
-    });
+    };
+
+    // SKU detection: contains these tokens
+    function skuType(sku){
+      const s = String(sku||"").toUpperCase();
+      if (!s) return "";
+      if (s.includes("10OZ")) return "10OZ";
+      if (s.includes("5OZ")) return "5OZ";
+      if (s.includes("16OZ")) return "16OZ";
+      if (s.includes("1LB")) return "1LB";
+      if (s.includes("3LB")) return "3LB";
+      return "";
+    }
+
+    // Shipping classification
+    const DONATION_LOCATIONS = new Set([
+      "DONACIÓN - MANATIES",
+      "DONACIÓN - EQUIPO",
+      "DONACIÓN - FUNDACIÓN FE Y ESPERANZA",
+      "DONACIÓN - BANCO DE ALIMENTO PR",
+      "SAMPLES"
+    ]);
+    const RECEIVED_LOCATION = "WAREHOUSE";
+    const WASTE_LOCATION = "BASURA";
 
     // =========================================================
-    // CANONICAL HEADERS (exact names used in code)
+    // HEADERS (canonical names used in logic)
+    // NOTE: we keep tolerant alias mapping but canonical must match your dataset
     // =========================================================
-    const G = Object.freeze({
+    const H = Object.freeze({
       // Seeding
       SEED_WEEK: "Seed Week",
       FLATS_SEEDED: "Flats Seeded",
@@ -313,73 +365,70 @@
       // Transplant
       TRANS_WEEK: "Transplant Week",
       BOARDS_TRANS: "Boards Transplant",
-      EXPECTED_BOARDS: "Expected Boards Transplanted",
+      EXPECT_BOARDS: "Expected Boards Transplanted",
       TRANS_WORKERS: "Transplant Total # of Workers",
       TRANS_START: "Transplant Start Time",
       TRANS_FINISH: "Transplant Finish Time",
+      // date for daily time bucketing (we'll try multiple)
+      TRANS_DATE: "Transplant Date",
 
       // Harvest
       HARV_WEEK: "Harvest Week",
-      HARV_DATE: "Harvest Date",
-      HARV_START: "Harvest Start",
-      HARV_FINISH: "Harvest Finish",
-      HARV_WORKERS: "Harvest # of Workers",
       HARV_BOARDS: "# of Boards Harvested",
-      HARV_CUT_LBS: "Peso de La Lechuga Cortada",
+      HARV_CUT: "Peso de La Lechuga Cortada",
       HARV_WITH_WASTE: "Peso de La Lechuga con Waste",
 
-      // Sanitation-ish (in Grow per your note)
-      BOARDS_CLEANED: "Total # of Boards Cleaned",
-      BOARDS_BROKEN: "Total # of Broken Boards Production"
-    });
+      // Cleaning / boards
+      CLEAN_BOARDS: "Total # of Boards Cleaned",
+      BROKEN_BOARDS: "Total # of Broken Boards Production",
 
-    const P = Object.freeze({
+      // Pack
       PACK_WEEK: "Pack Week",
       SKU: "SKU Packed",
       CASES: "Quantity of Cases Packed",
+
+      // Shipping (Pack)
       LBS_SHIPPED: "# Lbs Shipped",
-      LOCATION: "Location Shipped"
+      LOC_SHIPPED: "Location Shipped",
+
+      // Common date fallback
+      DATE: "Harvest Date"
     });
 
-    // =========================================================
-    // HEADER NORMALIZATION + ALIASES (tolerant input)
-    // =========================================================
-    function normHeader(s){
-      return String(s ?? "").replace(/\s+/g," ").trim().toLowerCase();
-    }
+    function normHeader(s){ return String(s ?? "").replace(/\s+/g," ").trim().toLowerCase(); }
 
-    // Keep aliases conservative and focused (no guessing)
     const HEADER_ALIASES = new Map([
-      // Grow
-      ["seed week", G.SEED_WEEK],
-      ["flats seeded", G.FLATS_SEEDED],
-      ["target flats to seed", G.TARGET_FLATS],
+      // (Add anything you see over time)
+      ["seed week", H.SEED_WEEK],
+      ["flats seeded", H.FLATS_SEEDED],
+      ["target flats to seed", H.TARGET_FLATS],
 
-      ["transplant week", G.TRANS_WEEK],
-      ["boards transplant", G.BOARDS_TRANS],
-      ["expected boards transplanted", G.EXPECTED_BOARDS],
-      ["transplant total # of workers", G.TRANS_WORKERS],
-      ["transplant start time", G.TRANS_START],
-      ["transplant finish time", G.TRANS_FINISH],
+      ["transplant week", H.TRANS_WEEK],
+      ["boards transplant", H.BOARDS_TRANS],
+      ["expected boards transplanted", H.EXPECT_BOARDS],
+      ["transplant total # of workers", H.TRANS_WORKERS],
+      ["transplant start time", H.TRANS_START],
+      ["transplant finish time", H.TRANS_FINISH],
+      ["transplant date", H.TRANS_DATE],
 
-      ["harvest week", G.HARV_WEEK],
-      ["harvest date", G.HARV_DATE],
-      ["harvest start", G.HARV_START],
-      ["harvest finish", G.HARV_FINISH],
-      ["harvest # of workers", G.HARV_WORKERS],
-      ["# of boards harvested", G.HARV_BOARDS],
-      ["peso de la lechuga cortada", G.HARV_CUT_LBS],
-      ["peso de la lechuga con waste", G.HARV_WITH_WASTE],
+      ["harvest week", H.HARV_WEEK],
+      ["# of boards harvested", H.HARV_BOARDS],
+      ["peso de la lechuga cortada", H.HARV_CUT],
+      ["peso de la lechuga con waste", H.HARV_WITH_WASTE],
 
-      ["total # of boards cleaned", G.BOARDS_CLEANED],
-      ["total # of broken boards production", G.BOARDS_BROKEN],
+      ["total # of boards cleaned", H.CLEAN_BOARDS],
+      ["total # of broken boards production", H.BROKEN_BOARDS],
 
-      // Pack
-      ["pack week", P.PACK_WEEK],
-      ["sku packed", P.SKU],
-      ["quantity of cases packed", P.CASES],
-      ["# lbs shipped", P.LBS_SHIPPED],
-      ["location shipped", P.LOCATION],
+      ["pack week", H.PACK_WEEK],
+      ["sku packed", H.SKU],
+      ["quantity of cases packed", H.CASES],
+
+      ["# lbs shipped", H.LBS_SHIPPED],
+      ["lbs shipped", H.LBS_SHIPPED],
+      ["location shipped", H.LOC_SHIPPED],
+
+      ["harvest date", H.DATE],
+      ["date", H.DATE]
     ]);
 
     function canonicalizeHeaders(headersRaw){
@@ -394,7 +443,7 @@
     }
 
     // =========================================================
-    // UTIL
+    // PARSERS
     // =========================================================
     function parseNumber(v){
       if (v === null || v === undefined) return 0;
@@ -402,62 +451,417 @@
       const s = String(v).trim();
       if (!s) return 0;
       if (s.toUpperCase().includes("#VALUE")) return 0;
-      const n = parseFloat(s.replace(/,/g,""));
+      const cleaned = s.replace(/,/g,"");
+      const n = parseFloat(cleaned);
       return Number.isFinite(n) ? n : 0;
     }
 
-    // Time parsing (Excel fraction, decimal hours, HH:MM, HH:MM AM/PM)
+    function parseAnyDate(v){
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+
+      // Excel serial
+      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899,11,30));
+        const d = new Date(excelEpoch.getTime() + v * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      const s0 = String(v).trim();
+      if (!s0) return null;
+
+      const s0n = s0.toLowerCase();
+      if (["(no date)","no date","n/a","na","null","undefined"].includes(s0n)) return null;
+
+      // numeric string serial
+      const n = Number(s0);
+      if (Number.isFinite(n) && n > 20000 && n < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899,11,30));
+        const d = new Date(excelEpoch.getTime() + n * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // strip weekday prefix "Tuesday, December 16, 2025"
+      let s = s0;
+      const parts = s.split(",");
+      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
+
+      // ISO
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // US MM/DD/YYYY
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
+        const [mm,dd,yy] = s.split("/").map(Number);
+        const yyyy = yy < 100 ? 2000 + yy : yy;
+        const d = new Date(yyyy, mm-1, dd);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatMMDDYYYY(d){
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      const yyyy = d.getFullYear();
+      return `${mm}/${dd}/${yyyy}`;
+    }
+
     function parseTimeToMinutes(v){
       if (v === null || v === undefined) return NaN;
 
+      // Excel time fraction
       if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1) return Math.round(v * 24 * 60);
+      // decimal hours
       if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 24) return Math.round(v * 60);
 
-      const s = String(v ?? "").trim();
-      if (!s) return NaN;
+      const str = String(v ?? "").trim();
+      if (!str) return NaN;
 
-      const asNum = Number(s);
+      const asNum = Number(str);
       if (Number.isFinite(asNum)) {
         if (asNum >= 0 && asNum < 1) return Math.round(asNum * 24 * 60);
         if (asNum >= 1 && asNum <= 24) return Math.round(asNum * 60);
       }
 
-      const m = s.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
+      const m = str.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
       if (!m) return NaN;
       let hh = parseInt(m[1],10);
       const mm = parseInt(m[2],10);
       const ap = m[3] ? m[3].toUpperCase() : "";
-      if (ap) { if (hh === 12) hh = 0; if (ap === "PM") hh += 12; }
+      if (ap) {
+        if (hh === 12) hh = 0;
+        if (ap === "PM") hh += 12;
+      }
       return hh * 60 + mm;
     }
 
-    function spanHoursFromMinMax(minStart, maxFinish){
+    function spanHours(minStart, maxFinish){
       if (!Number.isFinite(minStart) || !Number.isFinite(maxFinish)) return 0;
       let diff = maxFinish - minStart;
       if (diff < 0) diff += 24 * 60;
       return diff / 60;
     }
 
-    function safePct(completed, target){
-      const c = Number(completed)||0;
-      const t = Number(target)||0;
-      if (t <= 0) return null;
-      return (c / t) * 100;
+    // =========================================================
+    // LOADERS
+    // =========================================================
+    function loadJson(key){
+      const raw = (localStorage.getItem(key) || "").trim();
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
     }
 
-    function pctClass(p){
-      if (p === null || !Number.isFinite(p)) return "muted";
-      if (p >= 98) return "good";
-      if (p >= 92) return "warn";
-      return "bad";
+    function sheetToObjects(sheetObj){
+      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const canonHeaders = canonicalizeHeaders(headersRaw);
+
+      const out = [];
+      for (const r of rows){
+        if (!Array.isArray(r)) continue;
+        const obj = {};
+        for (let i=0;i<canonHeaders.length;i++){
+          const k = String(canonHeaders[i] ?? "").trim();
+          if (!k) continue;
+          obj[k] = (i < r.length) ? r[i] : "";
+        }
+        out.push(obj);
+      }
+      return out;
     }
+
+    // =========================================================
+    // WEEK DISCOVERY
+    // =========================================================
+    function collectWeeks(growRows, packRows){
+      const weeks = new Set();
+
+      const addWeek = (v) => {
+        const s = String(v ?? "").trim();
+        if (!s) return;
+        // keep as raw string but normalize "Week 51" -> "51" if needed
+        const m = s.match(/(\d{1,3})/);
+        weeks.add(m ? m[1] : s);
+      };
+
+      for (const r of (growRows||[])){
+        addWeek(r[H.SEED_WEEK]);
+        addWeek(r[H.TRANS_WEEK]);
+        addWeek(r[H.HARV_WEEK]);
+      }
+      for (const r of (packRows||[])){
+        addWeek(r[H.PACK_WEEK]);
+      }
+
+      const arr = Array.from(weeks);
+      arr.sort((a,b) => (parseFloat(a) - parseFloat(b)));
+      return arr;
+    }
+
+    // =========================================================
+    // COMPUTE WEEK SUMMARY
+    // =========================================================
+    function computeWeekSummary(week, growRows, packRows){
+      const wk = String(week ?? "").trim();
+      const wkNum = (wk.match(/(\d{1,3})/)||[])[1] || wk;
+
+      const isWeek = (val) => {
+        const s = String(val ?? "").trim();
+        if (!s) return false;
+        const m = s.match(/(\d{1,3})/);
+        return (m ? m[1] : s) === wkNum;
+      };
+
+      // ---- SEEDING ----
+      const seedRows = growRows.filter(r => isWeek(r[H.SEED_WEEK]));
+      const flatsCompleted = seedRows.reduce((s,r)=>s+parseNumber(r[H.FLATS_SEEDED]),0);
+      const flatsTarget = seedRows.reduce((s,r)=>s+parseNumber(r[H.TARGET_FLATS]),0);
+
+      // ---- TRANSPLANT (plugs) ----
+      const transRows = growRows.filter(r => isWeek(r[H.TRANS_WEEK]));
+      const boardsTrans = transRows.reduce((s,r)=>s+parseNumber(r[H.BOARDS_TRANS]),0);
+      const boardsExpected = transRows.reduce((s,r)=>s+parseNumber(r[H.EXPECT_BOARDS]),0);
+      const plugsCompleted = boardsTrans * 127;
+      const plugsTarget = boardsExpected * 127;
+
+      // ---- TRANSPLANT Boards/Person/Hour ----
+      // Daily time: min start -> max finish per day, then sum day spans across week.
+      // Need a date key. We'll try Transplant Date, else Harvest Date, else Date.
+      const dateCandidates = [H.TRANS_DATE, H.DATE, "Date"];
+      function getBestDate(row){
+        for (const h of dateCandidates){
+          if (h in row) {
+            const d = parseAnyDate(row[h]);
+            if (d) return d;
+          }
+        }
+        return null;
+      }
+
+      // Group by day
+      const dayMap = new Map();
+      for (const r of transRows){
+        const dObj = getBestDate(r);
+        const dayKey = dObj ? formatMMDDYYYY(dObj) : ""; // if missing, we'll fallback later
+        const startMin = parseTimeToMinutes(r[H.TRANS_START]);
+        const finishMin = parseTimeToMinutes(r[H.TRANS_FINISH]);
+        const workers = parseNumber(r[H.TRANS_WORKERS]);
+        const boards = parseNumber(r[H.BOARDS_TRANS]);
+
+        const key = dayKey || "__NO_DATE__";
+        if (!dayMap.has(key)) {
+          dayMap.set(key, {
+            hasDate: !!dayKey,
+            minStart: Number.isFinite(startMin) ? startMin : NaN,
+            maxFinish: Number.isFinite(finishMin) ? finishMin : NaN,
+            boardsSum: 0,
+            workersSum: 0,
+            workersCount: 0
+          });
+        }
+        const d = dayMap.get(key);
+        if (Number.isFinite(startMin)) d.minStart = Number.isFinite(d.minStart) ? Math.min(d.minStart, startMin) : startMin;
+        if (Number.isFinite(finishMin)) d.maxFinish = Number.isFinite(d.maxFinish) ? Math.max(d.maxFinish, finishMin) : finishMin;
+        d.boardsSum += boards;
+        if (workers > 0) { d.workersSum += workers; d.workersCount += 1; }
+      }
+
+      // Sum daily hours
+      let weekHours = 0;
+      for (const d of dayMap.values()){
+        // If everything is in NO_DATE bucket, this becomes one span for the week,
+        // which is the best we can do without date.
+        weekHours += spanHours(d.minStart, d.maxFinish);
+      }
+
+      // Avg workers across the week (your rule)
+      const workersSum = transRows.reduce((s,r)=>{
+        const w = parseNumber(r[H.TRANS_WORKERS]);
+        return s + (w > 0 ? w : 0);
+      },0);
+      const workersCount = transRows.reduce((s,r)=> s + (parseNumber(r[H.TRANS_WORKERS])>0 ? 1 : 0), 0);
+      const avgWorkers = workersCount > 0 ? (workersSum / workersCount) : 0;
+
+      const boardsPerPersonPerHour = (weekHours > 0 && avgWorkers > 0)
+        ? (boardsTrans / (avgWorkers * weekHours))
+        : NaN;
+
+      // ---- HARVEST ----
+      const harvRows = growRows.filter(r => isWeek(r[H.HARV_WEEK]));
+      const harvestBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BOARDS]),0);
+      const harvestCut = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_CUT]),0);
+      const harvestWithWaste = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_WITH_WASTE]),0);
+
+      // ---- CLEAN / BROKEN (Grow, filtered by Harvest Week) ----
+      const cleanedBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
+      const brokenBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
+
+      // ---- PACKING (Pack) ----
+      const packRowsW = packRows.filter(r => isWeek(r[H.PACK_WEEK]));
+      let cases5=0, units5=0, lbs5=0;
+      let cases10=0, units10=0, lbs10=0;
+      let lbsAll = 0;
+
+      for (const r of packRowsW){
+        const t = skuType(r[H.SKU]);
+        const cases = parseNumber(r[H.CASES]);
+        if (!t || !cases) continue;
+        const ppc = PACKS_PER_CASE[t] || 0;
+        const lbpu = LB_PER_UNIT[t] || 0;
+        const units = cases * ppc;
+        const lbs = units * lbpu;
+
+        lbsAll += lbs;
+        if (t === "5OZ"){ cases5 += cases; units5 += units; lbs5 += lbs; }
+        if (t === "10OZ"){ cases10 += cases; units10 += units; lbs10 += lbs; }
+      }
+
+      // ---- SHIPPING (Pack) ----
+      let shipReceived=0, shipDonation=0, shipWaste=0, shipSales=0;
+      for (const r of packRowsW){
+        const lbs = parseNumber(r[H.LBS_SHIPPED]);
+        if (!lbs) continue;
+        const loc = String(r[H.LOC_SHIPPED] ?? "").trim();
+        const locU = loc.toUpperCase();
+
+        if (!locU) continue;
+        if (locU === RECEIVED_LOCATION) shipReceived += lbs;
+        else if (locU === WASTE_LOCATION) shipWaste += lbs;
+        else if (DONATION_LOCATIONS.has(locU)) shipDonation += lbs;
+        else shipSales += lbs;
+      }
+
+      return {
+        wkNum,
+        seeding: { completed: flatsCompleted, target: flatsTarget, unit:"Flats" },
+        transplant: { completed: plugsCompleted, target: plugsTarget, unit:"Plugs" },
+        transplantRate: { value: boardsPerPersonPerHour, unit:"Boards" },
+        harvestBoards,
+        harvestCut,
+        harvestWithWaste,
+        pack5: { cases: cases5, units: units5, lbs: lbs5 },
+        pack10:{ cases: cases10, units: units10, lbs: lbs10 },
+        packAllLbs: lbsAll,
+        ship: { received: shipReceived, sales: shipSales, donation: shipDonation, waste: shipWaste },
+        cleanedBoards,
+        brokenBoards,
+        aux: { weekHours, avgWorkers, boardsTrans, transRowsCount: transRows.length }
+      };
+    }
+
+    // =========================================================
+    // RENDER
+    // =========================================================
+    const $ = (id)=>document.getElementById(id);
 
     function fmtInt(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:0}); }
     function fmt1(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:1}); }
+    function pctPill(completed, target){
+      if (!(target > 0)) return `<span class="pill muted">—</span>`;
+      const p = (completed/target)*100;
+      const cls = p >= 100 ? "good" : p >= 90 ? "warn" : "bad";
+      return `<span class="pill ${cls}">${p.toFixed(0)}%</span>`;
+    }
 
-    function setNote(msg){ document.getElementById("note").textContent = msg || ""; }
-    function setDiag(msg){
-      const el = document.getElementById("diag");
+    function renderTable(summary){
+      const tbody = $("tbody");
+      if (!tbody) return;
+
+      const rows = [];
+
+      // Seeding
+      rows.push({
+        label:"Seeding",
+        completed: fmtInt(summary.seeding.completed),
+        target: fmtInt(summary.seeding.target),
+        units: summary.seeding.unit,
+        pct: pctPill(summary.seeding.completed, summary.seeding.target)
+      });
+
+      // Transplant (plugs)
+      rows.push({
+        label:"Transplant",
+        completed: fmtInt(summary.transplant.completed),
+        target: fmtInt(summary.transplant.target),
+        units: summary.transplant.unit,
+        pct: pctPill(summary.transplant.completed, summary.transplant.target)
+      });
+
+      // Transplant rate
+      const rateOk = Number.isFinite(summary.transplantRate.value) && summary.transplantRate.value > 0;
+      rows.push({
+        label:"Transplant - Boards/Person/Hour",
+        completed: rateOk ? fmt1(summary.transplantRate.value) : "—",
+        target: "—",
+        units: "Boards",
+        pct: `<span class="pill muted">—</span>`
+      });
+
+      // Harvest
+      rows.push({ label:"Harvest", completed: fmtInt(summary.harvestBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
+      rows.push({ label:"Harvest - Lechuga", completed: fmtInt(summary.harvestCut), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+      rows.push({ label:"Harvest - Lechuga Con Waste", completed: fmtInt(summary.harvestWithWaste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+
+      // Packing
+      rows.push({
+        label:"Pack - 5OZ",
+        completed: fmtInt(summary.pack5.cases),
+        target:"—",
+        units: `${fmtInt(summary.pack5.units)} Units · ${fmtInt(summary.pack5.lbs)} Lbs`,
+        pct:`<span class="pill muted">—</span>`
+      });
+      rows.push({
+        label:"Pack - 10OZ",
+        completed: fmtInt(summary.pack10.cases),
+        target:"—",
+        units: `${fmtInt(summary.pack10.units)} Units · ${fmtInt(summary.pack10.lbs)} Lbs`,
+        pct:`<span class="pill muted">—</span>`
+      });
+      rows.push({
+        label:"Pack - All",
+        completed: fmtInt(summary.packAllLbs),
+        target:"—",
+        units:"Lbs",
+        pct:`<span class="pill muted">—</span>`
+      });
+
+      // Shipping
+      rows.push({ label:"Shipping - Received", completed: fmtInt(summary.ship.received), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+      rows.push({ label:"Shipping - Sales", completed: fmtInt(summary.ship.sales), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+      rows.push({ label:"Shipping - Donation", completed: fmtInt(summary.ship.donation), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+      rows.push({ label:"Shipping - Waste", completed: fmtInt(summary.ship.waste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
+
+      // Boards
+      rows.push({ label:"# of Cleaned Boards", completed: fmtInt(summary.cleanedBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
+      rows.push({ label:"# of Broken Boards", completed: fmtInt(summary.brokenBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
+
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td class="row-label">${r.label}</td>
+          <td>${r.completed}</td>
+          <td>${r.target}</td>
+          <td>${r.units}</td>
+          <td>${r.pct}</td>
+        </tr>
+      `).join("");
+    }
+
+    function setChip(id, ok, text){
+      const el = $(id);
+      if (!el) return;
+      el.innerHTML = ok
+        ? `<span class="chip-dot"></span><span>${text}</span>`
+        : `<span class="chip-danger-dot"></span><span>${text}</span>`;
+    }
+
+    function setHint(msg){ const el=$("hint"); if (el) el.textContent = msg || ""; }
+    function setDebug(msg){
+      const el = $("debug");
       if (!el) return;
       if (!msg) { el.style.display="none"; el.textContent=""; return; }
       el.style.display="block";
@@ -465,498 +869,128 @@
     }
 
     // =========================================================
-    // LOAD + PICK SHEET
-    // =========================================================
-    function loadJSON(key){
-      const raw = (localStorage.getItem(key)||"").trim();
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
-    }
-
-    function pickSheet(payload, candidates){
-      const sheets = payload?.sheets || {};
-      if (!sheets || typeof sheets !== "object") return null;
-
-      for (const name of candidates) if (name in sheets) return { name, sheet: sheets[name] };
-
-      const keys = Object.keys(sheets);
-      const normKeys = keys.map(k => ({ k, nk: String(k).trim().toLowerCase() }));
-      for (const want of candidates.map(s => String(s).trim().toLowerCase())) {
-        const hit = normKeys.find(x => x.nk === want) || normKeys.find(x => x.nk.includes(want));
-        if (hit) return { name: hit.k, sheet: sheets[hit.k] };
-      }
-
-      if (keys.length) return { name: keys[0], sheet: sheets[keys[0]] };
-      return null;
-    }
-
-    function sheetToRowObjects(sheetObj){
-      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
-      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
-      const canonHeaders = canonicalizeHeaders(headersRaw);
-
-      const out = [];
-      for (const r of rows) {
-        if (!Array.isArray(r)) continue;
-        const obj = {};
-        for (let i=0; i<canonHeaders.length; i++){
-          const key = String(canonHeaders[i] ?? "").trim();
-          if (!key) continue;
-          obj[key] = (i < r.length) ? r[i] : "";
-        }
-        out.push(obj);
-      }
-      return { rows: out, canonHeaders };
-    }
-
-    // =========================================================
-    // MODELS
+    // MAIN LOAD/RENDER
     // =========================================================
     let GROW_ROWS = [];
     let PACK_ROWS = [];
-    let WEEK_OPTIONS = [];
-    let SELECTED_WEEK = null;
+    let WEEKS = [];
+    let selectedWeek = "";
 
-    function buildModels(){
-      const growPayload = loadJSON(MASTER_GROW_KEY);
-      const packPayload = loadJSON(MASTER_PACK_KEY);
+    function loadData(){
+      const grow = loadJson(MASTER_GROW_KEY);
+      const pack = loadJson(MASTER_PACK_KEY);
 
-      let diag = [];
-      let note = [];
+      const growOk = !!grow?.sheets?.[CANON_GROW_SHEET];
+      const packOk = !!pack?.sheets?.[CANON_PACK_SHEET];
 
-      // Grow
-      if (!growPayload) {
-        GROW_ROWS = [];
-        note.push("No Master Grow payload found (campo_master_grow_v1). Load it in Data Input.");
+      setChip("chip-grow", growOk, growOk ? "Grow: Loaded" : "Grow: Missing");
+      setChip("chip-pack", packOk, packOk ? "Pack: Loaded" : "Pack: Missing");
+
+      const warnEl = $("chip-warn");
+      if (warnEl) warnEl.style.display = (growOk && packOk) ? "none" : "inline-flex";
+
+      GROW_ROWS = growOk ? sheetToObjects(grow.sheets[CANON_GROW_SHEET]) : [];
+      PACK_ROWS = packOk ? sheetToObjects(pack.sheets[CANON_PACK_SHEET]) : [];
+
+      const growPing = localStorage.getItem(MASTER_GROW_PING_KEY) || "";
+      const packPing = localStorage.getItem(MASTER_PACK_PING_KEY) || "";
+      const lu = $("lastUpdated");
+      if (lu){
+        const parts = [];
+        if (growPing) parts.push("Grow: " + new Date(Number(growPing)).toLocaleString());
+        if (packPing) parts.push("Pack: " + new Date(Number(packPing)).toLocaleString());
+        lu.textContent = parts.length ? parts.join(" · ") : "—";
+      }
+
+      WEEKS = collectWeeks(GROW_ROWS, PACK_ROWS);
+      if (!WEEKS.length){
+        setHint(
+          "No weeks found yet.\n\nFix:\n- Open Data Input\n- Upload Master Grow + Master Pack\n- Confirm week columns exist (Seed Week / Transplant Week / Harvest Week / Pack Week)"
+        );
       } else {
-        const picked = pickSheet(growPayload, GROW_SHEET_CANDIDATES);
-        if (!picked?.sheet) {
-          GROW_ROWS = [];
-          note.push("Master Grow payload loaded, but no sheet found.");
-        } else {
-          const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
-          GROW_ROWS = rows;
-          diag.push(`Grow sheet: ${picked.name}`);
-          diag.push(`Grow rows: ${rows.length.toLocaleString()}`);
-          diag.push(`Grow headers (first 50):\n- ${canonHeaders.slice(0,50).filter(Boolean).join("\n- ")}`);
-        }
+        setHint("");
       }
-
-      // Pack
-      if (!packPayload) {
-        PACK_ROWS = [];
-        note.push("No Master Pack payload found (campo_master_pack_v1). Load it in Data Input.");
-      } else {
-        const picked = pickSheet(packPayload, PACK_SHEET_CANDIDATES);
-        if (!picked?.sheet) {
-          PACK_ROWS = [];
-          note.push("Master Pack payload loaded, but no sheet found.");
-        } else {
-          const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
-          PACK_ROWS = rows;
-          diag.push(`\nPack sheet: ${picked.name}`);
-          diag.push(`Pack rows: ${rows.length.toLocaleString()}`);
-          diag.push(`Pack headers (first 50):\n- ${canonHeaders.slice(0,50).filter(Boolean).join("\n- ")}`);
-        }
-      }
-
-      // Week options (union of Grow + Pack weeks)
-      const weeks = new Set();
-
-      // From grow: Seed Week / Transplant Week / Harvest Week
-      for (const r of GROW_ROWS) {
-        const w1 = String(r[G.SEED_WEEK] ?? "").trim();
-        const w2 = String(r[G.TRANS_WEEK] ?? "").trim();
-        const w3 = String(r[G.HARV_WEEK] ?? "").trim();
-        if (w1) weeks.add(w1);
-        if (w2) weeks.add(w2);
-        if (w3) weeks.add(w3);
-      }
-
-      // From pack: Pack Week
-      for (const r of PACK_ROWS) {
-        const wp = String(r[P.PACK_WEEK] ?? "").trim();
-        if (wp) weeks.add(wp);
-      }
-
-      // Sort weeks numerically if possible
-      WEEK_OPTIONS = Array.from(weeks).sort((a,b)=>{
-        const na = parseFloat(a), nb = parseFloat(b);
-        if (!isNaN(na) && !isNaN(nb)) return na - nb;
-        return String(a).localeCompare(String(b));
-      });
-
-      // Default selected: most recent (largest numeric if numeric)
-      if (!SELECTED_WEEK || !WEEK_OPTIONS.includes(SELECTED_WEEK)) {
-        if (WEEK_OPTIONS.length) {
-          // pick last (largest)
-          SELECTED_WEEK = WEEK_OPTIONS[WEEK_OPTIONS.length - 1];
-        } else {
-          SELECTED_WEEK = null;
-        }
-      }
-
-      setNote(note.join("\n"));
-      setDiag(diag.join("\n"));
     }
 
-    // =========================================================
-    // COMPUTATIONS BY WEEK
-    // =========================================================
-    function computeForWeek(weekStr){
-      const wk = String(weekStr ?? "").trim();
-      if (!wk) return null;
-
-      // ---------------------------
-      // SEEDING
-      // ---------------------------
-      const seedRows = GROW_ROWS.filter(r => String(r[G.SEED_WEEK] ?? "").trim() === wk);
-      const flatsSeeded = seedRows.reduce((s,r)=>s + parseNumber(r[G.FLATS_SEEDED]), 0);
-      // target sometimes repeats per row; choose max nonzero (safer than sum)
-      const targetFlats = seedRows.reduce((m,r)=>Math.max(m, parseNumber(r[G.TARGET_FLATS])), 0);
-
-      // ---------------------------
-      // TRANSPLANT
-      // ---------------------------
-      const transRows = GROW_ROWS.filter(r => String(r[G.TRANS_WEEK] ?? "").trim() === wk);
-      const boardsTrans = transRows.reduce((s,r)=>s + parseNumber(r[G.BOARDS_TRANS]), 0);
-      const expectedBoards = transRows.reduce((m,r)=>Math.max(m, parseNumber(r[G.EXPECTED_BOARDS])), 0);
-
-      const plugsCompleted = boardsTrans * 127;
-      const plugsTarget = expectedBoards * 127;
-
-      // Boards/Person/Hour
-      // total boards / avg workers / span hours
-      let minStart = NaN, maxFinish = NaN;
-      let workersSum = 0, workersCount = 0;
-
-      for (const r of transRows){
-        const st = parseTimeToMinutes(r[G.TRANS_START]);
-        const fn = parseTimeToMinutes(r[G.TRANS_FINISH]);
-        if (Number.isFinite(st)) minStart = Number.isFinite(minStart) ? Math.min(minStart, st) : st;
-        if (Number.isFinite(fn)) maxFinish = Number.isFinite(maxFinish) ? Math.max(maxFinish, fn) : fn;
-
-        const w = parseNumber(r[G.TRANS_WORKERS]);
-        if (w > 0) { workersSum += w; workersCount += 1; }
-      }
-      const spanH = spanHoursFromMinMax(minStart, maxFinish);
-      const avgWorkers = workersCount > 0 ? (workersSum / workersCount) : 0;
-      const boardsPerPersonHour = (spanH > 0 && avgWorkers > 0) ? (boardsTrans / avgWorkers / spanH) : 0;
-
-      // ---------------------------
-      // HARVEST
-      // ---------------------------
-      const harvRows = GROW_ROWS.filter(r => String(r[G.HARV_WEEK] ?? "").trim() === wk);
-      const harvestBoards = harvRows.reduce((s,r)=>s + parseNumber(r[G.HARV_BOARDS]), 0);
-      const harvestCutLbs = harvRows.reduce((s,r)=>s + parseNumber(r[G.HARV_CUT_LBS]), 0);
-      const harvestWithWaste = harvRows.reduce((s,r)=>s + parseNumber(r[G.HARV_WITH_WASTE]), 0);
-
-      // ---------------------------
-      // CLEANED / BROKEN BOARDS
-      // ---------------------------
-      const cleanedBoards = GROW_ROWS
-        .filter(r => String(r[G.HARV_WEEK] ?? "").trim() === wk || String(r[G.TRANS_WEEK] ?? "").trim() === wk || String(r[G.SEED_WEEK] ?? "").trim() === wk)
-        .reduce((s,r)=>s + parseNumber(r[G.BOARDS_CLEANED]), 0);
-
-      const brokenBoards = GROW_ROWS
-        .filter(r => String(r[G.HARV_WEEK] ?? "").trim() === wk || String(r[G.TRANS_WEEK] ?? "").trim() === wk || String(r[G.SEED_WEEK] ?? "").trim() === wk)
-        .reduce((s,r)=>s + parseNumber(r[G.BOARDS_BROKEN]), 0);
-
-      // ---------------------------
-      // PACKING (cases + estimated lbs)
-      // ---------------------------
-      const packRows = PACK_ROWS.filter(r => String(r[P.PACK_WEEK] ?? "").trim() === wk);
-
-      function skuType(r){
-        const sku = String(r[P.SKU] ?? "").toUpperCase();
-        // Prefer token match
-        if (sku.includes("-10OZ") || sku.includes("10OZ")) return "10OZ";
-        if (sku.includes("-5OZ") || sku.includes("5OZ")) return "5OZ";
-        if (sku.includes("-16OZ") || sku.includes("16OZ")) return "16OZ";
-        if (sku.includes("-1LB") || sku.includes("1LB")) return "1LB";
-        if (sku.includes("-3LB") || sku.includes("3LB")) return "3LB";
-        return null;
-      }
-
-      const packCasesByType = { "5OZ":0, "10OZ":0, "16OZ":0, "1LB":0, "3LB":0 };
-      for (const r of packRows){
-        const t = skuType(r);
-        if (!t) continue;
-        packCasesByType[t] += parseNumber(r[P.CASES]);
-      }
-
-      function estimatedLbsFromCases(type){
-        const cases = packCasesByType[type] || 0;
-        const packsPerCase = PACKS_PER_CASE[type] || 0;
-        const lbPerUnit = WEIGHT_PER_UNIT_LB[type] || 0;
-        return cases * packsPerCase * lbPerUnit;
-      }
-
-      const pack5Cases = packCasesByType["5OZ"];
-      const pack10Cases = packCasesByType["10OZ"];
-      const pack5Units = pack5Cases * PACKS_PER_CASE["5OZ"];
-      const pack10Units = pack10Cases * PACKS_PER_CASE["10OZ"];
-      const pack5LbsEst = estimatedLbsFromCases("5OZ");
-      const pack10LbsEst = estimatedLbsFromCases("10OZ");
-
-      // Pack All (per your instruction: sum of all pack types weight => rely on # Lbs Shipped for now)
-      const packAllLbs = packRows.reduce((s,r)=>s + parseNumber(r[P.LBS_SHIPPED]), 0);
-
-      // ---------------------------
-      // SHIPPING (by Location Shipped, relying on # Lbs Shipped)
-      // ---------------------------
-      function normLoc(v){ return String(v ?? "").trim().toLowerCase(); }
-      const donationSet = new Set([
-        "donación - manaties",
-        "donación - equipo",
-        "donación - fundación fe y esperanza",
-        "donación - banco de alimento pr",
-        "samples"
-      ]);
-
-      let shipReceived=0, shipDonation=0, shipWaste=0, shipSales=0;
-
-      for (const r of packRows){
-        const lbs = parseNumber(r[P.LBS_SHIPPED]);
-        const loc = normLoc(r[P.LOCATION]);
-        if (!loc) continue;
-
-        if (loc === "warehouse") shipReceived += lbs;
-        else if (loc === "basura") shipWaste += lbs;
-        else if (donationSet.has(loc)) shipDonation += lbs;
-        else shipSales += lbs;
-      }
-
-      return {
-        week: wk,
-
-        seeding: { completed: flatsSeeded, target: targetFlats, units: "Flats" },
-
-        transplantPlugs: { completed: plugsCompleted, target: plugsTarget, units: "Plugs" },
-        transplantBPH: { completed: boardsPerPersonHour, target: null, units: "Boards" },
-
-        harvestBoards: { completed: harvestBoards, target: null, units: "Boards" },
-        harvestCut: { completed: harvestCutLbs, target: null, units: "Lbs" },
-        harvestWithWaste: { completed: harvestWithWaste, target: null, units: "Lbs" },
-
-        pack5: { completed: pack5Cases, units: "Cases", auxUnits: pack5Units, auxLbs: pack5LbsEst },
-        pack10: { completed: pack10Cases, units: "Cases", auxUnits: pack10Units, auxLbs: pack10LbsEst },
-        packAll: { completed: packAllLbs, units: "Lbs" },
-
-        shipReceived: { completed: shipReceived, units: "Lbs" },
-        shipSales: { completed: shipSales, units: "Lbs" },
-        shipDonation: { completed: shipDonation, units: "Lbs" },
-        shipWaste: { completed: shipWaste, units: "Lbs" },
-
-        cleaned: { completed: cleanedBoards, units: "Boards" },
-        broken: { completed: brokenBoards, units: "Boards" },
-      };
-    }
-
-    // =========================================================
-    // RENDER
-    // =========================================================
-    function renderWeekDropdown(){
-      const sel = document.getElementById("week-select");
+    function renderWeekOptions(){
+      const sel = $("weekSelect");
       if (!sel) return;
 
-      sel.innerHTML = "";
-      if (!WEEK_OPTIONS.length) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "No weeks found";
-        sel.appendChild(opt);
-        sel.disabled = true;
+      const current = selectedWeek;
+      sel.innerHTML = WEEKS.map(w => `<option value="${String(w)}">Week ${String(w)}</option>`).join("");
+
+      if (current && WEEKS.includes(current)) sel.value = current;
+      else {
+        // default to latest
+        const last = WEEKS[WEEKS.length-1];
+        selectedWeek = last || "";
+        sel.value = selectedWeek;
+      }
+    }
+
+    function render(){
+      if (!selectedWeek){
+        const title = $("panelTitle");
+        if (title) title.textContent = "Week –";
+        $("tbody").innerHTML = "";
         return;
       }
 
-      sel.disabled = false;
-      for (const w of WEEK_OPTIONS){
-        const opt = document.createElement("option");
-        opt.value = w;
-        opt.textContent = "Week " + w;
-        sel.appendChild(opt);
-      }
-      sel.value = SELECTED_WEEK || WEEK_OPTIONS[WEEK_OPTIONS.length - 1];
-    }
+      const summary = computeWeekSummary(selectedWeek, GROW_ROWS, PACK_ROWS);
 
-    function addRow(tbody, label, completed, target, units, pct, rowClass, completedFmt, targetFmt){
-      const tr = document.createElement("tr");
-      tr.className = rowClass;
+      const title = $("panelTitle");
+      if (title) title.textContent = "Week " + summary.wkNum;
 
-      let pctText = "–";
-      let pctCls = "muted";
-      if (pct !== null && Number.isFinite(pct)) {
-        pctText = pct.toFixed(0) + "%";
-        pctCls = pctClass(pct);
-      }
+      renderTable(summary);
 
-      const cText = completedFmt ?? fmtInt(completed);
-      const tText = (target === null || target === undefined || Number(target) === 0)
-        ? "–"
-        : (targetFmt ?? fmtInt(target));
-
-      tr.innerHTML = `
-        <td>${label}</td>
-        <td>${cText}</td>
-        <td class="${tText==="–" ? "muted" : ""}">${tText}</td>
-        <td class="${units==="–" ? "muted" : ""}">${units || "–"}</td>
-        <td><span class="pct ${pctCls}">${pctText}</span></td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    function renderTable(){
-      const tbody = document.getElementById("summary-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-
-      const w = computeForWeek(SELECTED_WEEK);
-      const header = document.getElementById("week-header");
-      if (header) header.textContent = w ? ("Week " + w.week) : "Week –";
-
-      if (!w) {
-        addRow(tbody, "No data", 0, 0, "–", null, "row-ship");
-        return;
-      }
-
-      // Seeding
-      addRow(
-        tbody,
-        "Seeding",
-        w.seeding.completed,
-        w.seeding.target,
-        w.seeding.units,
-        safePct(w.seeding.completed, w.seeding.target),
-        "row-seeding"
+      // Helpful diagnostics (kept subtle)
+      setDebug(
+        `Transplant diagnostics:\n` +
+        `- rows in week: ${summary.aux.transRowsCount}\n` +
+        `- boards transplanted (sum): ${summary.aux.boardsTrans.toLocaleString()}\n` +
+        `- avg workers (week): ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"}\n` +
+        `- total hours (sum of daily spans): ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
+        `\nNote: If transplant date is missing in the sheet, time will fallback to a single span bucket for the week.`
       );
-
-      // Transplant (plugs)
-      addRow(
-        tbody,
-        "Transplant",
-        w.transplantPlugs.completed,
-        w.transplantPlugs.target,
-        w.transplantPlugs.units,
-        safePct(w.transplantPlugs.completed, w.transplantPlugs.target),
-        "row-transplant"
-      );
-
-      // Transplant boards/person/hour (no target provided)
-      addRow(
-        tbody,
-        "Transplant - Boards/Person/Hour",
-        w.transplantBPH.completed,
-        null,
-        w.transplantBPH.units,
-        null,
-        "row-transplant",
-        fmt1(w.transplantBPH.completed),
-        null
-      );
-
-      // Harvest
-      addRow(tbody, "Harvest", w.harvestBoards.completed, null, w.harvestBoards.units, null, "row-harvest");
-      addRow(tbody, "Harvest - Lechuga", w.harvestCut.completed, null, w.harvestCut.units, null, "row-harvest");
-      addRow(tbody, "Harvest - Lechuga Con Waste", w.harvestWithWaste.completed, null, w.harvestWithWaste.units, null, "row-harvest");
-
-      // Pack (cases + show aux in Units column like screenshot style)
-      // We'll show Units column as "<units> | <lbs>" for quick readability.
-      const pack5UnitsText = `${fmtInt(w.pack5.auxUnits)} Units`;
-      const pack5LbsText = `${fmtInt(w.pack5.auxLbs)} Lbs`;
-      addRow(
-        tbody,
-        "Pack - 5OZ",
-        w.pack5.completed,
-        null,
-        `${pack5UnitsText} · ${pack5LbsText}`,
-        null,
-        "row-pack"
-      );
-
-      const pack10UnitsText = `${fmtInt(w.pack10.auxUnits)} Units`;
-      const pack10LbsText = `${fmtInt(w.pack10.auxLbs)} Lbs`;
-      addRow(
-        tbody,
-        "Pack - 10OZ",
-        w.pack10.completed,
-        null,
-        `${pack10UnitsText} · ${pack10LbsText}`,
-        null,
-        "row-pack"
-      );
-
-      addRow(
-        tbody,
-        "Pack - All",
-        w.packAll.completed,
-        null,
-        w.packAll.units,
-        null,
-        "row-pack"
-      );
-
-      // Shipping
-      addRow(tbody, "Shipping - Received", w.shipReceived.completed, null, w.shipReceived.units, null, "row-ship");
-      addRow(tbody, "Shipping - Sales", w.shipSales.completed, null, w.shipSales.units, null, "row-ship");
-      addRow(tbody, "Shipping - Donation", w.shipDonation.completed, null, w.shipDonation.units, null, "row-ship");
-      addRow(tbody, "Shipping - Waste", w.shipWaste.completed, null, w.shipWaste.units, null, "row-ship");
-
-      // Cleaned / Broken
-      addRow(tbody, "# of Cleaned Boards", w.cleaned.completed, null, w.cleaned.units, null, "row-san");
-      addRow(tbody, "# of Broken Boards", w.broken.completed, null, w.broken.units, null, "row-san");
-    }
-
-    function renderAll(){
-      buildModels();
-      renderWeekDropdown();
-      renderTable();
     }
 
     // =========================================================
-    // UI
-    // =========================================================
-    function setupUI(){
-      const sel = document.getElementById("week-select");
-      if (sel){
-        sel.addEventListener("change", () => {
-          SELECTED_WEEK = sel.value;
-          renderTable();
-        });
-      }
-    }
-
-    // =========================================================
-    // LIVE REFRESH (bulletproof)
+    // LIVE REFRESH (same contract as the other dashboards)
     // =========================================================
     let reloadTimer = null;
     function reloadAll(reason){
       if (reloadTimer) clearTimeout(reloadTimer);
       reloadTimer = setTimeout(() => {
         reloadTimer = null;
-        renderAll();
+        const prevWeeks = WEEKS.slice();
+        loadData();
+        renderWeekOptions();
+
+        // If the selected week disappeared, reselect to latest
+        if (selectedWeek && !WEEKS.includes(selectedWeek)) {
+          selectedWeek = WEEKS[WEEKS.length-1] || "";
+        }
+
+        render();
         // console.log("🔄 Weekly Summary reload", reason || "");
       }, 60);
     }
 
     function setupListeners(){
-      // 1) storage (other tabs/frames)
-      window.addEventListener("storage", (e)=>{
+      // 1) storage events
+      window.addEventListener("storage", (e) => {
         if (!e) return;
-        if (
-          e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY ||
-          e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY
-        ) reloadAll("storage");
+        if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_GROW_PING_KEY, MASTER_PACK_PING_KEY].includes(e.key)) reloadAll("storage");
       });
 
-      // 2) CustomEvent (same tab)
+      // 2) CustomEvents
       window.addEventListener(MSG_GROW, () => reloadAll("customevent-grow"));
-      document.addEventListener(MSG_GROW, () => reloadAll("customevent-grow-doc"));
       window.addEventListener(MSG_PACK, () => reloadAll("customevent-pack"));
+      document.addEventListener(MSG_GROW, () => reloadAll("customevent-grow-doc"));
       document.addEventListener(MSG_PACK, () => reloadAll("customevent-pack-doc"));
 
-      // 3) postMessage (index hub)
-      window.addEventListener("message", (event)=>{
+      // 3) postMessage from index
+      window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
         if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") reloadAll("message-grow");
@@ -965,29 +999,38 @@
 
       // 4) BroadcastChannel
       if (bc){
-        bc.onmessage = (ev)=>{
+        bc.onmessage = (ev) => {
           const msg = ev?.data;
           if (msg?.type === MSG_GROW) reloadAll("broadcast-grow");
           if (msg?.type === MSG_PACK) reloadAll("broadcast-pack");
         };
       }
 
-      // 5) Poll fallback (iframe/safari oddities)
-      let lastGrowLen = (localStorage.getItem(MASTER_GROW_KEY)||"").length;
-      let lastPackLen = (localStorage.getItem(MASTER_PACK_KEY)||"").length;
-
-      setInterval(()=>{
-        const curGrowLen = (localStorage.getItem(MASTER_GROW_KEY)||"").length;
-        const curPackLen = (localStorage.getItem(MASTER_PACK_KEY)||"").length;
-        if (curGrowLen !== lastGrowLen) { lastGrowLen = curGrowLen; reloadAll("poll-grow"); }
-        if (curPackLen !== lastPackLen) { lastPackLen = curPackLen; reloadAll("poll-pack"); }
+      // 5) Safety poll
+      let lastGrowLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+      let lastPackLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+      setInterval(() => {
+        const gl = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+        const pl = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+        if (gl !== lastGrowLen || pl !== lastPackLen) {
+          lastGrowLen = gl; lastPackLen = pl;
+          reloadAll("poll");
+        }
       }, 1500);
     }
 
-    document.addEventListener("DOMContentLoaded", ()=>{
-      setupUI();
+    document.addEventListener("DOMContentLoaded", () => {
       setupListeners();
-      renderAll();
+      loadData();
+      renderWeekOptions();
+
+      const sel = $("weekSelect");
+      sel?.addEventListener("change", () => {
+        selectedWeek = sel.value;
+        render();
+      });
+
+      reloadAll("init");
     });
   </script>
 </body>
