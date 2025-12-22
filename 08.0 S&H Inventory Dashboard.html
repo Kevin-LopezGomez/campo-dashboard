@@ -441,7 +441,6 @@
       line-height: 1.4;
     }
     .issues li{ margin: 4px 0; }
-    .issues code{ color: rgba(226,232,240,.95); }
 
     /* Table */
     .table-wrapper{
@@ -636,7 +635,7 @@
               <span>Data filters</span>
             </div>
             <div class="panel-subtitle">
-              Daily snapshot by Warehouse Date (defaults to latest date).
+              Daily snapshot by <strong>Warehouse Date</strong> (defaults to latest date).
             </div>
           </div>
           <div class="panel-header-right">
@@ -692,7 +691,7 @@
               <span class="kpi-unit">cases</span>
             </div>
             <div class="kpi-trend" id="kpi-skus">–</div>
-            <div class="kpi-meta">Available = in inventory − reserved (or source column).</div>
+            <div class="kpi-meta">Available column (or inventory − reserved fallback).</div>
           </article>
 
           <article class="kpi-card">
@@ -713,7 +712,7 @@
               <span class="kpi-unit">days</span>
             </div>
             <div class="kpi-trend" id="kpi-oldest">–</div>
-            <div class="kpi-meta">Uses Age column (numeric). Weighted by cases in inventory.</div>
+            <div class="kpi-meta">Uses Warehouse Age. Weighted by Cases in Inventory.</div>
           </article>
         </section>
       </section>
@@ -728,7 +727,7 @@
                 <span>Inventory by SKU</span>
               </div>
               <div class="panel-subtitle">
-                Click a SKU card to see lot details (batch + location).
+                Click a SKU card to see lot details (W Batch Run Code + Warehouse Location).
               </div>
             </div>
             <div class="panel-header-right">
@@ -739,7 +738,7 @@
           <div class="sku-cards" id="sku-cards"></div>
 
           <div class="footer-note">
-            <span>Tip: use <strong>Warehouse SKU</strong> for separation.</span>
+            <span>SKU separation: <strong>Warehouse SKU</strong></span>
             <span id="filtered-note">–</span>
           </div>
         </section>
@@ -808,15 +807,15 @@
                 <tr>
                   <th>Warehouse SKU</th>
                   <th>Warehouse Date</th>
-                  <th>W- Batch Run Code</th>
+                  <th>W Batch Run Code</th>
                   <th>Warehouse Location</th>
                   <th>Cases in Inventory</th>
                   <th>Cases Reserved</th>
                   <th>Cases Available</th>
-                  <th>Customer</th>
-                  <th>Obs</th>
-                  <th>Pack Date</th>
-                  <th>Age</th>
+                  <th>Cutomer Reserved</th>
+                  <th>Warehouse Observations</th>
+                  <th>Warehouse Pack Date</th>
+                  <th>Warehouse Age</th>
                 </tr>
               </thead>
               <tbody id="raw-body"></tbody>
@@ -840,21 +839,19 @@
         <button class="modal-close" id="modal-close" type="button">Close ✕</button>
       </div>
       <div class="modal-body">
-        <div style="color:var(--muted);font-size:.75rem;margin-bottom:8px;" id="modal-sub">
-          –
-        </div>
+        <div style="color:var(--muted);font-size:.75rem;margin-bottom:8px;" id="modal-sub">–</div>
         <div class="table-wrapper" style="margin-top:0;">
           <div class="table-scroll" style="max-height: 58vh;">
             <table>
               <thead>
                 <tr>
-                  <th>W- Batch Run Code</th>
+                  <th>W Batch Run Code</th>
                   <th>Warehouse Location</th>
                   <th>Cases in Inv.</th>
                   <th>Cases Avail.</th>
-                  <th>Customer</th>
-                  <th>Pack Date</th>
-                  <th>Age</th>
+                  <th>Cutomer Reserved</th>
+                  <th>Warehouse Pack Date</th>
+                  <th>Warehouse Age</th>
                 </tr>
               </thead>
               <tbody id="modal-body-rows"></tbody>
@@ -879,24 +876,32 @@
     const PACK_SHEET_CANDIDATES = ["Pack Data", "PACK DATA", "PackData", "Packing Data", MASTER_PACK_SHEET_NAME];
 
     // ============================================================
-    // REQUIRED HEADERS FOR S&H (exact names preferred)
+    // EXACT HEADERS YOU PROVIDED (primary)
+    // Warehouse Date | W Batch Run Code | Warehouse Location | Cases in Inventory | Cases Reserved |
+    // Cases Available | Cutomer Reserved | Warehouse Observations | Warehouse Pack Date |
+    // Warehouse Age | Warehouse SKU
     // ============================================================
-    const REQUIRED_HEADERS = [
+    // We treat these as canonical names and also accept a few common variants.
+    const HEADER_ALIASES = {
+      "Warehouse Date": ["Warehouse Date"],
+      "W Batch Run Code": ["W Batch Run Code", "W- Batch Run Code", "W- Batch Run Code "],
+      "Warehouse Location": ["Warehouse Location"],
+      "Cases in Inventory": ["Cases in Inventory"],
+      "Cases Reserved": ["Cases Reserved"],
+      "Cases Available": ["Cases Available"],
+      "Cutomer Reserved": ["Cutomer Reserved", "Customer Reserved", "Customer", "Cutomer"],
+      "Warehouse Observations": ["Warehouse Observations", "Obs", "Observations"],
+      "Warehouse Pack Date": ["Warehouse Pack Date", "Pack Date"],
+      "Warehouse Age": ["Warehouse Age", "Age"],
+      "Warehouse SKU": ["Warehouse SKU", "SKU"]
+    };
+
+    const REQUIRED_CANONICAL = [
       "Warehouse SKU",
       "Warehouse Date",
-      "W- Batch Run Code",
+      "W Batch Run Code",
       "Warehouse Location",
       "Cases in Inventory"
-    ];
-
-    // Optional / best effort
-    const OPTIONAL_HEADERS = [
-      "Cases Reserved",
-      "Cases Available",
-      "Customer",
-      "Obs",
-      "Pack Date",
-      "Age"
     ];
 
     // ============================================================
@@ -970,7 +975,6 @@
     }
 
     function isAllZeroRow(r){
-      // ignore rows that are basically empty or have 0 inventory/reserved/available
       const inv = r.casesInv || 0;
       const res = r.casesRes || 0;
       const av  = r.casesAvail || 0;
@@ -981,7 +985,7 @@
       const s = safeStr(raw);
       if (!s) return "";
       const d = new Date(s);
-      if (isNaN(d.getTime())) return s; // keep as-is
+      if (isNaN(d.getTime())) return s;
       const y = d.getFullYear();
       const m = String(d.getMonth()+1).padStart(2,"0");
       const da = String(d.getDate()).padStart(2,"0");
@@ -995,6 +999,15 @@
         return d.toLocaleDateString(undefined, { weekday:"long", year:"numeric", month:"long", day:"numeric" });
       }
       return key;
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
     // ============================================================
@@ -1031,15 +1044,27 @@
       return { headers: headers.map(h => String(h ?? "")), rowObjs: out };
     }
 
-    function findHeader(headers, wanted){
-      // exact match first, then case-insensitive match
+    function findHeader(headers, aliases){
+      // Try exact first
       const set = new Set(headers);
-      if (set.has(wanted)) return wanted;
-      const low = wanted.toLowerCase();
-      for (const h of headers){
-        if (String(h).toLowerCase() === low) return h;
+      for (const a of aliases){
+        if (set.has(a)) return a;
+      }
+      // Then case-insensitive
+      const lowerMap = new Map(headers.map(h => [String(h).toLowerCase(), h]));
+      for (const a of aliases){
+        const hit = lowerMap.get(String(a).toLowerCase());
+        if (hit) return hit;
       }
       return "";
+    }
+
+    function resolveHeaders(headers){
+      const resolved = {};
+      for (const canon of Object.keys(HEADER_ALIASES)){
+        resolved[canon] = findHeader(headers, HEADER_ALIASES[canon] || [canon]);
+      }
+      return resolved;
     }
 
     function parseRows(payload){
@@ -1047,53 +1072,48 @@
       lastParsedHeaders = [];
 
       if (!payload?.sheets){
-        return { rows: [], missing: REQUIRED_HEADERS.slice(), headers: [] };
+        return { rows: [], missing: REQUIRED_CANONICAL.slice(), headers: [] };
       }
 
       selectedSheetName = getFirstExistingSheet(payload);
       if (!selectedSheetName){
-        return { rows: [], missing: REQUIRED_HEADERS.slice(), headers: [] };
+        return { rows: [], missing: REQUIRED_CANONICAL.slice(), headers: [] };
       }
 
       const sheet = payload.sheets[selectedSheetName];
       const { headers, rowObjs } = sheetToRowObjects(sheet);
       lastParsedHeaders = headers;
 
-      // resolve required header names (supports minor casing differences)
-      const resolved = {};
-      for (const h of [...REQUIRED_HEADERS, ...OPTIONAL_HEADERS]){
-        resolved[h] = findHeader(headers, h);
-      }
+      const H = resolveHeaders(headers);
 
-      const missing = REQUIRED_HEADERS.filter(h => !resolved[h]);
+      const missing = REQUIRED_CANONICAL.filter(c => !H[c]);
       if (missing.length){
         return { rows: [], missing, headers };
       }
 
       const out = [];
       for (const r of rowObjs){
-        const sku = safeStr(r[resolved["Warehouse SKU"]]);
-        const whDateRaw = safeStr(r[resolved["Warehouse Date"]]);
+        const sku = safeStr(r[H["Warehouse SKU"]]);
+        const whDateRaw = safeStr(r[H["Warehouse Date"]]);
         const whDateKey = dateKeyFromWarehouseDate(whDateRaw);
-        const batch = safeStr(r[resolved["W- Batch Run Code"]]);
-        const loc = safeStr(r[resolved["Warehouse Location"]]);
 
-        const inv = parseNumber(r[resolved["Cases in Inventory"]]);
-        const res = resolved["Cases Reserved"] ? parseNumber(r[resolved["Cases Reserved"]]) : 0;
-        const availFromCol = resolved["Cases Available"] ? parseNumber(r[resolved["Cases Available"]]) : 0;
+        const batch = safeStr(r[H["W Batch Run Code"]]);
+        const loc = safeStr(r[H["Warehouse Location"]]);
 
-        // compute available: prefer provided if >0 else inv-res
+        const inv = parseNumber(r[H["Cases in Inventory"]]);
+        const res = H["Cases Reserved"] ? parseNumber(r[H["Cases Reserved"]]) : 0;
+        const availFromCol = H["Cases Available"] ? parseNumber(r[H["Cases Available"]]) : 0;
+
         const avail = (availFromCol > 0) ? availFromCol : Math.max(0, inv - res);
 
-        const cust = resolved["Customer"] ? safeStr(r[resolved["Customer"]]) : "";
-        const obs = resolved["Obs"] ? safeStr(r[resolved["Obs"]]) : "";
-        const packDate = resolved["Pack Date"] ? safeStr(r[resolved["Pack Date"]]) : "";
-        const age = resolved["Age"] ? parseNumber(r[resolved["Age"]]) : 0;
+        const cust = H["Cutomer Reserved"] ? safeStr(r[H["Cutomer Reserved"]]) : "";
+        const obs = H["Warehouse Observations"] ? safeStr(r[H["Warehouse Observations"]]) : "";
+        const packDate = H["Warehouse Pack Date"] ? safeStr(r[H["Warehouse Pack Date"]]) : "";
+        const age = H["Warehouse Age"] ? parseNumber(r[H["Warehouse Age"]]) : 0;
 
-        // skip completely empty
         if (!sku && !whDateRaw && !batch && !loc && !(inv||res||avail)) continue;
 
-        // HARD filters: must have SKU and date to behave consistently
+        // Keep consistent behavior: require sku + date
         if (!sku || !whDateKey){
           filteredOutCount++;
           continue;
@@ -1114,7 +1134,6 @@
           age
         };
 
-        // Remove nonsense rows (all zeros)
         if (isAllZeroRow(row)){
           filteredOutCount++;
           continue;
@@ -1131,7 +1150,6 @@
     // ============================================================
     function getDateKeys(){
       const keys = Array.from(new Set(allRows.map(r => r.whDateKey).filter(Boolean)));
-      // sort descending (latest first) for ISO dates; otherwise keep lexicographic
       keys.sort((a,b) => {
         if (/^\d{4}-\d{2}-\d{2}$/.test(a) && /^\d{4}-\d{2}-\d{2}$/.test(b)){
           return b.localeCompare(a);
@@ -1139,11 +1157,6 @@
         return String(b).localeCompare(String(a));
       });
       return keys;
-    }
-
-    function buildSkuList(rows){
-      const skus = Array.from(new Set(rows.map(r => r.sku).filter(Boolean))).sort();
-      return skus;
     }
 
     function getFilteredRows(){
@@ -1156,7 +1169,6 @@
         rows = rows.filter(r => r.whDateKey === currentDateKey);
       }
 
-      // apply sku selection
       if (currentSku){
         rows = rows.filter(r => r.sku === currentSku);
       }
@@ -1191,12 +1203,10 @@
         sel.appendChild(opt);
       });
 
-      // default to latest if not set
       if (!currentDateKey && keys.length){
         currentDateKey = keys[0];
         sel.value = "";
       } else {
-        // show as specific date if user selected
         sel.value = currentDateKey || "";
       }
     }
@@ -1209,11 +1219,7 @@
         return;
       }
       const v = sel.value;
-      if (!v){
-        currentDateKey = keys[0]; // latest
-      } else {
-        currentDateKey = v;
-      }
+      currentDateKey = v ? v : keys[0];
     }
 
     function renderSkuSelect(){
@@ -1221,7 +1227,6 @@
       const baseRows = getSnapshotRowsForCards();
       const hideZero = document.getElementById("toggle-hide-zero").checked;
 
-      // aggregate available by sku for selection list filtering
       const bySku = new Map();
       for (const r of baseRows){
         if (!bySku.has(r.sku)) bySku.set(r.sku, { avail:0, inv:0, res:0 });
@@ -1244,16 +1249,14 @@
       sel.appendChild(optAll);
 
       for (const sku of skus){
-        const opt = document.createElement("option");
         const a = bySku.get(sku);
+        const opt = document.createElement("option");
         opt.value = sku;
         opt.textContent = `${sku}  •  avail ${fmt(a.avail,1)}  •  inv ${fmt(a.inv,1)}`;
         sel.appendChild(opt);
       }
 
-      // keep selection if possible
-      const exists = skus.includes(currentSku);
-      if (!exists) currentSku = "";
+      if (!skus.includes(currentSku)) currentSku = "";
       sel.value = currentSku;
     }
 
@@ -1263,7 +1266,6 @@
     function renderKpis(){
       const snapRows = getSnapshotRowsForCards();
 
-      // If hide-zero is on, still KPIs should reflect actual selection (not hidden)
       const dateLabel = document.getElementById("toggle-show-all-dates").checked
         ? "All dates"
         : `For ${prettyDate(currentDateKey)}`;
@@ -1333,12 +1335,7 @@
       const bySku = new Map();
       for (const r of rows){
         if (!bySku.has(r.sku)){
-          bySku.set(r.sku, {
-            sku: r.sku,
-            inv: 0, res: 0, avail: 0,
-            oldestAge: -1,
-            locations: new Set()
-          });
+          bySku.set(r.sku, { sku: r.sku, inv: 0, res: 0, avail: 0, oldestAge: -1, locations: new Set() });
         }
         const a = bySku.get(r.sku);
         a.inv += r.casesInv || 0;
@@ -1351,19 +1348,11 @@
       let skus = Array.from(bySku.values())
         .sort((a,b) => (b.avail - a.avail) || a.sku.localeCompare(b.sku));
 
-      if (hideZero){
-        skus = skus.filter(a => a.avail > 0);
-      }
-
-      // Apply dropdown sku filter (cards should match too)
-      if (currentSku){
-        skus = skus.filter(a => a.sku === currentSku);
-      }
+      if (hideZero) skus = skus.filter(a => a.avail > 0);
+      if (currentSku) skus = skus.filter(a => a.sku === currentSku);
 
       note.textContent = `${fmt(skus.length,0)} SKU(s) displayed`;
-
-      const removedCopy = `${filteredOutCount.toLocaleString()} removed`;
-      filteredNote.textContent = `Rows filtered out: ${removedCopy}`;
+      filteredNote.textContent = `Rows filtered out: ${filteredOutCount.toLocaleString()} removed`;
 
       if (!skus.length){
         wrap.innerHTML = `<div style="color:var(--muted);font-size:.78rem;padding:10px 4px;">No SKUs for this selection.</div>`;
@@ -1412,7 +1401,6 @@
     function renderIssues(){
       const rows = getSnapshotRowsForCards();
 
-      // oldest lots (top 8 by age)
       const oldest = rows
         .filter(r => (r.age || 0) > 0 && (r.casesInv || 0) > 0)
         .slice()
@@ -1429,7 +1417,6 @@
         }
       }
 
-      // low/zero availability by sku
       const bySku = new Map();
       for (const r of rows){
         if (!bySku.has(r.sku)) bySku.set(r.sku, { sku:r.sku, avail:0, inv:0 });
@@ -1456,12 +1443,14 @@
         }
       }
 
-      // reservations: sum reserved by customer
+      // group "Cutomer Reserved" by value string
       const byCust = new Map();
       for (const r of rows){
         const cust = (r.customer || "").trim();
+        if (!cust) continue;
         const res = r.casesRes || 0;
-        if (!cust || !(res > 0)) continue;
+        // If you want reservations based on Cases Reserved regardless of customer label, keep this:
+        if (!(res > 0)) continue;
         if (!byCust.has(cust)) byCust.set(cust, 0);
         byCust.set(cust, byCust.get(cust) + res);
       }
@@ -1485,7 +1474,6 @@
 
       const rows = getFilteredRows();
 
-      // sort by SKU then batch then location (stable)
       rows.sort((a,b) =>
         a.sku.localeCompare(b.sku) ||
         String(a.whDateKey).localeCompare(String(b.whDateKey)) ||
@@ -1540,32 +1528,20 @@
       const body = document.getElementById("modal-body-rows");
       const footer = document.getElementById("modal-footer");
 
-      const baseRows = getSnapshotRowsForCards()
-        .filter(r => r.sku === sku);
-
+      const baseRows = getSnapshotRowsForCards().filter(r => r.sku === sku);
       const showAllDates = document.getElementById("toggle-show-all-dates").checked;
 
       skuEl.textContent = sku || "(no SKU)";
       sub.textContent = showAllDates
-        ? `All dates • ${baseRows.length} row(s) • grouped by batch + location`
-        : `${prettyDate(currentDateKey)} • ${baseRows.length} row(s) • grouped by batch + location`;
+        ? `All dates • ${baseRows.length} row(s) • grouped by W Batch Run Code + Warehouse Location`
+        : `${prettyDate(currentDateKey)} • ${baseRows.length} row(s) • grouped by W Batch Run Code + Warehouse Location`;
 
-      // group by batch+loc
       const key = (r) => `${r.batch || ""}|||${r.loc || ""}`;
       const map = new Map();
       for (const r of baseRows){
         const k = key(r);
         if (!map.has(k)){
-          map.set(k, {
-            batch: r.batch || "",
-            loc: r.loc || "",
-            inv: 0,
-            avail: 0,
-            cust: "",
-            packDate: "",
-            age: 0,
-            oldest: 0
-          });
+          map.set(k, { batch: r.batch || "", loc: r.loc || "", inv: 0, avail: 0, cust: "", packDate: "", oldest: 0 });
         }
         const a = map.get(k);
         a.inv += r.casesInv || 0;
@@ -1575,8 +1551,7 @@
         if ((r.age || 0) > (a.oldest || 0)) a.oldest = r.age || 0;
       }
 
-      const lots = Array.from(map.values())
-        .sort((a,b) => (b.oldest - a.oldest) || (b.avail - a.avail));
+      const lots = Array.from(map.values()).sort((a,b) => (b.oldest - a.oldest) || (b.avail - a.avail));
 
       body.innerHTML = "";
       let inv=0, avail=0;
@@ -1615,7 +1590,7 @@
     // ============================================================
     // Main reload/render pipeline
     // ============================================================
-    function reloadAll(reason=""){
+    function reloadAll(){
       setUpdatedChip();
 
       const payload = loadPayload();
@@ -1623,31 +1598,28 @@
 
       if (parsed.missing.length){
         allRows = [];
-        selectedSheetName = selectedSheetName || "";
         setStatus(payload ? "warn" : "warn", payload ? "Missing required columns" : "Master Pack not loaded");
 
         const hasAny = !!(localStorage.getItem(MASTER_PACK_KEY) || "").trim();
-        const missingList = parsed.missing.map(h => `<li><code>${h}</code></li>`).join("");
+        const missingList = parsed.missing.map(h => `<li><code>${escapeHtml(h)}</code></li>`).join("");
 
         const sheetKeys = payload?.sheets ? Object.keys(payload.sheets) : [];
         const sheetList = sheetKeys.length
-          ? `<div style="margin-top:6px;color:rgba(148,163,184,.95);">Sheets found: <code>${sheetKeys.join("</code>, <code>")}</code></div>`
+          ? `<div style="margin-top:6px;color:rgba(148,163,184,.95);">Sheets found: <code>${sheetKeys.map(escapeHtml).join("</code>, <code>")}</code></div>`
           : "";
 
         showBanner(`
           <strong>S&amp;H dashboard is not ready.</strong>
           <div style="margin-top:6px;color:rgba(148,163,184,.95);">
-            This dashboard requires these exact headers in Pack Data (inside Master Pack payload):
+            Missing required headers (expects your exact names):
           </div>
           <ul>${missingList}</ul>
           ${sheetList}
           <div style="margin-top:6px;color:rgba(148,163,184,.95);">
-            Fix the headers in the Pack Data sheet, then upload again via Data Input.
-            SKU separation uses <code>Warehouse SKU</code>.
+            This dashboard separates SKUs by <code>Warehouse SKU</code>.
           </div>
         `);
 
-        // clear UI
         document.getElementById("sku-cards").innerHTML = "";
         document.getElementById("raw-body").innerHTML = "";
         document.getElementById("raw-footer").textContent = "–";
@@ -1677,14 +1649,10 @@
         setStatus("ok", `Loaded ${allRows.length} rows (removed ${filteredOutCount})`);
       }
 
-      // ensure date selection is valid
       renderDateSelect();
       normalizeCurrentDateFromSelect();
 
-      // render dropdowns
       renderSkuSelect();
-
-      // render content
       renderKpis();
       renderSkuCards();
       renderIssues();
@@ -1692,40 +1660,20 @@
     }
 
     // ============================================================
-    // HTML escaping
-    // ============================================================
-    function escapeHtml(str){
-      return String(str ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-
-    // ============================================================
-    // Events / init
+    // Init + live refresh
     // ============================================================
     document.addEventListener("DOMContentLoaded", () => {
-      // buttons
-      document.getElementById("btn-reload").addEventListener("click", () => reloadAll("manual"));
+      document.getElementById("btn-reload").addEventListener("click", reloadAll);
+
       document.getElementById("btn-clear-selection").addEventListener("click", () => {
         currentSku = "";
         document.getElementById("sku-select").value = "";
-        renderKpis();
-        renderSkuCards();
-        renderIssues();
-        renderRawTable();
+        renderKpis(); renderSkuCards(); renderIssues(); renderRawTable();
       });
 
-      // toggles/selects
       document.getElementById("toggle-show-all-dates").addEventListener("change", () => {
-        // If switching to all dates, date selector still shows "Latest" but used for reference.
         renderSkuSelect();
-        renderKpis();
-        renderSkuCards();
-        renderIssues();
-        renderRawTable();
+        renderKpis(); renderSkuCards(); renderIssues(); renderRawTable();
       });
 
       document.getElementById("toggle-hide-zero").addEventListener("change", () => {
@@ -1740,21 +1688,14 @@
       document.getElementById("date-select").addEventListener("change", () => {
         normalizeCurrentDateFromSelect();
         renderSkuSelect();
-        renderKpis();
-        renderSkuCards();
-        renderIssues();
-        renderRawTable();
+        renderKpis(); renderSkuCards(); renderIssues(); renderRawTable();
       });
 
       document.getElementById("sku-select").addEventListener("change", (e) => {
         currentSku = e.target.value || "";
-        renderKpis();
-        renderSkuCards();
-        renderIssues();
-        renderRawTable();
+        renderKpis(); renderSkuCards(); renderIssues(); renderRawTable();
       });
 
-      // sku card click -> modal
       document.getElementById("sku-cards").addEventListener("click", (e) => {
         const card = e.target.closest(".sku-card");
         if (!card) return;
@@ -1763,7 +1704,6 @@
         openModalForSku(sku);
       });
 
-      // modal close
       document.getElementById("modal-close").addEventListener("click", closeModal);
       document.getElementById("modal-backdrop").addEventListener("click", (e) => {
         if (e.target.id === "modal-backdrop") closeModal();
@@ -1772,18 +1712,16 @@
         if (e.key === "Escape") closeModal();
       });
 
-      // INITIAL LOAD
-      reloadAll("init");
+      reloadAll();
 
-      // LIVE REFRESH (MATCH PACK DASHBOARD)
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
-        if (msg.type === UPDATE_EVENT_TYPE) reloadAll("message");
+        if (msg.type === UPDATE_EVENT_TYPE) reloadAll();
       });
 
       window.addEventListener("storage", (e) => {
-        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) reloadAll("storage");
+        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) reloadAll();
       });
     });
   </script>
