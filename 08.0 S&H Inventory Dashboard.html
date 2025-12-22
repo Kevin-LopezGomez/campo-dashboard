@@ -876,24 +876,20 @@
     const PACK_SHEET_CANDIDATES = ["Pack Data", "PACK DATA", "PackData", "Packing Data", MASTER_PACK_SHEET_NAME];
 
     // ============================================================
-    // EXACT HEADERS YOU PROVIDED (primary)
-    // Warehouse Date | W Batch Run Code | Warehouse Location | Cases in Inventory | Cases Reserved |
-    // Cases Available | Cutomer Reserved | Warehouse Observations | Warehouse Pack Date |
-    // Warehouse Age | Warehouse SKU
+    // OPTION A (STRICT): only accept "W Batch Run Code"
     // ============================================================
-    // We treat these as canonical names and also accept a few common variants.
     const HEADER_ALIASES = {
       "Warehouse Date": ["Warehouse Date"],
-      "W Batch Run Code": ["W Batch Run Code", "W- Batch Run Code", "W- Batch Run Code "],
+      "W Batch Run Code": ["W Batch Run Code"],   // ✅ STRICT OPTION A
       "Warehouse Location": ["Warehouse Location"],
       "Cases in Inventory": ["Cases in Inventory"],
       "Cases Reserved": ["Cases Reserved"],
       "Cases Available": ["Cases Available"],
-      "Cutomer Reserved": ["Cutomer Reserved", "Customer Reserved", "Customer", "Cutomer"],
-      "Warehouse Observations": ["Warehouse Observations", "Obs", "Observations"],
-      "Warehouse Pack Date": ["Warehouse Pack Date", "Pack Date"],
-      "Warehouse Age": ["Warehouse Age", "Age"],
-      "Warehouse SKU": ["Warehouse SKU", "SKU"]
+      "Cutomer Reserved": ["Cutomer Reserved"],
+      "Warehouse Observations": ["Warehouse Observations"],
+      "Warehouse Pack Date": ["Warehouse Pack Date"],
+      "Warehouse Age": ["Warehouse Age"],
+      "Warehouse SKU": ["Warehouse SKU"]
     };
 
     const REQUIRED_CANONICAL = [
@@ -1045,12 +1041,10 @@
     }
 
     function findHeader(headers, aliases){
-      // Try exact first
       const set = new Set(headers);
       for (const a of aliases){
         if (set.has(a)) return a;
       }
-      // Then case-insensitive
       const lowerMap = new Map(headers.map(h => [String(h).toLowerCase(), h]));
       for (const a of aliases){
         const hit = lowerMap.get(String(a).toLowerCase());
@@ -1103,7 +1097,6 @@
         const inv = parseNumber(r[H["Cases in Inventory"]]);
         const res = H["Cases Reserved"] ? parseNumber(r[H["Cases Reserved"]]) : 0;
         const availFromCol = H["Cases Available"] ? parseNumber(r[H["Cases Available"]]) : 0;
-
         const avail = (availFromCol > 0) ? availFromCol : Math.max(0, inv - res);
 
         const cust = H["Cutomer Reserved"] ? safeStr(r[H["Cutomer Reserved"]]) : "";
@@ -1113,7 +1106,6 @@
 
         if (!sku && !whDateRaw && !batch && !loc && !(inv||res||avail)) continue;
 
-        // Keep consistent behavior: require sku + date
         if (!sku || !whDateKey){
           filteredOutCount++;
           continue;
@@ -1443,13 +1435,11 @@
         }
       }
 
-      // group "Cutomer Reserved" by value string
       const byCust = new Map();
       for (const r of rows){
         const cust = (r.customer || "").trim();
         if (!cust) continue;
         const res = r.casesRes || 0;
-        // If you want reservations based on Cases Reserved regardless of customer label, keep this:
         if (!(res > 0)) continue;
         if (!byCust.has(cust)) byCust.set(cust, 0);
         byCust.set(cust, byCust.get(cust) + res);
@@ -1518,9 +1508,6 @@
       `;
     }
 
-    // ============================================================
-    // Modal (lot details) — by SKU
-    // ============================================================
     function openModalForSku(sku){
       const backdrop = document.getElementById("modal-backdrop");
       const skuEl = document.getElementById("modal-sku");
@@ -1587,9 +1574,6 @@
       backdrop.setAttribute("aria-hidden", "true");
     }
 
-    // ============================================================
-    // Main reload/render pipeline
-    // ============================================================
     function reloadAll(){
       setUpdatedChip();
 
@@ -1600,7 +1584,6 @@
         allRows = [];
         setStatus(payload ? "warn" : "warn", payload ? "Missing required columns" : "Master Pack not loaded");
 
-        const hasAny = !!(localStorage.getItem(MASTER_PACK_KEY) || "").trim();
         const missingList = parsed.missing.map(h => `<li><code>${escapeHtml(h)}</code></li>`).join("");
 
         const sheetKeys = payload?.sheets ? Object.keys(payload.sheets) : [];
@@ -1659,9 +1642,6 @@
       renderRawTable();
     }
 
-    // ============================================================
-    // Init + live refresh
-    // ============================================================
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("btn-reload").addEventListener("click", reloadAll);
 
