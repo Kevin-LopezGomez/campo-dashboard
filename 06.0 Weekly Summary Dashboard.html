@@ -42,8 +42,8 @@
       border-radius:24px;
       padding:20px 20px 16px;
       background:
-        radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
-        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.10), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.10), transparent 55%),
         linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
       border:1px solid rgba(148,163,184,.35);
       box-shadow:
@@ -87,6 +87,7 @@
       gap:10px;
       flex:1 1 320px;
       min-width:280px;
+      flex-wrap:wrap;
     }
 
     .chip{
@@ -122,6 +123,87 @@
       outline:none;
       min-width:160px;
     }
+
+    /* ======= NEW: HIGHLIGHTS ======= */
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:10px;
+      margin:10px 0 12px;
+    }
+    @media(max-width:1100px){ .kpi-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media(max-width:620px){ .kpi-grid{ grid-template-columns: 1fr; } }
+
+    .kpi-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(55,65,81,.9);
+      background:
+        radial-gradient(circle at top left, rgba(34,197,94,.10), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(59,130,246,.10), transparent 60%),
+        linear-gradient(135deg, rgba(17,24,39,.92), rgba(15,23,42,.98));
+      box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(15,23,42,.7);
+      padding:12px 12px 10px;
+      min-height:86px;
+    }
+    .kpi-glow{
+      position:absolute; inset:-40px -60px auto auto;
+      width:140px;height:140px;border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, rgba(34,197,94,.35), transparent 62%);
+      filter: blur(6px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .kpi-label{
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      color:rgba(156,163,175,.92);
+    }
+    .kpi-value{
+      margin-top:6px;
+      font-size:1.35rem;
+      font-weight:720;
+      letter-spacing:.01em;
+      font-variant-numeric: tabular-nums;
+      display:flex;align-items:baseline;gap:8px;
+    }
+    .kpi-unit{ font-size:.78rem; color:rgba(156,163,175,.85); text-transform:uppercase; letter-spacing:.14em; }
+    .kpi-sub{
+      margin-top:6px;
+      font-size:.78rem;
+      color:rgba(148,163,184,.82);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .callouts{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:0 0 10px;
+    }
+    .callout{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius:999px;
+      padding:6px 10px;
+      border:1px solid rgba(55,65,81,.9);
+      background: rgba(2,6,23,.35);
+      color:rgba(209,213,219,.92);
+      font-size:.78rem;
+      box-shadow: 0 10px 26px rgba(0,0,0,.28);
+    }
+    .callout .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.25);
+    }
+    .callout.warn .dot{ background: rgba(251,146,60,.95); box-shadow: 0 0 0 3px rgba(251,146,60,.22); }
+    .callout.bad .dot{ background: rgba(248,113,113,.95); box-shadow: 0 0 0 3px rgba(248,113,113,.20); }
 
     .panel{
       border-radius:18px;
@@ -261,6 +343,39 @@
         </div>
       </header>
 
+      <!-- NEW: highlights + callouts -->
+      <section class="kpi-grid" id="highlights">
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Week</div>
+          <div class="kpi-value"><span id="hi-week">–</span></div>
+          <div class="kpi-sub" id="hi-range">—</div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Best % Completed</div>
+          <div class="kpi-value"><span id="hi-best">—</span></div>
+          <div class="kpi-sub" id="hi-best-label">—</div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Lowest % Completed</div>
+          <div class="kpi-value"><span id="hi-worst">—</span></div>
+          <div class="kpi-sub" id="hi-worst-label">—</div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Shipping (Sales)</div>
+          <div class="kpi-value"><span id="hi-sales">—</span> <span class="kpi-unit">LBS</span></div>
+          <div class="kpi-sub" id="hi-ship-note">—</div>
+        </article>
+      </section>
+
+      <div class="callouts" id="callouts"></div>
+
       <section class="panel">
         <div class="panel-header">
           <div>
@@ -354,7 +469,6 @@
 
     // =========================================================
     // HEADERS (canonical names used in logic)
-    // NOTE: we keep tolerant alias mapping but canonical must match your dataset
     // =========================================================
     const H = Object.freeze({
       // Seeding
@@ -369,7 +483,6 @@
       TRANS_WORKERS: "Transplant Total # of Workers",
       TRANS_START: "Transplant Start Time",
       TRANS_FINISH: "Transplant Finish Time",
-      // date for daily time bucketing (we'll try multiple)
       TRANS_DATE: "Transplant Date",
 
       // Harvest
@@ -378,7 +491,8 @@
       HARV_CUT: "Peso de La Lechuga Cortada",
       HARV_WITH_WASTE: "Peso de La Lechuga con Waste",
 
-      // Cleaning / boards
+      // Cleaning / boards (NOTE: Cleaned is by Sanitation Week)
+      SAN_WEEK: "Sanitation Week",
       CLEAN_BOARDS: "Total # of Boards Cleaned",
       BROKEN_BOARDS: "Total # of Broken Boards Production",
 
@@ -398,11 +512,12 @@
     function normHeader(s){ return String(s ?? "").replace(/\s+/g," ").trim().toLowerCase(); }
 
     const HEADER_ALIASES = new Map([
-      // (Add anything you see over time)
+      // Seeding
       ["seed week", H.SEED_WEEK],
       ["flats seeded", H.FLATS_SEEDED],
       ["target flats to seed", H.TARGET_FLATS],
 
+      // Transplant
       ["transplant week", H.TRANS_WEEK],
       ["boards transplant", H.BOARDS_TRANS],
       ["expected boards transplanted", H.EXPECT_BOARDS],
@@ -411,22 +526,30 @@
       ["transplant finish time", H.TRANS_FINISH],
       ["transplant date", H.TRANS_DATE],
 
+      // Harvest
       ["harvest week", H.HARV_WEEK],
       ["# of boards harvested", H.HARV_BOARDS],
       ["peso de la lechuga cortada", H.HARV_CUT],
       ["peso de la lechuga con waste", H.HARV_WITH_WASTE],
 
+      // Sanitation / boards
+      ["sanitation week", H.SAN_WEEK],
+      ["semana de sanitation", H.SAN_WEEK],
+      ["semana sanitation", H.SAN_WEEK],
       ["total # of boards cleaned", H.CLEAN_BOARDS],
       ["total # of broken boards production", H.BROKEN_BOARDS],
 
+      // Pack
       ["pack week", H.PACK_WEEK],
       ["sku packed", H.SKU],
       ["quantity of cases packed", H.CASES],
 
+      // Shipping
       ["# lbs shipped", H.LBS_SHIPPED],
       ["lbs shipped", H.LBS_SHIPPED],
       ["location shipped", H.LOC_SHIPPED],
 
+      // Date
       ["harvest date", H.DATE],
       ["date", H.DATE]
     ]);
@@ -584,7 +707,6 @@
       const addWeek = (v) => {
         const s = String(v ?? "").trim();
         if (!s) return;
-        // keep as raw string but normalize "Week 51" -> "51" if needed
         const m = s.match(/(\d{1,3})/);
         weeks.add(m ? m[1] : s);
       };
@@ -593,6 +715,7 @@
         addWeek(r[H.SEED_WEEK]);
         addWeek(r[H.TRANS_WEEK]);
         addWeek(r[H.HARV_WEEK]);
+        addWeek(r[H.SAN_WEEK]); // NEW: include sanitation weeks
       }
       for (const r of (packRows||[])){
         addWeek(r[H.PACK_WEEK]);
@@ -617,7 +740,7 @@
         return (m ? m[1] : s) === wkNum;
       };
 
-      // ---- SEEDING ----
+      // ---- SEEDING (SUM across rows for the week) ----
       const seedRows = growRows.filter(r => isWeek(r[H.SEED_WEEK]));
       const flatsCompleted = seedRows.reduce((s,r)=>s+parseNumber(r[H.FLATS_SEEDED]),0);
       const flatsTarget = seedRows.reduce((s,r)=>s+parseNumber(r[H.TARGET_FLATS]),0);
@@ -629,9 +752,7 @@
       const plugsCompleted = boardsTrans * 127;
       const plugsTarget = boardsExpected * 127;
 
-      // ---- TRANSPLANT Boards/Person/Hour ----
-      // Daily time: min start -> max finish per day, then sum day spans across week.
-      // Need a date key. We'll try Transplant Date, else Harvest Date, else Date.
+      // ---- TRANSPLANT TIME + AVG WORKERS ----
       const dateCandidates = [H.TRANS_DATE, H.DATE, "Date"];
       function getBestDate(row){
         for (const h of dateCandidates){
@@ -643,15 +764,15 @@
         return null;
       }
 
-      // Group by day
       const dayMap = new Map();
       for (const r of transRows){
         const dObj = getBestDate(r);
-        const dayKey = dObj ? formatMMDDYYYY(dObj) : ""; // if missing, we'll fallback later
+        const dayKey = dObj ? formatMMDDYYYY(dObj) : "";
         const startMin = parseTimeToMinutes(r[H.TRANS_START]);
         const finishMin = parseTimeToMinutes(r[H.TRANS_FINISH]);
         const workers = parseNumber(r[H.TRANS_WORKERS]);
         const boards = parseNumber(r[H.BOARDS_TRANS]);
+        const expBoards = parseNumber(r[H.EXPECT_BOARDS]);
 
         const key = dayKey || "__NO_DATE__";
         if (!dayMap.has(key)) {
@@ -660,6 +781,7 @@
             minStart: Number.isFinite(startMin) ? startMin : NaN,
             maxFinish: Number.isFinite(finishMin) ? finishMin : NaN,
             boardsSum: 0,
+            expectedBoardsSum: 0,
             workersSum: 0,
             workersCount: 0
           });
@@ -668,18 +790,15 @@
         if (Number.isFinite(startMin)) d.minStart = Number.isFinite(d.minStart) ? Math.min(d.minStart, startMin) : startMin;
         if (Number.isFinite(finishMin)) d.maxFinish = Number.isFinite(d.maxFinish) ? Math.max(d.maxFinish, finishMin) : finishMin;
         d.boardsSum += boards;
+        d.expectedBoardsSum += expBoards;
         if (workers > 0) { d.workersSum += workers; d.workersCount += 1; }
       }
 
-      // Sum daily hours
       let weekHours = 0;
       for (const d of dayMap.values()){
-        // If everything is in NO_DATE bucket, this becomes one span for the week,
-        // which is the best we can do without date.
         weekHours += spanHours(d.minStart, d.maxFinish);
       }
 
-      // Avg workers across the week (your rule)
       const workersSum = transRows.reduce((s,r)=>{
         const w = parseNumber(r[H.TRANS_WORKERS]);
         return s + (w > 0 ? w : 0);
@@ -687,8 +806,15 @@
       const workersCount = transRows.reduce((s,r)=> s + (parseNumber(r[H.TRANS_WORKERS])>0 ? 1 : 0), 0);
       const avgWorkers = workersCount > 0 ? (workersSum / workersCount) : 0;
 
-      const boardsPerPersonPerHour = (weekHours > 0 && avgWorkers > 0)
+      // ---- TRANSPLANT Boards/Person/Hour (Completed) ----
+      const boardsPerPersonPerHour_completed = (weekHours > 0 && avgWorkers > 0)
         ? (boardsTrans / (avgWorkers * weekHours))
+        : NaN;
+
+      // ---- TRANSPLANT Boards/Person/Hour (Target) ----
+      // your rule: reuse same people + hours, but use SUM(Expected Boards) for week as "target boards"
+      const boardsPerPersonPerHour_target = (weekHours > 0 && avgWorkers > 0)
+        ? (boardsExpected / (avgWorkers * weekHours))
         : NaN;
 
       // ---- HARVEST ----
@@ -697,8 +823,10 @@
       const harvestCut = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_CUT]),0);
       const harvestWithWaste = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_WITH_WASTE]),0);
 
-      // ---- CLEAN / BROKEN (Grow, filtered by Harvest Week) ----
-      const cleanedBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
+      // ---- CLEANED (Sanitation Week) / BROKEN (Harvest Week) ----
+      const sanRows = growRows.filter(r => isWeek(r[H.SAN_WEEK]));
+      const cleanedBoards = sanRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
+
       const brokenBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
 
       // ---- PACKING (Pack) ----
@@ -740,17 +868,27 @@
         wkNum,
         seeding: { completed: flatsCompleted, target: flatsTarget, unit:"Flats" },
         transplant: { completed: plugsCompleted, target: plugsTarget, unit:"Plugs" },
-        transplantRate: { value: boardsPerPersonPerHour, unit:"Boards" },
+
+        transplantRate: {
+          completed: boardsPerPersonPerHour_completed,
+          target: boardsPerPersonPerHour_target,
+          unit:"Boards"
+        },
+
         harvestBoards,
         harvestCut,
         harvestWithWaste,
+
         pack5: { cases: cases5, units: units5, lbs: lbs5 },
         pack10:{ cases: cases10, units: units10, lbs: lbs10 },
         packAllLbs: lbsAll,
+
         ship: { received: shipReceived, sales: shipSales, donation: shipDonation, waste: shipWaste },
+
         cleanedBoards,
         brokenBoards,
-        aux: { weekHours, avgWorkers, boardsTrans, transRowsCount: transRows.length }
+
+        aux: { weekHours, avgWorkers, boardsTrans, boardsExpected, transRowsCount: transRows.length }
       };
     }
 
@@ -761,11 +899,106 @@
 
     function fmtInt(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:0}); }
     function fmt1(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:1}); }
+
+    function pctClass(p){
+      if (!Number.isFinite(p)) return "muted";
+      if (p >= 100) return "good";
+      if (p >= 90) return "warn";
+      return "bad";
+    }
+
     function pctPill(completed, target){
       if (!(target > 0)) return `<span class="pill muted">—</span>`;
       const p = (completed/target)*100;
-      const cls = p >= 100 ? "good" : p >= 90 ? "warn" : "bad";
-      return `<span class="pill ${cls}">${p.toFixed(0)}%</span>`;
+      return `<span class="pill ${pctClass(p)}">${p.toFixed(0)}%</span>`;
+    }
+
+    function pctValue(completed, target){
+      if (!(target > 0)) return NaN;
+      return (completed/target)*100;
+    }
+
+    function safeText(elId, text){
+      const el = $(elId);
+      if (el) el.textContent = text;
+    }
+
+    function renderHighlights(summary){
+      // Week card
+      safeText("hi-week", `Week ${summary.wkNum}`);
+
+      // Best/Worst among the rows where target exists: Seeding + Transplant plugs + Transplant rate
+      const candidates = [
+        { label:"Seeding", pct: pctValue(summary.seeding.completed, summary.seeding.target) },
+        { label:"Transplant (Plugs)", pct: pctValue(summary.transplant.completed, summary.transplant.target) },
+        { label:"Transplant Rate", pct: pctValue(summary.transplantRate.completed, summary.transplantRate.target) },
+      ].filter(x => Number.isFinite(x.pct));
+
+      let best = null, worst = null;
+      for (const c of candidates){
+        if (!best || c.pct > best.pct) best = c;
+        if (!worst || c.pct < worst.pct) worst = c;
+      }
+
+      safeText("hi-best", best ? `${Math.round(best.pct)}%` : "—");
+      safeText("hi-best-label", best ? best.label : "—");
+      safeText("hi-worst", worst ? `${Math.round(worst.pct)}%` : "—");
+      safeText("hi-worst-label", worst ? worst.label : "—");
+
+      safeText("hi-sales", fmtInt(summary.ship.sales));
+      safeText("hi-ship-note", `Received: ${fmtInt(summary.ship.received)} • Donation: ${fmtInt(summary.ship.donation)}`);
+
+      // optional date range (not available without reliable per-row dates)
+      safeText("hi-range", `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`);
+
+      renderCallouts(summary);
+    }
+
+    function renderCallouts(summary){
+      const wrap = $("callouts");
+      if (!wrap) return;
+
+      const items = [];
+
+      // Seeding status
+      if (summary.seeding.target > 0){
+        const p = (summary.seeding.completed/summary.seeding.target)*100;
+        items.push({
+          cls: p >= 100 ? "" : p >= 90 ? "warn" : "bad",
+          text: p >= 100 ? `Seeding hit target (${Math.round(p)}%)` : `Seeding at ${Math.round(p)}%`
+        });
+      }
+
+      // Transplant plugs status
+      if (summary.transplant.target > 0){
+        const p = (summary.transplant.completed/summary.transplant.target)*100;
+        items.push({
+          cls: p >= 100 ? "" : p >= 90 ? "warn" : "bad",
+          text: p >= 100 ? `Transplant hit target (${Math.round(p)}%)` : `Transplant at ${Math.round(p)}%`
+        });
+      }
+
+      // Cleaned boards highlight
+      if (summary.cleanedBoards > 0){
+        items.push({ cls:"", text:`Cleaned boards: ${fmtInt(summary.cleanedBoards)} (Sanitation Week)` });
+      } else {
+        items.push({ cls:"warn", text:`No cleaned boards recorded for Sanitation Week ${summary.wkNum}` });
+      }
+
+      // Broken boards highlight
+      if (summary.brokenBoards > 0){
+        items.push({ cls:"warn", text:`Broken boards: ${fmtInt(summary.brokenBoards)} (Harvest Week)` });
+      }
+
+      // Shipping breakdown
+      items.push({ cls:"", text:`Shipping Sales: ${fmtInt(summary.ship.sales)} lbs` });
+
+      wrap.innerHTML = items.slice(0,6).map(i => `
+        <div class="callout ${i.cls}">
+          <span class="dot"></span>
+          <span>${i.text}</span>
+        </div>
+      `).join("");
     }
 
     function renderTable(summary){
@@ -792,14 +1025,18 @@
         pct: pctPill(summary.transplant.completed, summary.transplant.target)
       });
 
-      // Transplant rate
-      const rateOk = Number.isFinite(summary.transplantRate.value) && summary.transplantRate.value > 0;
+      // Transplant rate (completed + target)
+      const rateC = summary.transplantRate.completed;
+      const rateT = summary.transplantRate.target;
+      const rateOkC = Number.isFinite(rateC) && rateC > 0;
+      const rateOkT = Number.isFinite(rateT) && rateT > 0;
+
       rows.push({
         label:"Transplant - Boards/Person/Hour",
-        completed: rateOk ? fmt1(summary.transplantRate.value) : "—",
-        target: "—",
+        completed: rateOkC ? fmt1(rateC) : "—",
+        target: rateOkT ? fmt1(rateT) : "—",
         units: "Boards",
-        pct: `<span class="pill muted">—</span>`
+        pct: (rateOkC && rateOkT) ? pctPill(rateC, rateT) : `<span class="pill muted">—</span>`
       });
 
       // Harvest
@@ -836,7 +1073,7 @@
       rows.push({ label:"Shipping - Donation", completed: fmtInt(summary.ship.donation), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
       rows.push({ label:"Shipping - Waste", completed: fmtInt(summary.ship.waste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` });
 
-      // Boards
+      // Boards (Cleaned uses Sanitation Week)
       rows.push({ label:"# of Cleaned Boards", completed: fmtInt(summary.cleanedBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
       rows.push({ label:"# of Broken Boards", completed: fmtInt(summary.brokenBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` });
 
@@ -905,7 +1142,7 @@
       WEEKS = collectWeeks(GROW_ROWS, PACK_ROWS);
       if (!WEEKS.length){
         setHint(
-          "No weeks found yet.\n\nFix:\n- Open Data Input\n- Upload Master Grow + Master Pack\n- Confirm week columns exist (Seed Week / Transplant Week / Harvest Week / Pack Week)"
+          "No weeks found yet.\n\nFix:\n- Open Data Input\n- Upload Master Grow + Master Pack\n- Confirm week columns exist (Seed Week / Transplant Week / Harvest Week / Pack Week / Sanitation Week)"
         );
       } else {
         setHint("");
@@ -921,7 +1158,6 @@
 
       if (current && WEEKS.includes(current)) sel.value = current;
       else {
-        // default to latest
         const last = WEEKS[WEEKS.length-1];
         selectedWeek = last || "";
         sel.value = selectedWeek;
@@ -941,13 +1177,14 @@
       const title = $("panelTitle");
       if (title) title.textContent = "Week " + summary.wkNum;
 
+      renderHighlights(summary);
       renderTable(summary);
 
-      // Helpful diagnostics (kept subtle)
       setDebug(
         `Transplant diagnostics:\n` +
         `- rows in week: ${summary.aux.transRowsCount}\n` +
         `- boards transplanted (sum): ${summary.aux.boardsTrans.toLocaleString()}\n` +
+        `- expected boards (sum): ${summary.aux.boardsExpected.toLocaleString()}\n` +
         `- avg workers (week): ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"}\n` +
         `- total hours (sum of daily spans): ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
         `\nNote: If transplant date is missing in the sheet, time will fallback to a single span bucket for the week.`
@@ -955,7 +1192,7 @@
     }
 
     // =========================================================
-    // LIVE REFRESH (same contract as the other dashboards)
+    // LIVE REFRESH
     // =========================================================
     let reloadTimer = null;
     function reloadAll(reason){
@@ -966,30 +1203,25 @@
         loadData();
         renderWeekOptions();
 
-        // If the selected week disappeared, reselect to latest
         if (selectedWeek && !WEEKS.includes(selectedWeek)) {
           selectedWeek = WEEKS[WEEKS.length-1] || "";
         }
 
         render();
-        // console.log("🔄 Weekly Summary reload", reason || "");
       }, 60);
     }
 
     function setupListeners(){
-      // 1) storage events
       window.addEventListener("storage", (e) => {
         if (!e) return;
         if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_GROW_PING_KEY, MASTER_PACK_PING_KEY].includes(e.key)) reloadAll("storage");
       });
 
-      // 2) CustomEvents
       window.addEventListener(MSG_GROW, () => reloadAll("customevent-grow"));
       window.addEventListener(MSG_PACK, () => reloadAll("customevent-pack"));
       document.addEventListener(MSG_GROW, () => reloadAll("customevent-grow-doc"));
       document.addEventListener(MSG_PACK, () => reloadAll("customevent-pack-doc"));
 
-      // 3) postMessage from index
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
@@ -997,7 +1229,6 @@
         if (msg.type === MSG_PACK || msg.type === "MASTER_PACK_UPDATED") reloadAll("message-pack");
       });
 
-      // 4) BroadcastChannel
       if (bc){
         bc.onmessage = (ev) => {
           const msg = ev?.data;
@@ -1006,7 +1237,6 @@
         };
       }
 
-      // 5) Safety poll
       let lastGrowLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
       let lastPackLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
       setInterval(() => {
