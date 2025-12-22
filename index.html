@@ -111,6 +111,7 @@
       border-radius:18px;
       border:1px solid rgba(148,163,184,.25);
       background:
+        radial-gradient(circle at top right, rgba(34,163,184,0.06), transparent 60%),
         radial-gradient(circle at top right, rgba(34,197,94,0.08), transparent 60%),
         linear-gradient(135deg, rgba(15,23,42,0.92), rgba(15,23,42,0.98));
       box-shadow: var(--shadow);
@@ -177,6 +178,10 @@
       <button class="tab" data-target="p-harvest" data-tab="harvest">✂️ <span>Harvest</span></button>
       <button class="tab" data-target="p-packing" data-tab="packing">📦 <span>Packing</span></button>
       <button class="tab" data-target="p-sanitation" data-tab="sanitation">🧼 <span>Sanitation</span></button>
+      <!-- Add future dashboards here (Weekly Summary, etc.) -->
+      <!-- Example:
+      <button class="tab" data-target="p-weekly" data-tab="weekly">📊 <span>Weekly Summary</span></button>
+      -->
     </div>
 
     <div class="main">
@@ -257,6 +262,21 @@
           <iframe id="ifr-sanitation" data-src="05.0 Sanitation Dashboard.html"></iframe>
         </div>
       </section>
+
+      <!-- Future:
+      <section class="panel" id="p-weekly">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Weekly Summary Dashboard</h2>
+            <p>Reads Master Grow + Master Pack and builds the Week Summary table (targets + % completed).</p>
+          </div>
+          <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>06.0 Weekly Summary Dashboard.html</code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-weekly" data-src="06.0 Weekly Summary Dashboard.html"></iframe>
+        </div>
+      </section>
+      -->
     </div>
   </div>
 
@@ -283,7 +303,7 @@
       const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
       const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
 
-      // Contract: dashboards (Seeding) expect sheets["Master Grow"] and sheets["Master Pack"]
+      // Contract: dashboards expect sheets["Master Grow"] and sheets["Master Pack"]
       const CANON_GROW_SHEET = "Master Grow";
       const CANON_PACK_SHEET = "Master Pack";
 
@@ -291,12 +311,18 @@
       const MSG_GROW = "MASTER_GROW_UPDATED";
       const MSG_PACK = "MASTER_PACK_UPDATED";
 
-      // BroadcastChannel (same-origin only; optional)
-      const BC_NAME = "campo_updates_v1";
-      const bc = (() => {
-        try { return ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null; }
-        catch { return null; }
-      })();
+      // =========================================================
+      // BroadcastChannel (support BOTH names for compatibility)
+      // - Canonical is: campo_master_bus_v1 (dashboards)
+      // - Legacy is:    campo_updates_v1 (older pages)
+      // =========================================================
+      const BC_NAMES = ["campo_master_bus_v1", "campo_updates_v1"];
+      const bcs = [];
+      for (const name of BC_NAMES) {
+        try {
+          if ("BroadcastChannel" in window) bcs.push(new BroadcastChannel(name));
+        } catch {}
+      }
 
       // =========================================================
       // DOM refs
@@ -315,7 +341,7 @@
       }
 
       // =========================================================
-      // Toast helper (replaces badge, more informative)
+      // Toast helper
       // =========================================================
       let toastTimer = null;
       function showToast(msg, sub, ok){
@@ -330,9 +356,9 @@
       }
 
       // =========================================================
-      // iFrame notify helper (bulletproof)
+      // iFrame notify helper
       // =========================================================
-      const IFRAME_IDS = ["ifr-seeding","ifr-transplant","ifr-harvest","ifr-packing","ifr-sanitation","ifr-data"];
+      const IFRAME_IDS = ["ifr-seeding","ifr-transplant","ifr-harvest","ifr-packing","ifr-sanitation","ifr-data"/*,"ifr-weekly"*/];
       function notifyIframes(type){
         for (const id of IFRAME_IDS){
           const ifr = document.getElementById(id);
@@ -343,8 +369,10 @@
       }
 
       function broadcast(type){
-        // BroadcastChannel (same-origin)
-        try { bc?.postMessage?.({ type, ts: Date.now() }); } catch(e){}
+        const payload = { type, ts: Date.now() };
+        for (const ch of bcs) {
+          try { ch.postMessage(payload); } catch {}
+        }
       }
 
       // =========================================================
@@ -361,55 +389,45 @@
       // =========================================================
       // Contract normalizer (bulletproof)
       // - Ensures sheets["Master Grow"] / sheets["Master Pack"] exist.
-      // - If worker returns sheets under different keys, remap.
       // =========================================================
       function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
 
       function normalizeMasterPayload(raw, kind){
         if (!isObject(raw)) return raw;
 
-        // If it already has the canonical sheet, keep it
-        const sheets = raw.sheets;
-        if (isObject(sheets)) {
-          const want = (kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET;
-          if (sheets[want]) return raw;
+        const want = (kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET;
 
-          // Try to find an equivalent sheet key
-          const keys = Object.keys(sheets);
+        // Already canonical
+        if (isObject(raw.sheets) && raw.sheets[want]) return raw;
+
+        // Try to remap existing sheet key
+        if (isObject(raw.sheets)) {
+          const keys = Object.keys(raw.sheets);
           const wantLower = want.toLowerCase();
-          let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
 
-          if (!match && kind === "grow") {
-            match = keys.find(k => String(k).toLowerCase().includes("grow"));
-          }
-          if (!match && kind === "pack") {
-            match = keys.find(k => String(k).toLowerCase().includes("pack"));
-          }
+          let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
+          if (!match && kind === "grow") match = keys.find(k => String(k).toLowerCase().includes("grow"));
+          if (!match && kind === "pack") match = keys.find(k => String(k).toLowerCase().includes("pack"));
 
           if (match) {
             const clone = JSON.parse(JSON.stringify(raw));
             clone.sheets = clone.sheets || {};
             clone.sheets[want] = clone.sheets[match];
-            // keep original too (harmless)
             return clone;
           }
         }
 
-        // If payload looks like a single-sheet object (headers/rows at top-level), wrap it
+        // If it's a top-level {headers, rows}, wrap it
         if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
-          const wrapped = {
+          return {
             version: raw.version || "v1",
             updatedAt: raw.updatedAt || new Date().toISOString(),
             kind: raw.kind || (kind === "grow" ? "grow" : "pack"),
             sourceLabel: raw.sourceLabel || "worker",
-            sheets: {
-              [(kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET]: { headers: raw.headers, rows: raw.rows }
-            }
+            sheets: { [want]: { headers: raw.headers, rows: raw.rows } }
           };
-          return wrapped;
         }
 
-        // If none apply, return as-is
         return raw;
       }
 
@@ -434,7 +452,7 @@
       }
 
       // =========================================================
-      // Hydrate localStorage from Worker (bulletproof + normalized)
+      // Hydrate localStorage from Worker (normalized + emits updates)
       // =========================================================
       async function tryHydrateFromWorker(){
         // Health check
@@ -457,7 +475,8 @@
           const normalizedGrow = normalizeMasterPayload(growJson, "grow");
           localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(normalizedGrow));
           localStorage.setItem(MASTER_GROW_PING, String(now));
-          window.dispatchEvent(new CustomEvent(MSG_GROW, { detail:{ key: MASTER_GROW_KEY, ts: now } }));
+
+          try { window.dispatchEvent(new CustomEvent(MSG_GROW, { detail:{ key: MASTER_GROW_KEY, ts: now } })); } catch {}
           notifyIframes(MSG_GROW);
           broadcast(MSG_GROW);
           wroteAny = true;
@@ -471,7 +490,8 @@
           const normalizedPack = normalizeMasterPayload(packJson, "pack");
           localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(normalizedPack));
           localStorage.setItem(MASTER_PACK_PING, String(now));
-          window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } }));
+
+          try { window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } })); } catch {}
           notifyIframes(MSG_PACK);
           broadcast(MSG_PACK);
           wroteAny = true;
@@ -481,7 +501,7 @@
 
         if (wroteAny) {
           const ok = storageContractOk();
-          showToast("Hydrated from Worker", ok ? "Contract OK (Master Grow/Pack sheets present)" : "⚠️ Contract warning: missing canonical sheet keys", ok);
+          showToast("Hydrated from Worker", ok ? "Contract OK (canonical Master Grow/Pack sheets present)" : "⚠️ Contract warning: missing canonical sheet keys", ok);
           console.log("✅ Hydrated localStorage from Worker (grow/pack).");
         } else {
           showToast("Worker connected", "No grow/pack loaded (files missing or errors).", false);
@@ -524,7 +544,7 @@
       }
 
       // =========================================================
-      // Drag-to-reorder with threshold (bulletproof)
+      // Drag-to-reorder with threshold
       // =========================================================
       function makeSortable(){
         const DRAG_THRESHOLD = 8;
@@ -661,24 +681,39 @@
 
       // =========================================================
       // Message bridge (bulletproof)
-      // - Any iframe (data-input or dashboards) can send MASTER_*_UPDATED
+      // - Any iframe can send MASTER_*_UPDATED
       // - Index forwards to all iframes + BroadcastChannel
+      // - Index also "touches" ping keys so poll-based dashboards refresh too
       // =========================================================
+      function touchPing(type){
+        const now = String(Date.now());
+        if (type === MSG_GROW || type === "MASTER_GROW_UPDATED") {
+          try { localStorage.setItem(MASTER_GROW_PING, now); } catch {}
+        }
+        if (type === MSG_PACK || type === "MASTER_PACK_UPDATED") {
+          try { localStorage.setItem(MASTER_PACK_PING, now); } catch {}
+        }
+      }
+
       window.addEventListener("message", (event) => {
         const msg = event?.data || {};
         if (!msg.type) return;
+
         if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED") {
+          touchPing(msg.type);
           notifyIframes(msg.type);
           broadcast(msg.type);
           showToast("Update received", msg.type, true);
         }
       });
 
-      if (bc) {
-        bc.onmessage = (ev) => {
+      // Listen on ALL BC channels and forward to iframes
+      for (const ch of bcs) {
+        ch.onmessage = (ev) => {
           const msg = ev?.data || {};
           if (!msg.type) return;
-          if (msg.type === MSG_GROW || msg.type === MSG_PACK) {
+          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED") {
+            touchPing(msg.type);
             notifyIframes(msg.type);
           }
         };
