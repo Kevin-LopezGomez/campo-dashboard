@@ -501,6 +501,18 @@
 
     .hidden { display: none; }
     .hint-empty { font-size: 0.75rem; color: var(--muted); margin-top: 6px; white-space: pre-wrap; }
+
+    .debug {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(2,6,23,.35);
+      font-size: .74rem;
+      color: var(--sub);
+      display:none;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 
@@ -643,6 +655,7 @@
           </div>
 
           <div id="empty-hint" class="hint-empty"></div>
+          <div id="debug" class="debug"></div>
         </section>
       </section>
     </div>
@@ -650,31 +663,128 @@
 
   <script>
     // =========================================================
-    // STORAGE / SHEET CONTRACT
+    // STORAGE CONTRACT
     // =========================================================
     const MASTER_GROW_KEY = "campo_master_grow_v1";
     const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
-    const MASTER_GROW_SHEET_NAME = "Master Grow";
 
-    // STRICT header contract (matches your header list)
-    const HEADERS = Object.freeze({
+    // IMPORTANT: We accept multiple possible sheet names (bulletproof),
+    // but prefer "Master Grow" as the canonical name.
+    const SHEET_CANDIDATES = [
+      "Master Grow",
+      "master grow",
+      "MASTER GROW",
+      "Grow",
+      "grow",
+      "MG",
+      "mg"
+    ];
+
+    // Parent/index message types
+    const MSG_GROW = "MASTER_GROW_UPDATED";
+
+    // BroadcastChannel (same-origin only; harmless if unsupported)
+    const BC_NAME = "campo_master_bus_v1";
+    const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
+
+    // =========================================================
+    // CANONICAL (meaning) headers we use internally
+    // =========================================================
+    const H = Object.freeze({
       DATE: "Harvest Date",
       WEEK: "Harvest Week",
       START: "Harvest Start",
       FINISH: "Harvest Finish",
       WORKERS: "Harvest # of Workers",
       BOARDS: "# of Boards Harvested",
+      CUT_LBS: "Peso de La Lechuga Cortada",
       WASTE_LBS: "Total Harvest Waste Weight",
-      WITH_WASTE_LBS: "Peso de La Lechuga con Waste" // optional, if present we'll use it
+      WITH_WASTE_LBS: "Peso de La Lechuga con Waste"
     });
 
-    // ✅ FIX: CUT LBS headers updated to match your actual header exactly
-    const CUT_LBS_HEADERS = Object.freeze([
-      "Peso de La Lechuga Cortada",
-      "Peso de la Lechuga Cortada",
-      "PESO DE LA LECHUGA CORTADA",
-      "Peso de la lechuga cortada"
+    // =========================================================
+    // HEADER ALIASES (tolerant like Seeding)
+    // Add anything you ever see here.
+    // =========================================================
+    function normHeader(s){
+      return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    const HEADER_ALIASES = new Map([
+      // Date
+      ["harvest date", H.DATE],
+      ["date", H.DATE],
+      ["fecha de harvest", H.DATE],
+      ["fecha de cosecha", H.DATE],
+      ["cosecha date", H.DATE],
+
+      // Week
+      ["harvest week", H.WEEK],
+      ["week", H.WEEK],
+      ["cosecha week", H.WEEK],
+      ["semana", H.WEEK],
+      ["semana de cosecha", H.WEEK],
+
+      // Start/Finish
+      ["harvest start", H.START],
+      ["start", H.START],
+      ["inicio", H.START],
+      ["inicio harvest", H.START],
+      ["inicio de cosecha", H.START],
+
+      ["harvest finish", H.FINISH],
+      ["finish", H.FINISH],
+      ["final", H.FINISH],
+      ["fin", H.FINISH],
+      ["final harvest", H.FINISH],
+      ["final de cosecha", H.FINISH],
+
+      // Workers
+      ["harvest # of workers", H.WORKERS],
+      ["harvest workers", H.WORKERS],
+      ["# of workers", H.WORKERS],
+      ["workers", H.WORKERS],
+      ["trabajadores", H.WORKERS],
+
+      // Boards
+      ["# of boards harvested", H.BOARDS],
+      ["boards harvested", H.BOARDS],
+      ["boards", H.BOARDS],
+      ["# boards harvested", H.BOARDS],
+
+      // Cut lbs (common variants)
+      ["peso de la lechuga cortada", H.CUT_LBS],
+      ["peso de la lechuga  cortada", H.CUT_LBS],
+      ["peso lechuga cortada", H.CUT_LBS],
+      ["cut lbs", H.CUT_LBS],
+      ["cut weight", H.CUT_LBS],
+
+      // Waste
+      ["total harvest waste weight", H.WASTE_LBS],
+      ["waste weight", H.WASTE_LBS],
+      ["waste", H.WASTE_LBS],
+      ["desperdicio", H.WASTE_LBS],
+      ["peso waste", H.WASTE_LBS],
+
+      // With waste
+      ["peso de la lechuga con waste", H.WITH_WASTE_LBS],
+      ["with waste", H.WITH_WASTE_LBS],
+      ["con waste", H.WITH_WASTE_LBS],
+      ["total with waste", H.WITH_WASTE_LBS]
     ]);
+
+    function canonicalizeHeaders(headersRaw){
+      const canonHeaders = [];
+      const canonIndexByName = new Map();
+      headersRaw.forEach((h, idx) => {
+        const raw = String(h ?? "");
+        const key = normHeader(raw);
+        const canon = HEADER_ALIASES.get(key) || raw.trim();
+        canonHeaders[idx] = canon;
+        if (canon && !canonIndexByName.has(canon)) canonIndexByName.set(canon, idx);
+      });
+      return { canonHeaders, canonIndexByName };
+    }
 
     // =========================================================
     // STATE
@@ -692,10 +802,23 @@
     let WEEKLY = [];
 
     // =========================================================
-    // PARSERS
+    // HELPERS
     // =========================================================
+    function setEmpty(msg) {
+      const el = document.getElementById("empty-hint");
+      if (el) el.textContent = msg || "";
+    }
+    function setDebug(msg){
+      const el = document.getElementById("debug");
+      if (!el) return;
+      if (!msg) { el.style.display="none"; el.textContent=""; return; }
+      el.style.display="block";
+      el.textContent = msg;
+    }
+
     function parseNumber(v) {
       if (v === null || v === undefined) return 0;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
       const s = String(v).trim();
       if (!s) return 0;
       if (s.toUpperCase().includes("#VALUE")) return 0;
@@ -704,9 +827,88 @@
       return Number.isFinite(n) ? n : 0;
     }
 
-    function parseTimeOfDayToMinutes(s) {
-      const str = String(s ?? "").trim();
+    // Handles: Date obj, MM/DD/YYYY, ISO, long-form, Excel serial number
+    function parseAnyDate(v){
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+
+      // Excel serial number (number)
+      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + v * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      const s0 = String(v).trim();
+      if (!s0) return null;
+
+      // common "no date" tokens
+      const s0n = s0.toLowerCase();
+      if (s0n === "(no date)" || s0n === "no date" || s0n === "n/a" || s0n === "na" || s0n === "null" || s0n === "undefined") return null;
+
+      // Excel serial number (string)
+      const n = Number(s0);
+      if (Number.isFinite(n) && n > 20000 && n < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + n * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Strip weekday prefix: "Wednesday, October 1, 2025"
+      let s = s0;
+      const parts = s.split(",");
+      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
+
+      // ISO
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // US MM/DD/YYYY
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
+        const [mm, dd, yy] = s.split("/").map(Number);
+        const yyyy = yy < 100 ? 2000 + yy : yy;
+        const d = new Date(yyyy, mm - 1, dd);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Fallback
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatDateMMDDYYYY(date) {
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const yyyy = date.getFullYear();
+      return `${mm}/${dd}/${yyyy}`;
+    }
+
+    // Time parsing: supports "HH:MM", "HH:MM AM/PM", decimal hours (e.g. 6.5), and Excel time fractions (0.5)
+    function parseTimeToMinutes(v) {
+      if (v === null || v === undefined) return NaN;
+
+      // Excel time fraction (0..1)
+      if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1) {
+        return Math.round(v * 24 * 60);
+      }
+
+      // Decimal hours (e.g. 6.5)
+      if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 24) {
+        return Math.round(v * 60);
+      }
+
+      const str = String(v ?? "").trim();
       if (!str) return NaN;
+
+      // If it's numeric string
+      const asNum = Number(str);
+      if (Number.isFinite(asNum)) {
+        if (asNum >= 0 && asNum < 1) return Math.round(asNum * 24 * 60);
+        if (asNum >= 1 && asNum <= 24) return Math.round(asNum * 60);
+      }
+
       const m = str.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
       if (!m) return NaN;
       let hh = parseInt(m[1], 10);
@@ -742,13 +944,8 @@
       return Array.from({ length: n }, (_, i) => slope * (i + 1) + intercept);
     }
 
-    function setEmpty(msg) {
-      const el = document.getElementById("empty-hint");
-      if (el) el.textContent = msg || "";
-    }
-
     // =========================================================
-    // MASTER GROW JSON -> ROW OBJECTS
+    // LOAD PAYLOAD + FIND SHEET (bulletproof)
     // =========================================================
     function loadMasterGrowPayload() {
       const raw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
@@ -756,122 +953,151 @@
       try { return JSON.parse(raw); } catch { return null; }
     }
 
-    function sheetToRowObjects(sheetObj) {
-      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
-      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
-      const out = [];
+    function pickSheet(payload){
+      const sheets = payload?.sheets || {};
+      if (!sheets || typeof sheets !== "object") return null;
 
+      // Exact candidate match
+      for (const name of SHEET_CANDIDATES) {
+        if (name in sheets) return { name, sheet: sheets[name] };
+      }
+
+      // Case-insensitive / includes match
+      const keys = Object.keys(sheets);
+      const normKeys = keys.map(k => ({ k, nk: String(k).trim().toLowerCase() }));
+      for (const want of SHEET_CANDIDATES.map(s => String(s).trim().toLowerCase())) {
+        const hit = normKeys.find(x => x.nk === want) || normKeys.find(x => x.nk.includes(want));
+        if (hit) return { name: hit.k, sheet: sheets[hit.k] };
+      }
+
+      // Fallback: first sheet
+      if (keys.length) return { name: keys[0], sheet: sheets[keys[0]] };
+      return null;
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
+
+      const out = [];
       for (const r of rows) {
         if (!Array.isArray(r)) continue;
         const obj = {};
-        for (let i = 0; i < headers.length; i++) {
-          const h = headers[i];
-          const key = (h === null || h === undefined) ? "" : String(h);
-          if (!key.trim()) continue;
+        for (let i = 0; i < canonHeaders.length; i++) {
+          const key = String(canonHeaders[i] ?? "").trim();
+          if (!key) continue;
           obj[key] = (i < r.length) ? r[i] : "";
         }
         out.push(obj);
       }
-      return out;
+      return { rows: out, canonHeaders };
     }
 
     function getCutLbs(row) {
-      for (const h of CUT_LBS_HEADERS) {
-        if (h in row) return parseNumber(row[h]);
+      // We canonicalize to H.CUT_LBS, but we also try common raw variants just in case.
+      const v = parseNumber(row[H.CUT_LBS]);
+      if (v) return v;
+
+      const fallbacks = [
+        "Peso de la Lechuga Cortada",
+        "PESO DE LA LECHUGA CORTADA",
+        "peso de la lechuga cortada"
+      ];
+      for (const h of fallbacks) {
+        if (h in row) {
+          const n = parseNumber(row[h]);
+          if (n) return n;
+        }
       }
       return 0;
     }
 
     function getWithWasteLbs(row, cut, waste) {
-      // If your sheet already has "Peso de La Lechuga con Waste", use it.
-      if (HEADERS.WITH_WASTE_LBS in row) {
-        const v = parseNumber(row[HEADERS.WITH_WASTE_LBS]);
-        if (v > 0) return v;
-      }
-      // Otherwise compute it.
+      const v = parseNumber(row[H.WITH_WASTE_LBS]);
+      if (v > 0) return v;
       return (cut || 0) + (waste || 0);
     }
 
     // =========================================================
-    // BUILD MODELS
+    // BUILD MODELS (CUTS / DAILY / WEEKLY)
     // =========================================================
     function buildModels() {
       const payload = loadMasterGrowPayload();
-      const sheet = payload?.sheets?.[MASTER_GROW_SHEET_NAME];
-
-      if (!sheet) {
+      if (!payload) {
         CUTS = []; DAILY = []; WEEKLY = [];
-        setEmpty("No Master Grow sheet found. Upload Master Grow in Data Input.");
+        setEmpty("No Master Grow payload in localStorage.\n\nFix:\n- Open Data Input\n- Upload Master Grow\n- Confirm it saves to campo_master_grow_v1");
+        setDebug("");
         return;
       }
 
-      const rows = sheetToRowObjects(sheet);
+      const picked = pickSheet(payload);
+      if (!picked || !picked.sheet) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty("Master Grow payload loaded, but no sheets were found.");
+        setDebug("Sheets keys:\n- " + Object.keys(payload.sheets || {}).join("\n- "));
+        return;
+      }
+
+      const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
+
       if (!rows.length) {
         CUTS = []; DAILY = []; WEEKLY = [];
-        setEmpty("Master Grow loaded, but the sheet has no rows.");
+        setEmpty(`Sheet "${picked.name}" loaded, but it has 0 rows.`);
+        setDebug("Canonical headers (first 80):\n- " + canonHeaders.slice(0,80).filter(Boolean).join("\n- "));
         return;
       }
 
-      // ✅ Validate REQUIRED headers against sheet.headers
-      const headerSet = new Set((sheet.headers || []).map(h => String(h || "")));
-      const required = [HEADERS.DATE, HEADERS.WEEK, HEADERS.START, HEADERS.FINISH, HEADERS.BOARDS];
+      // Required canonical headers (tolerant input via alias mapping)
+      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
+      const required = [H.DATE, H.WEEK, H.START, H.FINISH, H.BOARDS];
       const missing = required.filter(h => !headerSet.has(h));
-      if (missing.length) {
-        CUTS = []; DAILY = []; WEEKLY = [];
-        const preview = (sheet.headers || []).slice(0, 60).map(h => String(h || "")).join("\n- ");
-        setEmpty(
-          "Master Grow loaded, but Harvest headers are missing (strict contract).\n\nMissing:\n- " +
-          missing.join("\n- ") +
-          "\n\nHeader preview (first 60):\n- " + preview
-        );
-        return;
-      }
 
-      // ✅ Warn (but do not fail) if no CUT LBS header matches
-      const hasCutHeader = CUT_LBS_HEADERS.some(h => headerSet.has(h));
-      if (!hasCutHeader) {
-        setEmpty(
-          "Master Grow loaded. Required headers OK.\n\nBUT: No CUT LBS header matched.\n" +
-          "Add your exact cut-lbs header to CUT_LBS_HEADERS.\n\nCurrently allowed:\n- " +
-          CUT_LBS_HEADERS.join("\n- ")
-        );
-      } else {
-        setEmpty("");
-      }
+      // We do NOT hard-fail; we degrade gracefully and explain what is missing.
+      const softWarnings = [];
+      if (missing.length) softWarnings.push("Missing required headers:\n- " + missing.join("\n- "));
+      if (!headerSet.has(H.CUT_LBS)) softWarnings.push("Missing cut-lbs header (will show 0 cut lbs unless alias exists).");
+      if (!headerSet.has(H.WASTE_LBS)) softWarnings.push("Missing waste-lbs header (waste will be 0 unless alias exists).");
 
-      // CUTS: include ALL rows, but ✅ FIX: SKIP ANY ROW WITH NO REAL DATE
+      setEmpty(softWarnings.length ? ("Master Grow loaded with warnings.\n\n" + softWarnings.join("\n\n")) : "");
+      setDebug(
+        `Using sheet: ${picked.name}\n` +
+        `Rows: ${rows.length.toLocaleString()}\n` +
+        `Sheets available: ${(Object.keys(payload.sheets||{}).length)}\n\n` +
+        `Canonical headers (first 80):\n- ${canonHeaders.slice(0,80).filter(Boolean).join("\n- ")}`
+      );
+
+      // CUTS
       const cuts = [];
+      let droppedBlank = 0;
+      let droppedNoDate = 0;
+
       for (const r of rows) {
         if (!r || typeof r !== "object") continue;
 
-        let date = String(r[HEADERS.DATE] ?? "").trim();
-        // ✅ FIX: normalize common “no date” values
-        if (!date || date === "(no date)" || date.toLowerCase() === "n/a" || date.toLowerCase() === "null") {
-          date = "";
-        }
-        // ✅ FIX: hard-skip no-date rows (removes "(no date)" entirely)
-        if (!date) continue;
+        const dateObj = parseAnyDate(r[H.DATE]);
+        if (!dateObj) { droppedNoDate++; continue; }
+        const date = formatDateMMDDYYYY(dateObj);
 
-        const week = String(r[HEADERS.WEEK] ?? "").trim();
-        const startStr = String(r[HEADERS.START] ?? "").trim();
-        const finishStr = String(r[HEADERS.FINISH] ?? "").trim();
-        const boards = parseNumber(r[HEADERS.BOARDS]);
+        const week = String(r[H.WEEK] ?? "").trim();
 
+        const startMin = parseTimeToMinutes(r[H.START]);
+        const finishMin = parseTimeToMinutes(r[H.FINISH]);
+
+        const boards = parseNumber(r[H.BOARDS]);
         const cut = getCutLbs(r);
-        const waste = (HEADERS.WASTE_LBS in r) ? parseNumber(r[HEADERS.WASTE_LBS]) : 0;
-        const workers = (HEADERS.WORKERS in r) ? parseNumber(r[HEADERS.WORKERS]) : 0;
+        const waste = parseNumber(r[H.WASTE_LBS]);
+        const workers = parseNumber(r[H.WORKERS]);
 
         const allBlank =
-          !week && !startStr && !finishStr &&
+          !week &&
+          !String(r[H.START] ?? "").trim() && !String(r[H.FINISH] ?? "").trim() &&
           boards === 0 && cut === 0 && waste === 0 && workers === 0;
 
-        if (allBlank) continue;
-
-        const startMin = parseTimeOfDayToMinutes(startStr);
-        const finishMin = parseTimeOfDayToMinutes(finishStr);
+        if (allBlank) { droppedBlank++; continue; }
 
         const spanH = spanHoursFromMinMax(startMin, finishMin);
-
         const withWaste = getWithWasteLbs(r, cut, waste);
 
         const lbsPerBoard = boards > 0 ? (cut / boards) : 0;
@@ -879,31 +1105,42 @@
         const potential = withWaste > 0 ? (cut / withWaste) * 100 : 0;
 
         cuts.push({
-          date, week,
+          dateObj,
+          date,
+          week,
           boards,
-          cut, waste, withWaste,
+          cut,
+          waste,
+          withWaste,
           lbsPerBoard,
           bph,
           potential,
-          startMin, finishMin,
+          startMin,
+          finishMin,
           workers
         });
       }
 
-      // DAILY: aggregate by Harvest Date; ✅ FIX: do NOT create "(no date)" bucket
+      // Sort cuts by date then by start time
+      cuts.sort((a,b) => (a.dateObj - b.dateObj) || ((a.startMin||0)-(b.startMin||0)));
+
+      // DAILY: aggregate by date; span uses earliest start -> latest finish for that day.
       const dayMap = new Map();
       for (const c of cuts) {
-        if (!c.date) continue; // safety
         const key = c.date;
-
         if (!dayMap.has(key)) {
           dayMap.set(key, {
             date: key,
+            dateObj: c.dateObj,
             weekGuess: c.week || "",
             minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
             maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
-            boards: 0, cut: 0, waste: 0, withWaste: 0,
-            workersSum: 0, workersCount: 0
+            boards: 0,
+            cut: 0,
+            waste: 0,
+            withWaste: 0,
+            workersSum: 0,
+            workersCount: 0
           });
         }
         const d = dayMap.get(key);
@@ -920,36 +1157,37 @@
         if (!d.weekGuess && c.week) d.weekGuess = c.week;
       }
 
-      const daily = Array.from(dayMap.values()).map(d => {
-        const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
-        const bph = spanH > 0 ? (d.boards / spanH) : 0;
-        const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
-        const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
-        const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
-        return {
-          date: d.date,
-          week: d.weekGuess || "",
-          spanH,
-          boards: d.boards,
-          cut: d.cut,
-          waste: d.waste,
-          withWaste: d.withWaste,
-          bph,
-          lbsPerBoard,
-          potential,
-          avgWorkers
-        };
-      });
+      const daily = Array.from(dayMap.values())
+        .sort((a,b) => a.dateObj - b.dateObj)
+        .map(d => {
+          const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
+          const bph = spanH > 0 ? (d.boards / spanH) : 0;
+          const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
+          const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
+          const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
+          return {
+            date: d.date,
+            dateObj: d.dateObj,
+            week: d.weekGuess || "",
+            spanH,
+            boards: d.boards,
+            cut: d.cut,
+            waste: d.waste,
+            withWaste: d.withWaste,
+            bph,
+            lbsPerBoard,
+            potential,
+            avgWorkers
+          };
+        });
 
-      // WEEKLY: aggregate from daily by Harvest Week
+      // WEEKLY: aggregate from daily by numeric week where possible; otherwise lexicographic.
       const wkMap = new Map();
       for (const d of daily) {
-        const wk = parseNumber(d.week);
-        if (!(wk > 0)) continue;
-        const key = String(wk);
-        if (!wkMap.has(key)) {
-          wkMap.set(key, { week: wk, spanH: 0, boards: 0, cut: 0, waste: 0, withWaste: 0 });
-        }
+        const wkStr = String(d.week ?? "").trim();
+        if (!wkStr) continue;
+        const key = wkStr;
+        if (!wkMap.has(key)) wkMap.set(key, { week: wkStr, spanH: 0, boards: 0, cut: 0, waste: 0, withWaste: 0 });
         const w = wkMap.get(key);
         w.spanH += d.spanH;
         w.boards += d.boards;
@@ -958,7 +1196,12 @@
         w.withWaste += d.withWaste;
       }
 
-      const weekly = Array.from(wkMap.values()).sort((a,b) => a.week - b.week).map(w => {
+      const weekly = Array.from(wkMap.values()).sort((a,b) => {
+        const aw = parseFloat(a.week);
+        const bw = parseFloat(b.week);
+        if (!isNaN(aw) && !isNaN(bw)) return aw - bw;
+        return String(a.week).localeCompare(String(b.week));
+      }).map(w => {
         const bph = w.spanH > 0 ? (w.boards / w.spanH) : 0;
         const lbsPerBoard = w.boards > 0 ? (w.cut / w.boards) : 0;
         const potential = w.withWaste > 0 ? (w.cut / w.withWaste) * 100 : 0;
@@ -968,10 +1211,20 @@
       CUTS = cuts;
       DAILY = daily;
       WEEKLY = weekly;
+
+      // If we built nothing, provide diagnostics
+      if (!CUTS.length) {
+        setEmpty(
+          "No harvest cuts were built.\n\nDiagnostics:\n" +
+          `- Dropped blank rows: ${droppedBlank}\n` +
+          `- Dropped rows w/ unparseable date: ${droppedNoDate}\n\n` +
+          "Fix:\n- Ensure Harvest Date is present (MM/DD/YYYY, ISO, long-form, or Excel serial)\n- Ensure headers match (or add alias in HEADER_ALIASES)"
+        );
+      }
     }
 
     // =========================================================
-    // RENDER KPIs (from DAILY span)
+    // KPIs
     // =========================================================
     function renderKPIs() {
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -991,6 +1244,21 @@
         document.getElementById("chip-high-text").textContent = "–";
         document.getElementById("chip-mid-text").textContent = "–";
         document.getElementById("chip-low-text").textContent = "–";
+        // Also reset footer totals
+        const tfootRow = document.querySelector("#harvest-table tfoot tr");
+        if (tfootRow) {
+          const tds = tfootRow.querySelectorAll("td");
+          if (tds.length >= 10) {
+            tds[2].textContent = "0";
+            tds[3].textContent = "0.0";
+            tds[4].textContent = "0";
+            tds[5].textContent = "0";
+            tds[6].textContent = "0";
+            tds[7].textContent = "0.0";
+            tds[8].textContent = "0.0";
+            tds[9].textContent = "0%";
+          }
+        }
         return;
       }
 
@@ -1074,12 +1342,16 @@
       cutBody.innerHTML = "";
       CUTS.forEach(c => {
         const p = c.potential || 0;
+        const spanH = (Number.isFinite(c.startMin) && Number.isFinite(c.finishMin))
+          ? spanHoursFromMinMax(c.startMin, c.finishMin)
+          : 0;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${c.date || "–"}</td>
           <td>${c.week || "–"}</td>
           <td>${fmtInt(c.boards)}</td>
-          <td>${fmt1(c.startMin>=0 && c.finishMin>=0 ? spanHoursFromMinMax(c.startMin, c.finishMin) : 0)}</td>
+          <td>${fmt1(spanH)}</td>
           <td>${fmtInt(c.cut)}</td>
           <td>${fmtInt(c.waste)}</td>
           <td>${fmtInt(c.withWaste)}</td>
@@ -1133,7 +1405,7 @@
     // CHARTS
     // =========================================================
     function renderCharts() {
-      const labelsCut = CUTS.map((_, i) => String(i + 1));
+      const labelsCut = CUTS.map((c, i) => c.date ? `${c.date} #${i+1}` : String(i+1));
       const boardsByCut = CUTS.map(c => c.boards);
       const bphByCut = CUTS.map(c => c.bph);
       const cutByCut = CUTS.map(c => c.cut);
@@ -1329,40 +1601,62 @@
     }
 
     // =========================================================
-    // WIRING (matches fixed seeding/transplant)
+    // LIVE REFRESH (bulletproof: debounce + poll + bc + message)
     // =========================================================
-    function reloadAll() {
-      buildModels();
-      renderKPIs();
-      renderTable();
-      renderCharts();
+    let reloadTimer = null;
+    function reloadAll(reason){
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        buildModels();
+        renderKPIs();
+        renderTable();
+        renderCharts();
+        // console.log("🔄 Harvest reload", reason || "");
+      }, 60);
     }
 
     function setupListeners() {
+      // 1) storage
       window.addEventListener("storage", (e) => {
-        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll();
+        if (!e) return;
+        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll("storage");
       });
 
-      window.addEventListener("MASTER_GROW_UPDATED", (e) => {
-        const key = e?.detail?.key;
-        if (!key || key === MASTER_GROW_KEY) reloadAll();
-      });
-      document.addEventListener("MASTER_GROW_UPDATED", (e) => {
-        const key = e?.detail?.key;
-        if (!key || key === MASTER_GROW_KEY) reloadAll();
-      });
+      // 2) CustomEvent (same frame)
+      window.addEventListener(MSG_GROW, () => reloadAll("customevent"));
+      document.addEventListener(MSG_GROW, () => reloadAll("customevent-doc"));
 
+      // 3) postMessage from index/data input
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
-        if (msg.type === "MASTER_GROW_UPDATED") reloadAll();
+        if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") reloadAll("message");
       });
+
+      // 4) BroadcastChannel
+      if (bc) {
+        bc.onmessage = (ev) => {
+          const msg = ev?.data;
+          if (msg?.type === MSG_GROW) reloadAll("broadcast");
+        };
+      }
+
+      // 5) Safety poll (Safari iframe oddities)
+      let lastLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+      setInterval(() => {
+        const curLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+        if (curLen !== lastLen) {
+          lastLen = curLen;
+          reloadAll("poll");
+        }
+      }, 1500);
     }
 
     document.addEventListener("DOMContentLoaded", () => {
       setupUI();
       setupListeners();
-      reloadAll();
+      reloadAll("init");
     });
   </script>
 </body>
