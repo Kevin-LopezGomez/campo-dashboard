@@ -41,12 +41,12 @@
       align-items:flex-start;
     }
 
-    /* ✅ WIDER DASHBOARD CONTAINER */
+    /* ✅ Wider main container (uses wide space better) */
     .container{
-      width: min(1800px, 96vw);
-      max-width: none;
+      width:100%;
+      max-width: 1760px; /* was 1320 */
       border-radius:24px;
-      padding: 20px 24px 18px;
+      padding: 20px 20px 16px;
       background:
         radial-gradient(circle at top right, rgba(34,197,94,.08), transparent 60%),
         radial-gradient(circle at bottom left, rgba(59,130,246,.09), transparent 55%),
@@ -119,18 +119,9 @@
     .chip-dot, .chip-warn-dot, .chip-err-dot{
       width:6px; height:6px; border-radius:999px;
     }
-    .chip-dot{
-      background: var(--accent);
-      box-shadow: 0 0 0 3px rgba(34,197,94,.35);
-    }
-    .chip-warn-dot{
-      background: var(--warn);
-      box-shadow: 0 0 0 3px rgba(245,158,11,.35);
-    }
-    .chip-err-dot{
-      background: var(--danger);
-      box-shadow: 0 0 0 3px rgba(239,68,68,.28);
-    }
+    .chip-dot{ background: var(--accent); box-shadow: 0 0 0 3px rgba(34,197,94,.35); }
+    .chip-warn-dot{ background: var(--warn); box-shadow: 0 0 0 3px rgba(245,158,11,.35); }
+    .chip-err-dot{ background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.28); }
 
     /* Panels */
     .panel{
@@ -225,23 +216,23 @@
       box-shadow: 0 0 0 3px rgba(56,189,248,.28);
     }
 
-    /* ✅ TOP LAYOUT MORE INVENTORY SPACE */
+    /* Layout */
     .layout-top{
       display:grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr);
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr);
       gap: 14px;
       margin-top: 10px;
       align-items: stretch;
     }
     @media (max-width: 980px){
       .layout-top{ grid-template-columns: minmax(0,1fr); }
-      .container{ border-radius:18px; padding: 14px 12px 14px; width: 100%; max-width: 100%; }
+      .container{ border-radius:18px; padding: 14px 12px 14px; }
     }
 
-    /* ✅ KPI cards: minimum width so they don't look stretched */
+    /* KPI cards */
     .kpi-grid{
       display:grid;
-      grid-template-columns: repeat(4, minmax(260px, 1fr));
+      grid-template-columns: repeat(4, minmax(0,1fr));
       gap: 10px;
       margin-top: 8px;
       margin-bottom: 12px;
@@ -332,10 +323,9 @@
     }
     .toggle input{ margin:0; }
 
-    /* ✅ RESPONSIVE SKU GRID (auto 2–4 cols) */
     .sku-cards{
       display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      grid-template-columns: repeat(2, minmax(0,1fr));
       gap: 10px;
       margin-top: 10px;
     }
@@ -408,9 +398,7 @@
       letter-spacing: .14em;
       margin-bottom: 4px;
     }
-    .stat .value{
-      font-weight: 650;
-    }
+    .stat .value{ font-weight: 650; }
     .stat .sub{
       font-size: .68rem;
       color: var(--muted);
@@ -457,7 +445,7 @@
       flex-direction:column;
     }
     .table-scroll{
-      max-height: 460px;
+      max-height: 520px;
       overflow:auto;
       scrollbar-width: thin;
       scrollbar-color: #4b5563 rgba(15,23,42,.2);
@@ -471,7 +459,7 @@
       width:100%;
       border-collapse: collapse;
       font-size: .78rem;
-      min-width: 980px;
+      min-width: 1120px;
     }
     thead{
       position: sticky;
@@ -526,10 +514,12 @@
       z-index: 50;
     }
 
-    /* ✅ WIDER MODAL */
+    /* ✅ Taller + wider LOT DETAILS modal (always legible) */
     .modal{
-      width: min(1200px, 96vw);
-      max-height: min(82vh, 900px);
+      width: min(1500px, 98vw);
+      height: 85vh;
+      max-height: 85vh;
+      min-height: 540px;
       border-radius: 18px;
       border: 1px solid rgba(55,65,81,.95);
       background: radial-gradient(circle at top left, rgba(17,24,39,.98), rgba(15,23,42,1));
@@ -545,6 +535,7 @@
       align-items:center;
       justify-content:space-between;
       gap: 10px;
+      flex: 0 0 auto;
     }
     .modal-title{
       font-size:.78rem;
@@ -561,11 +552,16 @@
       text-transform:none;
       font-size: .85rem;
     }
+
+    /* ✅ modal body owns vertical space; only inner scrolls */
     .modal-body{
+      flex: 1 1 auto;
       padding: 10px 12px 12px;
-      overflow:auto;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
-    .modal-body table{ min-width: 980px; }
+    .modal-body table{ min-width: 980px; width: 100%; }
+
     .modal-close{
       border-radius:999px;
       border: 1px solid rgba(55,65,81,.9);
@@ -665,7 +661,7 @@
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             <label class="toggle" style="gap:8px;">
               <span style="color:var(--sub);">SKU:</span>
-              <select class="select" id="sku-select" style="max-width: 360px;"></select>
+              <select class="select" id="sku-select" style="max-width: 520px;"></select>
             </label>
 
             <label class="toggle">
@@ -808,18 +804,18 @@
           <div class="table-scroll">
             <table>
               <thead>
-                <!-- ✅ RAW TABLE ORDER UPDATED (Location moved to end) -->
                 <tr>
+                  <!-- ✅ Reordered to match your preference + moved Location to end -->
                   <th>Warehouse SKU</th>
                   <th>Warehouse Date</th>
                   <th>W Batch Run Code</th>
-                  <th>Cases Avail.</th>
-                  <th>Cases in Inv.</th>
+                  <th>Cases Available</th>
+                  <th>Cases in Inventory</th>
                   <th>Warehouse Age</th>
-                  <th>Cases Reserved</th>
                   <th>Cutomer Reserved</th>
                   <th>Warehouse Pack Date</th>
                   <th>Warehouse Location</th>
+                  <th>Cases Reserved</th>
                   <th>Warehouse Observations</th>
                 </tr>
               </thead>
@@ -846,17 +842,17 @@
       <div class="modal-body">
         <div style="color:var(--muted);font-size:.75rem;margin-bottom:8px;" id="modal-sub">–</div>
         <div class="table-wrapper" style="margin-top:0;">
-          <div class="table-scroll" style="max-height: 58vh;">
+          <div class="table-scroll" style="max-height: none;">
             <table>
               <thead>
-                <!-- ✅ MODAL ORDER UPDATED (Location moved to end) -->
                 <tr>
+                  <!-- ✅ Your requested order + Location at end -->
                   <th>W Batch Run Code</th>
-                  <th>Cases in Inv.</th>
                   <th>Cases Avail.</th>
+                  <th>Cases in Inv.</th>
+                  <th>Warehouse Age</th>
                   <th>Cutomer Reserved</th>
                   <th>Warehouse Pack Date</th>
-                  <th>Warehouse Age</th>
                   <th>Warehouse Location</th>
                 </tr>
               </thead>
@@ -882,7 +878,10 @@
     const PACK_SHEET_CANDIDATES = ["Pack Data", "PACK DATA", "PackData", "Packing Data", MASTER_PACK_SHEET_NAME];
 
     // ============================================================
-    // HEADERS + ALIASES
+    // EXACT HEADERS YOU PROVIDED (primary)
+    // Warehouse Date | W Batch Run Code | Warehouse Location | Cases in Inventory | Cases Reserved |
+    // Cases Available | Cutomer Reserved | Warehouse Observations | Warehouse Pack Date |
+    // Warehouse Age | Warehouse SKU
     // ============================================================
     const HEADER_ALIASES = {
       "Warehouse Date": ["Warehouse Date"],
@@ -1047,12 +1046,10 @@
     }
 
     function findHeader(headers, aliases){
-      // Try exact first
       const set = new Set(headers);
       for (const a of aliases){
         if (set.has(a)) return a;
       }
-      // Then case-insensitive
       const lowerMap = new Map(headers.map(h => [String(h).toLowerCase(), h]));
       for (const a of aliases){
         const hit = lowerMap.get(String(a).toLowerCase());
@@ -1115,7 +1112,7 @@
 
         if (!sku && !whDateRaw && !batch && !loc && !(inv||res||avail)) continue;
 
-        // require sku + date
+        // Keep consistent behavior: require sku + date
         if (!sku || !whDateKey){
           filteredOutCount++;
           continue;
@@ -1445,7 +1442,6 @@
         }
       }
 
-      // group "Cutomer Reserved" by value string
       const byCust = new Map();
       for (const r of rows){
         const cust = (r.customer || "").trim();
@@ -1496,10 +1492,10 @@
           <td>${fmt(r.casesAvail,1)}</td>
           <td>${fmt(r.casesInv,1)}</td>
           <td>${r.age ? fmt(r.age,0) : "0"}</td>
-          <td>${fmt(r.casesRes,1)}</td>
           <td>${escapeHtml(r.customer || "")}</td>
           <td>${escapeHtml(r.packDate || "")}</td>
           <td>${escapeHtml(r.loc || "")}</td>
+          <td>${fmt(r.casesRes,1)}</td>
           <td>${escapeHtml(r.obs || "")}</td>
         `;
         tbody.appendChild(tr);
@@ -1542,7 +1538,15 @@
       for (const r of baseRows){
         const k = key(r);
         if (!map.has(k)){
-          map.set(k, { batch: r.batch || "", loc: r.loc || "", inv: 0, avail: 0, cust: "", packDate: "", oldest: 0 });
+          map.set(k, {
+            batch: r.batch || "",
+            loc: r.loc || "",
+            inv: 0,
+            avail: 0,
+            cust: "",
+            packDate: "",
+            oldest: 0
+          });
         }
         const a = map.get(k);
         a.inv += r.casesInv || 0;
@@ -1562,11 +1566,11 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${escapeHtml(l.batch)}</td>
-          <td>${fmt(l.inv,1)}</td>
           <td>${fmt(l.avail,1)}</td>
+          <td>${fmt(l.inv,1)}</td>
+          <td>${l.oldest ? fmt(l.oldest,0) : "0"}</td>
           <td>${escapeHtml(l.cust || "")}</td>
           <td>${escapeHtml(l.packDate || "")}</td>
-          <td>${l.oldest ? fmt(l.oldest,0) : "0"}</td>
           <td>${escapeHtml(l.loc)}</td>
         `;
         body.appendChild(tr);
@@ -1602,7 +1606,6 @@
         setStatus(payload ? "warn" : "warn", payload ? "Missing required columns" : "Master Pack not loaded");
 
         const missingList = parsed.missing.map(h => `<li><code>${escapeHtml(h)}</code></li>`).join("");
-
         const sheetKeys = payload?.sheets ? Object.keys(payload.sheets) : [];
         const sheetList = sheetKeys.length
           ? `<div style="margin-top:6px;color:rgba(148,163,184,.95);">Sheets found: <code>${sheetKeys.map(escapeHtml).join("</code>, <code>")}</code></div>`
