@@ -165,7 +165,7 @@
     <div class="topbar">
       <div class="brand">
         <div class="title">Campo Caribe Operations</div>
-        <div class="subtitle">Unified testing harness (Data Input + Weekly Summary + Seeding + Transplant + Harvest + Packing + Sanitation + Inventory). Drag tabs to reorder (saved to localStorage).</div>
+        <div class="subtitle">Unified testing harness (Data Input + Weekly Summary + Seeding + Transplant + Harvest + Packing + Shipments + Sanitation + Inventory). Drag tabs to reorder (saved to localStorage).</div>
       </div>
     </div>
 
@@ -176,9 +176,11 @@
       <button class="tab" data-target="p-transplant" data-tab="transplant">🪴 <span>Transplant</span></button>
       <button class="tab" data-target="p-harvest" data-tab="harvest">✂️ <span>Harvest</span></button>
       <button class="tab" data-target="p-packing" data-tab="packing">📦 <span>Packing</span></button>
-      <button class="tab" data-target="p-sanitation" data-tab="sanitation">🧼 <span>Sanitation</span></button>
 
-      <!-- ✅ NEW TAB PILL -->
+      <!-- ✅ NEW TAB PILL (Shipments dashboard we just created) -->
+      <button class="tab" data-target="p-shipments" data-tab="shipments">🚚 <span>Shipments</span></button>
+
+      <button class="tab" data-target="p-sanitation" data-tab="sanitation">🧼 <span>Sanitation</span></button>
       <button class="tab" data-target="p-inventory" data-tab="inventory">📦 <span>S&amp;H Inventory</span></button>
     </div>
 
@@ -261,6 +263,20 @@
         </div>
       </section>
 
+      <!-- ✅ NEW PANEL (Shipments / Forward Sales) -->
+      <section class="panel" id="p-shipments">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Shipments (Forward Sales) Dashboard</h2>
+            <p>Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).</p>
+          </div>
+          <div style="opacity:.9;color:var(--sub);font-size:.85rem;">📄 file: <code>09.0 Shipments Dashboard.html</code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-shipments" data-src="09.0 Shipments Dashboard.html"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-sanitation">
         <div class="section-head">
           <div class="head-left">
@@ -274,7 +290,6 @@
         </div>
       </section>
 
-      <!-- ✅ NEW PANEL -->
       <section class="panel" id="p-inventory">
         <div class="section-head">
           <div class="head-left">
@@ -373,8 +388,9 @@
         "ifr-transplant",
         "ifr-harvest",
         "ifr-packing",
+        "ifr-shipments", // ✅ NEW
         "ifr-sanitation",
-        "ifr-inventory" // ✅ NEW
+        "ifr-inventory"
       ];
 
       function notifyIframes(type){
