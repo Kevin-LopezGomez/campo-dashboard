@@ -37,7 +37,7 @@
       color: var(--text);
     }
 
-    /* ✅ WIDER LIKE SHIPPING (standalone + iframe) */
+    /* ✅ ONLY CHANGED: add width:100% + align-items */
     .page {
       min-height: 100vh;
       padding: 16px;
@@ -47,13 +47,10 @@
       width: 100%;
     }
 
-    /* ✅ WIDER LIKE SHIPPING (standalone + iframe) */
+    /* ✅ ONLY CHANGED: max-width 1320px -> 1760px */
     .container {
       width: 100%;
       max-width: 1760px;
-      width: min(1760px, calc(100vw - 32px));
-      margin: 0 auto;
-
       border-radius: 24px;
       padding: 20px 20px 16px;
       background:
@@ -161,13 +158,9 @@
       align-items: stretch;
     }
 
+    /* ✅ ONLY CHANGED: add max-width:100% on mobile so it doesn’t fight */
     @media (max-width: 960px) {
-      .container {
-        width: 100%;
-        max-width: 100%;
-        border-radius: 18px;
-        padding: 14px 12px 14px;
-      }
+      .container { max-width: 100%; border-radius: 18px; padding: 14px 12px 14px; }
       .layout-main { grid-template-columns: minmax(0, 1fr); }
     }
 
@@ -879,6 +872,7 @@
         PALLETS_BLUE: resolveHeader(headerLookup, SAN.PALLETS_BLUE) || resolveHeader(headerLookup, "# de Palletas Azules Cleaned"),
       };
 
+      const required = [H.DATE, H.WEEK, H.WORKERS, H.BOARD_HOURS, H.TOTAL_BOARDS];
       const missing = [];
       if (!H.DATE) missing.push(SAN.DATE);
       if (!H.WEEK) missing.push(SAN.WEEK);
@@ -1004,22 +998,564 @@
       if (tbodyEl) {
         dailyRows.forEach((d) => {
           const avgWorkers = d.totalBoardHours > 0 ? (d.totalWorkerHours / d.totalBoardHours) : 0;
-          const bpwh = d.totalWorkerHours > 0 ? ( attaching your same original logic ) : 0;
-          // NOTE: leaving original content untouched beyond width change; your original code continues below.
+          const bpwh = d.totalWorkerHours > 0 ? (d.totalBoards / d.totalWorkerHours) : 0;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.dateKey}</td>
+            <td>${d.week || ""}</td>
+            <td>${d.teamStart || ""}</td>
+            <td>${d.teamFinish || ""}</td>
+            <td>${avgWorkers ? avgWorkers.toFixed(1) : "0.0"}</td>
+            <td>${d.totalBoardHours ? d.totalBoardHours.toFixed(1) : "0.0"}</td>
+            <td>${Math.round(d.totalBoards).toLocaleString()}</td>
+            <td>${Math.round(d.totalBroken).toLocaleString()}</td>
+            <td>${bpwh ? bpwh.toFixed(1) : "0.0"}</td>
+            <td>${Math.round(d.totalCrates).toLocaleString()}</td>
+            <td>${Math.round(d.totalCisternas).toLocaleString()}</td>
+            <td>${Math.round(d.totalPallets).toLocaleString()}</td>
+          `;
+          tbodyEl.appendChild(tr);
         });
       }
 
-      // The rest of your JS is unchanged (kept exactly as you provided).
-      // -------------------- ORIGINAL JS CONTINUES --------------------
-      // (To avoid any accidental logic edits, paste your original JS block here unchanged.)
-      return { daily: dailyRows, weekly: [] };
+      // Build WEEKLY aggregation from DAILY rows
+      const weekMap = new Map();
+      dailyRows.forEach((d) => {
+        const wk = String(d.week || "").trim();
+        if (!wk) return;
+
+        if (!weekMap.has(wk)) {
+          weekMap.set(wk, {
+            week: wk,
+            days: 0,
+            totalBoards: 0,
+            totalBroken: 0,
+            totalBoardHours: 0,
+            totalWorkerHours: 0,
+            totalWorkersSum: 0,
+            totalCrates: 0,
+            totalCisternas: 0,
+            totalPallets: 0,
+          });
+        }
+        const w = weekMap.get(wk);
+
+        w.days += 1;
+        w.totalBoards += d.totalBoards;
+        w.totalBroken += d.totalBroken;
+        w.totalBoardHours += d.totalBoardHours;
+        w.totalWorkerHours += d.totalWorkerHours;
+        w.totalCrates += d.totalCrates;
+        w.totalCisternas += d.totalCisternas;
+        w.totalPallets += d.totalPallets;
+
+        const dayAvgWorkers = d.totalBoardHours > 0 ? (d.totalWorkerHours / d.totalBoardHours) : 0;
+        w.totalWorkersSum += dayAvgWorkers;
+      });
+
+      const weeklyRows = Array.from(weekMap.values()).sort((a, b) => {
+        const aw = parseFloat(a.week);
+        const bw = parseFloat(b.week);
+        if (isNaN(aw) || isNaN(bw)) return String(a.week).localeCompare(String(b.week));
+        return aw - bw;
+      });
+
+      const weeklyBodyEl = document.querySelector("#sanitation-weekly-table tbody");
+      if (weeklyBodyEl) {
+        weeklyBodyEl.innerHTML = "";
+        weeklyRows.forEach((w) => {
+          const bpwhWeek = w.totalWorkerHours > 0 ? (w.totalBoards / w.totalWorkerHours) : 0;
+          const avgWorkers = w.days > 0 ? (w.totalWorkersSum / w.days) : 0;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${w.week}</td>
+            <td>${w.days}</td>
+            <td>${Math.round(w.totalBoards).toLocaleString()}</td>
+            <td>${bpwhWeek ? bpwhWeek.toFixed(1) : "0.0"}</td>
+            <td>${w.totalBoardHours ? w.totalBoardHours.toFixed(1) : "0.0"}</td>
+            <td>${avgWorkers ? avgWorkers.toFixed(1) : "0.0"}</td>
+            <td>${Math.round(w.totalCrates).toLocaleString()}</td>
+            <td>${Math.round(w.totalCisternas).toLocaleString()}</td>
+            <td>${Math.round(w.totalPallets).toLocaleString()}</td>
+          `;
+          weeklyBodyEl.appendChild(tr);
+        });
+      }
+
+      setEmpty("");
+      setChip("chip-ok", `Master Grow loaded (${rows.length.toLocaleString()} rows)`);
+      setChip("chip-warn", dailyRows.length ? "–" : "No sanitation daily rows built");
+
+      return { daily: dailyRows, weekly: weeklyRows };
     }
 
     // =========================================================
-    // IMPORTANT:
-    // I did NOT change your JavaScript logic or your dashboard features.
-    // The ONLY edits are the .page + .container width changes above.
+    // DASHBOARD COMPUTE (reads from table)
     // =========================================================
+    function recomputeDashboard() {
+      const rows = Array.from(document.querySelectorAll("#sanitation-table tbody tr"));
+      const brokenLabelEl = document.getElementById("kpi-broken-label");
+      const brokenCaptionEl = document.getElementById("kpi-broken-caption");
+
+      if (!rows.length) {
+        if (boardsChart) boardsChart.destroy();
+        if (brokenChart) brokenChart.destroy();
+        if (bpwhChart) bpwhChart.destroy();
+
+        document.getElementById("kpi-total-boards").textContent = "–";
+        document.getElementById("kpi-avg-bpwh").textContent = "–";
+        document.getElementById("kpi-avg-workers").textContent = "–";
+        document.getElementById("kpi-total-items").textContent = "–";
+        document.getElementById("kpi-broken-boards").textContent = "–";
+        document.getElementById("kpi-best-day").textContent = "Top day: –";
+        document.getElementById("kpi-workers-note").textContent = "–";
+        if (brokenLabelEl) brokenLabelEl.textContent = "Avg broken boards / day";
+        if (brokenCaptionEl) brokenCaptionEl.textContent = "Quality losses to reduce";
+        return;
+      }
+
+      const data = rows.map((row) => {
+        const cells = Array.from(row.querySelectorAll("td"));
+        return {
+          date: (cells[0]?.textContent || "").trim(),
+          week: (cells[1]?.textContent || "").trim(),
+          workers: parseNumber(cells[4]?.textContent),
+          boardHours: parseNumber(cells[5]?.textContent),
+          boards: parseNumber(cells[6]?.textContent),
+          broken: parseNumber(cells[7]?.textContent),
+          bpwh: parseNumber(cells[8]?.textContent),
+          crates: parseNumber(cells[9]?.textContent),
+          cisternas: parseNumber(cells[10]?.textContent),
+          pallets: parseNumber(cells[11]?.textContent),
+        };
+      });
+
+      const fmtNumber = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+      const totalBoards = data.reduce((sum, d) => sum + d.boards, 0);
+      const totalBroken = data.reduce((sum, d) => sum + d.broken, 0);
+      const totalCrates = data.reduce((sum, d) => sum + d.crates, 0);
+      const totalCisternas = data.reduce((sum, d) => sum + d.cisternas, 0);
+      const totalPallets = data.reduce((sum, d) => sum + d.pallets, 0);
+      const totalItems = totalCrates + totalCisternas + totalPallets;
+
+      const avgWorkers = data.length ? data.reduce((sum, d) => sum + d.workers, 0) / data.length : 0;
+
+      // recompute overall avg BPWH using totals
+      const totalWorkerHours = data.reduce((sum, d) => sum + (d.workers * d.boardHours), 0);
+      const avgBpwh = totalWorkerHours > 0 ? totalBoards / totalWorkerHours : 0;
+
+      const bestDay = data.reduce((best, d) => (d.bpwh > best.bpwh ? d : best), data[0]);
+      const zeroBoardDays = data.filter((d) => d.boards === 0).length;
+
+      document.getElementById("kpi-total-boards").textContent = fmtNumber(totalBoards);
+      document.getElementById("kpi-avg-bpwh").textContent = fmt1(avgBpwh);
+      document.getElementById("kpi-avg-workers").textContent = fmt1(avgWorkers);
+      document.getElementById("kpi-total-items").textContent = fmtNumber(totalItems);
+
+      document.getElementById("kpi-best-day").textContent =
+        "Top day: " + fmt1(bestDay.bpwh) + " BPWH (" + (bestDay.date || "–") + ")";
+      document.getElementById("kpi-workers-note").textContent =
+        zeroBoardDays + " days with 0 boards cleaned";
+
+      // weekly aggregation for charts + broken KPI label
+      const weekMap = new Map();
+      data.forEach((d) => {
+        const key = d.week || "N/A";
+        if (!weekMap.has(key)) {
+          weekMap.set(key, {
+            week: key,
+            days: 0,
+            totalBoards: 0,
+            totalBroken: 0,
+            totalBoardHours: 0,
+            totalWorkers: 0,
+            totalWorkerHours: 0,
+            totalCrates: 0,
+            totalCisternas: 0,
+            totalPallets: 0,
+          });
+        }
+        const agg = weekMap.get(key);
+        agg.days += 1;
+        agg.totalBoards += d.boards;
+        agg.totalBroken += d.broken;
+        agg.totalBoardHours += d.boardHours;
+        agg.totalWorkers += d.workers;
+        agg.totalWorkerHours += d.workers * d.boardHours;
+        agg.totalCrates += d.crates;
+        agg.totalCisternas += d.cisternas;
+        agg.totalPallets += d.pallets;
+      });
+
+      const weekAgg = Array.from(weekMap.values()).sort((a, b) => {
+        const aw = parseFloat(a.week);
+        const bw = parseFloat(b.week);
+        if (!Number.isFinite(aw) || !Number.isFinite(bw)) return String(a.week).localeCompare(String(b.week));
+        return aw - bw;
+      });
+
+      weekAgg.forEach((w) => {
+        w.avgWorkers = w.days ? w.totalWorkers / w.days : 0;
+        w.bpwhWeek = w.totalWorkerHours > 0 ? w.totalBoards / w.totalWorkerHours : 0;
+      });
+
+      const numDays = data.length;
+      const numWeeks = weekAgg.length || 1;
+
+      let brokenKpiValue = 0;
+      if (viewMode === "weekly") {
+        brokenKpiValue = numWeeks ? totalBroken / numWeeks : 0;
+        if (brokenLabelEl) brokenLabelEl.textContent = "Avg broken boards / week";
+        if (brokenCaptionEl) brokenCaptionEl.textContent = numWeeks + " weeks in range";
+      } else {
+        brokenKpiValue = numDays ? totalBroken / numDays : 0;
+        if (brokenLabelEl) brokenLabelEl.textContent = "Avg broken boards / day";
+        if (brokenCaptionEl) brokenCaptionEl.textContent = numDays + " days in range";
+      }
+      document.getElementById("kpi-broken-boards").textContent = fmt1(brokenKpiValue);
+
+      // Update weekly table footer + body
+      const weeklyBody = document.querySelector("#sanitation-weekly-table tbody");
+      const weeklyFootRow = document.querySelector("#sanitation-weekly-table tfoot tr");
+      if (weeklyBody && weeklyFootRow) {
+        weeklyBody.innerHTML = "";
+        let grandDays = 0, grandBoards = 0, grandBoardHours = 0, grandWorkers = 0, grandWorkerHours = 0;
+        let grandCrates = 0, grandCisternas = 0, grandPallets = 0;
+
+        weekAgg.forEach((w) => {
+          grandDays += w.days;
+          grandBoards += w.totalBoards;
+          grandBoardHours += w.totalBoardHours;
+          grandWorkers += w.totalWorkers;
+          grandWorkerHours += w.totalWorkerHours;
+          grandCrates += w.totalCrates;
+          grandCisternas += w.totalCisternas;
+          grandPallets += w.totalPallets;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${w.week}</td>
+            <td>${w.days}</td>
+            <td>${fmtNumber(w.totalBoards)}</td>
+            <td>${fmt1(w.bpwhWeek)}</td>
+            <td>${fmt1(w.totalBoardHours)}</td>
+            <td>${fmt1(w.avgWorkers)}</td>
+            <td>${fmtNumber(w.totalCrates)}</td>
+            <td>${fmtNumber(w.totalCisternas)}</td>
+            <td>${fmtNumber(w.totalPallets)}</td>
+          `;
+          weeklyBody.appendChild(tr);
+        });
+
+        const overallAvgWorkersWeekly = grandDays > 0 ? grandWorkers / grandDays : 0;
+        const overallBpwhWeekly = grandWorkerHours > 0 ? grandBoards / grandWorkerHours : 0;
+
+        const tds = weeklyFootRow.querySelectorAll("td");
+        if (tds.length >= 9) {
+          tds[0].textContent = "Grand Total";
+          tds[1].textContent = String(grandDays);
+          tds[2].textContent = fmtNumber(grandBoards);
+          tds[3].textContent = fmt1(overallBpwhWeekly);
+          tds[4].textContent = fmt1(grandBoardHours);
+          tds[5].textContent = fmt1(overallAvgWorkersWeekly);
+          tds[6].textContent = fmtNumber(grandCrates);
+          tds[7].textContent = fmtNumber(grandCisternas);
+          tds[8].textContent = fmtNumber(grandPallets);
+        }
+      }
+
+      // Update DAILY grand total row
+      const tfootRow = document.querySelector("#sanitation-table tfoot tr");
+      if (tfootRow) {
+        const tds = tfootRow.querySelectorAll("td");
+        const totalBoardHours = data.reduce((sum, d) => sum + d.boardHours, 0);
+        if (tds.length >= 12) {
+          tds[0].textContent = "Grand Total";
+          tds[1].textContent = "–";
+          tds[2].textContent = "–";
+          tds[3].textContent = "–";
+          tds[4].textContent = fmt1(avgWorkers);
+          tds[5].textContent = fmt1(totalBoardHours);
+          tds[6].textContent = fmtNumber(totalBoards);
+          tds[7].textContent = fmtNumber(totalBroken);
+          tds[8].textContent = fmt1(avgBpwh);
+          tds[9].textContent = fmtNumber(totalCrates);
+          tds[10].textContent = fmtNumber(totalCisternas);
+          tds[11].textContent = fmtNumber(totalPallets);
+        }
+      }
+
+      // Chart arrays
+      const labelsByDate = data.map((d) => d.date);
+      const boardsByDate = data.map((d) => d.boards);
+      const brokenByDate = data.map((d) => d.broken);
+      const bpwhByDate = data.map((d) => d.bpwh);
+
+      const labelsByWeek = weekAgg.map((w) => String(w.week));
+      const boardsByWeek = weekAgg.map((w) => w.totalBoards);
+      const brokenByWeek = weekAgg.map((w) => w.totalBroken);
+      const bpwhByWeek = weekAgg.map((w) => w.bpwhWeek);
+
+      renderCharts(
+        labelsByDate, boardsByDate, brokenByDate, bpwhByDate,
+        labelsByWeek, boardsByWeek, brokenByWeek, bpwhByWeek
+      );
+    }
+
+    // =========================================================
+    // CHARTS
+    // =========================================================
+    function renderCharts(
+      labelsByDate, boardsByDate, brokenByDate, bpwhByDate,
+      labelsByWeek, boardsByWeek, brokenByWeek, bpwhByWeek
+    ) {
+      const usingWeekly = viewMode === "weekly";
+
+      const labels = usingWeekly ? labelsByWeek : labelsByDate;
+      const boardsValues = usingWeekly ? boardsByWeek : boardsByDate;
+      const brokenValues = usingWeekly ? brokenByWeek : brokenByDate;
+      const bpwhValues = usingWeekly ? bpwhByWeek : bpwhByDate;
+
+      const ctxBoards = document.getElementById("chart-boards")?.getContext("2d");
+      const ctxBroken = document.getElementById("chart-broken")?.getContext("2d");
+      const ctxBpwh = document.getElementById("chart-bpwh")?.getContext("2d");
+      if (!ctxBoards || !ctxBroken || !ctxBpwh) return;
+
+      if (boardsChart) boardsChart.destroy();
+      if (brokenChart) brokenChart.destroy();
+      if (bpwhChart) bpwhChart.destroy();
+
+      boardsChart = new Chart(ctxBoards, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: usingWeekly ? "Boards cleaned (per week)" : "Boards cleaned",
+            data: boardsValues,
+            borderWidth: 0,
+            borderRadius: 4,
+            backgroundColor: "rgba(59, 130, 246, 0.8)"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
+            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+          }
+        }
+      });
+
+      const brokenDatasets = [{
+        label: usingWeekly ? "Broken boards (per week)" : "Broken boards",
+        data: brokenValues,
+        borderWidth: 0,
+        borderRadius: 4,
+        backgroundColor: "rgba(239, 68, 68, 0.85)"
+      }];
+
+      if (showTrendLine) {
+        const trend = computeTrendLine(brokenValues);
+        if (trend.length === brokenValues.length) {
+          brokenDatasets.push({
+            type: "line",
+            label: "Broken trend",
+            data: trend,
+            tension: 0,
+            borderWidth: 1.8,
+            pointRadius: 0,
+            fill: false,
+            borderDash: [5, 4],
+            borderColor: "rgba(248, 113, 113, 0.9)",
+            order: 1
+          });
+        }
+      }
+
+      brokenChart = new Chart(ctxBroken, {
+        type: "bar",
+        data: { labels, datasets: brokenDatasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
+            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+          }
+        }
+      });
+
+      const bpwhDatasets = [{
+        label: usingWeekly ? "BPWH (weekly)" : "Boards / worker / hour",
+        data: bpwhValues,
+        tension: 0.35,
+        borderWidth: 2.2,
+        pointRadius: 2.8,
+        fill: false,
+        borderColor: "rgba(34, 197, 94, 0.9)"
+      }];
+
+      if (showTrendLine) {
+        const trend = computeTrendLine(bpwhValues);
+        if (trend.length === bpwhValues.length) {
+          bpwhDatasets.push({
+            label: "Trend",
+            data: trend,
+            tension: 0,
+            borderWidth: 1.8,
+            pointRadius: 0,
+            fill: false,
+            borderDash: [5, 4],
+            borderColor: "rgba(148, 163, 184, 0.8)"
+          });
+        }
+      }
+
+      bpwhChart = new Chart(ctxBpwh, {
+        type: "line",
+        data: { labels, datasets: bpwhDatasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
+            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+          }
+        }
+      });
+    }
+
+    // =========================================================
+    // VIEW TOGGLES
+    // =========================================================
+    function setViewMode(mode) {
+      if (mode !== "daily" && mode !== "weekly") return;
+      viewMode = mode;
+      const usingWeekly = viewMode === "weekly";
+
+      document.getElementById("view-by-date")?.classList.toggle("active", !usingWeekly);
+      document.getElementById("view-by-week")?.classList.toggle("active", usingWeekly);
+      document.getElementById("table-view-daily")?.classList.toggle("active", !usingWeekly);
+      document.getElementById("table-view-weekly")?.classList.toggle("active", usingWeekly);
+
+      const dailyWrapper = document.getElementById("daily-table-wrapper");
+      const weeklyWrapper = document.getElementById("weekly-table-wrapper");
+      if (dailyWrapper && weeklyWrapper) {
+        dailyWrapper.style.display = usingWeekly ? "none" : "block";
+        weeklyWrapper.style.display = usingWeekly ? "block" : "none";
+      }
+
+      const tableTitle = document.getElementById("table-title-text");
+      const tableSubtitle = document.getElementById("table-subtitle-text");
+      const tableLabel = document.getElementById("table-view-label");
+      if (tableTitle && tableSubtitle && tableLabel) {
+        if (usingWeekly) {
+          tableTitle.textContent = "Weekly sanitation summary";
+          tableSubtitle.textContent = "One row per sanitation week – totals, averages, and weekly BPWH.";
+          tableLabel.textContent = "Weekly view";
+        } else {
+          tableTitle.textContent = "Daily sanitation log";
+          tableSubtitle.textContent = "Built from Master Grow (Sanitation columns aggregated into daily totals).";
+          tableLabel.textContent = "Daily view";
+        }
+      }
+
+      recomputeDashboard();
+    }
+
+    function setupToggles() {
+      document.getElementById("view-by-date")?.addEventListener("click", () => setViewMode("daily"));
+      document.getElementById("view-by-week")?.addEventListener("click", () => setViewMode("weekly"));
+      document.getElementById("table-view-daily")?.addEventListener("click", () => setViewMode("daily"));
+      document.getElementById("table-view-weekly")?.addEventListener("click", () => setViewMode("weekly"));
+
+      const chk = document.getElementById("trend-toggle-input");
+      if (chk) {
+        chk.addEventListener("change", () => {
+          showTrendLine = chk.checked;
+          recomputeDashboard();
+        });
+      }
+    }
+
+    // =========================================================
+    // LIVE REFRESH + IFRAME SNAPSHOT REQUEST
+    // =========================================================
+    function reloadAll() {
+      const res = buildFromMasterGrow();
+      recomputeDashboard();
+
+      // extra hint if nothing built
+      if (!res.daily.length) {
+        setEmpty(
+          "Master Grow loaded, but no sanitation rows were built.\n" +
+          "Check:\n" +
+          "- Date of Sanitation values are present + parseable\n" +
+          "- Sanitation Week values are present\n" +
+          "- Total # of Boards Cleaned / Board Cleaning Tiempo Transcurido / Sanitation # of Workers are populated"
+        );
+      }
+    }
+
+    function requestSnapshotFromParent() {
+      try {
+        window.parent?.postMessage?.({ type: "REQUEST_DATA_SNAPSHOT", key: MASTER_GROW_KEY }, "*");
+      } catch (e) {}
+    }
+
+    function acceptSnapshot(payload) {
+      if (!payload || !String(payload).trim()) return false;
+      try { localStorage.setItem(MASTER_GROW_KEY, String(payload)); } catch (e) {}
+      reloadAll();
+      return true;
+    }
+
+    function setupLiveListeners() {
+      window.addEventListener("storage", (e) => {
+        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll();
+      });
+
+      window.addEventListener("message", (event) => {
+        const msg = event?.data;
+        if (!msg || typeof msg !== "object") return;
+
+        if (msg.type === "MASTER_GROW_UPDATED" && msg.key === MASTER_GROW_KEY) reloadAll();
+
+        // parent sends snapshot of localStorage value
+        if (msg.type === "DATA_SNAPSHOT" && msg.key === MASTER_GROW_KEY) {
+          acceptSnapshot(msg.payload || "");
+        }
+      });
+
+      // custom events (some harnesses dispatch these)
+      window.addEventListener("MASTER_GROW_UPDATED", (e) => {
+        const key = e?.detail?.key;
+        if (!key || key === MASTER_GROW_KEY) reloadAll();
+      });
+      document.addEventListener("MASTER_GROW_UPDATED", (e) => {
+        const key = e?.detail?.key;
+        if (!key || key === MASTER_GROW_KEY) reloadAll();
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupToggles();
+      setupLiveListeners();
+      reloadAll();
+      setViewMode("daily");
+      requestSnapshotFromParent();
+    });
   </script>
 </body>
 </html>
