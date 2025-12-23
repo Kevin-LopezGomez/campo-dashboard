@@ -20,6 +20,8 @@
       --accent-soft: rgba(34, 197, 94, 0.18);
       --danger: #ef4444;
       --danger-soft: rgba(239, 68, 68, 0.15);
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.16);
       --radius: 18px;
     }
 
@@ -60,6 +62,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
     .title-icon {
@@ -131,7 +134,15 @@
       max-width: 100%;
       white-space: normal;
     }
+    .chip strong{ color: var(--text); font-weight: 600; }
     .hidden { display: none; }
+
+    .chip-warn{
+      border-color: rgba(245,158,11,0.35);
+      background: rgba(245,158,11,0.10);
+      color: rgba(245,158,11,0.92);
+    }
+    .chip-warn strong{ color: rgba(245,158,11,0.95); }
 
     .pill-toggle {
       display: inline-flex;
@@ -306,7 +317,21 @@
       gap: 10px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      align-items: center;
     }
+    .mini-pill{
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid rgba(148,163,184,0.22);
+      background: rgba(15,23,42,0.55);
+      color: var(--sub);
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      white-space: nowrap;
+    }
+    .mini-pill b{ color: var(--text); font-weight: 650; }
+
     .shipcard-table {
       width: 100%;
       border-collapse: collapse;
@@ -319,6 +344,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      vertical-align: middle;
     }
     .shipcard-table th {
       color: var(--muted);
@@ -328,6 +354,20 @@
       font-weight: 500;
     }
     .shipcard-table tr:last-child td { border-bottom: none; }
+
+    .prio-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(245,158,11,0.35);
+      background: rgba(245,158,11,0.12);
+      color: rgba(245,158,11,0.95);
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
 
     @media (max-width: 960px) {
       .dashboard { padding: 16px; border-radius: 24px; }
@@ -361,6 +401,7 @@
         <div class="badge-row">
           <div class="pill-badge"><span class="pill-dot"></span> Anchor date is INCLUDED</div>
           <div class="pill-badge"><span class="pill-dot pill-dot-red"></span> Empty windows show “No upcoming data”</div>
+          <div class="pill-badge chip-warn"><strong>🔥 Priority</strong> = SKU cases ≥ threshold</div>
           <div class="pill-badge" id="liveChip"><span class="pill-dot"></span> Waiting for Packing upload…</div>
         </div>
       </div>
@@ -446,6 +487,21 @@
 
               <div class="chip" id="windowChip"><strong>Window:</strong> –</div>
               <div class="chip" id="nextShipDatesHint"><strong>Tip:</strong> “Next Shipments” uses the next 3 ship dates inside this window.</div>
+            </div>
+          </div>
+
+          <!-- PACK PRIORITY (RECOMMENDATION) -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title"><span class="dot"></span>Packing priority</div>
+              <span class="chip"><strong>🔥</strong> Quick triage</span>
+            </div>
+            <div class="row-grid">
+              <div class="control">
+                <label>Priority threshold (cases per SKU / ship date)</label>
+                <input id="priorityCasesInput" type="number" min="1" step="1" value="20" />
+              </div>
+              <div class="chip" id="priorityChip"><strong>Priority:</strong> SKU cases ≥ 20</div>
             </div>
           </div>
 
@@ -572,52 +628,42 @@
     }
 
     const HEADER_ALIASES = new Map([
-      // invoice date
       ["sales invoice date", SALES.INVOICE_DATE],
       ["invoice date", SALES.INVOICE_DATE],
       ["fecha factura", SALES.INVOICE_DATE],
 
-      // ship via
       ["sales ship via", SALES.SHIP_VIA],
       ["ship via", SALES.SHIP_VIA],
       ["via", SALES.SHIP_VIA],
 
-      // week
       ["sales week", SALES.WEEK],
       ["week", SALES.WEEK],
 
-      // ship date
       ["sales ship date", SALES.SHIP_DATE],
       ["ship date", SALES.SHIP_DATE],
       ["fecha envio", SALES.SHIP_DATE],
 
-      // invoice #
       ["sales invoice no.", SALES.INVOICE_NO],
       ["sales invoice no", SALES.INVOICE_NO],
       ["invoice no.", SALES.INVOICE_NO],
       ["invoice #", SALES.INVOICE_NO],
       ["invoice", SALES.INVOICE_NO],
 
-      // sku
       ["sales sku", SALES.SKU],
       ["sku", SALES.SKU],
       ["item", SALES.SKU],
 
-      // cases
       ["sales # of cases", SALES.CASES],
       ["# of cases", SALES.CASES],
       ["cases", SALES.CASES],
 
-      // customer
       ["sales customer", SALES.CUSTOMER],
       ["customer", SALES.CUSTOMER],
       ["cliente", SALES.CUSTOMER],
 
-      // term
       ["sales term", SALES.TERM],
       ["term", SALES.TERM],
 
-      // extra
       ["sales extra", SALES.EXTRA],
       ["extra", SALES.EXTRA],
       ["notes", SALES.EXTRA]
@@ -682,7 +728,6 @@
       const sheets = payload?.sheets || {};
       const names = Object.keys(sheets);
 
-      // 1) preferred names first (common patterns inside packing upload)
       const preferred = [
         "Sales",
         "Master Sales",
@@ -697,12 +742,10 @@
         if (sheets[p] && looksLikeSalesSheet(sheets[p])) return { name: p, sheet: sheets[p] };
       }
 
-      // 2) then: any sheet that matches required headers
       for (const n of names){
         if (looksLikeSalesSheet(sheets[n])) return { name: n, sheet: sheets[n] };
       }
 
-      // 3) last: try Master Pack itself if present (sometimes sales fields are inside it)
       if (sheets[MASTER_PACK_SHEET_NAME] && looksLikeSalesSheet(sheets[MASTER_PACK_SHEET_NAME])) {
         return { name: MASTER_PACK_SHEET_NAME, sheet: sheets[MASTER_PACK_SHEET_NAME] };
       }
@@ -772,7 +815,6 @@
       if (v === null || v === undefined) return null;
       if (v instanceof Date && !isNaN(v.getTime())) return v;
 
-      // Excel serial number
       if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
         const excelEpoch = new Date(Date.UTC(1899, 11, 30));
         const d = new Date(excelEpoch.getTime() + v * 86400000);
@@ -789,18 +831,15 @@
         return isNaN(d.getTime()) ? null : d;
       }
 
-      // Strip weekday prefix: "Wednesday, October 1, 2025"
       let s = s0;
       const parts = s.split(",");
       if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
 
-      // ISO
       if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
         const d = new Date(s);
         return isNaN(d.getTime()) ? null : d;
       }
 
-      // US MM/DD/YYYY or MM/DD/YY
       if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
         const [mm, dd, yy] = s.split("/").map(Number);
         const yyyy = yy < 100 ? 2000 + yy : yy;
@@ -821,6 +860,18 @@
     }
     function formatDateShort(d) {
       return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
+    }
+    function formatWeekdayShort(d){
+      return d.toLocaleDateString(undefined, { weekday: "short" }); // Mon, Tue...
+    }
+    function formatWeekdayLong(d){
+      return d.toLocaleDateString(undefined, { weekday: "long" }); // Monday, Tuesday...
+    }
+    function formatDateWithWeekdayShort(d){
+      return `${formatWeekdayShort(d)} ${formatDateShort(d)}`; // Wed 12/24/25
+    }
+    function formatDateWithWeekdayLong(d){
+      return `${formatWeekdayLong(d)} ${formatDateShort(d)}`; // Wednesday 12/24/25
     }
 
     function getUnits(record, unitMode) {
@@ -899,7 +950,6 @@
 
       const rowObjs = sheetToRowObjects(picked.sheet);
 
-      // Verify required canonical headers exist
       const hs = headerSetFromSheet(picked.sheet);
       const required = [SALES.SHIP_DATE, SALES.SKU, SALES.CASES, SALES.CUSTOMER];
       const missing = required.filter(h => !hs.has(h));
@@ -909,7 +959,6 @@
         return [];
       }
 
-      // Convert row objects to the raw array shape normalizeData expects
       const rawRows = rowObjs.map(o => ([
         o[SALES.INVOICE_DATE] ?? "",
         o[SALES.SHIP_VIA] ?? "",
@@ -942,7 +991,8 @@
       unitMode: "cases",
       anchorISO: null,
       daysAhead: 21,
-      weeksAhead: 6
+      weeksAhead: 6,
+      priorityCases: 20
     };
 
     // =========================================================
@@ -978,6 +1028,9 @@
     const forwardLogWrapper = document.getElementById("forwardLogWrapper");
     const shipCardsEl = document.getElementById("shipCards");
     const nextShipmentsChip = document.getElementById("nextShipmentsChip");
+
+    const priorityCasesInput = document.getElementById("priorityCasesInput");
+    const priorityChip = document.getElementById("priorityChip");
 
     // =========================================================
     // FORWARD WINDOW (INCLUSIVE)
@@ -1178,7 +1231,7 @@
           const units = getUnits(r, unitMode);
 
           tr.innerHTML = `
-            <td>${formatDateShort(r.shipDateObj)}</td>
+            <td>${formatDateWithWeekdayShort(r.shipDateObj)}</td>
             <td>${r.salesWeek || "–"}</td>
             <td>${r.sku}</td>
             <td class="text-right">${formatNumber(r.cases)}</td>
@@ -1226,6 +1279,10 @@
 
     // =========================================================
     // NEXT SHIPMENTS (NEXT 3 SHIP DATES)
+    // RECOMMENDATION INCLUDED:
+    //  - Day-of-week shown in header
+    //  - Ship-via split pills (Pick-up vs Our Delivery, etc.)
+    //  - Priority flag per SKU when cases >= threshold
     // =========================================================
     function buildNextShipments(filtered) {
       shipCardsEl.innerHTML = "";
@@ -1258,6 +1315,10 @@
         const skuSet = new Set();
         const custSet = new Set();
 
+        // Ship-via split (cases)
+        const viaCases = new Map(); // via -> cases
+
+        // Aggregate by SKU
         const skuAgg = new Map();
         for (const r of rows) {
           totalCases += r.cases;
@@ -1265,7 +1326,10 @@
           skuSet.add(r.sku);
           custSet.add(r.customer);
 
-          if (!skuAgg.has(r.sku)) skuAgg.set(r.sku, { sku:r.sku, cases:0, units:0, topCustomer:"–", topCustVal:0, viaMode:new Map() });
+          const viaKey = (r.shipVia || "–").trim() || "–";
+          viaCases.set(viaKey, (viaCases.get(viaKey) || 0) + r.cases);
+
+          if (!skuAgg.has(r.sku)) skuAgg.set(r.sku, { sku:r.sku, cases:0, units:0, topCustomer:"–", viaMode:new Map() });
           const a = skuAgg.get(r.sku);
           a.cases += r.cases;
           a.units += getUnitCount(r);
@@ -1274,7 +1338,7 @@
           const prev = a._custMap || (a._custMap = new Map());
           prev.set(r.customer, (prev.get(r.customer) || 0) + custUnits);
 
-          a.viaMode.set(r.shipVia || "–", (a.viaMode.get(r.shipVia || "–") || 0) + 1);
+          a.viaMode.set(viaKey, (a.viaMode.get(viaKey) || 0) + 1);
         }
 
         const skuRows = [...skuAgg.values()].map(a => {
@@ -1282,17 +1346,27 @@
           if (a._custMap) a._custMap.forEach((v,k)=>{ if(v>topV){ topV=v; topC=k; } });
           a.topCustomer = topC;
 
+          // mode ship via (by frequency)
           let topVia = "–", topViaV = -1;
           a.viaMode.forEach((v,k)=>{ if(v>topViaV){ topViaV=v; topVia=k; } });
           a.shipVia = topVia;
 
+          a.isPriority = (a.cases >= Math.max(1, Number(state.priorityCases) || 20));
           return a;
         }).sort((a,b)=> b.cases - a.cases || a.sku.localeCompare(b.sku));
+
+        // Build via pills (top 2 by cases)
+        const viaSorted = [...viaCases.entries()].sort((a,b)=> b[1] - a[1]);
+        const viaPills = viaSorted.slice(0, 2).map(([via, cases]) => {
+          return `<span class="mini-pill">${via}: <b>${formatNumber(cases)}</b> cs</span>`;
+        }).join("");
 
         const card = document.createElement("div");
         card.className = "shipcard";
 
-        const dateLabel = shipDateObj ? `Shipping on ${formatDateShort(shipDateObj)} (Week ${wk})` : `Shipping on ${iso} (Week ${wk})`;
+        const dateLabel = shipDateObj
+          ? `Shipping on ${formatDateWithWeekdayLong(shipDateObj)} (Week ${wk})`
+          : `Shipping on ${iso} (Week ${wk})`;
 
         card.innerHTML = `
           <div class="shipcard-top">
@@ -1302,6 +1376,7 @@
               <span><strong>${formatNumber(totalUnits)}</strong> units</span>
               <span><strong>${skuSet.size}</strong> SKUs</span>
               <span><strong>${custSet.size}</strong> customers</span>
+              ${viaPills ? `<span class="mini-pill"><b>Via split</b></span>${viaPills}` : ``}
             </div>
           </div>
 
@@ -1319,7 +1394,10 @@
               <tbody>
                 ${skuRows.map(r => `
                   <tr>
-                    <td>${r.sku}</td>
+                    <td>
+                      ${r.sku}
+                      ${r.isPriority ? `<span class="prio-badge">🔥 Priority</span>` : ``}
+                    </td>
                     <td class="text-right">${formatNumber(r.cases)}</td>
                     <td class="text-right">${formatNumber(r.units)}</td>
                     <td>${r.topCustomer}</td>
@@ -1340,10 +1418,14 @@
     // =========================================================
     function updateWindowChip() {
       const { start, end } = computeForwardRange();
-      windowChipEl.innerHTML = `<strong>Window:</strong> ${formatDateShort(start)} → ${formatDateShort(end)} (inclusive)`;
+      windowChipEl.innerHTML = `<strong>Window:</strong> ${formatDateWithWeekdayShort(start)} → ${formatDateWithWeekdayShort(end)} (inclusive)`;
     }
     function updateModeLabels() {
       tableModeChipEl.textContent = (state.viewMode === "weekly") ? "Weekly rows" : "Daily rows";
+    }
+    function updatePriorityChip(){
+      const val = Math.max(1, Number(state.priorityCases) || 20);
+      if (priorityChip) priorityChip.innerHTML = `<strong>Priority:</strong> SKU cases ≥ ${val}`;
     }
 
     // =========================================================
@@ -1352,6 +1434,7 @@
     function refreshDashboard() {
       updateWindowChip();
       updateModeLabels();
+      updatePriorityChip();
 
       const filtered = applyForwardOnly();
       renderKpis(filtered);
@@ -1369,14 +1452,11 @@
         salesData = fromPack;
         dataInputStatus.textContent = `Live: Using Packing upload (${salesData.length} rows).`;
       } else if (Array.isArray(fromPack) && fromPack.length === 0) {
-        // Payload present but no usable sales rows
         dataInputStatus.textContent = `Packing upload present, but no usable Sales rows found. (Using current dataset.)`;
       } else {
-        // No payload
-        // keep current dataset
+        // No payload: keep current dataset
       }
       refreshDashboard();
-      // Optional debug:
       // console.log("🔄 sales reload", reason || "");
     }
 
@@ -1426,6 +1506,19 @@
       weeksAheadInput.addEventListener("change", () => {
         state.weeksAhead = Math.max(1, Number(weeksAheadInput.value) || 6);
         weeksAheadInput.value = state.weeksAhead;
+        refreshDashboard();
+      });
+    }
+
+    function initPriorityControls(){
+      const v = Math.max(1, Number(priorityCasesInput.value) || 20);
+      state.priorityCases = v;
+      priorityCasesInput.value = v;
+      updatePriorityChip();
+
+      priorityCasesInput.addEventListener("change", () => {
+        state.priorityCases = Math.max(1, Number(priorityCasesInput.value) || 20);
+        priorityCasesInput.value = state.priorityCases;
         refreshDashboard();
       });
     }
@@ -1522,13 +1615,11 @@
     // =========================================================
     initToggles();
     initForwardControls();
+    initPriorityControls();
     initDataInput();
     setupLiveListeners();
 
-    // first: render whatever we have
     refreshDashboard();
-
-    // then: attempt load from packing upload immediately
     debounceReload("init");
   </script>
 </body>
