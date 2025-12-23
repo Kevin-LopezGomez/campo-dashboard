@@ -42,4 +42,1494 @@
       padding: 16px 20px 20px;
       display: flex;
       flex-direction: column;
-      gap: 16
+      gap: 16px;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-icon {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, #4ade80, #22c55e 55%, #16a34a 80%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #022c22;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6),
+                  0 10px 30px rgba(34, 197, 94, 0.45);
+    }
+
+    .title-sub { margin-top: 3px; font-size: 0.78rem; color: var(--muted); max-width: 820px; }
+
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: radial-gradient(circle at top left,#0f172a,#020617);
+      color: var(--sub);
+      white-space: nowrap;
+    }
+    .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18); }
+    .pill-dot-red { background: var(--danger); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18); }
+
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 16px; align-items: flex-start; }
+    .sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+    .section-card {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left, #0b1120, #020617);
+      padding: 12px 14px;
+    }
+
+    .section-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+    .section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25); }
+
+    .chip {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      border: 1px solid var(--border-subtle);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      cursor: default;
+      max-width: 100%;
+      white-space: normal;
+    }
+    .hidden { display: none; }
+
+    .pill-toggle {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.95);
+      gap: 2px;
+    }
+    .pill-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .pill-toggle button.active { background: var(--accent-soft); color: var(--accent); }
+
+    .data-input-body { display: grid; grid-template-rows: auto auto; gap: 8px; }
+    .data-input-help { font-size: 0.72rem; color: var(--muted); }
+    .data-input-textarea {
+      width: 100%;
+      min-height: 90px;
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      font-size: 0.75rem;
+      padding: 8px 10px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .data-input-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
+    .btn-primary {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #022c22;
+      background: linear-gradient(to right,#22c55e,#4ade80);
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(34,197,94,0.35);
+    }
+    .btn-danger {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #0b0f19;
+      background: linear-gradient(to right,#ef4444,#f87171);
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(239,68,68,0.25);
+    }
+    .data-input-status { font-size: 0.72rem; color: var(--muted); }
+    .data-input-collapsed .data-input-body { display: none; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .kpi-card {
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left,#020617,#020617 60%,#020617);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .kpi-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+    .kpi-value { font-size: 1.2rem; font-weight: 600; }
+    .kpi-sub { font-size: 0.75rem; color: var(--sub); }
+
+    .table-card {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left,#020617,#020617 60%,#020617);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .table-header-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+    .table-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .table-title .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(34,197,94,0.25); }
+    .table-sub { font-size: 0.7rem; color: var(--muted); }
+
+    .table-wrapper {
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.8);
+      background: radial-gradient(circle at top left,#020617,#020617);
+      overflow-y: auto;
+      overflow-x: auto;
+      scrollbar-gutter: stable both-edges;
+      max-height: 320px; /* overridden dynamically */
+    }
+    .table-wrapper table { width: 100%; min-width: 980px; table-layout: fixed; border-collapse: collapse; font-size: 0.75rem; }
+    thead { background: linear-gradient(to right,#020617,#020617); position: sticky; top: 0; z-index: 1; }
+    th, td { padding: 8px 8px; text-align: left; border-bottom: 1px solid rgba(31,41,55,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    th {
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.72rem;
+      background: #020617;
+    }
+    tbody tr:nth-child(even) { background: rgba(15, 23, 42, 0.8); }
+    tbody tr:hover { background: rgba(30, 64, 175, 0.4); }
+
+    .text-right { text-align: right !important; }
+    .text-center { text-align: center !important; }
+
+    .row-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .control {
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .control input {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(55,65,81,0.8);
+      background: rgba(2,6,23,0.7);
+      color: var(--text);
+      padding: 7px 8px;
+      font-size: 0.78rem;
+      outline: none;
+    }
+
+    .shipcards { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .shipcard {
+      border-radius: 18px;
+      border: 1px solid rgba(31,41,55,0.95);
+      background: radial-gradient(circle at top left, rgba(2,6,23,0.9), rgba(2,6,23,0.65));
+      padding: 10px 12px;
+      overflow: hidden;
+    }
+    .shipcard-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .shipcard-date {
+      font-size: 1.05rem;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+    }
+    .shipcard-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .shipcard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      table-layout: fixed;
+    }
+    .shipcard-table th, .shipcard-table td {
+      padding: 7px 8px;
+      border-bottom: 1px solid rgba(31,41,55,0.85);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .shipcard-table th {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .shipcard-table tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 960px) {
+      .dashboard { padding: 16px; border-radius: 24px; }
+      .layout { grid-template-columns: minmax(0,1fr); }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .kpi-row { grid-template-columns: minmax(0, 1fr); }
+      .header-row { flex-direction: column; align-items: flex-start; }
+      .badge-row { justify-content: flex-start; }
+      .table-wrapper table { min-width: 860px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <div class="dashboard">
+
+      <div class="header-row">
+        <div class="title-block">
+          <h1>
+            <span class="title-icon">$</span>
+            Sales Forward-Look Dashboard
+            <span style="font-size:0.8rem;font-weight:400;color:var(--muted);margin-left:4px;">UPCOMING ONLY</span>
+          </h1>
+          <div class="title-sub">
+            Forward view of what will ship on/after the anchor date. This is a shipment-first view so packing can react quickly.
+          </div>
+        </div>
+        <div class="badge-row">
+          <div class="pill-badge"><span class="pill-dot"></span> Anchor date is INCLUDED</div>
+          <div class="pill-badge"><span class="pill-dot pill-dot-red"></span> Empty windows show “No upcoming data”</div>
+          <div class="pill-badge" id="liveChip"><span class="pill-dot"></span> Waiting for Packing upload…</div>
+        </div>
+      </div>
+
+      <div class="layout">
+        <aside class="sidebar">
+
+          <!-- DATA INPUT (fallback / manual) -->
+          <div class="section-card data-input-collapsed" id="dataInputCard">
+            <div class="section-header">
+              <div class="section-title"><span class="dot"></span>Data input</div>
+              <div class="chip">
+                <span>Paste rows from Excel / Sheets</span>
+                <button id="toggleDataInputBtn" style="border:none;background:transparent;color:var(--sub);cursor:pointer;">Show</button>
+              </div>
+            </div>
+            <div class="data-input-body" id="dataInputBody">
+              <div class="data-input-help">
+                Paste tab-separated rows with (header optional):
+                <strong>
+                  Sales Invoice Date · Sales Ship Via · Sales Week · Sales Ship Date · Sales Invoice No. · Sales SKU · Sales # of Cases · Sales Customer · Sales Term · Sales Extra
+                </strong>
+                <br/>Term/Extra can be blank. Loading replaces current dataset.
+                <br/><span style="color:var(--sub);">Note:</span> Donations are INCLUDED (only “warehouse”/“samples” are excluded).
+              </div>
+              <textarea id="dataInputArea" class="data-input-textarea" placeholder="Paste Excel rows here..."></textarea>
+              <div class="data-input-actions">
+                <button class="btn-primary" id="loadDataBtn">Load pasted data</button>
+                <button class="btn-danger" id="clearDataBtn">Clear data</button>
+                <span class="data-input-status" id="dataInputStatus">Using built-in sample data.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW & UNITS -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title"><span class="dot"></span>View & units</div>
+              <span class="chip"><strong>Scope:</strong> Upcoming only</span>
+            </div>
+            <div class="row-grid">
+              <div class="chip" style="justify-content:space-between;">
+                <span>Units</span>
+                <div class="pill-toggle" id="unitModeToggle">
+                  <button data-unit="cases" class="active">Cases</button>
+                  <button data-unit="pounds">Pounds</button>
+                </div>
+              </div>
+
+              <div class="chip" style="justify-content:space-between;">
+                <span>Time</span>
+                <div class="pill-toggle" id="timeAxisToggle">
+                  <button data-view="daily" class="active">By ship date</button>
+                  <button data-view="weekly">By week</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FORWARD WINDOW -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title"><span class="dot"></span>Forward window</div>
+              <span class="chip"><strong>Inclusive</strong>: anchor day counts</span>
+            </div>
+
+            <div class="row-grid">
+              <div class="control">
+                <label>Anchor date (today)</label>
+                <input id="anchorDateInput" type="date" />
+              </div>
+
+              <div class="control-row">
+                <div class="control">
+                  <label>Days ahead</label>
+                  <input id="daysAheadInput" type="number" min="1" step="1" value="21" />
+                </div>
+                <div class="control">
+                  <label>Weeks ahead</label>
+                  <input id="weeksAheadInput" type="number" min="1" step="1" value="6" />
+                </div>
+              </div>
+
+              <div class="chip" id="windowChip"><strong>Window:</strong> –</div>
+              <div class="chip" id="nextShipDatesHint"><strong>Tip:</strong> “Next Shipments” uses the next 3 ship dates inside this window.</div>
+            </div>
+          </div>
+
+        </aside>
+
+        <main class="main">
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <div class="kpi-label">Upcoming shipments (total)</div>
+              <div class="kpi-value" id="kpiTotalSold">–</div>
+              <div class="kpi-sub" id="kpiTotalSoldSub">Within forward window</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-label" id="kpiAvgLabel">Average per ship day</div>
+              <div class="kpi-value" id="kpiAvg">–</div>
+              <div class="kpi-sub" id="kpiAvgSub">Across upcoming ship days</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-label">Top customer (upcoming)</div>
+              <div class="kpi-value" id="kpiTopCustomer">–</div>
+              <div class="kpi-sub" id="kpiTopCustomerSub">By units</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-label">Top SKU (upcoming)</div>
+              <div class="kpi-value" id="kpiTopSku">–</div>
+              <div class="kpi-sub" id="kpiTopSkuSub">By units</div>
+            </div>
+          </div>
+
+          <!-- FORWARD SALES LOG (TOP) -->
+          <div class="table-card" id="forwardLogCard">
+            <div class="table-header-row">
+              <div>
+                <div class="table-title"><span class="dot"></span>Forward sales log</div>
+                <div class="table-sub">
+                  Shipment line items within the forward window (anchor day included). <span style="color:var(--sub)">Sales term removed.</span>
+                </div>
+              </div>
+              <div class="chip" id="tableModeChip">Daily rows</div>
+            </div>
+
+            <div class="table-wrapper" id="forwardLogWrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ship date</th>
+                    <th>Week</th>
+                    <th>SKU</th>
+                    <th class="text-right">Cases</th>
+                    <th class="text-right">Units</th>
+                    <th>Customer</th>
+                    <th>Ship via</th>
+                    <th class="text-center">Invoice #</th>
+                  </tr>
+                </thead>
+                <tbody id="salesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- NEXT SHIPMENTS -->
+          <div class="section-card" id="nextShipmentsContainer">
+            <div class="section-header">
+              <div class="section-title"><span class="dot"></span><span id="nextShipmentsTitle">Next shipments (next 3 ship dates)</span></div>
+              <span class="chip" id="nextShipmentsChip">–</span>
+            </div>
+            <div class="shipcards" id="shipCards"></div>
+          </div>
+
+          <!-- WEEKLY SUMMARY (BOTTOM) -->
+          <div class="section-card" id="weeklySummaryContainer"></div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // SAMPLE DATA (fallback)
+    // =========================================================
+    const defaultSalesData = [
+      ["Wednesday, November 5, 2025","Our Delivery",45,"Thursday, November 6, 2025","663","COMBO-03LB",1,"Pocito Dulce","COD",""],
+      ["Thursday, October 30, 2025","Pick-up",45,"Thursday, November 6, 2025","655","COMBO-05OZ",228,"Agro Produce","NET-30",""],
+      ["Thursday, October 30, 2025","Pick-up",45,"Thursday, November 6, 2025","655","COMBO-10OZ",43,"Agro Produce","NET-30",""],
+      ["Wednesday, December 24, 2025","Pick-up",52,"Wednesday, December 24, 2025","730","COMBO-05OZ",225,"Agro Produce","NET-30",""],
+      ["Wednesday, December 24, 2025","Pick-up",52,"Wednesday, December 24, 2025","730","COMBO-10OZ",32,"Agro Produce","NET-30",""],
+      ["Monday, December 22, 2025","Our Delivery",53,"Tuesday, December 30, 2025","736","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15",""]
+    ];
+
+    // =========================================================
+    // STORAGE CONTRACT (PULL FROM PACKING DATA UPLOAD)
+    // =========================================================
+    const MASTER_PACK_KEY = "campo_master_pack_v1";
+    const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
+    const MASTER_PACK_SHEET_NAME = "Master Pack";
+
+    const MSG_PACK = "MASTER_PACK_UPDATED";
+
+    const BC_NAME = "campo_master_bus_v1";
+    const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
+
+    // =========================================================
+    // SALES HEADER CANONICALIZATION (tolerant)
+    // =========================================================
+    const SALES = Object.freeze({
+      INVOICE_DATE: "Sales Invoice Date",
+      SHIP_VIA: "Sales Ship Via",
+      WEEK: "Sales Week",
+      SHIP_DATE: "Sales Ship Date",
+      INVOICE_NO: "Sales Invoice No.",
+      SKU: "Sales SKU",
+      CASES: "Sales # of Cases",
+      CUSTOMER: "Sales Customer",
+      TERM: "Sales Term",
+      EXTRA: "Sales Extra"
+    });
+
+    function normHeader(s){
+      return String(s ?? "").replace(/\s+/g," ").trim().toLowerCase();
+    }
+
+    const HEADER_ALIASES = new Map([
+      // invoice date
+      ["sales invoice date", SALES.INVOICE_DATE],
+      ["invoice date", SALES.INVOICE_DATE],
+      ["fecha factura", SALES.INVOICE_DATE],
+
+      // ship via
+      ["sales ship via", SALES.SHIP_VIA],
+      ["ship via", SALES.SHIP_VIA],
+      ["via", SALES.SHIP_VIA],
+
+      // week
+      ["sales week", SALES.WEEK],
+      ["week", SALES.WEEK],
+
+      // ship date
+      ["sales ship date", SALES.SHIP_DATE],
+      ["ship date", SALES.SHIP_DATE],
+      ["fecha envio", SALES.SHIP_DATE],
+
+      // invoice #
+      ["sales invoice no.", SALES.INVOICE_NO],
+      ["sales invoice no", SALES.INVOICE_NO],
+      ["invoice no.", SALES.INVOICE_NO],
+      ["invoice #", SALES.INVOICE_NO],
+      ["invoice", SALES.INVOICE_NO],
+
+      // sku
+      ["sales sku", SALES.SKU],
+      ["sku", SALES.SKU],
+      ["item", SALES.SKU],
+
+      // cases
+      ["sales # of cases", SALES.CASES],
+      ["# of cases", SALES.CASES],
+      ["cases", SALES.CASES],
+
+      // customer
+      ["sales customer", SALES.CUSTOMER],
+      ["customer", SALES.CUSTOMER],
+      ["cliente", SALES.CUSTOMER],
+
+      // term
+      ["sales term", SALES.TERM],
+      ["term", SALES.TERM],
+
+      // extra
+      ["sales extra", SALES.EXTRA],
+      ["extra", SALES.EXTRA],
+      ["notes", SALES.EXTRA]
+    ]);
+
+    function canonicalizeHeaders(headersRaw){
+      const canonHeaders = [];
+      const canonIndexByName = new Map();
+
+      (headersRaw || []).forEach((h, idx) => {
+        const raw = String(h ?? "");
+        const key = normHeader(raw);
+        const canon = HEADER_ALIASES.get(key) || raw.trim();
+        canonHeaders[idx] = canon;
+        if (canon && !canonIndexByName.has(canon)) canonIndexByName.set(canon, idx);
+      });
+
+      return { canonHeaders, canonIndexByName };
+    }
+
+    // =========================================================
+    // PACK PAYLOAD LOADING
+    // =========================================================
+    function loadMasterPackPayload() {
+      const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
+
+      const out = [];
+      for (const r of rows) {
+        if (!Array.isArray(r)) continue;
+        const obj = {};
+        for (let i = 0; i < canonHeaders.length; i++) {
+          const key = String(canonHeaders[i] ?? "").trim();
+          if (!key) continue;
+          obj[key] = (i < r.length) ? r[i] : "";
+        }
+        out.push(obj);
+      }
+      return out;
+    }
+
+    function headerSetFromSheet(sheetObj){
+      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
+      return new Set(canonHeaders.map(h => String(h||"").trim()).filter(Boolean));
+    }
+
+    function looksLikeSalesSheet(sheetObj){
+      const hs = headerSetFromSheet(sheetObj);
+      const required = [SALES.SHIP_DATE, SALES.SKU, SALES.CASES, SALES.CUSTOMER];
+      return required.every(h => hs.has(h));
+    }
+
+    function pickSalesSheet(payload){
+      const sheets = payload?.sheets || {};
+      const names = Object.keys(sheets);
+
+      // 1) preferred names first (common patterns inside packing upload)
+      const preferred = [
+        "Sales",
+        "Master Sales",
+        "Forward Sales",
+        "Forward Sales Log",
+        "Sales Forward",
+        "Orders",
+        "Shipments"
+      ];
+
+      for (const p of preferred){
+        if (sheets[p] && looksLikeSalesSheet(sheets[p])) return { name: p, sheet: sheets[p] };
+      }
+
+      // 2) then: any sheet that matches required headers
+      for (const n of names){
+        if (looksLikeSalesSheet(sheets[n])) return { name: n, sheet: sheets[n] };
+      }
+
+      // 3) last: try Master Pack itself if present (sometimes sales fields are inside it)
+      if (sheets[MASTER_PACK_SHEET_NAME] && looksLikeSalesSheet(sheets[MASTER_PACK_SHEET_NAME])) {
+        return { name: MASTER_PACK_SHEET_NAME, sheet: sheets[MASTER_PACK_SHEET_NAME] };
+      }
+
+      return null;
+    }
+
+    // =========================================================
+    // ONLY exclude non-ship operational rows (donations INCLUDED)
+    // =========================================================
+    const excludedCustomers = new Set(["warehouse","samples"]);
+    function isExcludedCustomer(name = "") {
+      const n = String(name).trim().toLowerCase();
+      return excludedCustomers.has(n);
+    }
+
+    // =========================================================
+    // SKU INFERENCE
+    // =========================================================
+    function inferUnitsPerCase(sku) {
+      const s = String(sku || "").trim().toUpperCase();
+      if (s.endsWith("05OZ")) return 18;
+      if (s.endsWith("10OZ")) return 12;
+      if (s.endsWith("16OZ")) return 8;
+      if (s.endsWith("01LB")) return 10;
+      if (s.endsWith("03LB")) return 3;
+      if (s.endsWith("HEAD")) return 1;
+      return 1;
+    }
+    function inferLbsPerCase(sku) {
+      const s = String(sku || "").trim().toUpperCase();
+      if (s.endsWith("05OZ")) return 18 * (5 / 16);
+      if (s.endsWith("10OZ")) return 12 * (10 / 16);
+      if (s.endsWith("16OZ")) return 8 * (16 / 16);
+      if (s.endsWith("01LB")) return 10 * 1;
+      if (s.endsWith("03LB")) return 3 * 3;
+      if (s.endsWith("HEAD")) return 1;
+      return 1;
+    }
+
+    // =========================================================
+    // DATE + NUMBER HELPERS
+    // =========================================================
+    function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+    function endOfDay(d) { const x = new Date(d); x.setHours(23,59,59,999); return x; }
+
+    function toISODateLocal(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseNumber(v) {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      const s = String(v).trim();
+      if (!s) return 0;
+      if (s.toUpperCase().includes("#VALUE")) return 0;
+      const cleaned = s.replace(/,/g, "");
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // Handles Date obj, Excel serial, MM/DD/YYYY, ISO, long-form
+    function parseAnyDate(v){
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+
+      // Excel serial number
+      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + v * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      const s0 = String(v).trim();
+      if (!s0) return null;
+
+      const n = Number(s0);
+      if (Number.isFinite(n) && n > 20000 && n < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + n * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Strip weekday prefix: "Wednesday, October 1, 2025"
+      let s = s0;
+      const parts = s.split(",");
+      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
+
+      // ISO
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // US MM/DD/YYYY or MM/DD/YY
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
+        const [mm, dd, yy] = s.split("/").map(Number);
+        const yyyy = yy < 100 ? 2000 + yy : yy;
+        const d = new Date(yyyy, mm - 1, dd);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function safeDateParse(value) {
+      return parseAnyDate(value);
+    }
+
+    function formatNumber(value) {
+      return (Number(value) || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
+    }
+    function formatDateShort(d) {
+      return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
+    }
+
+    function getUnits(record, unitMode) {
+      if (unitMode === "cases") return record.cases;
+      return record.cases * (record.lbsPerCase ?? 1);
+    }
+    function getUnitCount(record) {
+      return record.cases * (record.unitsPerCase ?? 1);
+    }
+
+    // =========================================================
+    // NORMALIZE (from raw row arrays) - your existing contract
+    // =========================================================
+    function normalizeData(rawRows) {
+      return rawRows
+        .map(r => {
+          const invoiceDate = r[0] ?? "";
+          const shipVia     = r[1] ?? "";
+          const salesWeek   = r[2] ?? "";
+          const shipDate    = r[3] ?? "";
+          const invoiceNo   = r[4] ?? "";
+          const sku         = r[5] ?? "";
+          const cases       = r[6] ?? "";
+          const customer    = r[7] ?? "";
+          const term        = r[8] ?? "";
+          const extra       = r[9] ?? "";
+
+          const shipDateObj = safeDateParse(shipDate);
+          if (!shipDateObj) return null;
+
+          const skuClean = String(sku).trim().toUpperCase();
+          const shipDateISO = toISODateLocal(shipDateObj);
+
+          const unitsPerCase = inferUnitsPerCase(skuClean);
+          const lbsPerCase = inferLbsPerCase(skuClean);
+
+          return {
+            invoiceDate: String(invoiceDate),
+            shipVia: String(shipVia).trim(),
+            salesWeek: Number(salesWeek) || 0,
+            shipDate: String(shipDate),
+            shipDateObj,
+            shipDateISO,
+            invoiceNo: String(invoiceNo).trim(),
+            sku: skuClean,
+            cases: parseNumber(cases),
+            customer: String(customer).trim(),
+            term: String(term || "").trim(),
+            extra: String(extra || "").trim(),
+            unitsPerCase,
+            lbsPerCase
+          };
+        })
+        .filter(Boolean)
+        .filter(rec => rec.sku && rec.customer)
+        .filter(rec => rec.cases > 0)
+        .filter(rec => !isExcludedCustomer(rec.customer));
+    }
+
+    // =========================================================
+    // BUILD SALES ROWS FROM PACK PAYLOAD SHEET
+    // =========================================================
+    function buildSalesFromPackingPayload() {
+      const liveChip = document.getElementById("liveChip");
+      const payload = loadMasterPackPayload();
+      if (!payload) {
+        if (liveChip) liveChip.innerHTML = `<span class="pill-dot"></span> Waiting for Packing upload…`;
+        return null;
+      }
+
+      const picked = pickSalesSheet(payload);
+      if (!picked || !picked.sheet) {
+        if (liveChip) liveChip.innerHTML = `<span class="pill-dot pill-dot-red"></span> Packing upload loaded, but no Sales sheet found`;
+        return [];
+      }
+
+      const rowObjs = sheetToRowObjects(picked.sheet);
+
+      // Verify required canonical headers exist
+      const hs = headerSetFromSheet(picked.sheet);
+      const required = [SALES.SHIP_DATE, SALES.SKU, SALES.CASES, SALES.CUSTOMER];
+      const missing = required.filter(h => !hs.has(h));
+
+      if (missing.length) {
+        if (liveChip) liveChip.innerHTML = `<span class="pill-dot pill-dot-red"></span> Sales headers missing in "${picked.name}"`;
+        return [];
+      }
+
+      // Convert row objects to the raw array shape normalizeData expects
+      const rawRows = rowObjs.map(o => ([
+        o[SALES.INVOICE_DATE] ?? "",
+        o[SALES.SHIP_VIA] ?? "",
+        o[SALES.WEEK] ?? "",
+        o[SALES.SHIP_DATE] ?? "",
+        o[SALES.INVOICE_NO] ?? "",
+        o[SALES.SKU] ?? "",
+        o[SALES.CASES] ?? "",
+        o[SALES.CUSTOMER] ?? "",
+        o[SALES.TERM] ?? "",
+        o[SALES.EXTRA] ?? ""
+      ]));
+
+      const normalized = normalizeData(rawRows);
+
+      if (liveChip) {
+        liveChip.innerHTML = `<span class="pill-dot"></span> Live from Packing upload: <strong>${picked.name}</strong> (${normalized.length.toLocaleString()} rows)`;
+      }
+
+      return normalized;
+    }
+
+    // =========================================================
+    // STATE + DATA
+    // =========================================================
+    let salesData = normalizeData(defaultSalesData);
+
+    const state = {
+      viewMode: "daily",
+      unitMode: "cases",
+      anchorISO: null,
+      daysAhead: 21,
+      weeksAhead: 6
+    };
+
+    // =========================================================
+    // DOM
+    // =========================================================
+    const salesTableBody = document.getElementById("salesTableBody");
+    const weeklySummaryContainer = document.getElementById("weeklySummaryContainer");
+
+    const kpiTotalSoldEl = document.getElementById("kpiTotalSold");
+    const kpiTotalSoldSubEl = document.getElementById("kpiTotalSoldSub");
+    const kpiAvgLabelEl = document.getElementById("kpiAvgLabel");
+    const kpiAvgEl = document.getElementById("kpiAvg");
+    const kpiAvgSubEl = document.getElementById("kpiAvgSub");
+    const kpiTopCustomerEl = document.getElementById("kpiTopCustomer");
+    const kpiTopCustomerSubEl = document.getElementById("kpiTopCustomerSub");
+    const kpiTopSkuEl = document.getElementById("kpiTopSku");
+    const kpiTopSkuSubEl = document.getElementById("kpiTopSkuSub");
+
+    const tableModeChipEl = document.getElementById("tableModeChip");
+    const windowChipEl = document.getElementById("windowChip");
+
+    const anchorDateInput = document.getElementById("anchorDateInput");
+    const daysAheadInput = document.getElementById("daysAheadInput");
+    const weeksAheadInput = document.getElementById("weeksAheadInput");
+
+    const dataInputCard = document.getElementById("dataInputCard");
+    const dataInputArea = document.getElementById("dataInputArea");
+    const dataInputStatus = document.getElementById("dataInputStatus");
+    const loadDataBtn = document.getElementById("loadDataBtn");
+    const clearDataBtn = document.getElementById("clearDataBtn");
+    const toggleDataInputBtn = document.getElementById("toggleDataInputBtn");
+
+    const forwardLogWrapper = document.getElementById("forwardLogWrapper");
+    const shipCardsEl = document.getElementById("shipCards");
+    const nextShipmentsChip = document.getElementById("nextShipmentsChip");
+
+    // =========================================================
+    // FORWARD WINDOW (INCLUSIVE)
+    // =========================================================
+    function getAnchorDateObj() {
+      if (state.anchorISO) {
+        const [y,m,d] = state.anchorISO.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    }
+
+    function computeForwardRange() {
+      const anchor = startOfDay(getAnchorDateObj());
+      const days = Math.max(1, Number(state.daysAhead) || 21);
+      const endDate = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + (days - 1));
+      const end = endOfDay(endDate);
+      return { start: anchor, end };
+    }
+
+    function inForwardWindow(shipDateObj) {
+      const { start, end } = computeForwardRange();
+      return shipDateObj >= start && shipDateObj <= end;
+    }
+
+    function applyForwardOnly() {
+      return salesData.filter(r => inForwardWindow(r.shipDateObj));
+    }
+
+    // =========================================================
+    // KPIs
+    // =========================================================
+    function renderKpis(filtered) {
+      const unitLabel = state.unitMode === "cases" ? "cases" : "lbs";
+      const isWeekly = state.viewMode === "weekly";
+
+      if (!filtered.length) {
+        kpiTotalSoldEl.textContent = "0";
+        kpiTotalSoldSubEl.textContent = `No upcoming ${unitLabel} in window`;
+        kpiAvgLabelEl.textContent = isWeekly ? "Average per week" : "Average per ship day";
+        kpiAvgEl.textContent = "0";
+        kpiAvgSubEl.textContent = "No upcoming rows";
+        kpiTopCustomerEl.textContent = "–";
+        kpiTopCustomerSubEl.textContent = "No customer data";
+        kpiTopSkuEl.textContent = "–";
+        kpiTopSkuSubEl.textContent = "No SKU data";
+        return;
+      }
+
+      let total = 0;
+      const byCustomer = new Map();
+      const bySku = new Map();
+      const byDay = new Map();
+      const byWeek = new Map();
+
+      filtered.forEach(r => {
+        const u = getUnits(r, state.unitMode);
+        total += u;
+
+        byCustomer.set(r.customer, (byCustomer.get(r.customer) || 0) + u);
+        bySku.set(r.sku, (bySku.get(r.sku) || 0) + u);
+        byDay.set(r.shipDateISO, (byDay.get(r.shipDateISO) || 0) + u);
+        byWeek.set(String(r.salesWeek || 0), (byWeek.get(String(r.salesWeek || 0)) || 0) + u);
+      });
+
+      kpiTotalSoldEl.textContent = formatNumber(total);
+      kpiTotalSoldSubEl.textContent = `Across ${filtered.length} lines (${unitLabel})`;
+
+      if (isWeekly) {
+        kpiAvgLabelEl.textContent = "Average per week";
+        const avg = total / Math.max(byWeek.size, 1);
+        kpiAvgEl.textContent = formatNumber(avg);
+        kpiAvgSubEl.textContent = `Across ${byWeek.size} upcoming weeks`;
+      } else {
+        kpiAvgLabelEl.textContent = "Average per ship day";
+        const avg = total / Math.max(byDay.size, 1);
+        kpiAvgEl.textContent = formatNumber(avg);
+        kpiAvgSubEl.textContent = `Across ${byDay.size} upcoming ship days`;
+      }
+
+      let topCust = "–", topCustVal = -1;
+      byCustomer.forEach((v,k)=>{ if(v>topCustVal){ topCustVal=v; topCust=k; } });
+      kpiTopCustomerEl.textContent = topCust;
+      kpiTopCustomerSubEl.textContent = `${formatNumber(topCustVal)} ${unitLabel}`;
+
+      let topSku = "–", topSkuVal = -1;
+      bySku.forEach((v,k)=>{ if(v>topSkuVal){ topSkuVal=v; topSku=k; } });
+      kpiTopSkuEl.textContent = topSku;
+      kpiTopSkuSubEl.textContent = `${formatNumber(topSkuVal)} ${unitLabel}`;
+    }
+
+    // =========================================================
+    // WEEKLY SUMMARY (BOTTOM)
+    // =========================================================
+    function renderWeeklySummary(filtered) {
+      if (!weeklySummaryContainer) return;
+
+      const unitMode = state.unitMode;
+      if (!filtered.length) {
+        weeklySummaryContainer.innerHTML = `
+          <div class="section-header" style="margin-bottom:0;">
+            <div class="section-title"><span class="dot"></span>Weekly summary (forward)</div>
+            <span class="chip"><strong>No upcoming weeks</strong></span>
+          </div>
+        `;
+        return;
+      }
+
+      const byWeek = new Map();
+      filtered.forEach(r => {
+        const wk = Number(r.salesWeek) || 0;
+        const cases = r.cases;
+        const secondMetric = unitMode === "cases" ? getUnitCount(r) : getUnits(r, "pounds");
+
+        if (!byWeek.has(wk)) byWeek.set(wk, { cases:0, metric:0, customers:new Set(), skus:new Set() });
+        const b = byWeek.get(wk);
+        b.cases += cases;
+        b.metric += secondMetric;
+        b.customers.add(r.customer);
+        b.skus.add(r.sku);
+      });
+
+      const rows = [...byWeek.entries()].sort((a,b)=>a[0]-b[0]).map(([wk,info]) => `
+        <tr>
+          <td>Week ${wk || "–"}</td>
+          <td class="text-right">${formatNumber(info.cases)}</td>
+          <td class="text-right">${formatNumber(info.metric)}</td>
+          <td class="text-center">${info.customers.size}</td>
+          <td class="text-center">${info.skus.size}</td>
+        </tr>
+      `).join("");
+
+      const secondHeader = unitMode === "cases" ? "Units" : "Lbs";
+      const chipLabel = unitMode === "cases" ? "Mode: Cases + units/case" : "Mode: Lbs (cases × lbs/case)";
+
+      weeklySummaryContainer.innerHTML = `
+        <div class="section-header" style="margin-bottom:6px;">
+          <div class="section-title"><span class="dot"></span>Weekly summary (forward)</div>
+          <span class="chip"><strong>${chipLabel}</strong></span>
+        </div>
+        <div style="overflow:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+            <thead>
+              <tr>
+                <th style="text-align:left; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">Week</th>
+                <th class="text-right" style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">Cases</th>
+                <th class="text-right" style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">${secondHeader}</th>
+                <th class="text-center" style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">Customers</th>
+                <th class="text-center" style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">SKUs</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // =========================================================
+    // TABLE (FORWARD SALES LOG)
+    // =========================================================
+    function setForwardLogHeight(rowCount) {
+      const headerPx = 42;
+      const rowPx = 36;
+      const visibleRows = Math.min(10, Math.max(1, rowCount + 1));
+      const maxH = headerPx + (visibleRows * rowPx) + 4;
+      forwardLogWrapper.style.maxHeight = `${maxH}px`;
+    }
+
+    function renderTable(filtered) {
+      salesTableBody.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      const isWeekly = state.viewMode === "weekly";
+      const unitMode = state.unitMode;
+
+      if (!filtered.length) {
+        setForwardLogHeight(1);
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 8;
+        td.style.color = "#9ca3af";
+        td.textContent = "No upcoming rows in the current forward window (anchor day included).";
+        tr.appendChild(td);
+        frag.appendChild(tr);
+        salesTableBody.appendChild(frag);
+        return;
+      }
+
+      if (!isWeekly) {
+        const rows = filtered
+          .slice()
+          .sort((a,b)=> a.shipDateObj - b.shipDateObj || (a.invoiceNo || "").localeCompare(b.invoiceNo || ""));
+
+        setForwardLogHeight(rows.length);
+
+        rows.forEach(r => {
+          const tr = document.createElement("tr");
+          const units = getUnits(r, unitMode);
+
+          tr.innerHTML = `
+            <td>${formatDateShort(r.shipDateObj)}</td>
+            <td>${r.salesWeek || "–"}</td>
+            <td>${r.sku}</td>
+            <td class="text-right">${formatNumber(r.cases)}</td>
+            <td class="text-right">${formatNumber(units)}</td>
+            <td>${r.customer}</td>
+            <td>${r.shipVia || "–"}</td>
+            <td class="text-center">${r.invoiceNo || "–"}</td>
+          `;
+          frag.appendChild(tr);
+        });
+      } else {
+        const buckets = new Map();
+        filtered.forEach(r => {
+          const units = getUnits(r, unitMode);
+          const key = `${r.salesWeek}||${r.sku}||${r.customer}`;
+          if (!buckets.has(key)) buckets.set(key, { week:r.salesWeek, sku:r.sku, customer:r.customer, cases:0, units:0 });
+          const b = buckets.get(key);
+          b.cases += r.cases;
+          b.units += units;
+        });
+
+        const rows = [...buckets.values()]
+          .sort((a,b)=> (a.week||0) - (b.week||0) || a.sku.localeCompare(b.sku) || a.customer.localeCompare(b.customer));
+
+        setForwardLogHeight(rows.length);
+
+        rows.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>Week ${row.week || "–"}</td>
+            <td>${row.week || "–"}</td>
+            <td>${row.sku}</td>
+            <td class="text-right">${formatNumber(row.cases)}</td>
+            <td class="text-right">${formatNumber(row.units)}</td>
+            <td>${row.customer}</td>
+            <td>–</td>
+            <td class="text-center">Multiple</td>
+          `;
+          frag.appendChild(tr);
+        });
+      }
+
+      salesTableBody.appendChild(frag);
+    }
+
+    // =========================================================
+    // NEXT SHIPMENTS (NEXT 3 SHIP DATES)
+    // =========================================================
+    function buildNextShipments(filtered) {
+      shipCardsEl.innerHTML = "";
+
+      if (!filtered.length) {
+        nextShipmentsChip.textContent = "No upcoming ship dates";
+        shipCardsEl.innerHTML = `<div class="chip" style="width:100%;justify-content:center;">No upcoming shipments inside this forward window.</div>`;
+        return;
+      }
+
+      const dates = [...new Set(filtered.map(r => r.shipDateISO))]
+        .sort((a,b)=> a.localeCompare(b))
+        .slice(0, 3);
+
+      nextShipmentsChip.textContent = `Showing ${dates.length} ship date${dates.length===1?"":"s"}`;
+
+      const byDate = new Map();
+      for (const d of dates) byDate.set(d, []);
+      filtered.forEach(r => { if (byDate.has(r.shipDateISO)) byDate.get(r.shipDateISO).push(r); });
+
+      for (const iso of dates) {
+        const rows = byDate.get(iso) || [];
+        rows.sort((a,b)=> b.cases - a.cases || a.sku.localeCompare(b.sku));
+
+        const shipDateObj = rows[0]?.shipDateObj ? new Date(rows[0].shipDateObj) : null;
+        const wk = rows[0]?.salesWeek || "–";
+
+        let totalCases = 0;
+        let totalUnits = 0;
+        const skuSet = new Set();
+        const custSet = new Set();
+
+        const skuAgg = new Map();
+        for (const r of rows) {
+          totalCases += r.cases;
+          totalUnits += getUnitCount(r);
+          skuSet.add(r.sku);
+          custSet.add(r.customer);
+
+          if (!skuAgg.has(r.sku)) skuAgg.set(r.sku, { sku:r.sku, cases:0, units:0, topCustomer:"–", topCustVal:0, viaMode:new Map() });
+          const a = skuAgg.get(r.sku);
+          a.cases += r.cases;
+          a.units += getUnitCount(r);
+
+          const custUnits = getUnitCount(r);
+          const prev = a._custMap || (a._custMap = new Map());
+          prev.set(r.customer, (prev.get(r.customer) || 0) + custUnits);
+
+          a.viaMode.set(r.shipVia || "–", (a.viaMode.get(r.shipVia || "–") || 0) + 1);
+        }
+
+        const skuRows = [...skuAgg.values()].map(a => {
+          let topC = "–", topV = -1;
+          if (a._custMap) a._custMap.forEach((v,k)=>{ if(v>topV){ topV=v; topC=k; } });
+          a.topCustomer = topC;
+
+          let topVia = "–", topViaV = -1;
+          a.viaMode.forEach((v,k)=>{ if(v>topViaV){ topViaV=v; topVia=k; } });
+          a.shipVia = topVia;
+
+          return a;
+        }).sort((a,b)=> b.cases - a.cases || a.sku.localeCompare(b.sku));
+
+        const card = document.createElement("div");
+        card.className = "shipcard";
+
+        const dateLabel = shipDateObj ? `Shipping on ${formatDateShort(shipDateObj)} (Week ${wk})` : `Shipping on ${iso} (Week ${wk})`;
+
+        card.innerHTML = `
+          <div class="shipcard-top">
+            <div class="shipcard-date">${dateLabel}</div>
+            <div class="shipcard-meta">
+              <span><strong>${formatNumber(totalCases)}</strong> cases</span>
+              <span><strong>${formatNumber(totalUnits)}</strong> units</span>
+              <span><strong>${skuSet.size}</strong> SKUs</span>
+              <span><strong>${custSet.size}</strong> customers</span>
+            </div>
+          </div>
+
+          <div style="overflow:auto;">
+            <table class="shipcard-table" style="min-width:780px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">SKU</th>
+                  <th class="text-right">Cases</th>
+                  <th class="text-right">Units</th>
+                  <th style="text-align:left;">Top customer</th>
+                  <th style="text-align:left;">Ship via</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${skuRows.map(r => `
+                  <tr>
+                    <td>${r.sku}</td>
+                    <td class="text-right">${formatNumber(r.cases)}</td>
+                    <td class="text-right">${formatNumber(r.units)}</td>
+                    <td>${r.topCustomer}</td>
+                    <td>${r.shipVia || "–"}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        shipCardsEl.appendChild(card);
+      }
+    }
+
+    // =========================================================
+    // UI LABELS
+    // =========================================================
+    function updateWindowChip() {
+      const { start, end } = computeForwardRange();
+      windowChipEl.innerHTML = `<strong>Window:</strong> ${formatDateShort(start)} → ${formatDateShort(end)} (inclusive)`;
+    }
+    function updateModeLabels() {
+      tableModeChipEl.textContent = (state.viewMode === "weekly") ? "Weekly rows" : "Daily rows";
+    }
+
+    // =========================================================
+    // DASHBOARD REFRESH
+    // =========================================================
+    function refreshDashboard() {
+      updateWindowChip();
+      updateModeLabels();
+
+      const filtered = applyForwardOnly();
+      renderKpis(filtered);
+      renderTable(filtered);
+      buildNextShipments(filtered);
+      renderWeeklySummary(filtered);
+    }
+
+    // =========================================================
+    // LIVE RELOAD FROM PACKING UPLOAD
+    // =========================================================
+    function reloadFromPacking(reason) {
+      const fromPack = buildSalesFromPackingPayload();
+      if (Array.isArray(fromPack) && fromPack.length) {
+        salesData = fromPack;
+        dataInputStatus.textContent = `Live: Using Packing upload (${salesData.length} rows).`;
+      } else if (Array.isArray(fromPack) && fromPack.length === 0) {
+        // Payload present but no usable sales rows
+        dataInputStatus.textContent = `Packing upload present, but no usable Sales rows found. (Using current dataset.)`;
+      } else {
+        // No payload
+        // keep current dataset
+      }
+      refreshDashboard();
+      // Optional debug:
+      // console.log("🔄 sales reload", reason || "");
+    }
+
+    // =========================================================
+    // TOGGLES + EVENTS
+    // =========================================================
+    function setActiveToggle(container, attr, value) {
+      container.querySelectorAll("button").forEach(btn => btn.classList.toggle("active", btn.dataset[attr] === value));
+    }
+
+    function initToggles() {
+      const unitToggle = document.getElementById("unitModeToggle");
+      const timeAxisToggle = document.getElementById("timeAxisToggle");
+
+      unitToggle.addEventListener("click", (e) => {
+        if (e.target.tagName !== "BUTTON") return;
+        state.unitMode = e.target.dataset.unit === "pounds" ? "pounds" : "cases";
+        setActiveToggle(unitToggle, "unit", state.unitMode);
+        refreshDashboard();
+      });
+
+      timeAxisToggle.addEventListener("click", (e) => {
+        if (e.target.tagName !== "BUTTON") return;
+        state.viewMode = e.target.dataset.view === "weekly" ? "weekly" : "daily";
+        setActiveToggle(timeAxisToggle, "view", state.viewMode);
+        refreshDashboard();
+      });
+    }
+
+    function initForwardControls() {
+      const today = new Date();
+      const todayISO = toISODateLocal(today);
+      state.anchorISO = todayISO;
+      anchorDateInput.value = todayISO;
+
+      anchorDateInput.addEventListener("change", () => {
+        state.anchorISO = anchorDateInput.value || toISODateLocal(new Date());
+        refreshDashboard();
+      });
+
+      daysAheadInput.addEventListener("change", () => {
+        state.daysAhead = Math.max(1, Number(daysAheadInput.value) || 21);
+        daysAheadInput.value = state.daysAhead;
+        refreshDashboard();
+      });
+
+      weeksAheadInput.addEventListener("change", () => {
+        state.weeksAhead = Math.max(1, Number(weeksAheadInput.value) || 6);
+        weeksAheadInput.value = state.weeksAhead;
+        refreshDashboard();
+      });
+    }
+
+    function initDataInput() {
+      toggleDataInputBtn.addEventListener("click", () => {
+        const collapsed = dataInputCard.classList.toggle("data-input-collapsed");
+        toggleDataInputBtn.textContent = collapsed ? "Show" : "Hide";
+      });
+
+      loadDataBtn.addEventListener("click", () => {
+        const text = dataInputArea.value.trim();
+        if (!text) { dataInputStatus.textContent = "Paste tab-separated rows first."; return; }
+
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+        const raw = [];
+
+        for (const line of lines) {
+          const cols = line.split(/\t/);
+          const headerJoined = cols.join(" ").toLowerCase();
+          if (headerJoined.includes("sales invoice date") && headerJoined.includes("sales ship date")) continue;
+          if (cols.length < 8) continue;
+
+          raw.push([
+            cols[0], cols[1], cols[2], cols[3], cols[4],
+            cols[5], cols[6], cols[7],
+            cols[8] ?? "", cols[9] ?? ""
+          ]);
+        }
+
+        if (!raw.length) {
+          dataInputStatus.textContent = "Could not find any valid rows (need at least 8 tab-separated columns).";
+          return;
+        }
+
+        salesData = normalizeData(raw);
+        refreshDashboard();
+        dataInputStatus.textContent = `Loaded ${salesData.length} rows from pasted data (manual override).`;
+      });
+
+      clearDataBtn.addEventListener("click", () => {
+        dataInputArea.value = "";
+        salesData = normalizeData(defaultSalesData);
+        refreshDashboard();
+        dataInputStatus.textContent = "Cleared pasted data; reverted to sample data.";
+      });
+    }
+
+    // =========================================================
+    // LIVE LISTENERS (match Seeding pattern)
+    // =========================================================
+    let reloadTimer = null;
+    function debounceReload(reason){
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        reloadFromPacking(reason);
+      }, 60);
+    }
+
+    function setupLiveListeners() {
+      window.addEventListener("storage", (e) => {
+        if (!e) return;
+        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) debounceReload("storage");
+      });
+
+      window.addEventListener("message", (event) => {
+        const msg = event?.data;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === MSG_PACK || msg.type === "MASTER_PACK_UPDATED") debounceReload("message");
+      });
+
+      window.addEventListener(MSG_PACK, () => debounceReload("customevent"));
+
+      if (bc) {
+        bc.onmessage = (ev) => {
+          const msg = ev?.data;
+          if (msg?.type === MSG_PACK) debounceReload("broadcast");
+        };
+      }
+
+      let lastLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+      setInterval(() => {
+        const curLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+        if (curLen !== lastLen) {
+          lastLen = curLen;
+          debounceReload("poll");
+        }
+      }, 1500);
+    }
+
+    // =========================================================
+    // INIT
+    // =========================================================
+    initToggles();
+    initForwardControls();
+    initDataInput();
+    setupLiveListeners();
+
+    // first: render whatever we have
+    refreshDashboard();
+
+    // then: attempt load from packing upload immediately
+    debounceReload("init");
+  </script>
+</body>
+</html>
