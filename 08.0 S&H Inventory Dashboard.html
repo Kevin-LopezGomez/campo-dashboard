@@ -22,6 +22,8 @@
       --warn-soft: rgba(245,158,11,.16);
       --danger:#ef4444;
       --danger-soft: rgba(239,68,68,.15);
+      --exp:#a855f7; /* experiment purple */
+      --exp-soft: rgba(168,85,247,.16);
     }
 
     *{box-sizing:border-box;}
@@ -62,7 +64,7 @@
       flex-wrap:wrap;
       align-items:center;
       gap: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     .title-block{ flex:1 1 240px; min-width:0; }
     .title{
@@ -116,12 +118,133 @@
       background: radial-gradient(circle at top left, rgba(148,163,184,.18), transparent 55%);
       white-space: nowrap;
     }
-    .chip-dot, .chip-warn-dot, .chip-err-dot{
+    .chip-dot, .chip-warn-dot, .chip-err-dot, .chip-exp-dot{
       width:6px; height:6px; border-radius:999px;
     }
     .chip-dot{ background: var(--accent); box-shadow: 0 0 0 3px rgba(34,197,94,.35); }
     .chip-warn-dot{ background: var(--warn); box-shadow: 0 0 0 3px rgba(245,158,11,.35); }
     .chip-err-dot{ background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.28); }
+    .chip-exp-dot{ background: var(--exp); box-shadow: 0 0 0 3px rgba(168,85,247,.30); }
+
+    /* ✅ SUPER OBVIOUS MODE TOGGLE BAR */
+    .mode-bar{
+      margin: 8px 0 14px;
+      border-radius: 18px;
+      padding: 10px 12px;
+      border: 1px solid rgba(55,65,81,.95);
+      background:
+        radial-gradient(circle at top left, rgba(15,23,42,.92), rgba(15,23,42,.99));
+      box-shadow: 0 18px 40px rgba(0,0,0,.75), 0 0 0 1px rgba(15,23,42,.9);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+    }
+    .mode-left{
+      display:flex;
+      align-items:baseline;
+      gap: 10px;
+      flex-wrap:wrap;
+      min-width: 240px;
+    }
+    .mode-title{
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      color: var(--sub);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .mode-title .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--blue);
+      box-shadow: 0 0 0 3px rgba(56,189,248,.28);
+    }
+    .mode-hint{
+      font-size:.78rem;
+      color: var(--muted);
+    }
+
+    .segmented{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(2,6,23,.35);
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,.55);
+    }
+    .seg-btn{
+      border: 1px solid rgba(55,65,81,.95);
+      background: rgba(15,23,42,.92);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 16px;              /* BIG */
+      font-size: .88rem;               /* BIG */
+      font-weight: 750;                /* BIG */
+      letter-spacing: .01em;
+      cursor: pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+      -webkit-user-select:none;
+      transition: transform .06s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .seg-btn:active{ transform: scale(.99); }
+    .seg-btn .tag{
+      font-size:.72rem;
+      font-weight:700;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.35);
+      color: var(--sub);
+      background: rgba(2,6,23,.35);
+      white-space: nowrap;
+    }
+
+    .seg-btn.active.prod{
+      border-color: rgba(34,197,94,.55);
+      background: radial-gradient(circle at 20% 20%, rgba(34,197,94,.22), rgba(15,23,42,.92));
+      box-shadow: 0 0 0 1px rgba(34,197,94,.20), 0 14px 35px rgba(34,197,94,.18);
+    }
+    .seg-btn.active.exp{
+      border-color: rgba(168,85,247,.60);
+      background: radial-gradient(circle at 20% 20%, rgba(168,85,247,.22), rgba(15,23,42,.92));
+      box-shadow: 0 0 0 1px rgba(168,85,247,.20), 0 14px 35px rgba(168,85,247,.18);
+    }
+    .seg-btn.prod .tag{ border-color: rgba(34,197,94,.45); color: rgba(34,197,94,.95); background: rgba(34,197,94,.10); }
+    .seg-btn.exp  .tag{ border-color: rgba(168,85,247,.55); color: rgba(216,180,254,.95); background: rgba(168,85,247,.10); }
+
+    .mode-stats{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+      color: var(--sub);
+      font-size: .75rem;
+    }
+    .mode-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius:999px;
+      padding: 6px 10px;
+      border: 1px solid rgba(148,163,184,.35);
+      background: rgba(15,23,42,.55);
+      white-space: nowrap;
+    }
+    .mode-pill .mini-dot{
+      width:7px;height:7px;border-radius:999px;
+    }
+    .mode-pill.prod .mini-dot{ background: var(--accent); box-shadow: 0 0 0 3px rgba(34,197,94,.22); }
+    .mode-pill.exp  .mini-dot{ background: var(--exp);    box-shadow: 0 0 0 3px rgba(168,85,247,.20); }
 
     /* Panels */
     .panel{
@@ -227,6 +350,7 @@
     @media (max-width: 980px){
       .layout-top{ grid-template-columns: minmax(0,1fr); }
       .container{ border-radius:18px; padding: 14px 12px 14px; }
+      .seg-btn{ padding: 10px 14px; }
     }
 
     /* KPI cards */
@@ -617,12 +741,40 @@
             <span class="chip-dot"></span>
             <span id="chip-updated-text">Updated: –</span>
           </div>
+          <div class="chip" id="chip-mode">
+            <span class="chip-dot"></span>
+            <span id="chip-mode-text">Mode: Production</span>
+          </div>
           <div class="chip">
             <span class="chip-dot"></span>
             <span>Blanks/#VALUE removed • Zero rows ignored</span>
           </div>
         </div>
       </header>
+
+      <!-- ✅ BIG, OBVIOUS TOGGLE -->
+      <section class="mode-bar" aria-label="Inventory mode toggle">
+        <div class="mode-left">
+          <div class="mode-title"><span class="dot"></span><span>Inventory Mode</span></div>
+          <div class="mode-hint">Switch between <strong>Production</strong> and <strong>Experiment</strong> SKUs.</div>
+        </div>
+
+        <div class="segmented" role="tablist" aria-label="Production vs Experiment">
+          <button class="seg-btn prod active" id="btn-mode-prod" type="button" role="tab" aria-selected="true">
+            <span>Production</span>
+            <span class="tag">PROD</span>
+          </button>
+          <button class="seg-btn exp" id="btn-mode-exp" type="button" role="tab" aria-selected="false">
+            <span>Experiment</span>
+            <span class="tag">EXP</span>
+          </button>
+        </div>
+
+        <div class="mode-stats" id="mode-stats">
+          <span class="mode-pill prod"><span class="mini-dot"></span><span id="mode-prod-count">Prod: –</span></span>
+          <span class="mode-pill exp"><span class="mini-dot"></span><span id="mode-exp-count">Exp: –</span></span>
+        </div>
+      </section>
 
       <div class="banner" id="status-banner"></div>
 
@@ -878,6 +1030,13 @@
     const PACK_SHEET_CANDIDATES = ["Pack Data", "PACK DATA", "PackData", "Packing Data", MASTER_PACK_SHEET_NAME];
 
     // ============================================================
+    // ✅ MODE TOGGLE: Production vs Experiment
+    // Rule: Experiment SKUs start with "EXP" (e.g., EXPNT-05OZ, EXPNT-HEAD).
+    // Everything else is Production.
+    // ============================================================
+    const EXPERIMENT_SKU_REGEX = /^EXP/i;
+
+    // ============================================================
     // EXACT HEADERS YOU PROVIDED (primary)
     // Warehouse Date | W Batch Run Code | Warehouse Location | Cases in Inventory | Cases Reserved |
     // Cases Available | Cutomer Reserved | Warehouse Observations | Warehouse Pack Date |
@@ -908,12 +1067,15 @@
     // ============================================================
     // State
     // ============================================================
-    let allRows = [];
+    let allRowsRaw = [];     // parsed rows (no mode filter)
     let filteredOutCount = 0;
     let currentDateKey = "";
     let currentSku = "";
     let selectedSheetName = "";
     let lastParsedHeaders = [];
+
+    // mode: "prod" | "exp"
+    let inventoryMode = "prod";
 
     // ============================================================
     // Utilities
@@ -943,6 +1105,18 @@
       let ping = null;
       try { ping = localStorage.getItem(MASTER_PACK_PING_KEY); } catch(e){}
       document.getElementById("chip-updated-text").textContent = `Updated: ${fmtTs(ping)}`;
+    }
+
+    function setModeChip(){
+      const chip = document.getElementById("chip-mode");
+      const oldDot = chip.querySelector("span");
+      const label = document.getElementById("chip-mode-text");
+
+      const dot = document.createElement("span");
+      dot.className = (inventoryMode === "exp") ? "chip-exp-dot" : "chip-dot";
+      chip.replaceChild(dot, oldDot);
+
+      label.textContent = `Mode: ${inventoryMode === "exp" ? "Experiment" : "Production"}`;
     }
 
     function setStatus(kind, text){
@@ -1009,6 +1183,81 @@
         .replaceAll(">","&gt;")
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
+    }
+
+    // ============================================================
+    // Mode helpers
+    // ============================================================
+    function isExperimentSku(sku){
+      return EXPERIMENT_SKU_REGEX.test(String(sku || "").trim());
+    }
+
+    function getActiveRowsRaw(){
+      // filter by mode
+      if (inventoryMode === "exp"){
+        return allRowsRaw.filter(r => isExperimentSku(r.sku));
+      }
+      return allRowsRaw.filter(r => !isExperimentSku(r.sku));
+    }
+
+    function updateModeButtons(){
+      const prodBtn = document.getElementById("btn-mode-prod");
+      const expBtn  = document.getElementById("btn-mode-exp");
+
+      prodBtn.classList.toggle("active", inventoryMode === "prod");
+      expBtn.classList.toggle("active", inventoryMode === "exp");
+
+      prodBtn.setAttribute("aria-selected", inventoryMode === "prod" ? "true" : "false");
+      expBtn.setAttribute("aria-selected",  inventoryMode === "exp"  ? "true" : "false");
+
+      // apply correct "active class flavor"
+      prodBtn.classList.toggle("prod", true);
+      prodBtn.classList.toggle("exp", false);
+      expBtn.classList.toggle("exp", true);
+      expBtn.classList.toggle("prod", false);
+
+      // add the class used by CSS selectors (.active.prod / .active.exp)
+      prodBtn.classList.toggle("prod", true);
+      expBtn.classList.toggle("exp", true);
+
+      setModeChip();
+    }
+
+    function renderModeCounts(){
+      // counts based on parsed raw (not mode-filtered)
+      const prodRows = allRowsRaw.filter(r => !isExperimentSku(r.sku));
+      const expRows  = allRowsRaw.filter(r => isExperimentSku(r.sku));
+
+      const prodSku = new Set(prodRows.map(r => r.sku));
+      const expSku  = new Set(expRows.map(r => r.sku));
+
+      document.getElementById("mode-prod-count").textContent =
+        `Prod: ${fmt(prodSku.size,0)} SKU(s) • ${fmt(prodRows.length,0)} row(s)`;
+
+      document.getElementById("mode-exp-count").textContent =
+        `Exp: ${fmt(expSku.size,0)} SKU(s) • ${fmt(expRows.length,0)} row(s)`;
+    }
+
+    function setMode(nextMode){
+      if (nextMode !== "prod" && nextMode !== "exp") return;
+      if (inventoryMode === nextMode) return;
+
+      inventoryMode = nextMode;
+      updateModeButtons();
+
+      // clear SKU filter when switching modes (prevents "no results" confusion)
+      currentSku = "";
+      document.getElementById("sku-select").value = "";
+
+      // date select stays the same, but must re-validate against new mode rows
+      renderDateSelect();
+      normalizeCurrentDateFromSelect();
+
+      renderSkuSelect();
+      renderKpis();
+      renderSkuCards();
+      renderIssues();
+      renderRawTable();
     }
 
     // ============================================================
@@ -1145,10 +1394,10 @@
     }
 
     // ============================================================
-    // Filters + derived views
+    // Filters + derived views (now mode-aware)
     // ============================================================
     function getDateKeys(){
-      const keys = Array.from(new Set(allRows.map(r => r.whDateKey).filter(Boolean)));
+      const keys = Array.from(new Set(getActiveRowsRaw().map(r => r.whDateKey).filter(Boolean)));
       keys.sort((a,b) => {
         if (/^\d{4}-\d{2}-\d{2}$/.test(a) && /^\d{4}-\d{2}-\d{2}$/.test(b)){
           return b.localeCompare(a);
@@ -1162,7 +1411,7 @@
       const showAllDates = document.getElementById("toggle-show-all-dates").checked;
       const selectedDayOnly = document.getElementById("toggle-show-selected-day-only").checked;
 
-      let rows = allRows.slice();
+      let rows = getActiveRowsRaw().slice();
 
       if (!showAllDates && selectedDayOnly && currentDateKey){
         rows = rows.filter(r => r.whDateKey === currentDateKey);
@@ -1177,9 +1426,10 @@
 
     function getSnapshotRowsForCards(){
       const showAllDates = document.getElementById("toggle-show-all-dates").checked;
-      if (showAllDates) return allRows.slice();
-      if (currentDateKey) return allRows.filter(r => r.whDateKey === currentDateKey);
-      return allRows.slice();
+      const rows = getActiveRowsRaw();
+      if (showAllDates) return rows.slice();
+      if (currentDateKey) return rows.filter(r => r.whDateKey === currentDateKey);
+      return rows.slice();
     }
 
     // ============================================================
@@ -1202,7 +1452,14 @@
         sel.appendChild(opt);
       });
 
-      if (!currentDateKey && keys.length){
+      // keep currentDateKey if possible, otherwise set to latest available in this mode
+      if (!keys.length){
+        currentDateKey = "";
+        sel.value = "";
+        return;
+      }
+
+      if (!currentDateKey || !keys.includes(currentDateKey)){
         currentDateKey = keys[0];
         sel.value = "";
       } else {
@@ -1303,8 +1560,10 @@
       document.getElementById("kpi-unique-skus").textContent = fmt(skuSet.size, 0);
       document.getElementById("kpi-avg-age").textContent = avgAge ? fmt(avgAge, 1) : "0";
 
+      const modeLabel = inventoryMode === "exp" ? "Experiment" : "Production";
+
       document.getElementById("kpi-date-label").textContent =
-        `${dateLabel} • Sheet: ${selectedSheetName || "–"}`;
+        `${modeLabel} • ${dateLabel} • Sheet: ${selectedSheetName || "–"}`;
 
       document.getElementById("kpi-skus").textContent =
         currentSku ? `SKU filter: ${currentSku}` : `Reserved: ${fmt(totalRes,0)} cases`;
@@ -1504,9 +1763,10 @@
       const showAllDates = document.getElementById("toggle-show-all-dates").checked;
       const dayOnly = document.getElementById("toggle-show-selected-day-only").checked;
       const dateScope = showAllDates ? "All dates" : (dayOnly ? `Selected day: ${prettyDate(currentDateKey)}` : "All dates (table)");
+      const modeLabel = inventoryMode === "exp" ? "Experiment" : "Production";
 
       footer.innerHTML = `
-        <span>${dateScope}</span>
+        <span>${modeLabel} • ${dateScope}</span>
         <span>Rows: <strong>${rows.length.toLocaleString()}</strong></span>
         <span>Inv: <strong>${fmt(inv,0)}</strong></span>
         <span>Reserved: <strong>${fmt(res,0)}</strong></span>
@@ -1602,8 +1862,10 @@
       const parsed = parseRows(payload);
 
       if (parsed.missing.length){
-        allRows = [];
+        allRowsRaw = [];
         setStatus(payload ? "warn" : "warn", payload ? "Missing required columns" : "Master Pack not loaded");
+        setModeChip();
+        renderModeCounts();
 
         const missingList = parsed.missing.map(h => `<li><code>${escapeHtml(h)}</code></li>`).join("");
         const sheetKeys = payload?.sheets ? Object.keys(payload.sheets) : [];
@@ -1644,12 +1906,17 @@
       }
 
       showBanner(null);
-      allRows = parsed.rows;
+      allRowsRaw = parsed.rows;
 
-      if (!allRows.length){
-        setStatus("warn", `Loaded 0 valid rows (removed ${filteredOutCount})`);
+      setModeChip();
+      renderModeCounts();
+
+      const activeCount = getActiveRowsRaw().length;
+
+      if (!activeCount){
+        setStatus("warn", `Loaded 0 rows for this mode (total ${allRowsRaw.length}, removed ${filteredOutCount})`);
       } else {
-        setStatus("ok", `Loaded ${allRows.length} rows (removed ${filteredOutCount})`);
+        setStatus("ok", `Loaded ${activeCount} rows for this mode (total ${allRowsRaw.length}, removed ${filteredOutCount})`);
       }
 
       renderDateSelect();
@@ -1666,6 +1933,13 @@
     // Init + live refresh
     // ============================================================
     document.addEventListener("DOMContentLoaded", () => {
+      // mode toggle
+      document.getElementById("btn-mode-prod").addEventListener("click", () => setMode("prod"));
+      document.getElementById("btn-mode-exp").addEventListener("click",  () => setMode("exp"));
+
+      // visual init
+      updateModeButtons();
+
       document.getElementById("btn-reload").addEventListener("click", reloadAll);
 
       document.getElementById("btn-clear-selection").addEventListener("click", () => {
