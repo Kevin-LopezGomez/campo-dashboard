@@ -127,7 +127,7 @@
     /* ======= HIGHLIGHTS ======= */
     .kpi-grid{
       display:grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap:10px;
       margin:10px 0 12px;
     }
@@ -377,6 +377,13 @@
           <div class="kpi-label">Board Inventory (Est. Remaining)</div>
           <div class="kpi-value"><span id="inv-left">—</span></div>
           <div class="kpi-sub" id="inv-sub">—</div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Avg Broken Boards (Last 5)</div>
+          <div class="kpi-value"><span id="avg-broken-5">—</span></div>
+          <div class="kpi-sub" id="avg-broken-5-sub">—</div>
         </article>
       </section>
 
@@ -655,7 +662,6 @@
       return diff / 60;
     }
 
-    // IMPORTANT: only accept real week numbers, kill "#VALUE!" / blanks / garbage
     function weekNumFromCell(v){
       const raw = String(v ?? "").trim();
       if (!raw) return null;
@@ -668,6 +674,24 @@
       const n = parseInt(m[1],10);
       if (!Number.isFinite(n) || n <= 0 || n > 60) return null;
       return String(n);
+    }
+
+    // =========================================================
+    // WEEKLY BROKEN BOARDS (for any week)
+    // =========================================================
+    function computeWeeklyBrokenBoards(wkNum, growRows){
+      const wk = weekNumFromCell(wkNum);
+      if (!wk) return 0;
+      const isWeek = (val) => weekNumFromCell(val) === wk;
+
+      const sanRows = (growRows||[]).filter(r => isWeek(r[H.SAN_WEEK]));
+      const transRows = (growRows||[]).filter(r => isWeek(r[H.TRANS_WEEK]));
+      const harvRows = (growRows||[]).filter(r => isWeek(r[H.HARV_WEEK]));
+
+      const brokenSanWeek   = sanRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
+      const brokenTransWeek = transRows.reduce((s,r)=>s+parseNumber(r[H.TRANS_BROKEN]),0);
+      const brokenHarvWeek  = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BROKEN]),0);
+      return brokenSanWeek + brokenTransWeek + brokenHarvWeek;
     }
 
     // =========================================================
@@ -703,7 +727,6 @@
     // =========================================================
     function collectWeeks(growRows, packRows){
       const weeks = new Set();
-
       const addWeek = (v) => {
         const w = weekNumFromCell(v);
         if (w) weeks.add(w);
@@ -804,34 +827,65 @@
       const sanRows = growRows.filter(r => isWeek(r[H.SAN_WEEK]));
       const cleanedBoards = sanRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
 
-      // ---- BROKEN BOARDS (WEEK): Sanitation + Transplant + Harvest (each using their week columns) ----
+      // ---- BROKEN BOARDS (WEEK): Sanitation + Transplant + Harvest ----
       const brokenSanWeek   = sanRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
       const brokenTransWeek = transRows.reduce((s,r)=>s+parseNumber(r[H.TRANS_BROKEN]),0);
       const brokenHarvWeek  = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BROKEN]),0);
       const brokenBoards = brokenSanWeek + brokenTransWeek + brokenHarvWeek;
 
-      // ---- BROKEN BOARDS (CUMULATIVE since baseline date): date-based, all Grow rows ----
+      // ---- BROKEN BOARDS (CUMULATIVE up to selected week end date) ----
       const baseDate = parseAnyDate(BOARD_INV_BASE_DATE_STR);
 
-      const isOnOrAfterBase = (d) => {
-        if (!baseDate) return false;
-        return d && d.getTime() >= baseDate.getTime();
+      let weekEnd = null;
+      const considerMax = (d) => {
+        if (!d) return;
+        if (!weekEnd || d.getTime() > weekEnd.getTime()) weekEnd = d;
+      };
+
+      for (const r of sanRows) considerMax(parseAnyDate(r[H.SAN_DATE]));
+      for (const r of transRows) considerMax(parseAnyDate(r[H.TRANS_DATE]));
+      for (const r of harvRows) considerMax(parseAnyDate(r[H.DATE]));
+
+      if (!weekEnd) {
+        for (const r of growRows) considerMax(parseAnyDate(r[H.SAN_DATE]));
+        for (const r of growRows) considerMax(parseAnyDate(r[H.TRANS_DATE]));
+        for (const r of growRows) considerMax(parseAnyDate(r[H.DATE]));
+      }
+
+      const inRange = (d) => {
+        if (!baseDate || !d) return false;
+        const t = d.getTime();
+        return t >= baseDate.getTime() && (!weekEnd || t <= weekEnd.getTime());
       };
 
       const brokenSanSince = growRows
-        .filter(r => isOnOrAfterBase(parseAnyDate(r[H.SAN_DATE])))
+        .filter(r => inRange(parseAnyDate(r[H.SAN_DATE])))
         .reduce((s,r)=> s + parseNumber(r[H.BROKEN_BOARDS]), 0);
 
       const brokenTransSince = growRows
-        .filter(r => isOnOrAfterBase(parseAnyDate(r[H.TRANS_DATE])))
+        .filter(r => inRange(parseAnyDate(r[H.TRANS_DATE])))
         .reduce((s,r)=> s + parseNumber(r[H.TRANS_BROKEN]), 0);
 
       const brokenHarvSince = growRows
-        .filter(r => isOnOrAfterBase(parseAnyDate(r[H.DATE])))
+        .filter(r => inRange(parseAnyDate(r[H.DATE])))
         .reduce((s,r)=> s + parseNumber(r[H.HARV_BROKEN]), 0);
 
       const brokenSinceBaseline = brokenSanSince + brokenTransSince + brokenHarvSince;
       const boardInvRemaining = Math.max(0, BOARD_INV_BASE_COUNT - brokenSinceBaseline);
+
+      // ---- AVG BROKEN (Last 5 weeks, excludes current week) ----
+      const wkN = parseInt(wkNum, 10);
+      const last5 = [];
+      if (Number.isFinite(wkN)) {
+        for (let i = 1; i <= 5; i++){
+          const w = wkN - i;
+          if (w > 0) last5.push(w);
+        }
+      }
+      const last5BrokenValues = last5.map(w => computeWeeklyBrokenBoards(String(w), growRows));
+      const last5Avg = last5BrokenValues.length
+        ? last5BrokenValues.reduce((a,b)=>a+b,0) / last5BrokenValues.length
+        : NaN;
 
       // ---- PACKING (Pack) ----
       const packRowsW = packRows.filter(r => isWeek(r[H.PACK_WEEK]));
@@ -901,9 +955,16 @@
         boardInv: {
           baseDate: BOARD_INV_BASE_DATE_STR,
           baseCount: BOARD_INV_BASE_COUNT,
+          weekEnd,
           brokenSinceBaseline,
           brokenSinceBreakdown: { sanitation: brokenSanSince, transplant: brokenTransSince, harvest: brokenHarvSince },
           remaining: boardInvRemaining
+        },
+
+        brokenAvg5: {
+          weeks: last5,
+          values: last5BrokenValues,
+          avg: last5Avg
         },
 
         aux: { weekHours, avgWorkers, boardsTrans, boardsExpected, transRowsCount: transRows.length }
@@ -942,7 +1003,6 @@
     }
 
     function renderHighlights(summary){
-      // Inventory baseline always shown
       const baseLine = `Base ${fmtInt(BOARD_INV_BASE_COUNT)} @ ${BOARD_INV_BASE_DATE_STR}`;
 
       if (!summary || !summary.wkNum || summary.empty){
@@ -958,12 +1018,18 @@
         safeText("inv-left", "—");
         safeText("inv-sub", baseLine);
 
+        safeText("avg-broken-5", "—");
+        safeText("avg-broken-5-sub", "Last 5 weeks: —");
+
         renderCallouts(summary);
         return;
       }
 
       safeText("hi-week", `Week ${summary.wkNum}`);
-      safeText("hi-range", `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`);
+      safeText(
+        "hi-range",
+        `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`
+      );
 
       const candidates = [
         { label:"Seeding", pct: pctValue(summary.seeding.completed, summary.seeding.target) },
@@ -985,13 +1051,20 @@
       safeText("hi-sales", fmtInt(summary.ship.sales));
       safeText("hi-ship-note", `Received: ${fmtInt(summary.ship.received)} • Donation: ${fmtInt(summary.ship.donation)}`);
 
-      // Inventory KPI (cumulative since baseline date)
+      // Inventory KPI (cumulative up to selected week end)
       safeText("inv-left", fmtInt(summary.boardInv?.remaining ?? 0));
       const b = summary.boardInv?.brokenSinceBreakdown || {sanitation:0, transplant:0, harvest:0};
+      const asOf = summary.boardInv?.weekEnd ? formatMMDDYYYY(summary.boardInv.weekEnd) : "—";
       safeText(
         "inv-sub",
-        `${baseLine} • Broken since: ${fmtInt(summary.boardInv?.brokenSinceBaseline ?? 0)} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)}) • This week: ${fmtInt(summary.brokenBoards ?? 0)}`
+        `${baseLine} • As of: ${asOf} • Broken since: ${fmtInt(summary.boardInv?.brokenSinceBaseline ?? 0)} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)}) • This week: ${fmtInt(summary.brokenBoards ?? 0)}`
       );
+
+      // Avg broken last 5
+      const avg5 = summary.brokenAvg5?.avg;
+      safeText("avg-broken-5", Number.isFinite(avg5) ? fmtInt(Math.round(avg5)) : "—");
+      const wks = summary.brokenAvg5?.weeks || [];
+      safeText("avg-broken-5-sub", wks.length ? `Weeks: ${wks.join(", ")}` : "Weeks: —");
 
       renderCallouts(summary);
     }
@@ -1031,10 +1104,10 @@
       }
 
       if (summary.brokenBoards > 0){
-        const b = summary.brokenBreakdown || {sanitation:0, transplant:0, harvest:0};
+        const bb = summary.brokenBreakdown || {sanitation:0, transplant:0, harvest:0};
         items.push({
           cls:"warn",
-          text:`Broken boards: ${fmtInt(summary.brokenBoards)} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)})`
+          text:`Broken boards: ${fmtInt(summary.brokenBoards)} (San ${fmtInt(bb.sanitation)} + Trans ${fmtInt(bb.transplant)} + Harv ${fmtInt(bb.harvest)})`
         });
       }
 
