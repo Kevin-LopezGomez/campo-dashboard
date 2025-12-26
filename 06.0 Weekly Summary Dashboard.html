@@ -127,7 +127,7 @@
     /* ======= HIGHLIGHTS ======= */
     .kpi-grid{
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap:10px;
       margin:10px 0 12px;
     }
@@ -371,6 +371,13 @@
           <div class="kpi-value"><span id="hi-sales">—</span> <span class="kpi-unit">LBS</span></div>
           <div class="kpi-sub" id="hi-ship-note">—</div>
         </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Board Inventory (Est. Remaining)</div>
+          <div class="kpi-value"><span id="inv-left">—</span></div>
+          <div class="kpi-sub" id="inv-sub">—</div>
+        </article>
       </section>
 
       <div class="callouts" id="callouts"></div>
@@ -426,6 +433,12 @@
     const CANON_PACK_SHEET = "Master Pack";
 
     // =========================================================
+    // BOARD INVENTORY BASELINE (physical count)
+    // =========================================================
+    const BOARD_INV_BASE_DATE_STR = "12/15/2025";
+    const BOARD_INV_BASE_COUNT = 26204;
+
+    // =========================================================
     // PACK CONFIG
     // =========================================================
     const PACKS_PER_CASE = { "5OZ":18, "10OZ":12, "16OZ":8, "1LB":10, "3LB":3 };
@@ -467,15 +480,18 @@
       TRANS_START: "Transplant Start Time",
       TRANS_FINISH: "Transplant Finish Time",
       TRANS_DATE: "Transplant Date",
+      TRANS_BROKEN: "Transplant Broken Boards",
 
       HARV_WEEK: "Harvest Week",
       HARV_BOARDS: "# of Boards Harvested",
       HARV_CUT: "Peso de La Lechuga Cortada",
       HARV_WITH_WASTE: "Peso de La Lechuga con Waste",
+      HARV_BROKEN: "Harvest Boards Broken ",
 
       SAN_WEEK: "Sanitation Week",
+      SAN_DATE: "Date of Sanitation",
       CLEAN_BOARDS: "Total # of Boards Cleaned",
-      BROKEN_BOARDS: "Total # of Broken Boards Production",
+      BROKEN_BOARDS: "# of Broken Boards",
 
       PACK_WEEK: "Pack Week",
       SKU: "SKU Packed",
@@ -501,17 +517,23 @@
       ["transplant start time", H.TRANS_START],
       ["transplant finish time", H.TRANS_FINISH],
       ["transplant date", H.TRANS_DATE],
+      ["transplant broken boards", H.TRANS_BROKEN],
 
       ["harvest week", H.HARV_WEEK],
       ["# of boards harvested", H.HARV_BOARDS],
       ["peso de la lechuga cortada", H.HARV_CUT],
       ["peso de la lechuga con waste", H.HARV_WITH_WASTE],
+      ["harvest date", H.DATE],
+      ["harvest boards broken", H.HARV_BROKEN],
+      ["harvest boards broken ", H.HARV_BROKEN],
 
       ["sanitation week", H.SAN_WEEK],
       ["semana de sanitation", H.SAN_WEEK],
       ["semana sanitation", H.SAN_WEEK],
+      ["date of sanitation", H.SAN_DATE],
       ["total # of boards cleaned", H.CLEAN_BOARDS],
-      ["total # of broken boards production", H.BROKEN_BOARDS],
+      ["# of broken boards", H.BROKEN_BOARDS],
+      ["total # of broken boards", H.BROKEN_BOARDS],
 
       ["pack week", H.PACK_WEEK],
       ["sku packed", H.SKU],
@@ -521,7 +543,6 @@
       ["lbs shipped", H.LBS_SHIPPED],
       ["location shipped", H.LOC_SHIPPED],
 
-      ["harvest date", H.DATE],
       ["date", H.DATE]
     ]);
 
@@ -645,7 +666,6 @@
       const m = raw.match(/(\d{1,3})/);
       if (!m) return null;
       const n = parseInt(m[1],10);
-      // keep reasonable bounds (prevents weird IDs)
       if (!Number.isFinite(n) || n <= 0 || n > 60) return null;
       return String(n);
     }
@@ -679,7 +699,7 @@
     }
 
     // =========================================================
-    // WEEK DISCOVERY (filters out #VALUE!, blanks, etc.)
+    // WEEK DISCOVERY
     // =========================================================
     function collectWeeks(growRows, packRows){
       const weeks = new Set();
@@ -745,12 +765,10 @@
         const dayKey = dObj ? formatMMDDYYYY(dObj) : "";
         const startMin = parseTimeToMinutes(r[H.TRANS_START]);
         const finishMin = parseTimeToMinutes(r[H.TRANS_FINISH]);
-        const workers = parseNumber(r[H.TRANS_WORKERS]);
 
         const key = dayKey || "__NO_DATE__";
-        if (!dayMap.has(key)) {
-          dayMap.set(key, { minStart: NaN, maxFinish: NaN });
-        }
+        if (!dayMap.has(key)) dayMap.set(key, { minStart: NaN, maxFinish: NaN });
+
         const d = dayMap.get(key);
         if (Number.isFinite(startMin)) d.minStart = Number.isFinite(d.minStart) ? Math.min(d.minStart, startMin) : startMin;
         if (Number.isFinite(finishMin)) d.maxFinish = Number.isFinite(d.maxFinish) ? Math.max(d.maxFinish, finishMin) : finishMin;
@@ -782,10 +800,38 @@
       const harvestCut = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_CUT]),0);
       const harvestWithWaste = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_WITH_WASTE]),0);
 
-      // ---- CLEANED (Sanitation Week) / BROKEN (Harvest Week) ----
+      // ---- SANITATION ----
       const sanRows = growRows.filter(r => isWeek(r[H.SAN_WEEK]));
       const cleanedBoards = sanRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
-      const brokenBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
+
+      // ---- BROKEN BOARDS (WEEK): Sanitation + Transplant + Harvest (each using their week columns) ----
+      const brokenSanWeek   = sanRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
+      const brokenTransWeek = transRows.reduce((s,r)=>s+parseNumber(r[H.TRANS_BROKEN]),0);
+      const brokenHarvWeek  = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BROKEN]),0);
+      const brokenBoards = brokenSanWeek + brokenTransWeek + brokenHarvWeek;
+
+      // ---- BROKEN BOARDS (CUMULATIVE since baseline date): date-based, all Grow rows ----
+      const baseDate = parseAnyDate(BOARD_INV_BASE_DATE_STR);
+
+      const isOnOrAfterBase = (d) => {
+        if (!baseDate) return false;
+        return d && d.getTime() >= baseDate.getTime();
+      };
+
+      const brokenSanSince = growRows
+        .filter(r => isOnOrAfterBase(parseAnyDate(r[H.SAN_DATE])))
+        .reduce((s,r)=> s + parseNumber(r[H.BROKEN_BOARDS]), 0);
+
+      const brokenTransSince = growRows
+        .filter(r => isOnOrAfterBase(parseAnyDate(r[H.TRANS_DATE])))
+        .reduce((s,r)=> s + parseNumber(r[H.TRANS_BROKEN]), 0);
+
+      const brokenHarvSince = growRows
+        .filter(r => isOnOrAfterBase(parseAnyDate(r[H.DATE])))
+        .reduce((s,r)=> s + parseNumber(r[H.HARV_BROKEN]), 0);
+
+      const brokenSinceBaseline = brokenSanSince + brokenTransSince + brokenHarvSince;
+      const boardInvRemaining = Math.max(0, BOARD_INV_BASE_COUNT - brokenSinceBaseline);
 
       // ---- PACKING (Pack) ----
       const packRowsW = packRows.filter(r => isWeek(r[H.PACK_WEEK]));
@@ -820,7 +866,6 @@
         else shipSales += lbs;
       }
 
-      // If the user picks a week that exists, but there is literally no data across all sources, mark empty
       const hasAny =
         seedRows.length || transRows.length || harvRows.length || sanRows.length || packRowsW.length;
 
@@ -849,7 +894,17 @@
         ship: { received: shipReceived, sales: shipSales, donation: shipDonation, waste: shipWaste },
 
         cleanedBoards,
+
         brokenBoards,
+        brokenBreakdown: { sanitation: brokenSanWeek, transplant: brokenTransWeek, harvest: brokenHarvWeek },
+
+        boardInv: {
+          baseDate: BOARD_INV_BASE_DATE_STR,
+          baseCount: BOARD_INV_BASE_COUNT,
+          brokenSinceBaseline,
+          brokenSinceBreakdown: { sanitation: brokenSanSince, transplant: brokenTransSince, harvest: brokenHarvSince },
+          remaining: boardInvRemaining
+        },
 
         aux: { weekHours, avgWorkers, boardsTrans, boardsExpected, transRowsCount: transRows.length }
       };
@@ -887,6 +942,9 @@
     }
 
     function renderHighlights(summary){
+      // Inventory baseline always shown
+      const baseLine = `Base ${fmtInt(BOARD_INV_BASE_COUNT)} @ ${BOARD_INV_BASE_DATE_STR}`;
+
       if (!summary || !summary.wkNum || summary.empty){
         safeText("hi-week", "—");
         safeText("hi-range", "—");
@@ -896,6 +954,10 @@
         safeText("hi-worst-label", "—");
         safeText("hi-sales", "—");
         safeText("hi-ship-note", "—");
+
+        safeText("inv-left", "—");
+        safeText("inv-sub", baseLine);
+
         renderCallouts(summary);
         return;
       }
@@ -923,6 +985,14 @@
       safeText("hi-sales", fmtInt(summary.ship.sales));
       safeText("hi-ship-note", `Received: ${fmtInt(summary.ship.received)} • Donation: ${fmtInt(summary.ship.donation)}`);
 
+      // Inventory KPI (cumulative since baseline date)
+      safeText("inv-left", fmtInt(summary.boardInv?.remaining ?? 0));
+      const b = summary.boardInv?.brokenSinceBreakdown || {sanitation:0, transplant:0, harvest:0};
+      safeText(
+        "inv-sub",
+        `${baseLine} • Broken since: ${fmtInt(summary.boardInv?.brokenSinceBaseline ?? 0)} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)}) • This week: ${fmtInt(summary.brokenBoards ?? 0)}`
+      );
+
       renderCallouts(summary);
     }
 
@@ -930,7 +1000,6 @@
       const wrap = $("callouts");
       if (!wrap) return;
 
-      // If nothing selected / empty week, show a single clean callout (no "#VALUE!", no nonsense)
       if (!summary || !summary.wkNum){
         wrap.innerHTML = `
           <div class="callout warn"><span class="dot"></span><span>No valid weeks found. Check week columns for blanks/#VALUE!</span></div>
@@ -962,7 +1031,15 @@
       }
 
       if (summary.brokenBoards > 0){
-        items.push({ cls:"warn", text:`Broken boards: ${fmtInt(summary.brokenBoards)} (Harvest Week)` });
+        const b = summary.brokenBreakdown || {sanitation:0, transplant:0, harvest:0};
+        items.push({
+          cls:"warn",
+          text:`Broken boards: ${fmtInt(summary.brokenBoards)} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)})`
+        });
+      }
+
+      if (summary.boardInv?.remaining || summary.boardInv?.remaining === 0){
+        items.push({ cls:"", text:`Board inventory (est): ${fmtInt(summary.boardInv.remaining)} remaining` });
       }
 
       if (summary.ship.sales > 0){
@@ -981,7 +1058,6 @@
       }
     }
 
-    // Hide rows that are meaningless (all zeros with no underlying rows)
     function renderTable(summary){
       const tbody = $("tbody");
       if (!tbody) return;
@@ -1002,10 +1078,8 @@
       }
 
       const rows = [];
-
       const pushIfMeaningful = (obj, isMeaningful) => { if (isMeaningful) rows.push(obj); };
 
-      // Seeding (only show if we actually have seed rows OR totals nonzero)
       pushIfMeaningful({
         label:"Seeding",
         completed: fmtInt(summary.seeding.completed),
@@ -1014,7 +1088,6 @@
         pct: pctPill(summary.seeding.completed, summary.seeding.target)
       }, (summary.counts.seed > 0) || (summary.seeding.completed !== 0) || (summary.seeding.target !== 0));
 
-      // Transplant (plugs)
       pushIfMeaningful({
         label:"Transplant",
         completed: fmtInt(summary.transplant.completed),
@@ -1023,7 +1096,6 @@
         pct: pctPill(summary.transplant.completed, summary.transplant.target)
       }, (summary.counts.trans > 0) || (summary.transplant.completed !== 0) || (summary.transplant.target !== 0));
 
-      // Transplant rate (only show if we can compute something OR there were transplant rows)
       const rateC = summary.transplantRate.completed;
       const rateT = summary.transplantRate.target;
       const rateOkC = Number.isFinite(rateC) && rateC > 0;
@@ -1037,7 +1109,6 @@
         pct: (rateOkC && rateOkT) ? pctPill(rateC, rateT) : `<span class="pill muted">—</span>`
       }, (summary.counts.trans > 0) || rateOkC || rateOkT);
 
-      // Harvest (only if harvest rows or values)
       pushIfMeaningful({ label:"Harvest", completed: fmtInt(summary.harvestBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` },
         (summary.counts.harv > 0) || summary.harvestBoards !== 0);
 
@@ -1047,7 +1118,6 @@
       pushIfMeaningful({ label:"Harvest - Lechuga Con Waste", completed: fmtInt(summary.harvestWithWaste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
         (summary.counts.harv > 0) || summary.harvestWithWaste !== 0);
 
-      // Packing (only if pack rows or any totals)
       pushIfMeaningful({
         label:"Pack - 5OZ",
         completed: fmtInt(summary.pack5.cases),
@@ -1072,7 +1142,6 @@
         pct:`<span class="pill muted">—</span>`
       }, (summary.counts.pack > 0) || summary.packAllLbs !== 0);
 
-      // Shipping (only show lines that are nonzero or there were pack rows)
       pushIfMeaningful({ label:"Shipping - Received", completed: fmtInt(summary.ship.received), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
         (summary.counts.pack > 0) || summary.ship.received !== 0);
 
@@ -1085,14 +1154,12 @@
       pushIfMeaningful({ label:"Shipping - Waste", completed: fmtInt(summary.ship.waste), target:"—", units:"Lbs", pct:`<span class="pill muted">—</span>` },
         (summary.counts.pack > 0) || summary.ship.waste !== 0);
 
-      // Boards (Cleaned uses sanitation rows; broken uses harvest rows)
       pushIfMeaningful({ label:"# of Cleaned Boards", completed: fmtInt(summary.cleanedBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` },
         (summary.counts.san > 0) || summary.cleanedBoards !== 0);
 
       pushIfMeaningful({ label:"# of Broken Boards", completed: fmtInt(summary.brokenBoards), target:"—", units:"Boards", pct:`<span class="pill muted">—</span>` },
-        (summary.counts.harv > 0) || summary.brokenBoards !== 0);
+        (summary.counts.san > 0) || (summary.counts.trans > 0) || (summary.counts.harv > 0) || summary.brokenBoards !== 0);
 
-      // Safety: never render empty table
       if (!rows.length){
         rows.push({
           label:`Week ${summary.wkNum}`,
@@ -1167,7 +1234,6 @@
 
       WEEKS = collectWeeks(GROW_ROWS, PACK_ROWS);
 
-      // If current selection is invalid, clear it
       if (selectedWeek && !weekNumFromCell(selectedWeek)) selectedWeek = "";
 
       if (!WEEKS.length){
@@ -1242,7 +1308,6 @@
         loadData();
         renderWeekOptions();
 
-        // If week disappeared, choose latest
         const wk = weekNumFromCell(selectedWeek);
         if (wk && !WEEKS.includes(wk)) {
           selectedWeek = WEEKS[WEEKS.length-1] || "";
@@ -1298,7 +1363,7 @@
       const sel = $("weekSelect");
       sel?.addEventListener("change", () => {
         selectedWeek = weekNumFromCell(sel.value) || "";
-        if (selectedWeek) sel.value = selectedWeek; // normalize
+        if (selectedWeek) sel.value = selectedWeek;
         render();
       });
 
