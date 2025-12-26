@@ -35,9 +35,67 @@
       gap:12px;
     }
     .brand{display:flex;flex-direction:column;gap:4px;min-width:240px;}
-    .brand .title{font-weight:700;letter-spacing:.02em;font-size:1.05rem;}
+    .brand .title{font-weight:800;letter-spacing:.02em;font-size:1.05rem;}
     .brand .subtitle{color:var(--sub);font-size:.85rem;line-height:1.2;}
 
+    .topbar-right{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      min-width: 220px;
+    }
+    .icon-btn{
+      border:1px solid rgba(148,163,184,.25);
+      background: rgba(2,6,23,.32);
+      color: var(--text);
+      border-radius:12px;
+      padding:10px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .icon-btn:hover{ background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.35); }
+    .icon-btn:active{ transform: translateY(1px); }
+    .icon-btn[aria-expanded="true"]{
+      background: rgba(34,197,94,.12);
+      border-color: rgba(34,197,94,.55);
+      box-shadow: 0 0 0 1px rgba(34,197,94,.08) inset;
+    }
+    .grid9{
+      width:20px;height:20px;display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap:3px;
+    }
+    .grid9 span{
+      display:block;
+      width:100%;height:100%;
+      border-radius:3px;
+      background: rgba(229,231,235,.9);
+      opacity:.9;
+    }
+
+    .home-ico{
+      width:20px;height:20px;display:block;
+      position:relative;
+    }
+    .home-ico:before{
+      content:"";
+      position:absolute; inset:0;
+      clip-path: polygon(50% 5%, 95% 40%, 85% 40%, 85% 90%, 15% 90%, 15% 40%, 5% 40%);
+      background: rgba(229,231,235,.92);
+      border-radius:3px;
+    }
+
+    /* =========================================================
+       Pill strip (Operations only; hidden by default)
+       ========================================================= */
     .tabs{
       margin:0 16px;
       padding:10px;
@@ -46,7 +104,7 @@
       border:1px solid rgba(148,163,184,.25);
       box-shadow: 0 10px 34px rgba(0,0,0,.45);
 
-      display:flex;
+      display:none; /* shown only on ops dashboards */
       align-items:center;
       justify-content:flex-start;
       gap:10px;
@@ -60,6 +118,8 @@
       touch-action: pan-x;
       position:relative;
     }
+    .tabs.show{ display:flex; }
+
     .tabs::-webkit-scrollbar{height:6px;}
     .tabs::-webkit-scrollbar-thumb{background:#4b5563;border-radius:999px;}
 
@@ -88,24 +148,8 @@
       box-shadow: 0 0 0 1px rgba(34,197,94,.08) inset;
     }
 
-    .tab.dragging{
-      cursor:grabbing;
-      opacity:.98;
-      box-shadow: 0 14px 40px rgba(0,0,0,.55);
-      border-color: rgba(34,197,94,.55);
-      background: rgba(34,197,94,.12);
-      position:fixed;
-      z-index:9999;
-      transform:none;
-      pointer-events:none;
-    }
-    .tab.placeholder{
-      opacity:.35;
-      border-style:dashed;
-      background: rgba(2,6,23,.18);
-    }
-
     .main{flex:1 1 auto;padding:14px 16px 16px;overflow:hidden;}
+
     .panel{
       height:100%;
       border-radius:18px;
@@ -138,6 +182,346 @@
 
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
 
+    /* Data Input: hide header when active (tool mode) */
+    .panel.toolmode .section-head{ display:none; }
+    .panel.toolmode .iframe-wrap{ height:100%; }
+
+    /* =========================================================
+       HOME (default) — make the category "pills" fill area + square tiles
+       ========================================================= */
+    .home-wrap{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .home-top{
+      padding:18px 18px 12px;
+      border-bottom:1px solid rgba(148,163,184,.16);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .home-top h2{
+      margin:0;
+      font-size:1.15rem;
+      letter-spacing:.02em;
+    }
+    .home-top p{
+      margin:8px 0 0;
+      color:var(--sub);
+      font-size:.9rem;
+      line-height:1.25;
+      max-width: 980px;
+    }
+    .home-top .mini-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .mini-btn{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.25);
+      color: var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:44px;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .mini-btn:hover{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.08);
+    }
+
+    /* Fill remaining space and center the square grid */
+    .home-body{
+      flex:1 1 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      overflow:hidden;
+    }
+
+    /* A square stage that scales with viewport */
+    .home-stage{
+      width: min(1120px, calc(100vw - 64px));
+      height: min(1120px, calc(100vh - 210px)); /* topbar + padding buffer */
+      max-height: calc(100% - 10px);
+      aspect-ratio: 1 / 1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Square tiles grid (2x2 by default) that fills stage */
+    .home-grid{
+      width:100%;
+      height:100%;
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap:18px;
+    }
+
+    @media (max-width: 760px){
+      /* On small screens go 1 column; still fills stage but scroll if needed */
+      .home-stage{
+        height: calc(100vh - 210px);
+        aspect-ratio: auto;
+      }
+      .home-grid{
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    /* Make each card square-ish by forcing its own layout and fill */
+    .big-card{
+      width:100%;
+      height:100%;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.20);
+      border-radius:18px;
+      padding:18px 18px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:flex-start;
+      justify-content:flex-start;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      user-select:none;
+      -webkit-user-select:none;
+      text-align:left;
+      min-height:0; /* allow grid to control height */
+      overflow:hidden;
+    }
+    .big-card:hover{
+      background: rgba(34,197,94,.08);
+      border-color: rgba(34,197,94,.35);
+    }
+    .big-card:active{ transform: translateY(1px); }
+
+    .big-card .row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      width:100%;
+    }
+    .big-card .ico{ font-size:1.55rem; line-height:1; }
+    .big-card .name{
+      font-size:1.2rem;
+      font-weight:900;
+      letter-spacing:.01em;
+    }
+    .big-card .meta{
+      font-size:.95rem;
+      color: var(--sub);
+      line-height:1.25;
+      max-width: 46ch;
+    }
+
+    .danger{
+      border-color: rgba(239,68,68,.30);
+      background: rgba(239,68,68,.07);
+    }
+    .danger:hover{
+      border-color: rgba(239,68,68,.55);
+      background: rgba(239,68,68,.10);
+    }
+
+    /* Level 2 container (shown inside home panel) */
+    .home-level2{
+      width:100%;
+      height:100%;
+      display:none;
+    }
+    .home-level2.show{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .home-crumb{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color: var(--sub);
+      font-size:.95rem;
+      padding: 0 2px;
+    }
+    .home-crumb strong{ color: var(--text); font-weight:900; }
+    .home-back{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.25);
+      color: var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .home-back:hover{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.08);
+    }
+
+    .cat-grid{
+      flex:1 1 auto;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:12px;
+      overflow:auto;
+      padding-right: 6px;
+    }
+    @media (max-width: 980px){
+      .cat-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px){
+      .cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .tile{
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.20);
+      border-radius:16px;
+      padding:12px 10px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:flex-start;
+      justify-content:flex-start;
+      min-height:76px;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      user-select:none;
+      -webkit-user-select:none;
+      text-align:left;
+    }
+    .tile:hover{
+      background: rgba(34,197,94,.08);
+      border-color: rgba(34,197,94,.35);
+    }
+    .tile:active{ transform: translateY(1px); }
+    .tile .ico{ font-size:1.1rem; line-height:1; }
+    .tile .name{ font-size:.9rem; font-weight:900; letter-spacing:.01em; }
+    .tile .meta{ font-size:.76rem; color: var(--sub); line-height:1.1; }
+
+    .disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:saturate(.7);
+    }
+    .disabled:hover{
+      background: rgba(2,6,23,.20);
+      border-color: rgba(148,163,184,.18);
+    }
+
+    /* =========================================================
+       Launcher overlay + panel (2-level: Home -> Category)
+       ========================================================= */
+    .launcher-overlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.28);
+      z-index: 70000;
+      display:none;
+    }
+    .launcher-overlay.open{ display:block; }
+
+    .launcher{
+      position:fixed;
+      right:16px;
+      top:66px;
+      width:min(420px, calc(100vw - 32px));
+      max-height:min(640px, calc(100vh - 96px));
+      overflow:auto;
+
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.25);
+      background: rgba(15,23,42,.92);
+      box-shadow: 0 24px 80px rgba(0,0,0,.75);
+      z-index: 70001;
+
+      padding:12px;
+      display:none;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .launcher.open{ display:block; }
+
+    .launcher-top{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      padding:2px 2px 10px;
+    }
+    .launcher-btn{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.25);
+      color: var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-width:44px;
+    }
+    .launcher-btn:hover{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.08);
+    }
+
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    .crumb{
+      padding:0 6px 6px;
+      color: var(--sub);
+      font-size:.84rem;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      border-bottom:1px solid rgba(148,163,184,.14);
+      margin-bottom:6px;
+    }
+    .crumb .dot{
+      width:6px;height:6px;border-radius:999px;background: rgba(34,197,94,.7);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.08);
+    }
+    .crumb strong{ color: var(--text); font-weight:800; }
+
+    .launcher-home-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+      padding:6px 4px 10px;
+    }
+    .launcher-cat-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+      padding:10px 6px 12px;
+    }
+    @media (max-width: 520px){
+      .launcher-cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* Toast */
     .toast{
       position:fixed;
       left:12px;
@@ -165,27 +549,114 @@
     <div class="topbar">
       <div class="brand">
         <div class="title">Campo Caribe Operations</div>
-        <div class="subtitle">Unified testing harness (Data Input + Weekly Summary + Seeding + Transplant + Harvest + Packing + Shipments + Sanitation + Inventory). Drag tabs to reorder (saved to localStorage).</div>
+        <div class="subtitle">Unified testing harness (Home categories + Launcher + Ops pill strip on ops dashboards).</div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="icon-btn" id="btnHome" aria-label="Home" title="Home">
+          <span class="home-ico" aria-hidden="true"></span>
+        </button>
+
+        <button class="icon-btn" id="btnLauncher" aria-label="Open dashboard menu" aria-haspopup="dialog" aria-expanded="false" title="Dashboards">
+          <div class="grid9" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+        </button>
       </div>
     </div>
 
-    <div class="tabs" id="tabs" aria-label="Dashboards">
-      <button class="tab active" data-target="p-data" data-tab="data">📥 <span>Data Input</span></button>
-      <button class="tab" data-target="p-weekly" data-tab="weekly">📊 <span>Weekly Summary</span></button>
-      <button class="tab" data-target="p-seeding" data-tab="seeding">🌱 <span>Seeding</span></button>
-      <button class="tab" data-target="p-transplant" data-tab="transplant">🪴 <span>Transplant</span></button>
-      <button class="tab" data-target="p-harvest" data-tab="harvest">✂️ <span>Harvest</span></button>
-      <button class="tab" data-target="p-packing" data-tab="packing">📦 <span>Packing</span></button>
-
-      <!-- ✅ NEW TAB PILL (Shipments dashboard we just created) -->
-      <button class="tab" data-target="p-shipments" data-tab="shipments">🚚 <span>Shipments</span></button>
-
-      <button class="tab" data-target="p-sanitation" data-tab="sanitation">🧼 <span>Sanitation</span></button>
-      <button class="tab" data-target="p-inventory" data-tab="inventory">📦 <span>S&amp;H Inventory</span></button>
+    <div class="tabs" id="tabs" aria-label="Operations Dashboards">
+      <button class="tab" data-target="p-weekly">📊 <span>Weekly Summary</span></button>
+      <button class="tab" data-target="p-seeding">🌱 <span>Seeding</span></button>
+      <button class="tab" data-target="p-transplant">🪴 <span>Transplant</span></button>
+      <button class="tab" data-target="p-harvest">✂️ <span>Harvest</span></button>
+      <button class="tab" data-target="p-packing">📦 <span>Packing</span></button>
+      <button class="tab" data-target="p-shipments">🚚 <span>Shipments</span></button>
+      <button class="tab" data-target="p-sanitation">🧼 <span>Sanitation</span></button>
+      <button class="tab" data-target="p-inventory">📦 <span>S&amp;H Inventory</span></button>
     </div>
 
     <div class="main">
-      <section class="panel active" id="p-data">
+      <section class="panel active" id="p-home">
+        <div class="home-wrap">
+          <div class="home-top">
+            <div>
+              <h2>Dashboards</h2>
+              <p>
+                Choose a category. Clicking <strong>Operations</strong> opens the Operations dashboards list right here (no launcher needed).
+                The ▦ menu is always available too.
+              </p>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" id="homeBackBtn" title="Back to categories" aria-label="Back to categories" style="display:none;">←</button>
+            </div>
+          </div>
+
+          <div class="home-body">
+            <div class="home-stage">
+
+              <!-- Level 1 square tiles -->
+              <div class="home-grid" id="homeLevel1">
+                <button class="big-card" data-home-open="ops">
+                  <div class="row"><div class="ico">⚙️</div><div class="name">Operations</div></div>
+                  <div class="meta">Weekly, seeding, transplant, harvest, packing, inventory, shipments, sanitation</div>
+                </button>
+
+                <button class="big-card" data-home-open="sales">
+                  <div class="row"><div class="ico">📈</div><div class="name">Sales &amp; Marketing</div></div>
+                  <div class="meta">Coming soon</div>
+                </button>
+
+                <button class="big-card" data-home-open="team">
+                  <div class="row"><div class="ico">👥</div><div class="name">Team Tools</div></div>
+                  <div class="meta">Internal utilities</div>
+                </button>
+
+                <button class="big-card danger" data-home-go="p-data">
+                  <div class="row"><div class="ico">📥</div><div class="name">Data Input</div></div>
+                  <div class="meta">Write / publish master data</div>
+                </button>
+              </div>
+
+              <!-- Level 2 (still inside stage) -->
+              <div class="home-level2" id="homeLevel2">
+                <div class="home-crumb">
+                  <div id="homeCrumb"><strong>Operations</strong> — choose a dashboard</div>
+                  <button class="home-back" id="homeBackInline" aria-label="Back">← Back</button>
+                </div>
+
+                <div class="cat-grid" id="homeOps" style="display:none;">
+                  <button class="tile" data-home-go="p-weekly"><div class="ico">📊</div><div class="name">Weekly Summary</div><div class="meta">Targets + actuals</div></button>
+                  <button class="tile" data-home-go="p-seeding"><div class="ico">🌱</div><div class="name">Seeding</div><div class="meta">Trays & schedule</div></button>
+                  <button class="tile" data-home-go="p-transplant"><div class="ico">🪴</div><div class="name">Transplant</div><div class="meta">Moves & counts</div></button>
+                  <button class="tile" data-home-go="p-harvest"><div class="ico">✂️</div><div class="name">Harvest</div><div class="meta">Cut plans</div></button>
+                  <button class="tile" data-home-go="p-packing"><div class="ico">📦</div><div class="name">Packing</div><div class="meta">Pack plan</div></button>
+                  <button class="tile" data-home-go="p-inventory"><div class="ico">📦</div><div class="name">S&amp;H Inventory</div><div class="meta">Stock view</div></button>
+                  <button class="tile" data-home-go="p-shipments"><div class="ico">🚚</div><div class="name">Shipments</div><div class="meta">Forward sales</div></button>
+                  <button class="tile" data-home-go="p-sanitation"><div class="ico">🧼</div><div class="name">Sanitation</div><div class="meta">Checklists</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeSales" style="display:none;">
+                  <button class="tile disabled" disabled><div class="ico">💵</div><div class="name">Sales Overview</div><div class="meta">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">📈</div><div class="name">Forecast</div><div class="meta">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">📣</div><div class="name">Campaigns</div><div class="meta">Placeholder</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeTeam" style="display:none;">
+                  <button class="tile disabled" disabled><div class="ico">👥</div><div class="name">Schedule</div><div class="meta">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name">SOPs</div><div class="meta">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">✅</div><div class="name">Issues</div><div class="meta">Placeholder</div></button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="p-data" data-hidehead="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Data Input Dashboard</h2>
@@ -198,7 +669,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-weekly">
+      <section class="panel" id="p-weekly" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Weekly Summary Dashboard</h2>
@@ -211,7 +682,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-seeding">
+      <section class="panel" id="p-seeding" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Seeding Dashboard</h2>
@@ -224,7 +695,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-transplant">
+      <section class="panel" id="p-transplant" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Transplant Dashboard</h2>
@@ -237,7 +708,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-harvest">
+      <section class="panel" id="p-harvest" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Harvest Dashboard</h2>
@@ -250,7 +721,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-packing">
+      <section class="panel" id="p-packing" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Packing Dashboard</h2>
@@ -263,8 +734,7 @@
         </div>
       </section>
 
-      <!-- ✅ NEW PANEL (Shipments / Forward Sales) -->
-      <section class="panel" id="p-shipments">
+      <section class="panel" id="p-shipments" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Shipments (Forward Sales) Dashboard</h2>
@@ -277,7 +747,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-sanitation">
+      <section class="panel" id="p-sanitation" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Sanitation Dashboard</h2>
@@ -290,7 +760,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-inventory">
+      <section class="panel" id="p-inventory" data-ops="true">
         <div class="section-head">
           <div class="head-left">
             <h2>S&amp;H Inventory Dashboard</h2>
@@ -305,6 +775,74 @@
     </div>
   </div>
 
+  <div class="launcher-overlay" id="launcherOverlay" aria-hidden="true"></div>
+
+  <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="Dashboard menu">
+    <div class="launcher-top">
+      <button class="launcher-btn" id="btnLauncherBack" aria-label="Back" title="Back" style="display:none;">←</button>
+      <button class="launcher-btn" id="btnLauncherClose" aria-label="Close menu" title="Close">✕</button>
+    </div>
+
+    <div class="screen active" id="screen-home">
+      <div class="crumb" style="border-bottom:none;margin-bottom:0;padding-bottom:10px;">
+        <span class="dot"></span>
+        <span><strong>Dashboards</strong> — choose a category</span>
+      </div>
+
+      <div class="launcher-home-grid">
+        <button class="big-card" data-action="open-category" data-category="ops">
+          <div class="row"><div class="ico">⚙️</div><div class="name">Operations</div></div>
+          <div class="meta">Weekly, seeding, transplant, harvest, packing, inventory, shipments, sanitation</div>
+        </button>
+
+        <button class="big-card" data-action="open-category" data-category="sales">
+          <div class="row"><div class="ico">📈</div><div class="name">Sales &amp; Marketing</div></div>
+          <div class="meta">Coming soon</div>
+        </button>
+
+        <button class="big-card" data-action="open-category" data-category="team">
+          <div class="row"><div class="ico">👥</div><div class="name">Team Tools</div></div>
+          <div class="meta">Internal utilities</div>
+        </button>
+
+        <button class="big-card danger" data-action="go-panel" data-target="p-data">
+          <div class="row"><div class="ico">📥</div><div class="name">Data Input</div></div>
+          <div class="meta">Write / publish master data</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-category">
+      <div class="crumb">
+        <span class="dot"></span>
+        <span id="crumbText"><strong>Category</strong></span>
+      </div>
+
+      <div class="launcher-cat-grid" id="cat-ops" style="display:none;">
+        <button class="tile" data-action="go-panel" data-target="p-weekly"><div class="ico">📊</div><div class="name">Weekly Summary</div><div class="meta">Targets + actuals</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-seeding"><div class="ico">🌱</div><div class="name">Seeding</div><div class="meta">Trays & schedule</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-transplant"><div class="ico">🪴</div><div class="name">Transplant</div><div class="meta">Moves & counts</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-harvest"><div class="ico">✂️</div><div class="name">Harvest</div><div class="meta">Cut plans</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-packing"><div class="ico">📦</div><div class="name">Packing</div><div class="meta">Pack plan</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-inventory"><div class="ico">📦</div><div class="name">S&amp;H Inventory</div><div class="meta">Stock view</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-shipments"><div class="ico">🚚</div><div class="name">Shipments</div><div class="meta">Forward sales</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-sanitation"><div class="ico">🧼</div><div class="name">Sanitation</div><div class="meta">Checklists</div></button>
+      </div>
+
+      <div class="launcher-cat-grid" id="cat-sales" style="display:none;">
+        <button class="tile disabled" disabled><div class="ico">💵</div><div class="name">Sales Overview</div><div class="meta">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">📈</div><div class="name">Forecast</div><div class="meta">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">📣</div><div class="name">Campaigns</div><div class="meta">Placeholder</div></button>
+      </div>
+
+      <div class="launcher-cat-grid" id="cat-team" style="display:none;">
+        <button class="tile disabled" disabled><div class="ico">👥</div><div class="name">Schedule</div><div class="meta">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name">SOPs</div><div class="meta">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">✅</div><div class="name">Issues</div><div class="meta">Placeholder</div></button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast">
     <div id="toastText">–</div>
     <div class="t-sub" id="toastSub">–</div>
@@ -312,60 +850,60 @@
 
   <script>
     (function(){
-      // =========================================================
-      // Worker (source of truth)
-      // =========================================================
       const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
       const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
       const WORKER_GROW_URL   = `${WORKER_BASE}/data/master/grow.json`;
       const WORKER_PACK_URL   = `${WORKER_BASE}/data/master/pack.json`;
 
-      // =========================================================
-      // LocalStorage keys (MUST match dashboards)
-      // =========================================================
       const MASTER_GROW_KEY  = "campo_master_grow_v1";
       const MASTER_PACK_KEY  = "campo_master_pack_v1";
       const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
       const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
 
-      // Contract: dashboards expect sheets["Master Grow"] and sheets["Master Pack"]
       const CANON_GROW_SHEET = "Master Grow";
       const CANON_PACK_SHEET = "Master Pack";
 
-      // Events dashboards should listen for
       const MSG_GROW = "MASTER_GROW_UPDATED";
       const MSG_PACK = "MASTER_PACK_UPDATED";
 
-      // =========================================================
-      // BroadcastChannel (support BOTH names for compatibility)
-      // - Canonical is: campo_master_bus_v1 (dashboards)
-      // - Legacy is:    campo_updates_v1 (older pages)
-      // =========================================================
       const BC_NAMES = ["campo_master_bus_v1", "campo_updates_v1"];
       const bcs = [];
       for (const name of BC_NAMES) {
         try { if ("BroadcastChannel" in window) bcs.push(new BroadcastChannel(name)); } catch {}
       }
 
-      // =========================================================
-      // DOM refs
-      // =========================================================
-      const tabsWrap = document.getElementById("tabs");
       const panels = Array.from(document.querySelectorAll(".panel"));
-      const LS_ORDER_KEY = "campo_unified_tabs_order_v1";
+      const tabsWrap = document.getElementById("tabs");
+      const tabButtons = Array.from(document.querySelectorAll("#tabs .tab"));
+
       const toast = document.getElementById("toast");
       const toastText = document.getElementById("toastText");
       const toastSub = document.getElementById("toastSub");
 
-      if (!tabsWrap) {
-        console.error("FATAL: #tabs not found.");
-        document.body.innerHTML = "<div style='padding:20px;font-family:system-ui;color:#111'>FATAL: #tabs not found.</div>";
-        return;
-      }
+      const btnHome = document.getElementById("btnHome");
 
-      // =========================================================
-      // Toast helper
-      // =========================================================
+      const btnLauncher = document.getElementById("btnLauncher");
+      const btnLauncherClose = document.getElementById("btnLauncherClose");
+      const btnLauncherBack = document.getElementById("btnLauncherBack");
+      const launcher = document.getElementById("launcher");
+      const launcherOverlay = document.getElementById("launcherOverlay");
+
+      const screenHome = document.getElementById("screen-home");
+      const screenCategory = document.getElementById("screen-category");
+      const crumbText = document.getElementById("crumbText");
+      const catOps = document.getElementById("cat-ops");
+      const catSales = document.getElementById("cat-sales");
+      const catTeam = document.getElementById("cat-team");
+
+      const homeLevel1 = document.getElementById("homeLevel1");
+      const homeLevel2 = document.getElementById("homeLevel2");
+      const homeOps = document.getElementById("homeOps");
+      const homeSales = document.getElementById("homeSales");
+      const homeTeam = document.getElementById("homeTeam");
+      const homeCrumb = document.getElementById("homeCrumb");
+      const homeBackInline = document.getElementById("homeBackInline");
+      const homeBackBtn = document.getElementById("homeBackBtn");
+
       let toastTimer = null;
       function showToast(msg, sub, ok){
         if (!toast || !toastText || !toastSub) return;
@@ -378,19 +916,9 @@
         toastTimer = setTimeout(() => { toast.style.display = "none"; }, ok ? 2200 : 4200);
       }
 
-      // =========================================================
-      // iFrame notify helper
-      // =========================================================
       const IFRAME_IDS = [
-        "ifr-data",
-        "ifr-weekly",
-        "ifr-seeding",
-        "ifr-transplant",
-        "ifr-harvest",
-        "ifr-packing",
-        "ifr-shipments", // ✅ NEW
-        "ifr-sanitation",
-        "ifr-inventory"
+        "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory"
       ];
 
       function notifyIframes(type){
@@ -404,14 +932,9 @@
 
       function broadcast(type){
         const payload = { type, ts: Date.now() };
-        for (const ch of bcs) {
-          try { ch.postMessage(payload); } catch {}
-        }
+        for (const ch of bcs) { try { ch.postMessage(payload); } catch {} }
       }
 
-      // =========================================================
-      // Worker fetch helper
-      // =========================================================
       async function workerGetJson(url){
         const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
         const r = await fetch(bust, { cache:"no-store" });
@@ -420,9 +943,6 @@
         return JSON.parse(t);
       }
 
-      // =========================================================
-      // Contract normalizer
-      // =========================================================
       function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
 
       function normalizeMasterPayload(raw, kind){
@@ -462,19 +982,12 @@
 
       function storageContractOk(){
         const growRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
-        if (growRaw) {
-          try { if (!JSON.parse(growRaw)?.sheets?.[CANON_GROW_SHEET]) return false; } catch { return false; }
-        }
+        if (growRaw) { try { if (!JSON.parse(growRaw)?.sheets?.[CANON_GROW_SHEET]) return false; } catch { return false; } }
         const packRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
-        if (packRaw) {
-          try { if (!JSON.parse(packRaw)?.sheets?.[CANON_PACK_SHEET]) return false; } catch { return false; }
-        }
+        if (packRaw) { try { if (!JSON.parse(packRaw)?.sheets?.[CANON_PACK_SHEET]) return false; } catch { return false; } }
         return true;
       }
 
-      // =========================================================
-      // Hydrate localStorage from Worker
-      // =========================================================
       async function tryHydrateFromWorker(){
         try{
           const hr = await fetch(WORKER_HEALTH_URL, { cache:"no-store" });
@@ -519,178 +1032,163 @@
         }
       }
 
-      // =========================================================
-      // Panel activation (lazy iframe src)
-      // =========================================================
-      function activate(id){
-        const tabs = Array.from(tabsWrap.querySelectorAll(".tab"));
-        tabs.forEach(t => t.classList.toggle("active", t.dataset.target === id));
-        panels.forEach(p => p.classList.toggle("active", p.id === id));
+      function setTabsVisible(visible){
+        if (!tabsWrap) return;
+        tabsWrap.classList.toggle("show", !!visible);
+      }
 
-        const panel = document.getElementById(id);
-        const iframe = panel ? panel.querySelector("iframe[data-src]") : null;
+      function setActiveTabByPanel(panelId){
+        tabButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function activate(panelId){
+        panels.forEach(p => p.classList.toggle("active", p.id === panelId));
+        const panel = document.getElementById(panelId);
+        if (!panel) return;
+
+        const hideHead = panel.getAttribute("data-hidehead") === "true";
+        panels.forEach(p => p.classList.remove("toolmode"));
+        if (hideHead) panel.classList.add("toolmode");
+
+        const isOps = panel.getAttribute("data-ops") === "true";
+        setTabsVisible(isOps);
+        if (isOps) setActiveTabByPanel(panelId);
+
+        const iframe = panel.querySelector("iframe[data-src]");
         if (iframe && !iframe.src) iframe.src = iframe.getAttribute("data-src");
       }
 
-      // =========================================================
-      // Restore / save tab order
-      // =========================================================
-      function loadOrder(){
-        try { return JSON.parse(localStorage.getItem("campo_unified_tabs_order_v1") || "[]"); }
-        catch { return []; }
-      }
-      function saveOrder(){
-        const ids = Array.from(tabsWrap.querySelectorAll(".tab")).map(t => t.dataset.tab);
-        try { localStorage.setItem("campo_unified_tabs_order_v1", JSON.stringify(ids)); } catch {}
-      }
-      function applySavedOrder(){
-        const order = loadOrder();
-        if (!order.length) return;
-        const map = new Map(Array.from(tabsWrap.querySelectorAll(".tab")).map(t => [t.dataset.tab, t]));
-        order.forEach(id => {
-          const el = map.get(id);
-          if (el) tabsWrap.appendChild(el);
+      if (tabsWrap){
+        tabsWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
         });
       }
 
-      // =========================================================
-      // Drag-to-reorder with threshold
-      // =========================================================
-      function makeSortable(){
-        const DRAG_THRESHOLD = 8;
-
-        let downTab = null;
-        let isDragging = false;
-        let placeholder = null;
-        let offsetX = 0, offsetY = 0;
-        let startX = 0, startY = 0;
-
-        function pointerXY(e){
-          const p = e.touches ? e.touches[0] : e;
-          return { x: p.clientX, y: p.clientY };
-        }
-
-        function startDrag(tab, x, y){
-          isDragging = true;
-
-          const rect = tab.getBoundingClientRect();
-          offsetX = x - rect.left;
-          offsetY = y - rect.top;
-
-          placeholder = tab.cloneNode(true);
-          placeholder.classList.remove("active");
-          placeholder.classList.add("placeholder");
-          placeholder.style.width = rect.width + "px";
-          placeholder.style.height = rect.height + "px";
-
-          tabsWrap.insertBefore(placeholder, tab.nextSibling);
-
-          tab.classList.add("dragging");
-          tab.style.width = rect.width + "px";
-          tab.style.height = rect.height + "px";
-          tab.style.left = rect.left + "px";
-          tab.style.top  = rect.top  + "px";
-          tab.style.cursor = "grabbing";
-        }
-
-        function moveDrag(tab, x){
-          tab.style.left = (x - offsetX) + "px";
-          tab.style.top  = (startY - offsetY) + "px";
-
-          const tabs = Array.from(tabsWrap.querySelectorAll(".tab"))
-            .filter(t => t !== tab && t !== placeholder);
-
-          let inserted = false;
-          for (const t of tabs) {
-            const r = t.getBoundingClientRect();
-            const tCenter = r.left + r.width/2;
-            if (x < tCenter) {
-              tabsWrap.insertBefore(placeholder, t);
-              inserted = true;
-              break;
-            }
-          }
-          if (!inserted) tabsWrap.appendChild(placeholder);
-
-          const wrapRect = tabsWrap.getBoundingClientRect();
-          const edge = 36;
-          if (x < wrapRect.left + edge) tabsWrap.scrollLeft -= 10;
-          if (x > wrapRect.right - edge) tabsWrap.scrollLeft += 10;
-        }
-
-        function endDrag(tab){
-          tab.classList.remove("dragging");
-          tab.style.left = "";
-          tab.style.top  = "";
-          tab.style.width = "";
-          tab.style.height = "";
-          tab.style.cursor = "";
-
-          if (placeholder) {
-            tabsWrap.insertBefore(tab, placeholder);
-            placeholder.remove();
-            placeholder = null;
-          }
-
-          saveOrder();
-          isDragging = false;
-        }
-
-        function cleanup(){
-          window.removeEventListener("mousemove", onMove);
-          window.removeEventListener("mouseup", onUp);
-          window.removeEventListener("touchmove", onMove);
-          window.removeEventListener("touchend", onUp);
-        }
-
-        function onDown(e){
-          const tab = e.target.closest(".tab");
-          if (!tab) return;
-
-          downTab = tab;
-          isDragging = false;
-          const {x,y} = pointerXY(e);
-          startX = x; startY = y;
-
-          window.addEventListener("mousemove", onMove, { passive:false });
-          window.addEventListener("mouseup", onUp, { passive:true });
-          window.addEventListener("touchmove", onMove, { passive:false });
-          window.addEventListener("touchend", onUp, { passive:true });
-        }
-
-        function onMove(e){
-          if (!downTab) return;
-          const {x,y} = pointerXY(e);
-          const dx = x - startX;
-          const dy = y - startY;
-
-          if (!isDragging) {
-            if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-            e.preventDefault();
-            startDrag(downTab, x, y);
-          } else {
-            e.preventDefault();
-            moveDrag(downTab, x);
-          }
-        }
-
-        function onUp(){
-          cleanup();
-          if (!downTab) return;
-
-          if (isDragging) endDrag(downTab);
-          else activate(downTab.dataset.target);
-
-          downTab = null;
-        }
-
-        tabsWrap.addEventListener("mousedown", onDown);
-        tabsWrap.addEventListener("touchstart", onDown, { passive:true });
+      function homeShowLevel1(){
+        homeLevel1.style.display = "grid";
+        homeLevel2.classList.remove("show");
+        homeBackBtn.style.display = "none";
       }
 
-      // =========================================================
-      // Message bridge + ping touch
-      // =========================================================
+      function homeShowCategory(cat){
+        homeOps.style.display = "none";
+        homeSales.style.display = "none";
+        homeTeam.style.display = "none";
+
+        if (cat === "ops"){
+          homeCrumb.innerHTML = "<strong>Operations</strong> — choose a dashboard";
+          homeOps.style.display = "grid";
+        } else if (cat === "sales"){
+          homeCrumb.innerHTML = "<strong>Sales &amp; Marketing</strong> — coming soon";
+          homeSales.style.display = "grid";
+        } else if (cat === "team"){
+          homeCrumb.innerHTML = "<strong>Team Tools</strong> — internal utilities";
+          homeTeam.style.display = "grid";
+        }
+
+        homeLevel1.style.display = "none";
+        homeLevel2.classList.add("show");
+        homeBackBtn.style.display = "inline-flex";
+      }
+
+      document.getElementById("p-home").addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        const openCat = btn.getAttribute("data-home-open");
+        const goPanel = btn.getAttribute("data-home-go");
+
+        if (openCat){ homeShowCategory(openCat); return; }
+        if (goPanel){ activate(goPanel); return; }
+      });
+
+      homeBackInline.addEventListener("click", homeShowLevel1);
+      homeBackBtn.addEventListener("click", homeShowLevel1);
+
+      let launcherScreen = "home";
+      function showScreen(name){
+        launcherScreen = name;
+        screenHome.classList.toggle("active", name === "home");
+        screenCategory.classList.toggle("active", name === "category");
+        btnLauncherBack.style.display = (name === "category") ? "inline-flex" : "none";
+      }
+
+      function showLauncherCategory(cat){
+        catOps.style.display = "none";
+        catSales.style.display = "none";
+        catTeam.style.display = "none";
+
+        if (cat === "ops"){
+          crumbText.innerHTML = "<strong>Operations</strong> — choose a dashboard";
+          catOps.style.display = "grid";
+        } else if (cat === "sales"){
+          crumbText.innerHTML = "<strong>Sales &amp; Marketing</strong> — coming soon";
+          catSales.style.display = "grid";
+        } else if (cat === "team"){
+          crumbText.innerHTML = "<strong>Team Tools</strong> — internal utilities";
+          catTeam.style.display = "grid";
+        }
+        showScreen("category");
+      }
+
+      function openLauncher(){
+        launcher.classList.add("open");
+        launcherOverlay.classList.add("open");
+        launcherOverlay.setAttribute("aria-hidden", "false");
+        btnLauncher.setAttribute("aria-expanded", "true");
+        showScreen("home");
+      }
+
+      function closeLauncher(){
+        launcher.classList.remove("open");
+        launcherOverlay.classList.remove("open");
+        launcherOverlay.setAttribute("aria-hidden", "true");
+        btnLauncher.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleLauncher(){
+        const isOpen = launcher.classList.contains("open");
+        isOpen ? closeLauncher() : openLauncher();
+      }
+
+      btnLauncher.addEventListener("click", toggleLauncher);
+      btnLauncherClose.addEventListener("click", closeLauncher);
+      launcherOverlay.addEventListener("click", closeLauncher);
+      window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLauncher(); });
+      btnLauncherBack.addEventListener("click", () => showScreen("home"));
+
+      launcher.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        if (btn.disabled) return;
+
+        const action = btn.getAttribute("data-action");
+        if (!action) return;
+
+        if (action === "open-category"){
+          const cat = btn.getAttribute("data-category");
+          if (cat) showLauncherCategory(cat);
+          return;
+        }
+        if (action === "go-panel"){
+          const target = btn.getAttribute("data-target");
+          if (target){
+            activate(target);
+            closeLauncher();
+          }
+          return;
+        }
+      });
+
+      btnHome.addEventListener("click", () => {
+        closeLauncher();
+        homeShowLevel1();
+        activate("p-home");
+      });
+
       function touchPing(type){
         const now = String(Date.now());
         if (type === MSG_GROW || type === "MASTER_GROW_UPDATED") {
@@ -704,7 +1202,6 @@
       window.addEventListener("message", (event) => {
         const msg = event?.data || {};
         if (!msg.type) return;
-
         if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED") {
           touchPing(msg.type);
           notifyIframes(msg.type);
@@ -724,7 +1221,6 @@
         };
       }
 
-      // Safety poll (ping keys)
       let lastGrowPing = localStorage.getItem(MASTER_GROW_PING) || "";
       let lastPackPing = localStorage.getItem(MASTER_PACK_PING) || "";
       setInterval(() => {
@@ -734,15 +1230,8 @@
         if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
       }, 1500);
 
-      // =========================================================
-      // INIT
-      // =========================================================
-      applySavedOrder();
-      makeSortable();
-
-      const firstActive = tabsWrap.querySelector(".tab.active") || tabsWrap.querySelector(".tab");
-      if (firstActive) activate(firstActive.dataset.target);
-
+      homeShowLevel1();
+      activate("p-home");
       tryHydrateFromWorker();
     })();
   </script>
