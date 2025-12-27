@@ -87,7 +87,6 @@
       width:auto;
       display:block;
       object-fit:contain;
-      /* keeps it crisp */
       image-rendering:auto;
       filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
     }
@@ -269,7 +268,7 @@
       overflow:hidden;
       display:none;
     }
-    .panel.active{ display:flex; flex-direction:column; }
+    .panel.active{ display:flex; flex-direction:column; overflow:hidden; }
 
     .section-head{
       padding:16px 18px 12px;
@@ -323,11 +322,7 @@
     /* =========================================================
        HOME (default)
        ========================================================= */
-    .home-wrap{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
+    .home-wrap{ height:100%; display:flex; flex-direction:column; }
     .home-top{
       padding:18px 18px 12px;
       border-bottom:1px solid rgba(148,163,184,.14);
@@ -366,18 +361,12 @@
       max-width: 980px;
       font-weight:600;
     }
-
     .home-top strong{
       color: var(--hdr);
       font-weight:950;
       text-shadow: 0 1px 0 rgba(0,0,0,.65);
     }
-
-    .home-top .mini-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
+    .home-top .mini-actions{ display:flex; gap:10px; align-items:center; }
     .mini-btn{
       border:1px solid rgba(148,163,184,.22);
       background: rgba(2,6,23,.55);
@@ -393,48 +382,38 @@
       -webkit-user-select:none;
       box-shadow: 0 10px 18px rgba(0,0,0,.35);
     }
-    .mini-btn:hover{
-      border-color: rgba(34,197,94,.35);
-      background: rgba(34,197,94,.10);
-    }
+    .mini-btn:hover{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
 
     .home-body{
       flex:1 1 auto;
       display:flex;
-      align-items:center;
+      align-items:stretch;
       justify-content:center;
       padding:16px;
-      overflow:hidden;
+      overflow:auto;
     }
 
     .home-stage{
-      width: min(1120px, calc(100vw - 64px));
-      height: min(1120px, calc(100vh - 210px));
-      max-height: calc(100% - 10px);
-      aspect-ratio: 1 / 1;
+      width: 100%;
+      height: auto;
+      max-height: none;
+      aspect-ratio: auto;
       display:flex;
-      align-items:center;
+      align-items:stretch;
       justify-content:center;
+      padding: 8px 0;
     }
 
     .home-grid{
       width:100%;
-      height:100%;
       display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(2, minmax(0, 1fr));
-      gap:18px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap:16px;
+      align-content:start;
+      grid-auto-flow: row;
     }
-
     @media (max-width: 760px){
-      .home-stage{
-        height: calc(100vh - 210px);
-        aspect-ratio: auto;
-      }
-      .home-grid{
-        grid-template-columns: 1fr;
-        grid-template-rows: repeat(4, minmax(0, 1fr));
-      }
+      .home-grid{ grid-template-columns: 1fr; }
     }
 
     .big-card{
@@ -445,18 +424,18 @@
         radial-gradient(circle at 80% 20%, rgba(56,189,248,.08), transparent 45%),
         linear-gradient(135deg, rgba(2,6,23,.72), rgba(15,23,42,.72));
       border-radius:18px;
-      padding:18px 18px;
+      padding:14px;
       cursor:pointer;
       display:flex;
       flex-direction:column;
-      gap:12px;
+      gap:10px;
       align-items:flex-start;
       justify-content:flex-start;
       transition: background .12s ease, border-color .12s ease, transform .08s ease, box-shadow .12s ease;
       user-select:none;
       -webkit-user-select:none;
       text-align:left;
-      min-height:0;
+      min-height:170px;
       overflow:hidden;
       box-shadow: var(--shadow-soft);
       backdrop-filter: blur(10px);
@@ -471,19 +450,10 @@
     }
     .big-card:active{ transform: translateY(1px); }
 
-    .big-card .row{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      width:100%;
-    }
-    .big-card .ico{
-      font-size:1.65rem;
-      line-height:1;
-      filter: brightness(1.12) saturate(1.08);
-    }
+    .big-card .row{ display:flex; align-items:center; gap:12px; width:100%; }
+    .big-card .ico{ font-size:1.65rem; line-height:1; filter: brightness(1.12) saturate(1.08); }
     .big-card .name{
-      font-size:1.32rem;
+      font-size:1.2rem;
       font-weight:950;
       letter-spacing:.012em;
       color: var(--hdr);
@@ -503,11 +473,29 @@
       opacity:.9;
     }
     .big-card .meta{
-      font-size:1.02rem;
+      font-size: .96rem;
       color: rgba(226,232,240,.88);
-      line-height:1.35;
-      max-width: 56ch;
-      font-weight:600;
+      line-height: 1.35;
+      max-width: 62ch;
+      font-weight: 600;
+
+      display: -webkit-box;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+
+      overflow: hidden;
+    }
+
+
+    .big-card[aria-disabled="true"]{
+      opacity:.6;
+      cursor:not-allowed;
+      filter:saturate(.8);
+    }
+    .big-card[aria-disabled="true"]:hover{
+      border-color: rgba(148,163,184,.24);
+      box-shadow: var(--shadow-soft);
+      transform:none;
     }
 
     .danger{
@@ -523,16 +511,8 @@
         linear-gradient(135deg, rgba(2,6,23,.78), rgba(15,23,42,.78));
     }
 
-    .home-level2{
-      width:100%;
-      height:100%;
-      display:none;
-    }
-    .home-level2.show{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
+    .home-level2{ width:100%; height:100%; display:none; }
+    .home-level2.show{ display:flex; flex-direction:column; gap:12px; }
 
     .home-crumb{
       display:flex;
@@ -586,51 +566,6 @@
     }
     @media (max-width: 640px){
       .cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    /* Decorative Operations icon ring (non-interactive, hidden on small screens) */
-    .op-icon-ring{
-      width: 220px;
-      height: 220px;
-      margin: 14px auto 18px;
-      opacity: .55;
-      pointer-events:none;
-      user-select:none;
-      -webkit-user-select:none;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-    }
-    .op-icon-ring .op-icon{
-      position:absolute;
-      width:52px;height:52px;
-      border-radius:50%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:1.2rem;
-      background: rgba(255,255,255,.08);
-      border:1px solid rgba(148,163,184,.25);
-      box-shadow: 0 10px 22px rgba(0,0,0,.28);
-    }
-    .op-icon-ring .op-icon:nth-child(1){ top:4px; left:50%; transform:translate(-50%,0); }
-    .op-icon-ring .op-icon:nth-child(2){ top:26%; left:6%; }
-    .op-icon-ring .op-icon:nth-child(3){ top:65%; left:6%; }
-    .op-icon-ring .op-icon:nth-child(4){ bottom:4px; left:50%; transform:translate(-50%,0); }
-    .op-icon-ring .op-icon:nth-child(5){ top:65%; right:6%; }
-    .op-icon-ring .op-icon:nth-child(6){ top:26%; right:6%; }
-    .op-icon-ring .op-icon:nth-child(7){ top:50%; left:50%; transform:translate(-50%,-50%); background: rgba(255,255,255,.12); }
-    @media (max-width: 900px){
-      .op-icon-ring{ display:none; }
-    }
-    .op-icon-ring--card{
-      width: 220px;
-      height: 220px;
-      margin: 6px 0 10px;
-      opacity: .50;
-      align-self:center;
-      pointer-events:none;
     }
 
     .tile{
@@ -688,12 +623,12 @@
     }
 
     /* =========================================================
-       Launcher overlay + panel
+       Google-style Launcher overlay + panel (NEW)
        ========================================================= */
     .launcher-overlay{
       position:fixed;
       inset:0;
-      background: rgba(2,6,23,.55);
+      background: rgba(2,6,23,.50);
       z-index: 70000;
       display:none;
     }
@@ -701,94 +636,146 @@
 
     .launcher{
       position:fixed;
-      right:16px;
-      top:66px;
-      width:min(420px, calc(100vw - 32px));
-      max-height:min(640px, calc(100vh - 96px));
+      right:14px;
+      top:62px;
+      width: min(360px, calc(100vw - 28px));
+      max-height: min(520px, calc(100vh - 92px));
       overflow:auto;
 
-      border-radius:18px;
+      border-radius: 18px;
       border:1px solid rgba(148,163,184,.18);
-      background: rgba(15,23,42,.86);
-      box-shadow: var(--shadow);
+      background: rgba(11,18,34,.92);
+      box-shadow: 0 28px 90px rgba(0,0,0,.75);
       z-index: 70001;
 
-      padding:12px;
+      padding: 10px;
       display:none;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148,163,184,.55) rgba(2,6,23,0.25);
+      scrollbar-gutter: stable;
     }
     .launcher.open{ display:block; }
 
-    .launcher-top{
+    .launcher::-webkit-scrollbar{ width: 8px; }
+    .launcher::-webkit-scrollbar-thumb{
+      background: rgba(148,163,184,.45);
+      border-radius: 999px;
+    }
+    .launcher::-webkit-scrollbar-track{
+      background: rgba(2,6,23,.15);
+    }
+
+    .launcher-header{
       display:flex;
       align-items:center;
-      justify-content:flex-end;
-      gap:10px;
-      padding:2px 2px 10px;
+      justify-content:flex-start;
+      gap:8px;
+      padding: 4px 4px 10px;
+      border-bottom:1px solid rgba(148,163,184,.12);
+      margin-bottom: 8px;
     }
-    .launcher-btn{
-      border:1px solid rgba(148,163,184,.22);
-      background: rgba(2,6,23,.55);
+
+    .launcher-iconbtn{
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.35);
       color: var(--text);
-      border-radius:12px;
-      padding:8px 10px;
-      cursor:pointer;
+      border-radius: 12px;
+      width: 38px;
+      height: 38px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      gap:8px;
-      min-width:44px;
-      box-shadow: 0 10px 18px rgba(0,0,0,.30);
+      cursor:pointer;
+      user-select:none;
+      -webkit-user-select:none;
     }
-    .launcher-btn:hover{
+    .launcher-iconbtn:hover{
       border-color: rgba(56,189,248,.40);
       background: rgba(56,189,248,.10);
+    }
+
+    .launcher-titleline{
+      font-weight: 850;
+      color: rgba(241,245,249,.92);
+      font-size: .95rem;
+      letter-spacing: .01em;
+      text-shadow: 0 1px 0 rgba(0,0,0,.65);
     }
 
     .screen{ display:none; }
     .screen.active{ display:block; }
 
-    .crumb{
-      padding:0 6px 6px;
-      color: rgba(226,232,240,.86);
-      font-size:.94rem;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      border-bottom:1px solid rgba(148,163,184,.14);
-      margin-bottom:6px;
-      font-weight:700;
-    }
-    .crumb .dot{
-      width:6px;height:6px;border-radius:999px;background: rgba(34,197,94,.8);
-      box-shadow: 0 0 0 3px rgba(34,197,94,.10);
-    }
-    .crumb strong{
-      color: var(--hdr);
-      font-weight:950;
-      text-shadow:
-        0 1px 0 rgba(0,0,0,.65),
-        0 0 18px var(--hdr-glow);
-    }
-
-    .launcher-home-grid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap:12px;
-      padding:6px 4px 10px;
-    }
-    .launcher-cat-grid{
+    .launcher-grid{
       display:grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:10px;
-      padding:10px 6px 12px;
+      gap: 10px;
+      padding: 2px 2px 8px;
     }
-    /* Hide descriptions only inside launcher cards */
-    .launcher .big-card .meta{ display:none; }
-    @media (max-width: 520px){
-      .launcher-home-grid{ grid-template-columns: 1fr; }
-      .launcher-cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 420px){
+      .launcher-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .launch-app{
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(2,6,23,.26);
+      border-radius: 16px;
+      padding: 10px 8px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+
+      min-height: 104px;
+      text-align:center;
+
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .launch-app:hover{
+      background: rgba(226,232,240,.08);
+      border-color: rgba(226,232,240,.22);
+    }
+    .launch-app:active{ transform: translateY(1px); }
+
+    .launch-app .app-ico{
+      font-size: 1.6rem;
+      line-height: 1;
+      filter: brightness(1.12) saturate(1.08);
+    }
+
+    .launch-app .app-name{
+      font-size: .92rem;
+      font-weight: 850;
+      color: rgba(241,245,249,.92);
+      line-height: 1.15;
+      text-shadow: 0 1px 0 rgba(0,0,0,.55);
+    }
+
+    .launch-app[aria-disabled="true"], .launch-app:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:saturate(.7);
+    }
+    .launch-app[aria-disabled="true"]:hover, .launch-app:disabled:hover{
+      background: rgba(2,6,23,.26);
+      border-color: rgba(148,163,184,.14);
+      transform:none;
+    }
+
+    .launch-app.danger{
+      border-color: rgba(239,68,68,.28);
+      background: rgba(239,68,68,.06);
+    }
+    .launch-app.danger:hover{
+      border-color: rgba(239,68,68,.48);
+      background: rgba(239,68,68,.10);
     }
 
     /* Toast */
@@ -819,7 +806,6 @@
 <body>
   <div class="shell">
     <div class="topbar">
-      <!-- ✅ Updated: logo + clickable brand block -->
       <div class="brand" id="brandHome" role="button" tabindex="0" aria-label="Go to main menu">
         <img class="logo" src="logo_full.png" alt="Campo Caribe logo" />
         <div class="brand-text">
@@ -869,20 +855,9 @@
 
           <div class="home-body">
             <div class="home-stage">
-
-              <!-- Level 1 square tiles -->
               <div class="home-grid" id="homeLevel1">
                 <button class="big-card" data-home-open="ops">
                   <div class="row"><div class="ico">⚙️</div><div class="name" data-i18n="card.ops.title">Operations</div></div>
-                  <div class="op-icon-ring op-icon-ring--card" aria-hidden="true">
-                    <div class="op-icon">📊</div>
-                    <div class="op-icon">🌱</div>
-                    <div class="op-icon">🪴</div>
-                    <div class="op-icon">✂️</div>
-                    <div class="op-icon">📦</div>
-                    <div class="op-icon">🚚</div>
-                    <div class="op-icon">🧼</div>
-                  </div>
                   <div class="meta" data-i18n="card.ops.meta">End-to-end operational planning and execution across production, inventory, and fulfillment</div>
                 </button>
 
@@ -901,38 +876,37 @@
                   <div class="meta" data-i18n="card.data.meta">Authoritative data uploads for company dashboards</div>
                 </button>
 
-                <button class="big-card" data-home-open="growing">
+                <button class="big-card" data-home-open="growing" aria-disabled="true">
                   <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
                   <div class="meta" data-i18n="card.growing.meta">Coming soon: Crop planning, cultivation schedules, and yield performance across all grow systems</div>
                 </button>
 
-                <button class="big-card" data-home-open="foodsafety">
+                <button class="big-card" data-home-open="foodsafety" aria-disabled="true">
                   <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
                   <div class="meta" data-i18n="card.foodsafety.meta">Coming soon: Compliance, audits, and food safety controls across production and packing</div>
                 </button>
 
-                <button class="big-card" data-home-open="maintenance">
+                <button class="big-card" data-home-open="maintenance" aria-disabled="true">
                   <div class="row"><div class="ico">🛠️</div><div class="name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div></div>
                   <div class="meta" data-i18n="card.maintenance.meta">Coming soon: Equipment maintenance, facility readiness, and infrastructure oversight</div>
                 </button>
 
-                <button class="big-card" data-home-open="finances">
+                <button class="big-card" data-home-open="finances" aria-disabled="true">
                   <div class="row"><div class="ico">💰</div><div class="name" data-i18n="card.finances.title">Finances</div></div>
                   <div class="meta" data-i18n="card.finances.meta">Coming soon: Financial performance, costs, budgeting, and operational profitability</div>
                 </button>
 
-                <button class="big-card" data-home-open="hr">
+                <button class="big-card" data-home-open="hr" aria-disabled="true">
                   <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
                   <div class="meta" data-i18n="card.hr.meta">Coming soon: Staffing, scheduling, payroll, and people operations</div>
                 </button>
 
-                <button class="big-card" data-home-open="procurement">
+                <button class="big-card" data-home-open="procurement" aria-disabled="true">
                   <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
                   <div class="meta" data-i18n="card.procurement.meta">Coming soon: Purchasing, supplies, inventory levels, and vendor coordination</div>
                 </button>
               </div>
 
-              <!-- Level 2 (still inside stage) -->
               <div class="home-level2" id="homeLevel2">
                 <div class="home-crumb">
                   <div id="homeCrumb" data-i18n-html="crumb.ops"><strong>Operations</strong> — choose a dashboard</div>
@@ -1089,94 +1063,81 @@
 
   <div class="launcher-overlay" id="launcherOverlay" aria-hidden="true"></div>
 
-    <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="Dashboard menu">
-      <div class="launcher-top">
-        <button class="launcher-btn" id="btnLauncherBack" aria-label="Back" title="Back" style="display:none;" data-i18n="home.back">←</button>
-        <button class="launcher-btn" id="btnLauncherClose" aria-label="Close menu" title="Close" data-i18n="launcher.close">✕</button>
-      </div>
+  <!-- ✅ Google-style Launcher (no X button, click-outside + Esc) -->
+  <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="Dashboard menu">
+    <div class="launcher-header">
+      <button class="launcher-iconbtn" id="btnLauncherBack" aria-label="Back" title="Back" style="display:none;">←</button>
+      <div class="launcher-titleline" id="launcherTitle" data-i18n="launcher.title">Dashboards</div>
+    </div>
 
-      <div class="screen active" id="screen-home">
-
-      <div class="launcher-home-grid">
-        <button class="big-card" data-action="open-category" data-category="ops">
-          <div class="row"><div class="ico">⚙️</div><div class="name" data-i18n="card.ops.title">Operations</div></div>
-          <div class="meta" data-i18n="card.ops.meta">End-to-end operational planning and execution across production, inventory, and fulfillment</div>
+    <div class="screen active" id="screen-home">
+      <div class="launcher-grid">
+        <button class="launch-app" data-action="open-category" data-category="ops">
+          <div class="app-ico">⚙️</div>
+          <div class="app-name" data-i18n="card.ops.title">Operations</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="sales">
+          <div class="app-ico">📈</div>
+          <div class="app-name" data-i18n="card.sales.title">Sales &amp; Marketing</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="team">
+          <div class="app-ico">👥</div>
+          <div class="app-name" data-i18n="card.team.title">Team Tools</div>
+        </button>
+        <button class="launch-app danger" data-action="go-panel" data-target="p-data">
+          <div class="app-ico">📥</div>
+          <div class="app-name" data-i18n="card.data.title">Data Input</div>
         </button>
 
-        <button class="big-card" data-action="open-category" data-category="sales">
-          <div class="row"><div class="ico">📈</div><div class="name" data-i18n="card.sales.title">Sales &amp; Marketing</div></div>
-          <div class="meta" data-i18n="card.sales.meta">Coming soon: Sales performance, forecasting, and customer demand insights</div>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🌿</div>
+          <div class="app-name" data-i18n="card.growing.title">Growing</div>
         </button>
-
-        <button class="big-card" data-action="open-category" data-category="team">
-          <div class="row"><div class="ico">👥</div><div class="name" data-i18n="card.team.title">Team Tools</div></div>
-          <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🛡️</div>
+          <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
         </button>
-
-        <button class="big-card danger" data-action="go-panel" data-target="p-data">
-          <div class="row"><div class="ico">📥</div><div class="name" data-i18n="card.data.title">Data Input</div></div>
-          <div class="meta" data-i18n="card.data.meta">Authoritative data uploads for company dashboards</div>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🛠️</div>
+          <div class="app-name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div>
         </button>
-
-        <button class="big-card disabled" disabled>
-          <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
-          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">💰</div>
+          <div class="app-name" data-i18n="card.finances.title">Finances</div>
         </button>
-
-        <button class="big-card disabled" disabled>
-          <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
-          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🧑‍🤝‍🧑</div>
+          <div class="app-name" data-i18n="card.hr.title">HR</div>
         </button>
-
-        <button class="big-card disabled" disabled>
-          <div class="row"><div class="ico">🛠️</div><div class="name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div></div>
-          <div class="meta" data-i18n="common.coming">Coming soon</div>
-        </button>
-
-        <button class="big-card disabled" disabled>
-          <div class="row"><div class="ico">💰</div><div class="name" data-i18n="card.finances.title">Finances</div></div>
-          <div class="meta" data-i18n="common.coming">Coming soon</div>
-        </button>
-
-        <button class="big-card disabled" disabled>
-          <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
-          <div class="meta" data-i18n="common.coming">Coming soon</div>
-        </button>
-
-        <button class="big-card disabled" disabled>
-          <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
-          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">📦</div>
+          <div class="app-name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div>
         </button>
       </div>
     </div>
 
     <div class="screen" id="screen-category">
-      <div class="crumb">
-        <span class="dot"></span>
-        <span id="crumbText" data-i18n-html="launcher.category"><strong>Category</strong></span>
+      <div class="launcher-grid" id="cat-ops" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-weekly"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.weekly.name">Weekly Summary</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-seeding"><div class="app-ico">🌱</div><div class="app-name" data-i18n="tile.seeding.name">Seeding</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-transplant"><div class="app-ico">🪴</div><div class="app-name" data-i18n="tile.transplant.name">Transplant</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-harvest"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.harvest.name">Harvest</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-packing"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.packing.name">Packing</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-inventory"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.inventory.name">S&amp;H Inventory</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-shipments"><div class="app-ico">🚚</div><div class="app-name" data-i18n="tile.shipments.name">Shipments</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-sanitation"><div class="app-ico">🧼</div><div class="app-name" data-i18n="tile.sanitation.name">Sanitation</div></button>
       </div>
 
-      <div class="launcher-cat-grid" id="cat-ops" style="display:none;">
-        <button class="tile" data-action="go-panel" data-target="p-weekly"><div class="ico">📊</div><div class="name" data-i18n="tile.weekly.name">Weekly Summary</div><div class="meta" data-i18n="tile.weekly.meta">Targets + actuals</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-seeding"><div class="ico">🌱</div><div class="name" data-i18n="tile.seeding.name">Seeding</div><div class="meta" data-i18n="tile.seeding.meta">Trays & schedule</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-transplant"><div class="ico">🪴</div><div class="name" data-i18n="tile.transplant.name">Transplant</div><div class="meta" data-i18n="tile.transplant.meta">Moves & counts</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-harvest"><div class="ico">✂️</div><div class="name" data-i18n="tile.harvest.name">Harvest</div><div class="meta" data-i18n="tile.harvest.meta">Cut plans</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-packing"><div class="ico">📦</div><div class="name" data-i18n="tile.packing.name">Packing</div><div class="meta" data-i18n="tile.packing.meta">Pack plan</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-inventory"><div class="ico">📦</div><div class="name" data-i18n="tile.inventory.name">S&amp;H Inventory</div><div class="meta" data-i18n="tile.inventory.meta">Stock view</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-shipments"><div class="ico">🚚</div><div class="name" data-i18n="tile.shipments.name">Shipments</div><div class="meta" data-i18n="tile.shipments.meta">Forward sales</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-sanitation"><div class="ico">🧼</div><div class="name" data-i18n="tile.sanitation.name">Sanitation</div><div class="meta" data-i18n="tile.sanitation.meta">Checklists</div></button>
+      <div class="launcher-grid" id="cat-sales" style="display:none;">
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">💵</div><div class="app-name" data-i18n="tile.sales-overview.name">Sales Overview</div></button>
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">📈</div><div class="app-name" data-i18n="tile.forecast.name">Forecast</div></button>
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">📣</div><div class="app-name" data-i18n="tile.campaigns.name">Campaigns</div></button>
       </div>
 
-      <div class="launcher-cat-grid" id="cat-sales" style="display:none;">
-        <button class="tile disabled" disabled><div class="ico">💵</div><div class="name" data-i18n="tile.sales-overview.name">Sales Overview</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">📈</div><div class="name" data-i18n="tile.forecast.name">Forecast</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">📣</div><div class="name" data-i18n="tile.campaigns.name">Campaigns</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-      </div>
-
-      <div class="launcher-cat-grid" id="cat-team" style="display:none;">
-        <button class="tile disabled" disabled><div class="ico">👥</div><div class="name" data-i18n="tile.schedule.name">Schedule</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name" data-i18n="tile.sops.name">SOPs</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">✅</div><div class="name" data-i18n="tile.issues.name">Issues</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+      <div class="launcher-grid" id="cat-team" style="display:none;">
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">👥</div><div class="app-name" data-i18n="tile.schedule.name">Schedule</div></button>
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.sops.name">SOPs</div></button>
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">✅</div><div class="app-name" data-i18n="tile.issues.name">Issues</div></button>
       </div>
     </div>
   </div>
@@ -1191,12 +1152,11 @@
       const I18N = {
         en: {
           "brand.title":"Company Dashboards",
+          "launcher.title":"Dashboards",
           "home.title":"Dashboards",
           "home.subtitle":"Choose a category to access company dashboards",
           "home.back":"← Back",
-          "launcher.close":"✕",
-          "launcher.homecrumb":"<strong>Dashboards</strong> — choose a category",
-          "launcher.category":"<strong>Category</strong>",
+          "launcher.category":"Category",
           "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
           "crumb.sales":"<strong>Sales &amp; Marketing</strong> — coming soon",
           "crumb.team":"<strong>Team Tools</strong> — internal utilities",
@@ -1208,7 +1168,6 @@
           "card.team.meta":"Internal tools for scheduling, coordination, and team workflows",
           "card.data.title":"Data Input",
           "card.data.meta":"Authoritative data uploads for company dashboards",
-          "common.coming":"Coming soon",
           "card.growing.title":"Growing",
           "card.growing.meta":"Coming soon: Crop planning, cultivation schedules, and yield performance across all grow systems",
           "card.foodsafety.title":"Food Safety",
@@ -1221,18 +1180,6 @@
           "card.hr.meta":"Coming soon: Staffing, scheduling, payroll, and people operations",
           "card.procurement.title":"Procurement & Inventory",
           "card.procurement.meta":"Coming soon: Purchasing, supplies, inventory levels, and vendor coordination",
-          "card.growing.title":"Growing",
-          "card.growing.meta":"Crop planning, cultivation schedules, and yield performance across all grow systems",
-          "card.foodsafety.title":"Food Safety",
-          "card.foodsafety.meta":"Compliance, audits, and food safety controls across production and packing",
-          "card.maintenance.title":"Maintenance & Facilities",
-          "card.maintenance.meta":"Equipment maintenance, facility readiness, and infrastructure oversight",
-          "card.finances.title":"Finances",
-          "card.finances.meta":"Financial performance, costs, budgeting, and operational profitability",
-          "card.hr.title":"HR",
-          "card.hr.meta":"Staffing, scheduling, payroll, and people operations",
-          "card.procurement.title":"Procurement & Inventory",
-          "card.procurement.meta":"Purchasing, supplies, inventory levels, and vendor coordination",
           "tab.weekly":"Weekly Summary",
           "tab.seeding":"Seeding",
           "tab.transplant":"Transplant",
@@ -1294,12 +1241,11 @@
         },
         es: {
           "brand.title":"Paneles de la empresa",
+          "launcher.title":"Paneles",
           "home.title":"Paneles",
           "home.subtitle":"Elige una categoría para acceder a los paneles de la empresa",
           "home.back":"← Volver",
-          "launcher.close":"✕",
-          "launcher.homecrumb":"<strong>Paneles</strong> — elige una categoría",
-          "launcher.category":"<strong>Categoría</strong>",
+          "launcher.category":"Categoría",
           "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
           "crumb.sales":"<strong>Ventas y marketing</strong> — próximamente",
           "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
@@ -1311,7 +1257,6 @@
           "card.team.meta":"Herramientas internas para programación, coordinación y flujos de trabajo del equipo",
           "card.data.title":"Carga de datos",
           "card.data.meta":"Cargas de datos autorizadas para los paneles de la empresa",
-          "common.coming":"Próximamente",
           "card.growing.title":"Crecimiento",
           "card.growing.meta":"Próximamente: planificación de cultivos, calendarios de cultivo y desempeño de rendimientos en todos los sistemas",
           "card.foodsafety.title":"Inocuidad alimentaria",
@@ -1384,6 +1329,7 @@
           "panel.inventory.file":"📄 archivo: <code>08.0 S&H Inventory Dashboard.html</code>"
         }
       };
+
       const LANG_KEY = "campo_lang";
 
       function t(key, lang){
@@ -1394,12 +1340,10 @@
       function applyI18n(lang){
         document.querySelectorAll("[data-i18n]").forEach(el => {
           const k = el.getAttribute("data-i18n");
-          if (el.id === "homeCrumb" || el.id === "crumbText") return;
           el.textContent = t(k, lang);
         });
         document.querySelectorAll("[data-i18n-html]").forEach(el => {
           const k = el.getAttribute("data-i18n-html");
-          if (el.id === "homeCrumb" || el.id === "crumbText") return;
           el.innerHTML = t(k, lang);
         });
       }
@@ -1436,17 +1380,16 @@
 
       const btnHome = document.getElementById("btnHome");
       const btnLang = document.getElementById("btnLang");
-      const brandHome = document.getElementById("brandHome"); // ✅ NEW
+      const brandHome = document.getElementById("brandHome");
 
       const btnLauncher = document.getElementById("btnLauncher");
-      const btnLauncherClose = document.getElementById("btnLauncherClose");
       const btnLauncherBack = document.getElementById("btnLauncherBack");
       const launcher = document.getElementById("launcher");
       const launcherOverlay = document.getElementById("launcherOverlay");
+      const launcherTitle = document.getElementById("launcherTitle");
 
       const screenHome = document.getElementById("screen-home");
       const screenCategory = document.getElementById("screen-category");
-      const crumbText = document.getElementById("crumbText");
       const catOps = document.getElementById("cat-ops");
       const catSales = document.getElementById("cat-sales");
       const catTeam = document.getElementById("cat-team");
@@ -1464,24 +1407,6 @@
       let currentLang = (localStorage.getItem(LANG_KEY) || "en").toLowerCase();
       if (!I18N[currentLang]) currentLang = "en";
 
-      function refreshCrumbs(){
-        if (homeLevel2?.classList.contains("show")){
-          if (homeOps.style.display === "grid") homeCrumb.innerHTML = t("crumb.ops", currentLang);
-          else if (homeSales.style.display === "grid") homeCrumb.innerHTML = t("crumb.sales", currentLang);
-          else if (homeTeam.style.display === "grid") homeCrumb.innerHTML = t("crumb.team", currentLang);
-        }
-        if (crumbText){
-          if (launcherScreen === "category"){
-            if (catOps.style.display === "grid") crumbText.innerHTML = t("crumb.ops", currentLang);
-            else if (catSales.style.display === "grid") crumbText.innerHTML = t("crumb.sales", currentLang);
-            else if (catTeam.style.display === "grid") crumbText.innerHTML = t("crumb.team", currentLang);
-            else crumbText.innerHTML = t("launcher.category", currentLang);
-          } else {
-            crumbText.innerHTML = t("launcher.category", currentLang);
-          }
-        }
-      }
-
       function updateLangButton(){
         if (!btnLang) return;
         btnLang.textContent = (currentLang === "en") ? "EN / ES" : "ES / EN";
@@ -1494,8 +1419,12 @@
         localStorage.setItem(LANG_KEY, currentLang);
         applyI18n(currentLang);
         updateLangButton();
-        refreshCrumbs();
+        // reset launcher header title when language flips
+        if (launcherTitle){
+          launcherTitle.textContent = t("launcher.title", currentLang);
+        }
       }
+
       function showToast(msg, sub, ok){
         if (!toast || !toastText || !toastSub) return;
         toast.classList.remove("ok","bad");
@@ -1683,12 +1612,12 @@
         homeLevel1.style.display = "none";
         homeLevel2.classList.add("show");
         homeBackBtn.style.display = "inline-flex";
-        refreshCrumbs();
       }
 
       document.getElementById("p-home").addEventListener("click", (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
+        if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
         const openCat = btn.getAttribute("data-home-open");
         const goPanel = btn.getAttribute("data-home-go");
@@ -1700,12 +1629,20 @@
       homeBackInline.addEventListener("click", homeShowLevel1);
       homeBackBtn.addEventListener("click", homeShowLevel1);
 
+      // ========= Launcher (Google style) =========
       let launcherScreen = "home";
+
       function showScreen(name){
         launcherScreen = name;
         screenHome.classList.toggle("active", name === "home");
         screenCategory.classList.toggle("active", name === "category");
         btnLauncherBack.style.display = (name === "category") ? "inline-flex" : "none";
+
+        if (launcherTitle){
+          launcherTitle.textContent = (name === "home")
+            ? t("launcher.title", currentLang)
+            : (currentLang === "en" ? "Category" : "Categoría");
+        }
       }
 
       function showLauncherCategory(cat){
@@ -1714,17 +1651,17 @@
         catTeam.style.display = "none";
 
         if (cat === "ops"){
-          crumbText.innerHTML = t("crumb.ops", currentLang);
           catOps.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.ops.title", currentLang);
         } else if (cat === "sales"){
-          crumbText.innerHTML = t("crumb.sales", currentLang);
           catSales.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.sales.title", currentLang);
         } else if (cat === "team"){
-          crumbText.innerHTML = t("crumb.team", currentLang);
           catTeam.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.team.title", currentLang);
         }
+
         showScreen("category");
-        refreshCrumbs();
       }
 
       function openLauncher(){
@@ -1748,10 +1685,14 @@
       }
 
       btnLauncher.addEventListener("click", toggleLauncher);
-      document.getElementById("btnLauncherClose").addEventListener("click", closeLauncher);
       launcherOverlay.addEventListener("click", closeLauncher);
       window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLauncher(); });
-      document.getElementById("btnLauncherBack").addEventListener("click", () => showScreen("home"));
+
+      btnLauncherBack.addEventListener("click", () => {
+        showScreen("home");
+        if (launcherTitle) launcherTitle.textContent = t("launcher.title", currentLang);
+      });
+
       if (btnLang){
         btnLang.addEventListener("click", () => {
           const next = currentLang === "en" ? "es" : "en";
@@ -1762,7 +1703,7 @@
       launcher.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
-        if (btn.disabled) return;
+        if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
         const action = btn.getAttribute("data-action");
         if (!action) return;
@@ -1791,7 +1732,6 @@
 
       btnHome.addEventListener("click", goHome);
 
-      /* ✅ Logo/brand clickable (mouse + keyboard) */
       if (brandHome){
         brandHome.addEventListener("click", goHome);
         brandHome.addEventListener("keydown", (e) => {
@@ -1827,6 +1767,7 @@
           if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED") {
             touchPing(msg.type);
             notifyIframes(msg.type);
+            broadcast(msg.type);
           }
         };
       }
