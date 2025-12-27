@@ -6,6 +6,8 @@
   <title>Campo Caribe Operations – Unified Testing Dashboard</title>
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap');
+
     :root{
       /* ===== Dark theme + legibility ===== */
       --bg:#020617;
@@ -60,21 +62,63 @@
       gap:12px;
     }
 
-    .brand{display:flex;flex-direction:column;gap:4px;min-width:240px;}
+    /* ✅ Updated brand block to include logo + clickable */
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:240px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-user-select:none;
+      padding:6px 8px;
+      border-radius:14px;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      border:1px solid transparent;
+    }
+    .brand:hover{
+      background: rgba(34,197,94,.08);
+      border-color: rgba(34,197,94,.22);
+    }
+    .brand:active{ transform: translateY(1px); }
+
+    .brand .logo{
+      height:42px;
+      width:auto;
+      display:block;
+      object-fit:contain;
+      /* keeps it crisp */
+      image-rendering:auto;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+    }
+
+    .brand-text{display:flex;flex-direction:column;gap:4px;min-width:0;}
     .brand .title{
-      font-weight:950;
+      font-family:'Poppins', 'Segoe UI', system-ui, -apple-system, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      font-weight:800;
       letter-spacing:.02em;
-      font-size:1.12rem;
+      font-size:1.4rem;
       color: var(--hdr);
       text-shadow:
         0 1px 0 rgba(0,0,0,.70),
         0 0 18px var(--hdr-glow);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .brand .subtitle{
       color:rgba(226,232,240,.78);
       font-size:.92rem;
       line-height:1.25;
       max-width: 980px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    @media (max-width: 720px){
+      .brand .logo{ height:36px; }
+      .brand .subtitle{ display:none; }
     }
 
     .topbar-right{
@@ -83,6 +127,13 @@
       justify-content:flex-end;
       gap:10px;
       min-width: 220px;
+    }
+
+    .lang-toggle{
+      font-weight:800;
+      font-size:.9rem;
+      padding:8px 10px;
+      letter-spacing:.02em;
     }
 
     .icon-btn{
@@ -151,12 +202,13 @@
 
       display:none;
       align-items:center;
-      justify-content:flex-start;
+      justify-content:center;
       gap:10px;
 
       overflow:auto;
       scrollbar-width: thin;
       scrollbar-color: rgba(148,163,184,.55) rgba(2,6,23,0.25);
+      scrollbar-gutter: stable;
 
       user-select:none;
       -webkit-user-select:none;
@@ -169,6 +221,9 @@
 
     .tabs::-webkit-scrollbar{height:6px;}
     .tabs::-webkit-scrollbar-thumb{background:rgba(148,163,184,.55);border-radius:999px;}
+    @media (max-width: 900px){
+      .tabs{ justify-content:flex-start; }
+    }
 
     .tab{
       border:1px solid rgba(148,163,184,.22);
@@ -524,12 +579,58 @@
       gap:12px;
       overflow:auto;
       padding-right: 6px;
+      position:relative;
     }
     @media (max-width: 980px){
       .cat-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 640px){
       .cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* Decorative Operations icon ring (non-interactive, hidden on small screens) */
+    .op-icon-ring{
+      width: 220px;
+      height: 220px;
+      margin: 14px auto 18px;
+      opacity: .55;
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-select:none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    }
+    .op-icon-ring .op-icon{
+      position:absolute;
+      width:52px;height:52px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:1.2rem;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(148,163,184,.25);
+      box-shadow: 0 10px 22px rgba(0,0,0,.28);
+    }
+    .op-icon-ring .op-icon:nth-child(1){ top:4px; left:50%; transform:translate(-50%,0); }
+    .op-icon-ring .op-icon:nth-child(2){ top:26%; left:6%; }
+    .op-icon-ring .op-icon:nth-child(3){ top:65%; left:6%; }
+    .op-icon-ring .op-icon:nth-child(4){ bottom:4px; left:50%; transform:translate(-50%,0); }
+    .op-icon-ring .op-icon:nth-child(5){ top:65%; right:6%; }
+    .op-icon-ring .op-icon:nth-child(6){ top:26%; right:6%; }
+    .op-icon-ring .op-icon:nth-child(7){ top:50%; left:50%; transform:translate(-50%,-50%); background: rgba(255,255,255,.12); }
+    @media (max-width: 900px){
+      .op-icon-ring{ display:none; }
+    }
+    .op-icon-ring--card{
+      width: 220px;
+      height: 220px;
+      margin: 6px 0 10px;
+      opacity: .50;
+      align-self:center;
+      pointer-events:none;
     }
 
     .tile{
@@ -683,7 +784,10 @@
       gap:10px;
       padding:10px 6px 12px;
     }
+    /* Hide descriptions only inside launcher cards */
+    .launcher .big-card .meta{ display:none; }
     @media (max-width: 520px){
+      .launcher-home-grid{ grid-template-columns: 1fr; }
       .launcher-cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
@@ -715,12 +819,16 @@
 <body>
   <div class="shell">
     <div class="topbar">
-      <div class="brand">
-        <div class="title">Campo Caribe Operations</div>
-        <div class="subtitle">Unified testing harness (Home categories + Launcher + Ops pill strip on ops dashboards).</div>
+      <!-- ✅ Updated: logo + clickable brand block -->
+      <div class="brand" id="brandHome" role="button" tabindex="0" aria-label="Go to main menu">
+        <img class="logo" src="logo_full.png" alt="Campo Caribe logo" />
+        <div class="brand-text">
+          <div class="title" data-i18n="brand.title">Company Dashboards</div>
+        </div>
       </div>
 
       <div class="topbar-right">
+        <button class="icon-btn lang-toggle" id="btnLang" aria-label="Language" title="Language">EN / ES</button>
         <button class="icon-btn" id="btnHome" aria-label="Home" title="Home">
           <span class="home-ico" aria-hidden="true"></span>
         </button>
@@ -736,14 +844,14 @@
     </div>
 
     <div class="tabs" id="tabs" aria-label="Operations Dashboards">
-      <button class="tab" data-target="p-weekly">📊 <span>Weekly Summary</span></button>
-      <button class="tab" data-target="p-seeding">🌱 <span>Seeding</span></button>
-      <button class="tab" data-target="p-transplant">🪴 <span>Transplant</span></button>
-      <button class="tab" data-target="p-harvest">✂️ <span>Harvest</span></button>
-      <button class="tab" data-target="p-packing">📦 <span>Packing</span></button>
-      <button class="tab" data-target="p-shipments">🚚 <span>Shipments</span></button>
-      <button class="tab" data-target="p-sanitation">🧼 <span>Sanitation</span></button>
-      <button class="tab" data-target="p-inventory">📦 <span>S&amp;H Inventory</span></button>
+      <button class="tab" data-target="p-weekly">📊 <span data-i18n="tab.weekly">Weekly Summary</span></button>
+      <button class="tab" data-target="p-seeding">🌱 <span data-i18n="tab.seeding">Seeding</span></button>
+      <button class="tab" data-target="p-transplant">🪴 <span data-i18n="tab.transplant">Transplant</span></button>
+      <button class="tab" data-target="p-harvest">✂️ <span data-i18n="tab.harvest">Harvest</span></button>
+      <button class="tab" data-target="p-packing">📦 <span data-i18n="tab.packing">Packing</span></button>
+      <button class="tab" data-target="p-shipments">🚚 <span data-i18n="tab.shipments">Shipments</span></button>
+      <button class="tab" data-target="p-sanitation">🧼 <span data-i18n="tab.sanitation">Sanitation</span></button>
+      <button class="tab" data-target="p-inventory">📦 <span data-i18n="tab.inventory">S&amp;H Inventory</span></button>
     </div>
 
     <div class="main">
@@ -751,11 +859,8 @@
         <div class="home-wrap">
           <div class="home-top">
             <div>
-              <h2>Dashboards</h2>
-              <p>
-                Choose a category. Clicking <strong>Operations</strong> opens the Operations dashboards list right here (no launcher needed).
-                The ▦ menu is always available too.
-              </p>
+              <h2 data-i18n="home.title">Dashboards</h2>
+              <p data-i18n="home.subtitle">Choose a category to access company dashboards</p>
             </div>
             <div class="mini-actions">
               <button class="mini-btn" id="homeBackBtn" title="Back to categories" aria-label="Back to categories" style="display:none;">←</button>
@@ -768,54 +873,93 @@
               <!-- Level 1 square tiles -->
               <div class="home-grid" id="homeLevel1">
                 <button class="big-card" data-home-open="ops">
-                  <div class="row"><div class="ico">⚙️</div><div class="name">Operations</div></div>
-                  <div class="meta">Weekly, seeding, transplant, harvest, packing, inventory, shipments, sanitation</div>
+                  <div class="row"><div class="ico">⚙️</div><div class="name" data-i18n="card.ops.title">Operations</div></div>
+                  <div class="op-icon-ring op-icon-ring--card" aria-hidden="true">
+                    <div class="op-icon">📊</div>
+                    <div class="op-icon">🌱</div>
+                    <div class="op-icon">🪴</div>
+                    <div class="op-icon">✂️</div>
+                    <div class="op-icon">📦</div>
+                    <div class="op-icon">🚚</div>
+                    <div class="op-icon">🧼</div>
+                  </div>
+                  <div class="meta" data-i18n="card.ops.meta">End-to-end operational planning and execution across production, inventory, and fulfillment</div>
                 </button>
 
                 <button class="big-card" data-home-open="sales">
-                  <div class="row"><div class="ico">📈</div><div class="name">Sales &amp; Marketing</div></div>
-                  <div class="meta">Coming soon</div>
+                  <div class="row"><div class="ico">📈</div><div class="name" data-i18n="card.sales.title">Sales &amp; Marketing</div></div>
+                  <div class="meta" data-i18n="card.sales.meta">Coming soon: Sales performance, forecasting, and customer demand insights</div>
                 </button>
 
                 <button class="big-card" data-home-open="team">
-                  <div class="row"><div class="ico">👥</div><div class="name">Team Tools</div></div>
-                  <div class="meta">Internal utilities</div>
+                  <div class="row"><div class="ico">👥</div><div class="name" data-i18n="card.team.title">Team Tools</div></div>
+                  <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
                 </button>
 
                 <button class="big-card danger" data-home-go="p-data">
-                  <div class="row"><div class="ico">📥</div><div class="name">Data Input</div></div>
-                  <div class="meta">Write / publish master data</div>
+                  <div class="row"><div class="ico">📥</div><div class="name" data-i18n="card.data.title">Data Input</div></div>
+                  <div class="meta" data-i18n="card.data.meta">Authoritative data uploads for company dashboards</div>
+                </button>
+
+                <button class="big-card" data-home-open="growing">
+                  <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
+                  <div class="meta" data-i18n="card.growing.meta">Coming soon: Crop planning, cultivation schedules, and yield performance across all grow systems</div>
+                </button>
+
+                <button class="big-card" data-home-open="foodsafety">
+                  <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
+                  <div class="meta" data-i18n="card.foodsafety.meta">Coming soon: Compliance, audits, and food safety controls across production and packing</div>
+                </button>
+
+                <button class="big-card" data-home-open="maintenance">
+                  <div class="row"><div class="ico">🛠️</div><div class="name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div></div>
+                  <div class="meta" data-i18n="card.maintenance.meta">Coming soon: Equipment maintenance, facility readiness, and infrastructure oversight</div>
+                </button>
+
+                <button class="big-card" data-home-open="finances">
+                  <div class="row"><div class="ico">💰</div><div class="name" data-i18n="card.finances.title">Finances</div></div>
+                  <div class="meta" data-i18n="card.finances.meta">Coming soon: Financial performance, costs, budgeting, and operational profitability</div>
+                </button>
+
+                <button class="big-card" data-home-open="hr">
+                  <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
+                  <div class="meta" data-i18n="card.hr.meta">Coming soon: Staffing, scheduling, payroll, and people operations</div>
+                </button>
+
+                <button class="big-card" data-home-open="procurement">
+                  <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
+                  <div class="meta" data-i18n="card.procurement.meta">Coming soon: Purchasing, supplies, inventory levels, and vendor coordination</div>
                 </button>
               </div>
 
               <!-- Level 2 (still inside stage) -->
               <div class="home-level2" id="homeLevel2">
                 <div class="home-crumb">
-                  <div id="homeCrumb"><strong>Operations</strong> — choose a dashboard</div>
-                  <button class="home-back" id="homeBackInline" aria-label="Back">← Back</button>
+                  <div id="homeCrumb" data-i18n-html="crumb.ops"><strong>Operations</strong> — choose a dashboard</div>
+                  <button class="home-back" id="homeBackInline" aria-label="Back" data-i18n="home.back">← Back</button>
                 </div>
 
                 <div class="cat-grid" id="homeOps" style="display:none;">
-                  <button class="tile" data-home-go="p-weekly"><div class="ico">📊</div><div class="name">Weekly Summary</div><div class="meta">Targets + actuals</div></button>
-                  <button class="tile" data-home-go="p-seeding"><div class="ico">🌱</div><div class="name">Seeding</div><div class="meta">Trays & schedule</div></button>
-                  <button class="tile" data-home-go="p-transplant"><div class="ico">🪴</div><div class="name">Transplant</div><div class="meta">Moves & counts</div></button>
-                  <button class="tile" data-home-go="p-harvest"><div class="ico">✂️</div><div class="name">Harvest</div><div class="meta">Cut plans</div></button>
-                  <button class="tile" data-home-go="p-packing"><div class="ico">📦</div><div class="name">Packing</div><div class="meta">Pack plan</div></button>
-                  <button class="tile" data-home-go="p-inventory"><div class="ico">📦</div><div class="name">S&amp;H Inventory</div><div class="meta">Stock view</div></button>
-                  <button class="tile" data-home-go="p-shipments"><div class="ico">🚚</div><div class="name">Shipments</div><div class="meta">Forward sales</div></button>
-                  <button class="tile" data-home-go="p-sanitation"><div class="ico">🧼</div><div class="name">Sanitation</div><div class="meta">Checklists</div></button>
+                  <button class="tile" data-home-go="p-weekly"><div class="ico">📊</div><div class="name" data-i18n="tile.weekly.name">Weekly Summary</div><div class="meta" data-i18n="tile.weekly.meta">Targets + actuals</div></button>
+                  <button class="tile" data-home-go="p-seeding"><div class="ico">🌱</div><div class="name" data-i18n="tile.seeding.name">Seeding</div><div class="meta" data-i18n="tile.seeding.meta">Trays & schedule</div></button>
+                  <button class="tile" data-home-go="p-transplant"><div class="ico">🪴</div><div class="name" data-i18n="tile.transplant.name">Transplant</div><div class="meta" data-i18n="tile.transplant.meta">Moves & counts</div></button>
+                  <button class="tile" data-home-go="p-harvest"><div class="ico">✂️</div><div class="name" data-i18n="tile.harvest.name">Harvest</div><div class="meta" data-i18n="tile.harvest.meta">Cut plans</div></button>
+                  <button class="tile" data-home-go="p-packing"><div class="ico">📦</div><div class="name" data-i18n="tile.packing.name">Packing</div><div class="meta" data-i18n="tile.packing.meta">Pack plan</div></button>
+                  <button class="tile" data-home-go="p-inventory"><div class="ico">📦</div><div class="name" data-i18n="tile.inventory.name">S&amp;H Inventory</div><div class="meta" data-i18n="tile.inventory.meta">Stock view</div></button>
+                  <button class="tile" data-home-go="p-shipments"><div class="ico">🚚</div><div class="name" data-i18n="tile.shipments.name">Shipments</div><div class="meta" data-i18n="tile.shipments.meta">Forward sales</div></button>
+                  <button class="tile" data-home-go="p-sanitation"><div class="ico">🧼</div><div class="name" data-i18n="tile.sanitation.name">Sanitation</div><div class="meta" data-i18n="tile.sanitation.meta">Checklists</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeSales" style="display:none;">
-                  <button class="tile disabled" disabled><div class="ico">💵</div><div class="name">Sales Overview</div><div class="meta">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">📈</div><div class="name">Forecast</div><div class="meta">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">📣</div><div class="name">Campaigns</div><div class="meta">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">💵</div><div class="name" data-i18n="tile.sales-overview.name">Sales Overview</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">📈</div><div class="name" data-i18n="tile.forecast.name">Forecast</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">📣</div><div class="name" data-i18n="tile.campaigns.name">Campaigns</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeTeam" style="display:none;">
-                  <button class="tile disabled" disabled><div class="ico">👥</div><div class="name">Schedule</div><div class="meta">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name">SOPs</div><div class="meta">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">✅</div><div class="name">Issues</div><div class="meta">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">👥</div><div class="name" data-i18n="tile.schedule.name">Schedule</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name" data-i18n="tile.sops.name">SOPs</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">✅</div><div class="name" data-i18n="tile.issues.name">Issues</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
                 </div>
               </div>
 
@@ -827,10 +971,10 @@
       <section class="panel" id="p-data" data-hidehead="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Data Input Dashboard</h2>
-            <p>Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
+            <h2 data-i18n="panel.data.title">Data Input Dashboard</h2>
+            <p data-i18n="panel.data.desc">Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>07.0 Data Input Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.data.file">📄 file: <code>07.0 Data Input Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-data" data-src="07.0 Data Input Dashboard.html?v=refresh1"></iframe>
@@ -840,10 +984,10 @@
       <section class="panel" id="p-weekly" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Weekly Summary Dashboard</h2>
-            <p>Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
+            <h2 data-i18n="panel.weekly.title">Weekly Summary Dashboard</h2>
+            <p data-i18n-html="panel.weekly.desc">Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>06.0 Weekly Summary Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.weekly.file">📄 file: <code>06.0 Weekly Summary Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-weekly" data-src="06.0 Weekly Summary Dashboard.html"></iframe>
@@ -853,10 +997,10 @@
       <section class="panel" id="p-seeding" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Seeding Dashboard</h2>
-            <p>Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets["Master Grow"]</code>.</p>
+            <h2 data-i18n="panel.seeding.title">Seeding Dashboard</h2>
+            <p data-i18n-html="panel.seeding.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets["Master Grow"]</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>01.0 Seeding Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.seeding.file">📄 file: <code>01.0 Seeding Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-seeding" data-src="01.0 Seeding Dashboard.html"></iframe>
@@ -866,10 +1010,10 @@
       <section class="panel" id="p-transplant" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Transplant Dashboard</h2>
-            <p>Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+            <h2 data-i18n="panel.transplant.title">Transplant Dashboard</h2>
+            <p data-i18n-html="panel.transplant.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>02.0 Transplant Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.transplant.file">📄 file: <code>02.0 Transplant Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-transplant" data-src="02.0 Transplant Dashboard.html"></iframe>
@@ -879,10 +1023,10 @@
       <section class="panel" id="p-harvest" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Harvest Dashboard</h2>
-            <p>Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+            <h2 data-i18n="panel.harvest.title">Harvest Dashboard</h2>
+            <p data-i18n-html="panel.harvest.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>03.0 Harvest Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.harvest.file">📄 file: <code>03.0 Harvest Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-harvest" data-src="03.0 Harvest Dashboard.html"></iframe>
@@ -892,10 +1036,10 @@
       <section class="panel" id="p-packing" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Packing Dashboard</h2>
-            <p>Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets["Master Pack"]</code>.</p>
+            <h2 data-i18n="panel.packing.title">Packing Dashboard</h2>
+            <p data-i18n-html="panel.packing.desc">Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets["Master Pack"]</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>04.0 Packing Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.packing.file">📄 file: <code>04.0 Packing Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-packing" data-src="04.0 Packing Dashboard.html"></iframe>
@@ -905,10 +1049,10 @@
       <section class="panel" id="p-shipments" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Shipments (Forward Sales) Dashboard</h2>
-            <p>Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).</p>
+            <h2 data-i18n="panel.shipments.title">Shipments (Forward Sales) Dashboard</h2>
+            <p data-i18n-html="panel.shipments.desc">Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>09.0 Shipments Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.shipments.file">📄 file: <code>09.0 Shipments Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-shipments" data-src="09.0 Shipments Dashboard.html"></iframe>
@@ -918,10 +1062,10 @@
       <section class="panel" id="p-sanitation" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>Sanitation Dashboard</h2>
-            <p>Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+            <h2 data-i18n="panel.sanitation.title">Sanitation Dashboard</h2>
+            <p data-i18n-html="panel.sanitation.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>05.0 Sanitation Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.sanitation.file">📄 file: <code>05.0 Sanitation Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-sanitation" data-src="05.0 Sanitation Dashboard.html"></iframe>
@@ -931,10 +1075,10 @@
       <section class="panel" id="p-inventory" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2>S&amp;H Inventory Dashboard</h2>
-            <p>Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.</p>
+            <h2 data-i18n="panel.inventory.title">S&amp;H Inventory Dashboard</h2>
+            <p data-i18n-html="panel.inventory.desc">Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>08.0 S&amp;H Inventory Dashboard.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.inventory.file">📄 file: <code>08.0 S&amp;H Inventory Dashboard.html</code></div>
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-inventory" data-src="08.0 S&amp;H Inventory Dashboard.html"></iframe>
@@ -945,37 +1089,63 @@
 
   <div class="launcher-overlay" id="launcherOverlay" aria-hidden="true"></div>
 
-  <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="Dashboard menu">
-    <div class="launcher-top">
-      <button class="launcher-btn" id="btnLauncherBack" aria-label="Back" title="Back" style="display:none;">←</button>
-      <button class="launcher-btn" id="btnLauncherClose" aria-label="Close menu" title="Close">✕</button>
-    </div>
-
-    <div class="screen active" id="screen-home">
-      <div class="crumb" style="border-bottom:none;margin-bottom:0;padding-bottom:10px;">
-        <span class="dot"></span>
-        <span><strong>Dashboards</strong> — choose a category</span>
+    <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="Dashboard menu">
+      <div class="launcher-top">
+        <button class="launcher-btn" id="btnLauncherBack" aria-label="Back" title="Back" style="display:none;" data-i18n="home.back">←</button>
+        <button class="launcher-btn" id="btnLauncherClose" aria-label="Close menu" title="Close" data-i18n="launcher.close">✕</button>
       </div>
+
+      <div class="screen active" id="screen-home">
 
       <div class="launcher-home-grid">
         <button class="big-card" data-action="open-category" data-category="ops">
-          <div class="row"><div class="ico">⚙️</div><div class="name">Operations</div></div>
-          <div class="meta">Weekly, seeding, transplant, harvest, packing, inventory, shipments, sanitation</div>
+          <div class="row"><div class="ico">⚙️</div><div class="name" data-i18n="card.ops.title">Operations</div></div>
+          <div class="meta" data-i18n="card.ops.meta">End-to-end operational planning and execution across production, inventory, and fulfillment</div>
         </button>
 
         <button class="big-card" data-action="open-category" data-category="sales">
-          <div class="row"><div class="ico">📈</div><div class="name">Sales &amp; Marketing</div></div>
-          <div class="meta">Coming soon</div>
+          <div class="row"><div class="ico">📈</div><div class="name" data-i18n="card.sales.title">Sales &amp; Marketing</div></div>
+          <div class="meta" data-i18n="card.sales.meta">Coming soon: Sales performance, forecasting, and customer demand insights</div>
         </button>
 
         <button class="big-card" data-action="open-category" data-category="team">
-          <div class="row"><div class="ico">👥</div><div class="name">Team Tools</div></div>
-          <div class="meta">Internal utilities</div>
+          <div class="row"><div class="ico">👥</div><div class="name" data-i18n="card.team.title">Team Tools</div></div>
+          <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
         </button>
 
         <button class="big-card danger" data-action="go-panel" data-target="p-data">
-          <div class="row"><div class="ico">📥</div><div class="name">Data Input</div></div>
-          <div class="meta">Write / publish master data</div>
+          <div class="row"><div class="ico">📥</div><div class="name" data-i18n="card.data.title">Data Input</div></div>
+          <div class="meta" data-i18n="card.data.meta">Authoritative data uploads for company dashboards</div>
+        </button>
+
+        <button class="big-card disabled" disabled>
+          <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
+          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        </button>
+
+        <button class="big-card disabled" disabled>
+          <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
+          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        </button>
+
+        <button class="big-card disabled" disabled>
+          <div class="row"><div class="ico">🛠️</div><div class="name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div></div>
+          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        </button>
+
+        <button class="big-card disabled" disabled>
+          <div class="row"><div class="ico">💰</div><div class="name" data-i18n="card.finances.title">Finances</div></div>
+          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        </button>
+
+        <button class="big-card disabled" disabled>
+          <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
+          <div class="meta" data-i18n="common.coming">Coming soon</div>
+        </button>
+
+        <button class="big-card disabled" disabled>
+          <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
+          <div class="meta" data-i18n="common.coming">Coming soon</div>
         </button>
       </div>
     </div>
@@ -983,30 +1153,30 @@
     <div class="screen" id="screen-category">
       <div class="crumb">
         <span class="dot"></span>
-        <span id="crumbText"><strong>Category</strong></span>
+        <span id="crumbText" data-i18n-html="launcher.category"><strong>Category</strong></span>
       </div>
 
       <div class="launcher-cat-grid" id="cat-ops" style="display:none;">
-        <button class="tile" data-action="go-panel" data-target="p-weekly"><div class="ico">📊</div><div class="name">Weekly Summary</div><div class="meta">Targets + actuals</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-seeding"><div class="ico">🌱</div><div class="name">Seeding</div><div class="meta">Trays & schedule</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-transplant"><div class="ico">🪴</div><div class="name">Transplant</div><div class="meta">Moves & counts</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-harvest"><div class="ico">✂️</div><div class="name">Harvest</div><div class="meta">Cut plans</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-packing"><div class="ico">📦</div><div class="name">Packing</div><div class="meta">Pack plan</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-inventory"><div class="ico">📦</div><div class="name">S&amp;H Inventory</div><div class="meta">Stock view</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-shipments"><div class="ico">🚚</div><div class="name">Shipments</div><div class="meta">Forward sales</div></button>
-        <button class="tile" data-action="go-panel" data-target="p-sanitation"><div class="ico">🧼</div><div class="name">Sanitation</div><div class="meta">Checklists</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-weekly"><div class="ico">📊</div><div class="name" data-i18n="tile.weekly.name">Weekly Summary</div><div class="meta" data-i18n="tile.weekly.meta">Targets + actuals</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-seeding"><div class="ico">🌱</div><div class="name" data-i18n="tile.seeding.name">Seeding</div><div class="meta" data-i18n="tile.seeding.meta">Trays & schedule</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-transplant"><div class="ico">🪴</div><div class="name" data-i18n="tile.transplant.name">Transplant</div><div class="meta" data-i18n="tile.transplant.meta">Moves & counts</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-harvest"><div class="ico">✂️</div><div class="name" data-i18n="tile.harvest.name">Harvest</div><div class="meta" data-i18n="tile.harvest.meta">Cut plans</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-packing"><div class="ico">📦</div><div class="name" data-i18n="tile.packing.name">Packing</div><div class="meta" data-i18n="tile.packing.meta">Pack plan</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-inventory"><div class="ico">📦</div><div class="name" data-i18n="tile.inventory.name">S&amp;H Inventory</div><div class="meta" data-i18n="tile.inventory.meta">Stock view</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-shipments"><div class="ico">🚚</div><div class="name" data-i18n="tile.shipments.name">Shipments</div><div class="meta" data-i18n="tile.shipments.meta">Forward sales</div></button>
+        <button class="tile" data-action="go-panel" data-target="p-sanitation"><div class="ico">🧼</div><div class="name" data-i18n="tile.sanitation.name">Sanitation</div><div class="meta" data-i18n="tile.sanitation.meta">Checklists</div></button>
       </div>
 
       <div class="launcher-cat-grid" id="cat-sales" style="display:none;">
-        <button class="tile disabled" disabled><div class="ico">💵</div><div class="name">Sales Overview</div><div class="meta">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">📈</div><div class="name">Forecast</div><div class="meta">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">📣</div><div class="name">Campaigns</div><div class="meta">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">💵</div><div class="name" data-i18n="tile.sales-overview.name">Sales Overview</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">📈</div><div class="name" data-i18n="tile.forecast.name">Forecast</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">📣</div><div class="name" data-i18n="tile.campaigns.name">Campaigns</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
       </div>
 
       <div class="launcher-cat-grid" id="cat-team" style="display:none;">
-        <button class="tile disabled" disabled><div class="ico">👥</div><div class="name">Schedule</div><div class="meta">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name">SOPs</div><div class="meta">Placeholder</div></button>
-        <button class="tile disabled" disabled><div class="ico">✅</div><div class="name">Issues</div><div class="meta">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">👥</div><div class="name" data-i18n="tile.schedule.name">Schedule</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name" data-i18n="tile.sops.name">SOPs</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+        <button class="tile disabled" disabled><div class="ico">✅</div><div class="name" data-i18n="tile.issues.name">Issues</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
       </div>
     </div>
   </div>
@@ -1018,6 +1188,222 @@
 
   <script>
     (function(){
+      const I18N = {
+        en: {
+          "brand.title":"Company Dashboards",
+          "home.title":"Dashboards",
+          "home.subtitle":"Choose a category to access company dashboards",
+          "home.back":"← Back",
+          "launcher.close":"✕",
+          "launcher.homecrumb":"<strong>Dashboards</strong> — choose a category",
+          "launcher.category":"<strong>Category</strong>",
+          "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
+          "crumb.sales":"<strong>Sales &amp; Marketing</strong> — coming soon",
+          "crumb.team":"<strong>Team Tools</strong> — internal utilities",
+          "card.ops.title":"Operations",
+          "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
+          "card.sales.title":"Sales & Marketing",
+          "card.sales.meta":"Coming soon: Sales performance, forecasting, and customer demand insights",
+          "card.team.title":"Team Tools",
+          "card.team.meta":"Internal tools for scheduling, coordination, and team workflows",
+          "card.data.title":"Data Input",
+          "card.data.meta":"Authoritative data uploads for company dashboards",
+          "common.coming":"Coming soon",
+          "card.growing.title":"Growing",
+          "card.growing.meta":"Coming soon: Crop planning, cultivation schedules, and yield performance across all grow systems",
+          "card.foodsafety.title":"Food Safety",
+          "card.foodsafety.meta":"Coming soon: Compliance, audits, and food safety controls across production and packing",
+          "card.maintenance.title":"Maintenance & Facilities",
+          "card.maintenance.meta":"Coming soon: Equipment maintenance, facility readiness, and infrastructure oversight",
+          "card.finances.title":"Finances",
+          "card.finances.meta":"Coming soon: Financial performance, costs, budgeting, and operational profitability",
+          "card.hr.title":"HR",
+          "card.hr.meta":"Coming soon: Staffing, scheduling, payroll, and people operations",
+          "card.procurement.title":"Procurement & Inventory",
+          "card.procurement.meta":"Coming soon: Purchasing, supplies, inventory levels, and vendor coordination",
+          "card.growing.title":"Growing",
+          "card.growing.meta":"Crop planning, cultivation schedules, and yield performance across all grow systems",
+          "card.foodsafety.title":"Food Safety",
+          "card.foodsafety.meta":"Compliance, audits, and food safety controls across production and packing",
+          "card.maintenance.title":"Maintenance & Facilities",
+          "card.maintenance.meta":"Equipment maintenance, facility readiness, and infrastructure oversight",
+          "card.finances.title":"Finances",
+          "card.finances.meta":"Financial performance, costs, budgeting, and operational profitability",
+          "card.hr.title":"HR",
+          "card.hr.meta":"Staffing, scheduling, payroll, and people operations",
+          "card.procurement.title":"Procurement & Inventory",
+          "card.procurement.meta":"Purchasing, supplies, inventory levels, and vendor coordination",
+          "tab.weekly":"Weekly Summary",
+          "tab.seeding":"Seeding",
+          "tab.transplant":"Transplant",
+          "tab.harvest":"Harvest",
+          "tab.packing":"Packing",
+          "tab.shipments":"Shipments",
+          "tab.sanitation":"Sanitation",
+          "tab.inventory":"S&H Inventory",
+          "tile.weekly.name":"Weekly Summary",
+          "tile.weekly.meta":"Targets + actuals",
+          "tile.seeding.name":"Seeding",
+          "tile.seeding.meta":"Trays & schedule",
+          "tile.transplant.name":"Transplant",
+          "tile.transplant.meta":"Moves & counts",
+          "tile.harvest.name":"Harvest",
+          "tile.harvest.meta":"Cut plans",
+          "tile.packing.name":"Packing",
+          "tile.packing.meta":"Pack plan",
+          "tile.inventory.name":"S&H Inventory",
+          "tile.inventory.meta":"Stock view",
+          "tile.shipments.name":"Shipments",
+          "tile.shipments.meta":"Forward sales",
+          "tile.sanitation.name":"Sanitation",
+          "tile.sanitation.meta":"Checklists",
+          "tile.sales-overview.name":"Sales Overview",
+          "tile.forecast.name":"Forecast",
+          "tile.campaigns.name":"Campaigns",
+          "tile.schedule.name":"Schedule",
+          "tile.sops.name":"SOPs",
+          "tile.issues.name":"Issues",
+          "tile.placeholder":"Placeholder",
+          "panel.data.title":"Data Input Dashboard",
+          "panel.data.desc":"Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).",
+          "panel.data.file":"📄 file: <code>07.0 Data Input Dashboard.html</code>",
+          "panel.weekly.title":"Weekly Summary Dashboard",
+          "panel.weekly.desc":"Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).",
+          "panel.weekly.file":"📄 file: <code>06.0 Weekly Summary Dashboard.html</code>",
+          "panel.seeding.title":"Seeding Dashboard",
+          "panel.seeding.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
+          "panel.seeding.file":"📄 file: <code>01.0 Seeding Dashboard.html</code>",
+          "panel.transplant.title":"Transplant Dashboard",
+          "panel.transplant.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
+          "panel.transplant.file":"📄 file: <code>02.0 Transplant Dashboard.html</code>",
+          "panel.harvest.title":"Harvest Dashboard",
+          "panel.harvest.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
+          "panel.harvest.file":"📄 file: <code>03.0 Harvest Dashboard.html</code>",
+          "panel.packing.title":"Packing Dashboard",
+          "panel.packing.desc":"Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
+          "panel.packing.file":"📄 file: <code>04.0 Packing Dashboard.html</code>",
+          "panel.shipments.title":"Shipments (Forward Sales) Dashboard",
+          "panel.shipments.desc":"Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).",
+          "panel.shipments.file":"📄 file: <code>09.0 Shipments Dashboard.html</code>",
+          "panel.sanitation.title":"Sanitation Dashboard",
+          "panel.sanitation.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
+          "panel.sanitation.file":"📄 file: <code>05.0 Sanitation Dashboard.html</code>",
+          "panel.inventory.title":"S&H Inventory Dashboard",
+          "panel.inventory.desc":"Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
+          "panel.inventory.file":"📄 file: <code>08.0 S&H Inventory Dashboard.html</code>"
+        },
+        es: {
+          "brand.title":"Paneles de la empresa",
+          "home.title":"Paneles",
+          "home.subtitle":"Elige una categoría para acceder a los paneles de la empresa",
+          "home.back":"← Volver",
+          "launcher.close":"✕",
+          "launcher.homecrumb":"<strong>Paneles</strong> — elige una categoría",
+          "launcher.category":"<strong>Categoría</strong>",
+          "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
+          "crumb.sales":"<strong>Ventas y marketing</strong> — próximamente",
+          "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
+          "card.ops.title":"Operaciones",
+          "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
+          "card.sales.title":"Ventas y marketing",
+          "card.sales.meta":"Próximamente: rendimiento de ventas, pronósticos y demanda de clientes",
+          "card.team.title":"Herramientas de equipo",
+          "card.team.meta":"Herramientas internas para programación, coordinación y flujos de trabajo del equipo",
+          "card.data.title":"Carga de datos",
+          "card.data.meta":"Cargas de datos autorizadas para los paneles de la empresa",
+          "common.coming":"Próximamente",
+          "card.growing.title":"Crecimiento",
+          "card.growing.meta":"Próximamente: planificación de cultivos, calendarios de cultivo y desempeño de rendimientos en todos los sistemas",
+          "card.foodsafety.title":"Inocuidad alimentaria",
+          "card.foodsafety.meta":"Próximamente: cumplimiento, auditorías y controles de inocuidad en producción y empaque",
+          "card.maintenance.title":"Mantenimiento y facilidades",
+          "card.maintenance.meta":"Próximamente: mantenimiento de equipos, preparación de instalaciones y supervisión de infraestructura",
+          "card.finances.title":"Finanzas",
+          "card.finances.meta":"Próximamente: desempeño financiero, costos, presupuestos y rentabilidad operativa",
+          "card.hr.title":"RR. HH.",
+          "card.hr.meta":"Próximamente: personal, programación, nómina y operaciones de personas",
+          "card.procurement.title":"Compras e inventario",
+          "card.procurement.meta":"Próximamente: compras, suministros, niveles de inventario y coordinación con proveedores",
+          "tab.weekly":"Resumen semanal",
+          "tab.seeding":"Siembra",
+          "tab.transplant":"Trasplante",
+          "tab.harvest":"Cosecha",
+          "tab.packing":"Empaque",
+          "tab.shipments":"Despachos",
+          "tab.sanitation":"Sanidad",
+          "tab.inventory":"Inventario S&H",
+          "tile.weekly.name":"Resumen semanal",
+          "tile.weekly.meta":"Objetivos y resultados",
+          "tile.seeding.name":"Siembra",
+          "tile.seeding.meta":"Bandejas y calendario",
+          "tile.transplant.name":"Trasplante",
+          "tile.transplant.meta":"Movimientos y conteos",
+          "tile.harvest.name":"Cosecha",
+          "tile.harvest.meta":"Planes de corte",
+          "tile.packing.name":"Empaque",
+          "tile.packing.meta":"Plan de empaque",
+          "tile.inventory.name":"Inventario S&H",
+          "tile.inventory.meta":"Vista de existencias",
+          "tile.shipments.name":"Despachos",
+          "tile.shipments.meta":"Ventas futuras",
+          "tile.sanitation.name":"Sanidad",
+          "tile.sanitation.meta":"Listas de verificación",
+          "tile.sales-overview.name":"Resumen de ventas",
+          "tile.forecast.name":"Pronóstico",
+          "tile.campaigns.name":"Campañas",
+          "tile.schedule.name":"Calendario",
+          "tile.sops.name":"POE",
+          "tile.issues.name":"Incidencias",
+          "tile.placeholder":"Próximamente",
+          "panel.data.title":"Panel de carga de datos",
+          "panel.data.desc":"Carga la herramienta de datos y escribe Master Grow / Master Pack en localStorage (y puede publicar en Supabase vía Worker).",
+          "panel.data.file":"📄 archivo: <code>07.0 Data Input Dashboard.html</code>",
+          "panel.weekly.title":"Panel de resumen semanal",
+          "panel.weekly.desc":"Lee Master Grow + Master Pack de <code>localStorage</code> y construye un resumen semanal (objetivos, reales y %).",
+          "panel.weekly.file":"📄 archivo: <code>06.0 Weekly Summary Dashboard.html</code>",
+          "panel.seeding.title":"Panel de siembra",
+          "panel.seeding.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
+          "panel.seeding.file":"📄 archivo: <code>01.0 Seeding Dashboard.html</code>",
+          "panel.transplant.title":"Panel de trasplante",
+          "panel.transplant.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
+          "panel.transplant.file":"📄 archivo: <code>02.0 Transplant Dashboard.html</code>",
+          "panel.harvest.title":"Panel de cosecha",
+          "panel.harvest.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
+          "panel.harvest.file":"📄 archivo: <code>03.0 Harvest Dashboard.html</code>",
+          "panel.packing.title":"Panel de empaque",
+          "panel.packing.desc":"Lee Master Pack de <code>localStorage</code> clave <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
+          "panel.packing.file":"📄 archivo: <code>04.0 Packing Dashboard.html</code>",
+          "panel.shipments.title":"Panel de despachos (ventas futuras)",
+          "panel.shipments.desc":"Lee líneas de ventas de la carga de Empaque (<code>campo_master_pack_v1</code>) y muestra lo que se despacha en o después de la fecha ancla (incluida).",
+          "panel.shipments.file":"📄 archivo: <code>09.0 Shipments Dashboard.html</code>",
+          "panel.sanitation.title":"Panel de sanidad",
+          "panel.sanitation.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
+          "panel.sanitation.file":"📄 archivo: <code>05.0 Sanitation Dashboard.html</code>",
+          "panel.inventory.title":"Panel de inventario S&H",
+          "panel.inventory.desc":"Lee Master Pack (preferido) + Master Grow (alterno) de <code>localStorage</code> claves <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
+          "panel.inventory.file":"📄 archivo: <code>08.0 S&H Inventory Dashboard.html</code>"
+        }
+      };
+      const LANG_KEY = "campo_lang";
+
+      function t(key, lang){
+        const use = (lang && I18N[lang]) ? lang : "en";
+        return I18N[use]?.[key] ?? I18N.en?.[key] ?? key;
+      }
+
+      function applyI18n(lang){
+        document.querySelectorAll("[data-i18n]").forEach(el => {
+          const k = el.getAttribute("data-i18n");
+          if (el.id === "homeCrumb" || el.id === "crumbText") return;
+          el.textContent = t(k, lang);
+        });
+        document.querySelectorAll("[data-i18n-html]").forEach(el => {
+          const k = el.getAttribute("data-i18n-html");
+          if (el.id === "homeCrumb" || el.id === "crumbText") return;
+          el.innerHTML = t(k, lang);
+        });
+      }
+
       const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
       const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
       const WORKER_GROW_URL   = `${WORKER_BASE}/data/master/grow.json`;
@@ -1049,6 +1435,8 @@
       const toastSub = document.getElementById("toastSub");
 
       const btnHome = document.getElementById("btnHome");
+      const btnLang = document.getElementById("btnLang");
+      const brandHome = document.getElementById("brandHome"); // ✅ NEW
 
       const btnLauncher = document.getElementById("btnLauncher");
       const btnLauncherClose = document.getElementById("btnLauncherClose");
@@ -1073,6 +1461,41 @@
       const homeBackBtn = document.getElementById("homeBackBtn");
 
       let toastTimer = null;
+      let currentLang = (localStorage.getItem(LANG_KEY) || "en").toLowerCase();
+      if (!I18N[currentLang]) currentLang = "en";
+
+      function refreshCrumbs(){
+        if (homeLevel2?.classList.contains("show")){
+          if (homeOps.style.display === "grid") homeCrumb.innerHTML = t("crumb.ops", currentLang);
+          else if (homeSales.style.display === "grid") homeCrumb.innerHTML = t("crumb.sales", currentLang);
+          else if (homeTeam.style.display === "grid") homeCrumb.innerHTML = t("crumb.team", currentLang);
+        }
+        if (crumbText){
+          if (launcherScreen === "category"){
+            if (catOps.style.display === "grid") crumbText.innerHTML = t("crumb.ops", currentLang);
+            else if (catSales.style.display === "grid") crumbText.innerHTML = t("crumb.sales", currentLang);
+            else if (catTeam.style.display === "grid") crumbText.innerHTML = t("crumb.team", currentLang);
+            else crumbText.innerHTML = t("launcher.category", currentLang);
+          } else {
+            crumbText.innerHTML = t("launcher.category", currentLang);
+          }
+        }
+      }
+
+      function updateLangButton(){
+        if (!btnLang) return;
+        btnLang.textContent = (currentLang === "en") ? "EN / ES" : "ES / EN";
+        btnLang.setAttribute("aria-label", currentLang === "en" ? "Switch to Spanish" : "Cambiar a inglés");
+        btnLang.setAttribute("title", btnLang.getAttribute("aria-label"));
+      }
+
+      function setLanguage(lang){
+        currentLang = I18N[lang] ? lang : "en";
+        localStorage.setItem(LANG_KEY, currentLang);
+        applyI18n(currentLang);
+        updateLangButton();
+        refreshCrumbs();
+      }
       function showToast(msg, sub, ok){
         if (!toast || !toastText || !toastSub) return;
         toast.classList.remove("ok","bad");
@@ -1247,19 +1670,20 @@
         homeTeam.style.display = "none";
 
         if (cat === "ops"){
-          homeCrumb.innerHTML = "<strong>Operations</strong> — choose a dashboard";
+          homeCrumb.innerHTML = t("crumb.ops", currentLang);
           homeOps.style.display = "grid";
         } else if (cat === "sales"){
-          homeCrumb.innerHTML = "<strong>Sales &amp; Marketing</strong> — coming soon";
+          homeCrumb.innerHTML = t("crumb.sales", currentLang);
           homeSales.style.display = "grid";
         } else if (cat === "team"){
-          homeCrumb.innerHTML = "<strong>Team Tools</strong> — internal utilities";
+          homeCrumb.innerHTML = t("crumb.team", currentLang);
           homeTeam.style.display = "grid";
         }
 
         homeLevel1.style.display = "none";
         homeLevel2.classList.add("show");
         homeBackBtn.style.display = "inline-flex";
+        refreshCrumbs();
       }
 
       document.getElementById("p-home").addEventListener("click", (e) => {
@@ -1290,16 +1714,17 @@
         catTeam.style.display = "none";
 
         if (cat === "ops"){
-          crumbText.innerHTML = "<strong>Operations</strong> — choose a dashboard";
+          crumbText.innerHTML = t("crumb.ops", currentLang);
           catOps.style.display = "grid";
         } else if (cat === "sales"){
-          crumbText.innerHTML = "<strong>Sales &amp; Marketing</strong> — coming soon";
+          crumbText.innerHTML = t("crumb.sales", currentLang);
           catSales.style.display = "grid";
         } else if (cat === "team"){
-          crumbText.innerHTML = "<strong>Team Tools</strong> — internal utilities";
+          crumbText.innerHTML = t("crumb.team", currentLang);
           catTeam.style.display = "grid";
         }
         showScreen("category");
+        refreshCrumbs();
       }
 
       function openLauncher(){
@@ -1323,10 +1748,16 @@
       }
 
       btnLauncher.addEventListener("click", toggleLauncher);
-      btnLauncherClose.addEventListener("click", closeLauncher);
+      document.getElementById("btnLauncherClose").addEventListener("click", closeLauncher);
       launcherOverlay.addEventListener("click", closeLauncher);
       window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLauncher(); });
-      btnLauncherBack.addEventListener("click", () => showScreen("home"));
+      document.getElementById("btnLauncherBack").addEventListener("click", () => showScreen("home"));
+      if (btnLang){
+        btnLang.addEventListener("click", () => {
+          const next = currentLang === "en" ? "es" : "en";
+          setLanguage(next);
+        });
+      }
 
       launcher.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
@@ -1351,11 +1782,22 @@
         }
       });
 
-      btnHome.addEventListener("click", () => {
+      /* ✅ Single “go home” function used by Home button + logo click */
+      function goHome(){
         closeLauncher();
         homeShowLevel1();
         activate("p-home");
-      });
+      }
+
+      btnHome.addEventListener("click", goHome);
+
+      /* ✅ Logo/brand clickable (mouse + keyboard) */
+      if (brandHome){
+        brandHome.addEventListener("click", goHome);
+        brandHome.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
+        });
+      }
 
       function touchPing(type){
         const now = String(Date.now());
@@ -1398,6 +1840,7 @@
         if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
       }, 1500);
 
+      setLanguage(currentLang);
       homeShowLevel1();
       activate("p-home");
       tryHydrateFromWorker();
