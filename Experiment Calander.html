@@ -1257,9 +1257,9 @@
       <div class="panel">
         <div class="mainHdr">
           <div class="viewTabs">
-            <div class="tab on" id="tabAgenda">Agenda</div>
+            <div class="tab" id="tabAgenda">Agenda</div>
             <div class="tab" id="tabMonth">Month</div>
-            <div class="tab" id="tabGantt">Gantt</div>
+            <div class="tab on" id="tabGantt">Gantt</div>
           </div>
           <div class="metaRow">
             <div class="togRow" style="margin:0 8px 0 0;">
@@ -1269,6 +1269,7 @@
               <div class="miniToggle harv on" data-k="harv"><span class="dot"></span>Harvest</div>
             </div>
             <span class="metaPill clickable" id="metaActiveMode"><span class="dot"></span><span id="metaActiveModeText">Active only</span></span>
+            <span class="metaPill" id="eventCountBadge">0 events</span>
             <span class="metaPill" id="metaRange">Start: — End: —</span>
             <span class="metaPill" id="metaGrouping">Grouping: milestone + pond</span>
           </div>
@@ -2751,6 +2752,9 @@
 
       if(saved.trim()) buildFromTSV();
       else render();
+
+      // Default to Gantt tab
+      setView("gantt");
 
       $("milestoneChips").addEventListener("click", (ev)=>{
         const chip = ev.target.closest(".chip");
