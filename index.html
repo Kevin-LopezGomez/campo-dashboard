@@ -871,9 +871,9 @@
                   <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
                 </button>
 
-                <button class="big-card" data-home-open="growing" aria-disabled="true">
+                <button class="big-card" data-home-open="growing">
                   <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
-                  <div class="meta" data-i18n="card.growing.meta">Coming soon: Crop planning, cultivation schedules, and yield performance across all grow systems</div>
+                  <div class="meta" data-i18n="card.growing.meta">Experiment calendar, cultivation timelines, and crop scheduling</div>
                 </button>
 
                 <button class="big-card" data-home-open="foodsafety" aria-disabled="true">
@@ -934,6 +934,10 @@
                   <button class="tile disabled" disabled><div class="ico">👥</div><div class="name" data-i18n="tile.schedule.name">Schedule</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
                   <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name" data-i18n="tile.sops.name">SOPs</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
                   <button class="tile disabled" disabled><div class="ico">✅</div><div class="name" data-i18n="tile.issues.name">Issues</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeGrowing" style="display:none;">
+                  <button class="tile" data-home-go="p-expcal"><div class="ico">🌿</div><div class="name" data-i18n="tile.expcal.name">Experiment Calendar</div><div class="meta" data-i18n="tile.expcal.meta">TSV paste + filters</div></button>
                 </div>
               </div>
 
@@ -1058,6 +1062,19 @@
           <iframe id="ifr-inventory" data-src="08.0 S&amp;H Inventory Dashboard.html"></iframe>
         </div>
       </section>
+
+      <section class="panel" id="p-expcal">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Experiment Calendar</h2>
+            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from Experiment Calander.html).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>Experiment Calander.html</code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-expcal" data-src="Experiment Calander.html"></iframe>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -1083,6 +1100,10 @@
         <button class="launch-app" data-action="open-category" data-category="team">
           <div class="app-ico">👥</div>
           <div class="app-name" data-i18n="card.team.title">Team Tools</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="growing">
+          <div class="app-ico">🌿</div>
+          <div class="app-name" data-i18n="card.growing.title">Growing</div>
         </button>
         <button class="launch-app danger" data-action="go-panel" data-target="p-data">
           <div class="app-ico">📥</div>
@@ -1139,6 +1160,10 @@
         <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.sops.name">SOPs</div></button>
         <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">✅</div><div class="app-name" data-i18n="tile.issues.name">Issues</div></button>
       </div>
+
+      <div class="launcher-grid" id="cat-growing" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-expcal"><div class="app-ico">🌿</div><div class="app-name" data-i18n="tile.expcal.name">Experiment Calendar</div></button>
+      </div>
     </div>
   </div>
 
@@ -1160,6 +1185,7 @@
           "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
           "crumb.sales":"<strong>Sales &amp; Marketing</strong> — coming soon",
           "crumb.team":"<strong>Team Tools</strong> — internal utilities",
+          "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
           "card.ops.title":"Operations",
           "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
           "card.sales.title":"Sales & Marketing",
@@ -1169,7 +1195,7 @@
           "card.data.title":"Data Input",
           "card.data.meta":"Authoritative data uploads for company dashboards",
           "card.growing.title":"Growing",
-          "card.growing.meta":"Coming soon: Crop planning, cultivation schedules, and yield performance across all grow systems",
+          "card.growing.meta":"Experiment calendar, cultivation schedules, and crop planning",
           "card.foodsafety.title":"Food Safety and Quality",
           "card.foodsafety.meta":"Coming soon: Compliance, audits, and food safety controls across production and packing",
           "card.maintenance.title":"Maintenance & Facilities",
@@ -1196,6 +1222,8 @@
           "tile.transplant.meta":"Moves & counts",
           "tile.harvest.name":"Harvest",
           "tile.harvest.meta":"Cut plans",
+          "tile.expcal.name":"Experiment Calendar",
+          "tile.expcal.meta":"TSV paste + filters",
           "tile.packing.name":"Packing",
           "tile.packing.meta":"Pack plan",
           "tile.inventory.name":"S&H Inventory",
@@ -1249,6 +1277,7 @@
           "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
           "crumb.sales":"<strong>Ventas y marketing</strong> — próximamente",
           "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
+          "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
           "card.ops.title":"Operaciones",
           "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
           "card.sales.title":"Ventas y mercadeo",
@@ -1258,7 +1287,7 @@
           "card.data.title":"Carga de datos",
           "card.data.meta":"Cargas de datos autorizadas para los paneles de la empresa",
           "card.growing.title":"Crecimiento",
-          "card.growing.meta":"Próximamente: planificación de cultivos, calendarios de cultivo y desempeño de rendimientos en todos los sistemas",
+          "card.growing.meta":"Calendario de experimentos, cronogramas de cultivo y planificación de cultivos",
           "card.foodsafety.title":"Inocuidad y calidad",
           "card.foodsafety.meta":"Próximamente: cumplimiento, auditorías y controles de inocuidad en producción y empaque",
           "card.maintenance.title":"Mantenimiento y facilidades",
@@ -1285,6 +1314,8 @@
           "tile.transplant.meta":"Movimientos y conteos",
           "tile.harvest.name":"Cosecha",
           "tile.harvest.meta":"Planes de corte",
+          "tile.expcal.name":"Calendario de experimentos",
+          "tile.expcal.meta":"Pega TSV + filtros",
           "tile.packing.name":"Empaque",
           "tile.packing.meta":"Plan de empaque",
           "tile.inventory.name":"Inventario S&H",
@@ -1393,12 +1424,14 @@
       const catOps = document.getElementById("cat-ops");
       const catSales = document.getElementById("cat-sales");
       const catTeam = document.getElementById("cat-team");
+      const catGrowing = document.getElementById("cat-growing");
 
       const homeLevel1 = document.getElementById("homeLevel1");
       const homeLevel2 = document.getElementById("homeLevel2");
       const homeOps = document.getElementById("homeOps");
       const homeSales = document.getElementById("homeSales");
       const homeTeam = document.getElementById("homeTeam");
+      const homeGrowing = document.getElementById("homeGrowing");
       const homeCrumb = document.getElementById("homeCrumb");
       const homeBackInline = document.getElementById("homeBackInline");
       const homeBackBtn = document.getElementById("homeBackBtn");
@@ -1597,6 +1630,7 @@
         homeOps.style.display = "none";
         homeSales.style.display = "none";
         homeTeam.style.display = "none";
+        if(homeGrowing) homeGrowing.style.display = "none";
 
         if (cat === "ops"){
           homeCrumb.innerHTML = t("crumb.ops", currentLang);
@@ -1607,6 +1641,9 @@
         } else if (cat === "team"){
           homeCrumb.innerHTML = t("crumb.team", currentLang);
           homeTeam.style.display = "grid";
+        } else if (cat === "growing" && homeGrowing){
+          homeCrumb.innerHTML = t("crumb.growing", currentLang);
+          homeGrowing.style.display = "grid";
         }
 
         homeLevel1.style.display = "none";
@@ -1649,6 +1686,7 @@
         catOps.style.display = "none";
         catSales.style.display = "none";
         catTeam.style.display = "none";
+        if(catGrowing) catGrowing.style.display = "none";
 
         if (cat === "ops"){
           catOps.style.display = "grid";
@@ -1659,6 +1697,9 @@
         } else if (cat === "team"){
           catTeam.style.display = "grid";
           if (launcherTitle) launcherTitle.textContent = t("card.team.title", currentLang);
+        } else if (cat === "growing" && catGrowing){
+          catGrowing.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.growing.title", currentLang);
         }
 
         showScreen("category");
@@ -1789,3 +1830,5 @@
   </script>
 </body>
 </html>
+          "tile.expcal.name":"Experiment Calendar",
+          "tile.expcal.meta":"TSV paste + filters",
