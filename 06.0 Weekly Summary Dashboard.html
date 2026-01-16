@@ -109,6 +109,33 @@
       padding:10px 12px;
       box-shadow: 0 18px 40px rgba(0,0,0,.35);
     }
+    #viewToggle{
+      padding:6px;
+      gap:6px;
+      background: rgba(2,6,23,.8);
+      border:1px solid rgba(74,222,128,.5);
+      box-shadow: 0 16px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(34,197,94,.2);
+    }
+    #viewToggle .pill{
+      padding:6px 14px;
+      font-size:.76rem;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      background: rgba(15,23,42,.9);
+      color:var(--sub);
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,.8);
+    }
+    #viewToggle .pill.good{
+      color:#ecfff4;
+      border-color: rgba(74,222,128,.85);
+      background: radial-gradient(circle at 30% 25%, rgba(34,197,94,.5), rgba(15,23,42,.95));
+      box-shadow: 0 10px 26px rgba(34,197,94,.35), inset 0 0 0 1px rgba(34,197,94,.35);
+    }
+    #viewToggle .pill.muted{
+      opacity:.65;
+    }
     .week-label{
       font-size:.75rem;color:var(--sub);
       text-transform:uppercase;letter-spacing:.14em;
@@ -1675,8 +1702,14 @@
       const datePicker = $("datePicker");
       const btnWeek = $("toggleWeekly");
       const btnDay = $("toggleDaily");
-      if (weekPicker) weekPicker.hidden = (viewMode !== "week");
-      if (datePicker) datePicker.hidden = (viewMode !== "day");
+      if (weekPicker) {
+        weekPicker.hidden = (viewMode !== "week");
+        weekPicker.style.display = (viewMode === "week") ? "flex" : "none";
+      }
+      if (datePicker) {
+        datePicker.hidden = (viewMode !== "day");
+        datePicker.style.display = (viewMode === "day") ? "flex" : "none";
+      }
       if (btnWeek) {
         btnWeek.classList.add("pill");
         btnWeek.classList.toggle("good", viewMode === "week");
@@ -1692,7 +1725,7 @@
     function render(){
       const title = $("panelTitle");
       if (viewMode === "day") {
-        const dObj = parseAnyDate(selectedDateISO);
+        const dObj = parseISODateLocal(selectedDateISO) || parseAnyDate(selectedDateISO);
         const dayLabel = dObj ? formatDayPill(dObj) : "—";
         if (title) title.textContent = "Day " + dayLabel;
 
