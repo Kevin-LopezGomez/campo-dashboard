@@ -628,6 +628,16 @@
       return `${mm}/${dd}/${yyyy}`;
     }
 
+    function getCurrentISOWeek(){
+      const now = new Date();
+      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return String(weekNum);
+    }
+
     function parseTimeToMinutes(v){
       if (v === null || v === undefined) return NaN;
 
@@ -1323,15 +1333,17 @@
       if (!sel) return;
 
       const current = weekNumFromCell(selectedWeek);
+      const currentValid = !!(current && WEEKS.includes(current));
 
       sel.innerHTML = WEEKS.map(w => `<option value="${String(w)}">Week ${String(w)}</option>`).join("");
 
-      if (current && WEEKS.includes(current)) {
+      if (currentValid) {
         selectedWeek = current;
         sel.value = current;
       } else {
-        const last = WEEKS[WEEKS.length-1];
-        selectedWeek = last || "";
+        const isoWeek = getCurrentISOWeek();
+        const fallback = WEEKS.includes(isoWeek) ? isoWeek : (WEEKS[WEEKS.length-1] || "");
+        selectedWeek = fallback;
         sel.value = selectedWeek;
       }
     }
