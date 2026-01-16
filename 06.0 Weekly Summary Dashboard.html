@@ -336,9 +336,19 @@
           <div class="chip" id="chip-pack"><span class="chip-dot"></span><span>Pack: –</span></div>
           <div class="chip" id="chip-warn" style="display:none;"><span class="chip-danger-dot"></span><span>Warnings</span></div>
 
-          <div class="week-picker">
+          <div class="week-picker" id="viewToggle">
+            <button class="pill good" id="toggleWeekly" type="button">Weekly</button>
+            <button class="pill muted" id="toggleDaily" type="button">Daily</button>
+          </div>
+
+          <div class="week-picker" id="weekPicker">
             <div class="week-label">Week</div>
             <select id="weekSelect"></select>
+          </div>
+
+          <div class="week-picker" id="datePicker" hidden>
+            <div class="week-label">Day</div>
+            <input id="dateSelect" type="date" />
           </div>
         </div>
       </header>
@@ -346,7 +356,7 @@
       <section class="kpi-grid" id="highlights">
         <article class="kpi-card">
           <div class="kpi-glow"></div>
-          <div class="kpi-label">Week</div>
+          <div class="kpi-label" id="hi-period-label">Week</div>
           <div class="kpi-value"><span id="hi-week">–</span></div>
           <div class="kpi-sub" id="hi-range">—</div>
         </article>
@@ -628,14 +638,77 @@
       return `${mm}/${dd}/${yyyy}`;
     }
 
-    function getCurrentISOWeek(){
-      const now = new Date();
-      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    function toISODateStr(date){
+      if (!(date instanceof Date) || isNaN(date.getTime())) return "";
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth()+1).padStart(2,"0");
+      const dd = String(date.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatDayPill(date){
+      const d = date instanceof Date ? date : parseAnyDate(date);
+      if (!d || isNaN(d.getTime())) return "—";
+      const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      return `${days[d.getDay()]} ${formatMMDDYYYY(d)}`;
+    }
+
+    function getISOWeekFromDate(date){
+      if (!(date instanceof Date) || isNaN(date.getTime())) return "";
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
       const dayNum = d.getUTCDay() || 7;
       d.setUTCDate(d.getUTCDate() + 4 - dayNum);
       const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
       const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
       return String(weekNum);
+    }
+
+    function getCurrentISOWeek(){
+      return getISOWeekFromDate(new Date());
+    }
+
+    function getMostRecentDataDateISO(growRows, packRows){
+      let latest = null;
+      const consider = (d) => {
+        if (!d || isNaN(d.getTime())) return;
+        if (!latest || d.getTime() > latest.getTime()) latest = d;
+      };
+
+      for (const r of (growRows||[])){
+        consider(parseAnyDate(r[H.DATE]));
+        consider(parseAnyDate(r[H.TRANS_DATE]));
+        consider(parseAnyDate(r[H.SAN_DATE]));
+      }
+
+      const packDateFields = [H.DATE, "Date", "Pack Date", "Ship Date"];
+      for (const r of (packRows||[])){
+        for (const f of packDateFields){
+          if (f in r) consider(parseAnyDate(r[f]));
+        }
+      }
+
+      return latest ? toISODateStr(latest) : "";
+    }
+
+    function hasAnyDataForDateISO(dateISO, growRows, packRows){
+      if (!dateISO) return false;
+      const isMatch = (val) => {
+        const d = parseAnyDate(val);
+        return d && toISODateStr(d) === dateISO;
+      };
+
+      for (const r of (growRows||[])){
+        if (isMatch(r[H.DATE]) || isMatch(r[H.TRANS_DATE]) || isMatch(r[H.SAN_DATE])) return true;
+      }
+
+      const packDateFields = [H.DATE, "Date", "Pack Date", "Ship Date"];
+      for (const r of (packRows||[])){
+        for (const f of packDateFields){
+          if (f in r && isMatch(r[f])) return true;
+        }
+      }
+
+      return false;
     }
 
     function parseTimeToMinutes(v){
@@ -981,6 +1054,219 @@
       };
     }
 
+    function computeDaySummary(dateISO, growRows, packRows){
+      const dObj = parseAnyDate(dateISO);
+      const iso = toISODateStr(dObj);
+      const wkNum = getISOWeekFromDate(dObj);
+      if (!dObj || !iso || !wkNum) {
+        return { wkNum:null, empty:true, reason:"Invalid day selection." };
+      }
+
+      const isDate = (val) => {
+        const d = parseAnyDate(val);
+        return d && toISODateStr(d) === iso;
+      };
+      const isSeedWeek = (val) => weekNumFromCell(val) === wkNum;
+
+      // ---- SEEDING ----
+      const seedRows = (growRows||[]).filter(r => isSeedWeek(r[H.SEED_WEEK]));
+      const flatsCompleted = seedRows.reduce((s,r)=>s+parseNumber(r[H.FLATS_SEEDED]),0);
+      const flatsTarget = seedRows.reduce((s,r)=>s+parseNumber(r[H.TARGET_FLATS]),0);
+
+      // ---- TRANSPLANT ----
+      const transRows = (growRows||[]).filter(r => isDate(r[H.TRANS_DATE]));
+      const boardsTrans = transRows.reduce((s,r)=>s+parseNumber(r[H.BOARDS_TRANS]),0);
+      const boardsExpected = transRows.reduce((s,r)=>s+parseNumber(r[H.EXPECT_BOARDS]),0);
+      const plugsCompleted = boardsTrans * 127;
+      const plugsTarget = boardsExpected * 127;
+
+      // ---- TRANSPLANT TIME + AVG WORKERS ----
+      const dateCandidates = [H.TRANS_DATE, H.DATE, "Date"];
+      function getBestDate(row){
+        for (const h of dateCandidates){
+          if (h in row) {
+            const d = parseAnyDate(row[h]);
+            if (d) return d;
+          }
+        }
+        return null;
+      }
+
+      const dayMap = new Map();
+      for (const r of transRows){
+        const dObjRow = getBestDate(r);
+        const dayKey = dObjRow ? formatMMDDYYYY(dObjRow) : "";
+        const startMin = parseTimeToMinutes(r[H.TRANS_START]);
+        const finishMin = parseTimeToMinutes(r[H.TRANS_FINISH]);
+
+        const key = dayKey || "__NO_DATE__";
+        if (!dayMap.has(key)) dayMap.set(key, { minStart: NaN, maxFinish: NaN });
+
+        const d = dayMap.get(key);
+        if (Number.isFinite(startMin)) d.minStart = Number.isFinite(d.minStart) ? Math.min(d.minStart, startMin) : startMin;
+        if (Number.isFinite(finishMin)) d.maxFinish = Number.isFinite(d.maxFinish) ? Math.max(d.maxFinish, finishMin) : finishMin;
+      }
+
+      let weekHours = 0;
+      for (const d of dayMap.values()){
+        weekHours += spanHours(d.minStart, d.maxFinish);
+      }
+
+      const workersSum = transRows.reduce((s,r)=>{
+        const w = parseNumber(r[H.TRANS_WORKERS]);
+        return s + (w > 0 ? w : 0);
+      },0);
+      const workersCount = transRows.reduce((s,r)=> s + (parseNumber(r[H.TRANS_WORKERS])>0 ? 1 : 0), 0);
+      const avgWorkers = workersCount > 0 ? (workersSum / workersCount) : 0;
+
+      const boardsPerPersonPerHour_completed = (weekHours > 0 && avgWorkers > 0)
+        ? (boardsTrans / (avgWorkers * weekHours))
+        : NaN;
+
+      const boardsPerPersonPerHour_target = (weekHours > 0 && avgWorkers > 0)
+        ? (boardsExpected / (avgWorkers * weekHours))
+        : NaN;
+
+      // ---- HARVEST ----
+      const harvRows = (growRows||[]).filter(r => isDate(r[H.DATE]));
+      const harvestBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BOARDS]),0);
+      const harvestCut = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_CUT]),0);
+      const harvestWithWaste = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_WITH_WASTE]),0);
+
+      // ---- SANITATION ----
+      const sanRows = (growRows||[]).filter(r => isDate(r[H.SAN_DATE]));
+      const cleanedBoards = sanRows.reduce((s,r)=>s+parseNumber(r[H.CLEAN_BOARDS]),0);
+
+      // ---- BROKEN BOARDS (DAY): Sanitation + Transplant + Harvest ----
+      const brokenSanWeek   = sanRows.reduce((s,r)=>s+parseNumber(r[H.BROKEN_BOARDS]),0);
+      const brokenTransWeek = transRows.reduce((s,r)=>s+parseNumber(r[H.TRANS_BROKEN]),0);
+      const brokenHarvWeek  = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BROKEN]),0);
+      const brokenBoards = brokenSanWeek + brokenTransWeek + brokenHarvWeek;
+
+      // ---- BROKEN BOARDS (CUMULATIVE up to selected day) ----
+      const baseDate = parseAnyDate(BOARD_INV_BASE_DATE_STR);
+      const weekEnd = dObj;
+
+      const inRange = (d) => {
+        if (!baseDate || !d) return false;
+        const t = d.getTime();
+        return t >= baseDate.getTime() && t <= weekEnd.getTime();
+      };
+
+      const brokenSanSince = (growRows||[])
+        .filter(r => inRange(parseAnyDate(r[H.SAN_DATE])))
+        .reduce((s,r)=> s + parseNumber(r[H.BROKEN_BOARDS]), 0);
+
+      const brokenTransSince = (growRows||[])
+        .filter(r => inRange(parseAnyDate(r[H.TRANS_DATE])))
+        .reduce((s,r)=> s + parseNumber(r[H.TRANS_BROKEN]), 0);
+
+      const brokenHarvSince = (growRows||[])
+        .filter(r => inRange(parseAnyDate(r[H.DATE])))
+        .reduce((s,r)=> s + parseNumber(r[H.HARV_BROKEN]), 0);
+
+      const brokenSinceBaseline = brokenSanSince + brokenTransSince + brokenHarvSince;
+      const boardInvRemaining = Math.max(0, BOARD_INV_BASE_COUNT - brokenSinceBaseline);
+
+      // ---- AVG BROKEN (Last 5 weeks, excludes current week) ----
+      const wkN = parseInt(wkNum, 10);
+      const last5 = [];
+      if (Number.isFinite(wkN)) {
+        for (let i = 1; i <= 5; i++){
+          const w = wkN - i;
+          if (w > 0) last5.push(w);
+        }
+      }
+      const last5BrokenValues = last5.map(w => computeWeeklyBrokenBoards(String(w), growRows));
+      const last5Avg = last5BrokenValues.length
+        ? last5BrokenValues.reduce((a,b)=>a+b,0) / last5BrokenValues.length
+        : NaN;
+
+      // ---- PACKING (Pack) ----
+      const packDateFields = [H.DATE, "Date", "Pack Date", "Ship Date"];
+      const packRowsD = (packRows||[]).filter(r => packDateFields.some(f => (f in r) && isDate(r[f])));
+      let cases5=0, units5=0, lbs5=0;
+      let cases10=0, units10=0, lbs10=0;
+      let lbsAll = 0;
+
+      for (const r of packRowsD){
+        const t = skuType(r[H.SKU]);
+        const cases = parseNumber(r[H.CASES]);
+        if (!t || !cases) continue;
+        const units = cases * (PACKS_PER_CASE[t] || 0);
+        const lbs = units * (LB_PER_UNIT[t] || 0);
+
+        lbsAll += lbs;
+        if (t === "5OZ"){ cases5 += cases; units5 += units; lbs5 += lbs; }
+        if (t === "10OZ"){ cases10 += cases; units10 += units; lbs10 += lbs; }
+      }
+
+      // ---- SHIPPING (Pack) ----
+      let shipReceived=0, shipDonation=0, shipWaste=0, shipSales=0;
+      for (const r of packRowsD){
+        const lbs = parseNumber(r[H.LBS_SHIPPED]);
+        if (!lbs) continue;
+        const loc = String(r[H.LOC_SHIPPED] ?? "").trim();
+        const locU = loc.toUpperCase();
+
+        if (!locU) continue;
+        if (locU === RECEIVED_LOCATION) shipReceived += lbs;
+        else if (locU === WASTE_LOCATION) shipWaste += lbs;
+        else if (DONATION_LOCATIONS.has(locU)) shipDonation += lbs;
+        else shipSales += lbs;
+      }
+
+      const hasAny =
+        seedRows.length || transRows.length || harvRows.length || sanRows.length || packRowsD.length;
+
+      return {
+        wkNum,
+        empty: !hasAny,
+        counts: { seed: seedRows.length, trans: transRows.length, harv: harvRows.length, san: sanRows.length, pack: packRowsD.length },
+
+        seeding: { completed: flatsCompleted, target: flatsTarget, unit:"Flats" },
+        transplant: { completed: plugsCompleted, target: plugsTarget, unit:"Plugs" },
+
+        transplantRate: {
+          completed: boardsPerPersonPerHour_completed,
+          target: boardsPerPersonPerHour_target,
+          unit:"Boards"
+        },
+
+        harvestBoards,
+        harvestCut,
+        harvestWithWaste,
+
+        pack5: { cases: cases5, units: units5, lbs: lbs5 },
+        pack10:{ cases: cases10, units: units10, lbs: lbs10 },
+        packAllLbs: lbsAll,
+
+        ship: { received: shipReceived, sales: shipSales, donation: shipDonation, waste: shipWaste },
+
+        cleanedBoards,
+
+        brokenBoards,
+        brokenBreakdown: { sanitation: brokenSanWeek, transplant: brokenTransWeek, harvest: brokenHarvWeek },
+
+        boardInv: {
+          baseDate: BOARD_INV_BASE_DATE_STR,
+          baseCount: BOARD_INV_BASE_COUNT,
+          weekEnd,
+          brokenSinceBaseline,
+          brokenSinceBreakdown: { sanitation: brokenSanSince, transplant: brokenTransSince, harvest: brokenHarvSince },
+          remaining: boardInvRemaining
+        },
+
+        brokenAvg5: {
+          weeks: last5,
+          values: last5BrokenValues,
+          avg: last5Avg
+        },
+
+        aux: { weekHours, avgWorkers, boardsTrans, boardsExpected, transRowsCount: transRows.length }
+      };
+    }
+
     // =========================================================
     // RENDER
     // =========================================================
@@ -1014,9 +1300,12 @@
 
     function renderHighlights(summary){
       const baseLine = `Base ${fmtInt(BOARD_INV_BASE_COUNT)} @ ${BOARD_INV_BASE_DATE_STR}`;
+      const periodLabel = $("hi-period-label");
+      if (periodLabel) periodLabel.textContent = (viewMode === "day") ? "Day" : "Week";
+      const dayPill = (viewMode === "day") ? formatDayPill(selectedDateISO) : "";
 
       if (!summary || !summary.wkNum || summary.empty){
-        safeText("hi-week", "—");
+        safeText("hi-week", (viewMode === "day" && selectedDateISO) ? dayPill : "—");
         safeText("hi-range", "—");
         safeText("hi-best", "—");
         safeText("hi-best-label", "—");
@@ -1035,7 +1324,7 @@
         return;
       }
 
-      safeText("hi-week", `Week ${summary.wkNum}`);
+      safeText("hi-week", (viewMode === "day") ? dayPill : `Week ${summary.wkNum}`);
       safeText(
         "hi-range",
         `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`
@@ -1083,16 +1372,20 @@
       const wrap = $("callouts");
       if (!wrap) return;
 
+      const periodTitle = (viewMode === "day") ? "Day" : "Week";
+      const periodValue = (viewMode === "day") ? formatDayPill(selectedDateISO) : (summary?.wkNum ?? "—");
+      const periodLabel = (viewMode === "day") ? `${periodTitle} ${periodValue}` : `${periodTitle} ${periodValue}`;
+
       if (!summary || !summary.wkNum){
         wrap.innerHTML = `
-          <div class="callout warn"><span class="dot"></span><span>No valid weeks found. Check week columns for blanks/#VALUE!</span></div>
+          <div class="callout warn"><span class="dot"></span><span>No valid ${viewMode === "day" ? "days" : "weeks"} found. Check ${viewMode === "day" ? "date" : "week"} columns for blanks/#VALUE!</span></div>
         `;
         return;
       }
 
       if (summary.empty){
         wrap.innerHTML = `
-          <div class="callout warn"><span class="dot"></span><span>No data for Week ${summary.wkNum}.</span></div>
+          <div class="callout warn"><span class="dot"></span><span>No data for ${periodLabel}.</span></div>
         `;
         return;
       }
@@ -1137,7 +1430,7 @@
       `).join("");
 
       if (!wrap.innerHTML.trim()){
-        wrap.innerHTML = `<div class="callout warn"><span class="dot"></span><span>Week ${summary.wkNum}: Nothing to highlight yet.</span></div>`;
+        wrap.innerHTML = `<div class="callout warn"><span class="dot"></span><span>${periodLabel}: Nothing to highlight yet.</span></div>`;
       }
     }
 
@@ -1151,9 +1444,10 @@
       }
 
       if (summary.empty){
+        const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : `Week ${summary.wkNum}`;
         tbody.innerHTML = `
           <tr>
-            <td class="row-label">No data for Week ${summary.wkNum}</td>
+            <td class="row-label">No data for ${periodLabel}</td>
             <td>—</td><td>—</td><td>—</td><td><span class="pill muted">—</span></td>
           </tr>
         `;
@@ -1244,8 +1538,9 @@
         (summary.counts.san > 0) || (summary.counts.trans > 0) || (summary.counts.harv > 0) || summary.brokenBoards !== 0);
 
       if (!rows.length){
+        const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : `Week ${summary.wkNum}`;
         rows.push({
-          label:`Week ${summary.wkNum}`,
+          label:periodLabel,
           completed:"—",
           target:"—",
           units:"—",
@@ -1288,6 +1583,8 @@
     let PACK_ROWS = [];
     let WEEKS = [];
     let selectedWeek = "";
+    let viewMode = "week";
+    let selectedDateISO = "";
 
     function loadData(){
       const grow = loadJson(MASTER_GROW_KEY);
@@ -1348,10 +1645,74 @@
       }
     }
 
+    function normalizeDateISO(value){
+      const d = parseAnyDate(value);
+      return d ? toISODateStr(d) : "";
+    }
+
+    function setDefaultDateSelection(){
+      const todayISO = toISODateStr(new Date());
+      if (hasAnyDataForDateISO(todayISO, GROW_ROWS, PACK_ROWS)) selectedDateISO = todayISO;
+      else selectedDateISO = getMostRecentDataDateISO(GROW_ROWS, PACK_ROWS);
+      const dateInput = $("dateSelect");
+      if (dateInput) dateInput.value = selectedDateISO || "";
+    }
+
+    function updateViewControls(){
+      const weekPicker = $("weekPicker");
+      const datePicker = $("datePicker");
+      const btnWeek = $("toggleWeekly");
+      const btnDay = $("toggleDaily");
+      if (weekPicker) weekPicker.hidden = (viewMode !== "week");
+      if (datePicker) datePicker.hidden = (viewMode !== "day");
+      if (btnWeek) {
+        btnWeek.classList.add("pill");
+        btnWeek.classList.toggle("good", viewMode === "week");
+        btnWeek.classList.toggle("muted", viewMode !== "week");
+      }
+      if (btnDay) {
+        btnDay.classList.add("pill");
+        btnDay.classList.toggle("good", viewMode === "day");
+        btnDay.classList.toggle("muted", viewMode !== "day");
+      }
+    }
+
     function render(){
+      const title = $("panelTitle");
+      if (viewMode === "day") {
+        const dObj = parseAnyDate(selectedDateISO);
+        const dayLabel = dObj ? formatDayPill(dObj) : "—";
+        if (title) title.textContent = "Day " + dayLabel;
+
+        const summary = computeDaySummary(selectedDateISO, GROW_ROWS, PACK_ROWS);
+        if (!summary || !summary.wkNum){
+          renderHighlights({ wkNum:null });
+          renderTable({ wkNum:null });
+          setDebug("");
+          return;
+        }
+
+        renderHighlights(summary);
+        renderTable(summary);
+
+        if (!summary.empty){
+          setDebug(
+            `Transplant diagnostics:\n` +
+            `- rows in day: ${summary.aux.transRowsCount}\n` +
+            `- boards transplanted (sum): ${summary.aux.boardsTrans.toLocaleString()}\n` +
+            `- expected boards (sum): ${summary.aux.boardsExpected.toLocaleString()}\n` +
+            `- avg workers (day): ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"}\n` +
+            `- total hours (sum of daily spans): ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
+            `\nNote: If transplant date is missing, time collapses into one bucket for the day.`
+          );
+        } else {
+          setDebug("");
+        }
+        return;
+      }
+
       const wk = weekNumFromCell(selectedWeek);
 
-      const title = $("panelTitle");
       if (!wk){
         if (title) title.textContent = "Week –";
         renderHighlights({ wkNum:null });
@@ -1392,6 +1753,18 @@
         reloadTimer = null;
         loadData();
         renderWeekOptions();
+        updateViewControls();
+
+        if (viewMode === "day") {
+          const normalized = normalizeDateISO(selectedDateISO);
+          if (!normalized) {
+            setDefaultDateSelection();
+          } else {
+            selectedDateISO = normalized;
+            const dateInput = $("dateSelect");
+            if (dateInput) dateInput.value = selectedDateISO;
+          }
+        }
 
         const wk = weekNumFromCell(selectedWeek);
         if (wk && !WEEKS.includes(wk)) {
@@ -1444,11 +1817,34 @@
       setupListeners();
       loadData();
       renderWeekOptions();
+      updateViewControls();
 
       const sel = $("weekSelect");
       sel?.addEventListener("change", () => {
         selectedWeek = weekNumFromCell(sel.value) || "";
         if (selectedWeek) sel.value = selectedWeek;
+        render();
+      });
+
+      const dateSel = $("dateSelect");
+      dateSel?.addEventListener("change", () => {
+        selectedDateISO = normalizeDateISO(dateSel.value);
+        if (selectedDateISO) dateSel.value = selectedDateISO;
+        render();
+      });
+
+      const toggleWeekly = $("toggleWeekly");
+      const toggleDaily = $("toggleDaily");
+      toggleWeekly?.addEventListener("click", () => {
+        viewMode = "week";
+        updateViewControls();
+        renderWeekOptions();
+        render();
+      });
+      toggleDaily?.addEventListener("click", () => {
+        viewMode = "day";
+        updateViewControls();
+        setDefaultDateSelection();
         render();
       });
 
