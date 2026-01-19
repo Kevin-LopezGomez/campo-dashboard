@@ -952,10 +952,10 @@
             <h2 data-i18n="panel.data.title">Data Input Dashboard</h2>
             <p data-i18n="panel.data.desc">Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.data.file">📄 file: <code>07.0 Data - Input Tool.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="data"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-data" data-src="07.0 Data - Input Tool.html?v=refresh1"></iframe>
+          <iframe id="ifr-data" data-file-key="data"></iframe>
         </div>
       </section>
 
@@ -965,10 +965,10 @@
             <h2 data-i18n="panel.weekly.title">Weekly Summary Dashboard</h2>
             <p data-i18n-html="panel.weekly.desc">Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.weekly.file">📄 file: <code>06.0 Ops - Weekly Summary.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="weekly"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-weekly" data-src="06.0 Ops - Weekly Summary.html"></iframe>
+          <iframe id="ifr-weekly" data-file-key="weekly"></iframe>
         </div>
       </section>
 
@@ -978,10 +978,10 @@
             <h2 data-i18n="panel.seeding.title">Seeding Dashboard</h2>
             <p data-i18n-html="panel.seeding.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets["Master Grow"]</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.seeding.file">📄 file: <code>01.0 Ops - Seeding.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="seeding"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-seeding" data-src="01.0 Ops - Seeding.html"></iframe>
+          <iframe id="ifr-seeding" data-file-key="seeding"></iframe>
         </div>
       </section>
 
@@ -991,10 +991,10 @@
             <h2 data-i18n="panel.transplant.title">Transplant Dashboard</h2>
             <p data-i18n-html="panel.transplant.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.transplant.file">📄 file: <code>02.0 Ops - Transplant.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="transplant"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-transplant" data-src="02.0 Ops - Transplant.html"></iframe>
+          <iframe id="ifr-transplant" data-file-key="transplant"></iframe>
         </div>
       </section>
 
@@ -1004,10 +1004,10 @@
             <h2 data-i18n="panel.harvest.title">Harvest Dashboard</h2>
             <p data-i18n-html="panel.harvest.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.harvest.file">📄 file: <code>03.0 Ops - Harvest.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="harvest"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-harvest" data-src="03.0 Ops - Harvest.html"></iframe>
+          <iframe id="ifr-harvest" data-file-key="harvest"></iframe>
         </div>
       </section>
 
@@ -1017,10 +1017,10 @@
             <h2 data-i18n="panel.packing.title">Packing Dashboard</h2>
             <p data-i18n-html="panel.packing.desc">Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets["Master Pack"]</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.packing.file">📄 file: <code>04.0 Ops - Packing.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="packing"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-packing" data-src="04.0 Ops - Packing.html"></iframe>
+          <iframe id="ifr-packing" data-file-key="packing"></iframe>
         </div>
       </section>
 
@@ -1030,10 +1030,10 @@
             <h2 data-i18n="panel.shipments.title">Shipments (Forward Sales) Dashboard</h2>
             <p data-i18n-html="panel.shipments.desc">Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.shipments.file">📄 file: <code>09.0 Ops - Shipments.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="shipments"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-shipments" data-src="09.0 Ops - Shipments.html"></iframe>
+          <iframe id="ifr-shipments" data-file-key="shipments"></iframe>
         </div>
       </section>
 
@@ -1043,10 +1043,10 @@
             <h2 data-i18n="panel.sanitation.title">Sanitation Dashboard</h2>
             <p data-i18n-html="panel.sanitation.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.sanitation.file">📄 file: <code>05.0 Ops - Sanitation.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="sanitation"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-sanitation" data-src="05.0 Ops - Sanitation.html"></iframe>
+          <iframe id="ifr-sanitation" data-file-key="sanitation"></iframe>
         </div>
       </section>
 
@@ -1056,10 +1056,10 @@
             <h2 data-i18n="panel.inventory.title">S&amp;H Inventory Dashboard</h2>
             <p data-i18n-html="panel.inventory.desc">Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;" data-i18n-html="panel.inventory.file">📄 file: <code>08.0 Ops - SH Inventory.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="inventory"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-inventory" data-src="08.0 Ops - SH Inventory.html"></iframe>
+          <iframe id="ifr-inventory" data-file-key="inventory"></iframe>
         </div>
       </section>
 
@@ -1067,12 +1067,12 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Experiment Calendar</h2>
-            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from 10.0 Growing - Experiment Calendar.html).</p>
+            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from <span data-file-text="expcal"></span>).</p>
           </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">📄 file: <code>10.0 Growing - Experiment Calendar.html</code></div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="expcal"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-expcal" data-src="10.0 Growing - Experiment Calendar.html"></iframe>
+          <iframe id="ifr-expcal" data-file-key="expcal"></iframe>
         </div>
       </section>
     </div>
@@ -1241,31 +1241,23 @@
           "tile.placeholder":"Placeholder",
           "panel.data.title":"Data Input Dashboard",
           "panel.data.desc":"Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).",
-          "panel.data.file":"📄 file: <code>07.0 Data - Input Tool.html</code>",
           "panel.weekly.title":"Weekly Summary Dashboard",
           "panel.weekly.desc":"Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).",
-          "panel.weekly.file":"📄 file: <code>06.0 Ops - Weekly Summary.html</code>",
           "panel.seeding.title":"Seeding Dashboard",
           "panel.seeding.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
-          "panel.seeding.file":"📄 file: <code>01.0 Ops - Seeding.html</code>",
           "panel.transplant.title":"Transplant Dashboard",
           "panel.transplant.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
-          "panel.transplant.file":"📄 file: <code>02.0 Ops - Transplant.html</code>",
           "panel.harvest.title":"Harvest Dashboard",
           "panel.harvest.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
-          "panel.harvest.file":"📄 file: <code>03.0 Ops - Harvest.html</code>",
           "panel.packing.title":"Packing Dashboard",
           "panel.packing.desc":"Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
-          "panel.packing.file":"📄 file: <code>04.0 Ops - Packing.html</code>",
           "panel.shipments.title":"Shipments (Forward Sales) Dashboard",
           "panel.shipments.desc":"Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).",
-          "panel.shipments.file":"📄 file: <code>09.0 Ops - Shipments.html</code>",
           "panel.sanitation.title":"Sanitation Dashboard",
           "panel.sanitation.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
-          "panel.sanitation.file":"📄 file: <code>05.0 Ops - Sanitation.html</code>",
           "panel.inventory.title":"S&H Inventory Dashboard",
           "panel.inventory.desc":"Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
-          "panel.inventory.file":"📄 file: <code>08.0 Ops - SH Inventory.html</code>"
+          "panel.file.prefix":"📄 file:"
         },
         es: {
           "brand.title":"Paneles de la empresa",
@@ -1333,32 +1325,41 @@
           "tile.placeholder":"Próximamente",
           "panel.data.title":"Panel de carga de datos",
           "panel.data.desc":"Carga la herramienta de datos y escribe Master Grow / Master Pack en localStorage (y puede publicar en Supabase vía Worker).",
-          "panel.data.file":"📄 archivo: <code>07.0 Data - Input Tool.html</code>",
           "panel.weekly.title":"Panel de resumen semanal",
           "panel.weekly.desc":"Lee Master Grow + Master Pack de <code>localStorage</code> y construye un resumen semanal (objetivos, reales y %).",
-          "panel.weekly.file":"📄 archivo: <code>06.0 Ops - Weekly Summary.html</code>",
           "panel.seeding.title":"Panel de siembra",
           "panel.seeding.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
-          "panel.seeding.file":"📄 archivo: <code>01.0 Ops - Seeding.html</code>",
           "panel.transplant.title":"Panel de trasplante",
           "panel.transplant.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
-          "panel.transplant.file":"📄 archivo: <code>02.0 Ops - Transplant.html</code>",
           "panel.harvest.title":"Panel de cosecha",
           "panel.harvest.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
-          "panel.harvest.file":"📄 archivo: <code>03.0 Ops - Harvest.html</code>",
           "panel.packing.title":"Panel de empaque",
           "panel.packing.desc":"Lee Master Pack de <code>localStorage</code> clave <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
-          "panel.packing.file":"📄 archivo: <code>04.0 Ops - Packing.html</code>",
           "panel.shipments.title":"Panel de despachos (ventas futuras)",
           "panel.shipments.desc":"Lee líneas de ventas de la carga de Empaque (<code>campo_master_pack_v1</code>) y muestra lo que se despacha en o después de la fecha ancla (incluida).",
-          "panel.shipments.file":"📄 archivo: <code>09.0 Ops - Shipments.html</code>",
           "panel.sanitation.title":"Panel de sanidad",
           "panel.sanitation.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
-          "panel.sanitation.file":"📄 archivo: <code>05.0 Ops - Sanitation.html</code>",
           "panel.inventory.title":"Panel de inventario S&H",
           "panel.inventory.desc":"Lee Master Pack (preferido) + Master Grow (alterno) de <code>localStorage</code> claves <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
-          "panel.inventory.file":"📄 archivo: <code>08.0 Ops - SH Inventory.html</code>"
+          "panel.file.prefix":"📄 archivo:"
         }
+      };
+
+      const FILES = {
+        seeding: "01.0 Ops - Seeding.html",
+        transplant: "02.0 Ops - Transplant.html",
+        harvest: "03.0 Ops - Harvest.html",
+        packing: "04.0 Ops - Packing.html",
+        sanitation: "05.0 Ops - Sanitation.html",
+        weekly: "06.0 Ops - Weekly Summary.html",
+        data: "07.0 Data - Input Tool.html",
+        inventory: "08.0 Ops - SH Inventory.html",
+        shipments: "09.0 Ops - Shipments.html",
+        expcal: "10.0 Growing - Experiment Calendar.html"
+      };
+
+      const FILE_QUERIES = {
+        data: "?v=refresh1"
       };
 
       const LANG_KEY = "campo_lang";
@@ -1473,6 +1474,38 @@
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
         "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal"
       ];
+
+      function fileWithQuery(key){
+        const base = FILES[key];
+        if (!base) return "";
+        return base + (FILE_QUERIES[key] || "");
+      }
+
+      function applyFileBindings(){
+        document.querySelectorAll("code[data-file-code]").forEach((codeEl) => {
+          const key = codeEl.getAttribute("data-file-code");
+          if (FILES[key]) codeEl.textContent = FILES[key];
+        });
+        document.querySelectorAll("[data-file-text]").forEach((textEl) => {
+          const key = textEl.getAttribute("data-file-text");
+          if (FILES[key]) textEl.textContent = FILES[key];
+        });
+        document.querySelectorAll("iframe[data-file-key]").forEach((iframe) => {
+          const key = iframe.getAttribute("data-file-key");
+          const src = fileWithQuery(key);
+          if (src) iframe.setAttribute("data-src", src);
+        });
+      }
+
+      async function checkFiles(){
+        const entries = Object.entries(FILES);
+        for (const [, name] of entries){
+          try{
+            const res = await fetch(encodeURI(name), { method: "HEAD", cache: "no-store" });
+            if (res.status === 404) showToast(`Missing file: ${name}`, "", false);
+          } catch {}
+        }
+      }
 
       function notifyIframes(type){
         for (const id of IFRAME_IDS){
@@ -1608,7 +1641,10 @@
         if (isOps) setActiveTabByPanel(panelId);
 
         const iframe = panel.querySelector("iframe[data-src]");
-        if (iframe && !iframe.src) iframe.src = iframe.getAttribute("data-src");
+        if (iframe && !iframe.src) {
+          const src = iframe.getAttribute("data-src");
+          if (src) iframe.src = encodeURI(src);
+        }
       }
 
       if (tabsWrap){
@@ -1822,9 +1858,11 @@
         if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
       }, 1500);
 
+      applyFileBindings();
       setLanguage(currentLang);
       homeShowLevel1();
       activate("p-home");
+      checkFiles();
       tryHydrateFromWorker();
     })();
   </script>
