@@ -1067,7 +1067,7 @@
         <div class="section-head">
           <div class="head-left">
             <h2>Experiment Calendar</h2>
-            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from <span data-file-text="expcal"></span>).</p>
+            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from <code data-file-text="expcal"></code>).</p>
           </div>
           <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="expcal"></code></div>
         </div>
@@ -1110,10 +1110,6 @@
           <div class="app-name" data-i18n="card.data.title">Data Input</div>
         </button>
 
-        <button class="launch-app" aria-disabled="true" disabled>
-          <div class="app-ico">🌿</div>
-          <div class="app-name" data-i18n="card.growing.title">Growing</div>
-        </button>
         <button class="launch-app" aria-disabled="true" disabled>
           <div class="app-ico">🛡️</div>
           <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
@@ -1687,9 +1683,9 @@
         homeBackBtn.style.display = "inline-flex";
       }
 
-      document.getElementById("p-home").addEventListener("click", (e) => {
+      function handleHomeClick(e){
         const btn = e.target.closest("button");
-        if (!btn) return;
+        if (!btn || !e.currentTarget.contains(btn)) return;
         if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
         const openCat = btn.getAttribute("data-home-open");
@@ -1697,7 +1693,10 @@
 
         if (openCat){ homeShowCategory(openCat); return; }
         if (goPanel){ activate(goPanel); return; }
-      });
+      }
+
+      homeLevel1.addEventListener("click", handleHomeClick);
+      homeLevel2.addEventListener("click", handleHomeClick);
 
       homeBackInline.addEventListener("click", homeShowLevel1);
       homeBackBtn.addEventListener("click", homeShowLevel1);
