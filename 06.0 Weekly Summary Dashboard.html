@@ -516,6 +516,7 @@
       SEED_WEEK: "Seed Week",
       FLATS_SEEDED: "Flats Seeded",
       TARGET_FLATS: "Target Flats to Seed",
+      SEED_DATE: "Seed Date",
 
       TRANS_WEEK: "Transplant Week",
       BOARDS_TRANS: "Boards Transplant",
@@ -553,6 +554,8 @@
       ["seed week", H.SEED_WEEK],
       ["flats seeded", H.FLATS_SEEDED],
       ["target flats to seed", H.TARGET_FLATS],
+      ["seed date", H.SEED_DATE],
+      ["seeding date", H.SEED_DATE],
 
       ["transplant week", H.TRANS_WEEK],
       ["boards transplant", H.BOARDS_TRANS],
@@ -1101,10 +1104,12 @@
         const d = parseAnyDate(val);
         return d && toISODateStr(d) === iso;
       };
-      const isSeedWeek = (val) => weekNumFromCell(val) === wkNum;
 
       // ---- SEEDING ----
-      const seedRows = (growRows||[]).filter(r => isSeedWeek(r[H.SEED_WEEK]));
+      const seedDateFields = [H.SEED_DATE, "Seed Date", "Seeding Date", "Date"];
+      const seedRows = (growRows||[]).filter(r =>
+        seedDateFields.some(f => (f in r) && isDate(r[f]))
+      );
       const flatsCompleted = seedRows.reduce((s,r)=>s+parseNumber(r[H.FLATS_SEEDED]),0);
       const flatsTarget = seedRows.reduce((s,r)=>s+parseNumber(r[H.TARGET_FLATS]),0);
 
@@ -1673,9 +1678,7 @@
         selectedWeek = current;
         sel.value = current;
       } else {
-        const isoWeek = getCurrentISOWeek();
-        const fallback = WEEKS.includes(isoWeek) ? isoWeek : (WEEKS[WEEKS.length-1] || "");
-        selectedWeek = fallback;
+        selectedWeek = getDefaultWeekSelection();
         sel.value = selectedWeek;
       }
     }
@@ -1695,6 +1698,12 @@
       else selectedDateISO = getMostRecentDataDateISO(GROW_ROWS, PACK_ROWS);
       const dateInput = $("dateSelect");
       if (dateInput) dateInput.value = selectedDateISO || "";
+    }
+
+    function getDefaultWeekSelection(){
+      if (!WEEKS.length) return "";
+      const isoWeek = getCurrentISOWeek();
+      return WEEKS.includes(isoWeek) ? isoWeek : (WEEKS[WEEKS.length-1] || "");
     }
 
     function updateViewControls(){
@@ -1882,6 +1891,7 @@
       const toggleDaily = $("toggleDaily");
       toggleWeekly?.addEventListener("click", () => {
         viewMode = "week";
+        selectedWeek = getDefaultWeekSelection();
         updateViewControls();
         renderWeekOptions();
         render();
