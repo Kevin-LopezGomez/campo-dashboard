@@ -1,0 +1,2397 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mulder’s Chart — Growers Tool (Hard-coded Prototype)</title>
+  <style>
+    :root{
+      /* === Option B (dashboard dark) === */
+      --bg0:#060b12;
+      --bg1:#081221;
+      --panel:#0b1a2c;
+      --panel2:#0a1728;
+      --panelStroke:rgba(255,255,255,.10);
+      --text:#eaf2ff;
+      --muted:rgba(234,242,255,.72);
+      --muted2:rgba(234,242,255,.55);
+      --muted3:rgba(234,242,255,.35);
+
+      --accent:#39d98a;
+      --accent2:#3aa0ff;
+
+      --ant:#ff3b3b;
+      --syn:#2fe26f;
+
+      --chip:#0d2037;
+      --chipStroke:rgba(255,255,255,.12);
+
+      --shadow: 0 24px 80px rgba(0,0,0,.55);
+      --radius: 22px;
+
+      --lineFaint: .12;
+      --lineFaintAllBright: .55; /* used only when "All bright overview" is active */
+      --lineBright: 1;
+
+      --strokeFaint: 1.5;
+      --strokeBright: 2.8;
+
+      --nodeR: 6.2;
+      --nodeRSelected: 7.4;
+
+      --labelSize: 14px;
+      --titleSize: 64px;
+
+      --chartPadding: 26px;
+    }
+
+    /* Presentation Mode */
+    .present {
+      --labelSize: 18px;
+      --titleSize: 80px;
+      --strokeFaint: 2.2;
+      --strokeBright: 3.6;
+      --nodeR: 7.4;
+      --nodeRSelected: 9.2;
+      --chartPadding: 16px;
+      --lineFaint: .16;
+      --lineFaintAllBright: .65;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 0%, rgba(57,217,138,.10), transparent 55%),
+        radial-gradient(1000px 800px at 70% 10%, rgba(58,160,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    .wrap{
+      max-width: 1280px;
+      margin: 28px auto 60px;
+      padding: 0 18px;
+    }
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    .h1{
+      font-size: var(--titleSize);
+      line-height: .95;
+      letter-spacing: -1px;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .controlsRow{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pillBar{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+    }
+
+    .pillBtn{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      border: 1px solid var(--chipStroke);
+      background: var(--chip);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      user-select:none;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
+    }
+    .pillBtn:active{ transform: scale(.98); }
+    .pillBtn[aria-pressed="true"]{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background: rgba(255,255,255,.35);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+    .dot.ant{ background: var(--ant); }
+    .dot.syn{ background: var(--syn); }
+
+    .ghostBtn{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+    }
+
+    .search{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.24);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      min-width: 270px;
+    }
+    .search input{
+      width: 100%;
+      border:none;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .search input::placeholder{ color: rgba(234,242,255,.45); font-weight: 600; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items:start;
+      margin-top: 12px;
+    }
+    .contextCard{
+      margin-bottom: 14px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--panelStroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .cardInner{
+      padding: 18px 18px 16px;
+    }
+
+    .kickerRow{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
+    .titleRow{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
+    .kicker{
+      font-size: 18px;
+      line-height: 1.35;
+      margin: 0 0 8px;
+      color: var(--text);
+      font-weight: 800;
+    }
+    .desc{
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 600;
+    }
+    .tip{
+      margin: 0 0 0;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .legend{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.10);
+    }
+    .legendItem{
+      display:flex;align-items:center;gap:8px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 12.5px;
+      opacity: .95;
+    }
+    .swatch{
+      width: 14px;height: 4px;border-radius: 999px;
+      background: rgba(255,255,255,.30);
+    }
+    .swatch.ant{ background: var(--ant); }
+    .swatch.syn{ background: var(--syn); }
+    .swatch.faint{
+      height: 4px;
+      background: rgba(234,242,255,.18);
+      border: 1px solid rgba(234,242,255,.12);
+    }
+
+    .toolRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toggles{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12.5px;
+    }
+    .toggle input{ transform: translateY(1px); }
+
+    .sliderWrap{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12.5px;
+      min-width: 260px;
+    }
+    .sliderWrap input[type="range"]{ width: 140px; }
+    .badge{
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+
+    .chartWrap{ padding: 12px 10px 16px; }
+    svg{
+      width: 100%;
+      display:block;
+      aspect-ratio: 820 / 520;
+      height: auto;
+      min-height: 420px;
+    }
+    .chartStage{
+      background: rgba(0,0,0,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      padding: var(--chartPadding);
+    }
+
+    /* Right panel */
+    .rightHeaderRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .rightTitle{
+      font-size: 34px;
+      margin: 0;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+    .rightMeta{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      flex-wrap:wrap;
+    }
+    .levelBadge{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2px;
+      white-space:nowrap;
+    }
+    .levelBadge.compact{
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .rightSub{
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-weight: 650;
+      line-height: 1.45;
+    }
+
+    .backBtn{
+      display:none;
+      align-items:center;
+      gap:8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 12px;
+      white-space:nowrap;
+    }
+    .backBtn:active{ transform: scale(.98); }
+
+    /* View switching */
+    .view{ display:none; }
+    .view.active{ display:block; }
+
+    .metaGrid{
+      border-top: 1px solid rgba(255,255,255,.10);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      padding: 12px 0;
+      margin: 10px 0 12px;
+      display:grid;
+      grid-template-columns: 140px 1fr;
+      gap: 10px 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .metaGrid .val{
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .sectionHead{
+      margin: 12px 0 8px;
+      color: var(--muted2);
+      letter-spacing: .14em;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .list{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+    .relCard{
+      padding: 12px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      cursor:pointer;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+    }
+    .relCard:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.18);
+      background: rgba(0,0,0,.22);
+    }
+    .relTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .relName{
+      font-weight: 950;
+      letter-spacing: -.2px;
+      font-size: 16px;
+    }
+    .relMeta{
+      color: var(--muted2);
+      font-weight: 850;
+      font-size: 12px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      white-space:nowrap;
+    }
+    .chipType{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-weight: 950;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+    }
+    .chipType .dot{ width:8px;height:8px; box-shadow:none; }
+    .relNote{
+      margin-top: 6px;
+      color: var(--muted);
+      font-weight: 650;
+      line-height: 1.4;
+      font-size: 13px;
+    }
+
+    /* Compact preview chips (Overview) */
+    .previewRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+    .miniChip{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.16);
+      color: rgba(234,242,255,.88);
+      padding: 8px 10px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .miniChip:hover{
+      border-color: rgba(255,255,255,.18);
+      background: rgba(0,0,0,.20);
+    }
+    .miniChip .dot{ width:8px;height:8px; box-shadow:none; }
+
+    /* Nav card for quick hopping between relationships */
+    .navCard .cardInner{ padding: 14px 16px; }
+    .navTitle{
+      margin: 0 0 8px;
+      color: var(--muted2);
+      font-weight: 850;
+      letter-spacing: .08em;
+      font-size: 12px;
+    }
+    .navChips{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+
+    .drawer{
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-weight: 650;
+      line-height: 1.5;
+    }
+    .drawer strong{ color: var(--text); font-weight: 950; }
+
+    .footerHint{
+      margin: 18px auto 0;
+      text-align:center;
+      color: rgba(234,242,255,.55);
+      font-weight: 750;
+      letter-spacing: .2px;
+      font-size: 16px;
+    }
+
+    /* Context editor + warnings */
+    .banner{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      border-radius: 16px;
+      padding: 10px 12px;
+      color: rgba(234,242,255,.78);
+      font-weight: 750;
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+    .banner.warn{
+      border-color: rgba(255,59,59,.24);
+      background: rgba(255,59,59,.06);
+    }
+    .banner .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      font-weight: 900;
+      margin-right: 8px;
+      color: rgba(234,242,255,.88);
+      white-space:nowrap;
+    }
+
+    .contextBox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      border-radius: 16px;
+      padding: 12px;
+      margin: 10px 0 12px;
+    }
+
+    .ctxHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      cursor:pointer;
+      user-select:none;
+    }
+    .ctxHeader .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .ctxTitle{
+      font-weight:950;
+      color:rgba(255,255,255,.92);
+      letter-spacing:-.2px;
+    }
+    .ctxCaret{
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 950;
+      color: rgba(234,242,255,.88);
+    }
+    .ctxBody{ margin-top: 10px; }
+    .contextBox.collapsed .ctxBody{ display:none; }
+
+    .contextGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .field{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 10px 10px;
+    }
+    .field label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      color: rgba(234,242,255,.72);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .field input, .field select{
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: 9px 10px;
+      color: var(--text);
+      outline:none;
+      font-weight: 850;
+      font-size: 13px;
+    }
+    .field small{
+      display:block;
+      margin-top: 6px;
+      color: rgba(234,242,255,.55);
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .miniRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap:wrap;
+    }
+    .tinyBtn{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .tinyBtn:active{ transform: scale(.98); }
+
+    .ruleBox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      border-radius: 16px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .ruleTitleRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .ruleTitle{
+      font-weight: 950;
+      letter-spacing: -.2px;
+      font-size: 16px;
+      color: rgba(255,255,255,.96);
+    }
+    .ruleMeta{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .chip{
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(234,242,255,.90);
+    }
+    .chip.high{ border-color: rgba(57,217,138,.22); background: rgba(57,217,138,.08); }
+    .chip.med{ border-color: rgba(58,160,255,.22); background: rgba(58,160,255,.08); }
+    .chip.low{ border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); opacity:.92; }
+    .ruleBody{
+      margin-top: 10px;
+      color: rgba(234,242,255,.72);
+      font-weight: 700;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .ruleCols{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .ruleSection{
+      border-top: 1px solid rgba(255,255,255,.10);
+      padding-top: 10px;
+    }
+    .ruleSection h4{
+      margin: 0 0 6px;
+      color: rgba(234,242,255,.70);
+      letter-spacing: .14em;
+      font-size: 11.5px;
+      font-weight: 950;
+    }
+    .bul{
+      margin: 0;
+      padding-left: 18px;
+      color: rgba(234,242,255,.70);
+      font-weight: 750;
+      line-height: 1.45;
+    }
+    .trigGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .trigRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .trigRow .lbl{
+      color: rgba(234,242,255,.78);
+      font-weight: 900;
+      font-size: 12.5px;
+    }
+    .trigRow .sub{
+      color: rgba(234,242,255,.52);
+      font-weight: 750;
+      font-size: 12px;
+    }
+    .trigRow input{
+      width: 140px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: 8px 10px;
+      color: var(--text);
+      outline:none;
+      font-weight: 900;
+      font-size: 12.5px;
+      text-align:right;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .controlsRow{ justify-content:flex-start; }
+      .search{ min-width: 220px; }
+      .h1{ font-size: 52px; }
+      .rightTitle{ font-size: 28px; }
+      .contextGrid{ grid-template-columns: 1fr; }
+      svg{ min-height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app">
+    <div class="top">
+      <div class="titleRow">
+        <h1 class="h1">Mulder’s Chart</h1>
+        <span class="levelBadge compact" aria-hidden="true">Level 1 · Context</span>
+      </div>
+
+      <div class="controlsRow">
+        <div class="search" title="Search nutrients (e.g., Mg, Magnesium, Potash)">
+          <span style="opacity:.7;font-weight:950;">⌕</span>
+          <input id="searchInput" type="text" placeholder="Search nutrient (e.g., Mg, Potash)" autocomplete="off" />
+        </div>
+
+        <div class="pillBar" role="group" aria-label="Filters">
+          <button class="pillBtn" id="btnAll" aria-pressed="true" title="All relationships">
+            <span class="dot"></span> All
+          </button>
+          <button class="pillBtn" id="btnAnt" aria-pressed="false" title="Antagonism only">
+            <span class="dot ant"></span> Antagonism
+          </button>
+          <button class="pillBtn" id="btnSyn" aria-pressed="false" title="Synergy only">
+            <span class="dot syn"></span> Synergy
+          </button>
+          <button class="pillBtn ghostBtn" id="btnReset" aria-pressed="false" title="Clear selection, reset filters">
+            Reset
+          </button>
+          <button class="pillBtn ghostBtn" id="btnPresent" aria-pressed="false" title="Presentation mode (bigger, higher contrast)">
+            Presentation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card contextCard">
+      <div class="cardInner">
+        <div class="banner" id="protoBanner">
+          <span class="pill">Prototype</span>
+          Thresholds below are <b>educated defaults</b> for hydro lettuce — not your confirmed facility settings.
+          Your boss can adjust the numbers anytime.
+        </div>
+
+        <div class="banner warn" id="ctxWarn" style="display:none;"></div>
+
+        <!-- Context editor (collapsed by default) -->
+        <div class="contextBox collapsed" id="contextBox" aria-label="Operation context">
+          <div class="ctxHeader" id="ctxToggle" title="Click to expand/collapse context">
+            <div class="left">
+              <div class="ctxTitle">Hydro lettuce context (v0)</div>
+              <div class="badge" id="ctxAssumptionBadge">Assumed</div>
+            </div>
+            <div class="ctxCaret" id="ctxCaret">+</div>
+          </div>
+
+          <div class="ctxBody" id="ctxBody">
+            <div class="contextGrid">
+              <div class="field">
+                <label>pH (target range) <span class="badge">guess</span></label>
+                <input id="ctxPH" placeholder="e.g., 5.8-6.2" />
+                <small>Used to scale micro lockout risk (Fe/Mn/Zn/Cu).</small>
+              </div>
+
+              <div class="field">
+                <label>EC (mS/cm) <span class="badge">guess</span></label>
+                <input id="ctxEC" placeholder="e.g., 1.4-1.8" />
+                <small>Used as an antagonism amplifier, especially Ca/B transport limits.</small>
+              </div>
+
+              <div class="field">
+                <label>Water source <span class="badge">guess</span></label>
+                <select id="ctxWater">
+                  <option value="unknown">Unknown</option>
+                  <option value="tap" selected>Tap</option>
+                  <option value="ro">RO</option>
+                  <option value="blended">Blended</option>
+                </select>
+                <small>Tap often adds Na/alkalinity; increases antagonism sensitivity.</small>
+              </div>
+
+              <div class="field">
+                <label>Recirculation reset <span class="badge">guess</span></label>
+                <select id="ctxReset">
+                  <option value="unknown">Unknown</option>
+                  <option value="daily">Daily</option>
+                  <option value="3d">Every 3 days</option>
+                  <option value="weekly" selected>Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
+                </select>
+                <small>Longer resets raise Na/Cl accumulation risk and EC drift.</small>
+              </div>
+
+              <div class="field" style="grid-column:1 / -1;">
+                <label>NH₄ fraction of total N (%) <span class="badge">guess</span></label>
+                <input id="ctxNH4" placeholder="e.g., 0-10" />
+                <small>NH₄-heavy N increases cation antagonism; Ca fails first in hydro.</small>
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <button class="tinyBtn" id="btnCtxAssume">Use recommended guesses</button>
+              <button class="tinyBtn" id="btnCtxUnknown">Mark unknown</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <div class="cardInner">
+          <div class="kickerRow">
+            <p class="kicker" style="margin:0;">More is not always more.</p>
+            <div class="levelBadge" aria-hidden="true">Level 2 · Diagram</div>
+          </div>
+          <p class="desc">
+            Click a nutrient to <b>pin focus</b>. Hover to <b>preview</b>.
+            Filters control what’s shown. In <b>All</b> with no selection, <b>everything stays bright</b>.
+          </p>
+          <p class="tip">
+            Tip: This is hard-coded data for now. Later we’ll replace the arrays with JSON/CSV without changing the UI.
+          </p>
+
+          <div class="legend" aria-label="Legend">
+            <div class="legendItem"><span class="swatch faint"></span> Faint = background context</div>
+            <div class="legendItem"><span class="swatch"></span> Bright = in focus</div>
+            <div class="legendItem"><span class="swatch ant"></span> Red = antagonism</div>
+            <div class="legendItem"><span class="swatch syn"></span> Green = synergy</div>
+          </div>
+
+          <div class="toolRow">
+            <div class="toggles">
+              <label class="toggle" title="Show or hide the faint background web">
+                <input id="toggleWeb" type="checkbox" checked />
+                Background web
+              </label>
+
+              <label class="toggle" title="Show label tooltips on hover (always on); also improves accessibility">
+                <input id="toggleTooltips" type="checkbox" checked />
+                Tooltips
+              </label>
+            </div>
+
+            <div class="sliderWrap" title="Show only relationships with at least this strength">
+              Density (min strength)
+              <input id="strengthSlider" type="range" min="1" max="3" step="1" value="1" />
+              <span class="badge" id="strengthBadge">1+</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="chartWrap">
+          <div class="chartStage">
+            <svg id="chart" viewBox="0 0 820 520" aria-label="Mulder’s Chart visualization" role="img"></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK NAV BETWEEN RELATIONSHIPS (details view) -->
+      <div class="card navCard" id="navRelCard" style="display:none;">
+        <div class="cardInner">
+          <div class="navTitle" id="navRelTitle">Other relationships</div>
+          <div class="navChips" id="navRelChips"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div class="cardInner">
+
+          <!-- Header row shared by both views -->
+            <div class="rightHeaderRow">
+              <h2 class="rightTitle" id="rightTitle">Explore</h2>
+              <div class="rightMeta">
+                <div class="levelBadge" id="rightLevel">Level 4 · Explore</div>
+                <button class="backBtn" id="btnBack" title="Back to overview">← Back</button>
+              </div>
+            </div>
+
+          <!-- OVERVIEW VIEW -->
+          <div class="view active" id="viewOverview">
+            <p class="rightSub">
+              Hover a nutrient to preview, click to pin. Click a relationship line/card to open details.
+              <span style="color:rgba(234,242,255,.68);font-weight:800;">(Esc clears, ←/→ cycles, Enter pins.)</span>
+            </p>
+
+            <div class="metaGrid" aria-label="Selection details">
+              <div>Mode</div><div class="val" id="uiMode">Overview</div>
+              <div>Filter</div><div class="val" id="uiFilter">All</div>
+              <div>Selection</div><div class="val" id="uiSelection">None</div>
+              <div>Type</div><div class="val" id="uiType">—</div>
+              <div>Strength</div><div class="val" id="uiStrength">—</div>
+            </div>
+
+            <div class="sectionHead">FOCUSED RELATIONSHIPS (OVERVIEW)</div>
+
+            <div id="noSelectionMsg" style="color:rgba(234,242,255,.60);font-weight:750;">
+              No nutrient selected.
+            </div>
+
+            <div id="focusedOverviewBlock" style="display:none;">
+              <div class="sectionHead">ANTAGONISM</div>
+              <div class="previewRow" id="previewAnt"></div>
+
+              <div class="sectionHead" style="margin-top:14px;">SYNERGY</div>
+              <div class="previewRow" id="previewSyn"></div>
+
+              <div class="drawer" id="watchForPreview"></div>
+            </div>
+          </div>
+
+          <!-- DETAILS VIEW -->
+          <div class="view" id="viewDetails">
+            <p class="rightSub" style="margin-bottom:10px;">
+              Details: edit context, tweak thresholds, and review safe-first actions.
+            </p>
+
+            <div class="sectionHead">FOCUSED RELATIONSHIPS</div>
+
+            <div id="detailsNoSelection" style="color:rgba(234,242,255,.60);font-weight:750;">
+              Select a nutrient, then click a relationship to open its rule card.
+            </div>
+
+            <div id="detailsFocusedBlock" style="display:none;">
+              <div class="sectionHead">ANTAGONISM</div>
+              <div class="list" id="listAnt"></div>
+
+              <div class="sectionHead" style="margin-top:14px;">SYNERGY</div>
+              <div class="list" id="listSyn"></div>
+
+              <div class="drawer" id="watchForDetails"></div>
+              <div class="drawer" id="relDrawer" style="display:none;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="footerHint">Click different nutrients to see their relationship with other nutrients.</div>
+  </div>
+
+<script>
+/* -------------------------
+   Data
+------------------------- */
+
+const nutrients = [
+  { id:"N",  name:"Nitrogen",    label:"Nitrogen (N)" },
+  { id:"P",  name:"Phosphate",   label:"Phosphate (P)" },
+  { id:"K",  name:"Potash",      label:"Potash (K)" },
+  { id:"S",  name:"Sulfur",      label:"Sulfur (S)" },
+  { id:"Ca", name:"Calcium",     label:"Calcium (Ca)" },
+  { id:"Mg", name:"Magnesium",   label:"Magnesium (Mg)" },
+  { id:"Zn", name:"Zinc",        label:"Zinc (Zn)" },
+  { id:"Fe", name:"Iron",        label:"Iron (Fe)" },
+  { id:"Cu", name:"Copper",      label:"Copper (Cu)" },
+  { id:"Mn", name:"Manganese",   label:"Manganese (Mn)" },
+  { id:"B",  name:"Boron",       label:"Boron (B)" },
+  { id:"Mo", name:"Molybdenum",  label:"Molybdenum (Mo)" },
+];
+
+const relationships = [
+  // N
+  {a:"N", b:"K",  type:"ant", strength:2, note:"High N can suppress K uptake; balance instead of chasing K."},
+  {a:"N", b:"Cu", type:"ant", strength:2, note:"Excess N can reduce Cu availability."},
+  {a:"N", b:"B",  type:"ant", strength:2, note:"Excess N can reduce B availability."},
+  {a:"N", b:"S",  type:"syn", strength:2, note:"N and S often rise together in protein formation; balanced S unlocks N."},
+  {a:"N", b:"Mg", type:"syn", strength:1, note:"Balanced Mg supports chlorophyll and N utilization."},
+  {a:"N", b:"Mo", type:"syn", strength:3, note:"Mo supports nitrate reduction; low Mo can mimic N issues."},
+
+  // P
+  {a:"P", b:"K",  type:"ant", strength:1, note:"Very high P can reduce K availability in some systems."},
+  {a:"P", b:"Ca", type:"ant", strength:3, note:"High P can precipitate with Ca; watch pH and Ca:P ratio."},
+  {a:"P", b:"Zn", type:"ant", strength:3, note:"Classic: high P can induce Zn deficiency."},
+  {a:"P", b:"Fe", type:"ant", strength:2, note:"High P can tie up Fe; keep Fe chelation/pH in mind."},
+  {a:"P", b:"Cu", type:"ant", strength:2, note:"High P can reduce Cu uptake."},
+  {a:"P", b:"Mg", type:"syn", strength:1, note:"Balanced P can support Mg utilization."},
+
+  // K
+  {a:"K", b:"Ca", type:"ant", strength:3, note:"High K can suppress Ca uptake; common in fruiting/heavy K programs."},
+  {a:"K", b:"Mg", type:"ant", strength:3, note:"High K can induce Mg deficiency; don’t just add Mg blindly—rebalance K."},
+  {a:"K", b:"N",  type:"ant", strength:2, note:"K and N can compete in excess; keep ratios steady."},
+  {a:"K", b:"Fe", type:"syn", strength:2, note:"Balanced K supports transport; can improve Fe function."},
+  {a:"K", b:"Mn", type:"syn", strength:1, note:"Balanced K can help Mn function in enzymatic processes."},
+  {a:"K", b:"B",  type:"ant", strength:1, note:"Very high K can reduce B uptake in some crops."},
+  {a:"K", b:"S",  type:"syn", strength:1, note:"Balanced K and S supports overall nutrient movement."},
+
+  // S
+  {a:"S",  b:"Ca", type:"ant", strength:1, note:"High sulfate salts can antagonize Ca availability indirectly."},
+  {a:"S",  b:"Cu", type:"ant", strength:2, note:"Overabundant S can reduce Cu availability."},
+  {a:"S",  b:"Mo", type:"ant", strength:3, note:"S can antagonize Mo; excess sulfate can reduce Mo uptake."},
+  {a:"S",  b:"Mn", type:"syn", strength:2, note:"Balanced S can improve Mn availability in some soils/media."},
+  {a:"S",  b:"N",  type:"syn", strength:2, note:"N:S balance is key for growth; mismatch causes inefficiency."},
+
+  // Ca
+  {a:"Ca", b:"Mg", type:"ant", strength:3, note:"Classic: high Ca can suppress Mg; check Ca:Mg ratio first."},
+  {a:"Ca", b:"Zn", type:"ant", strength:2, note:"High Ca can suppress Zn availability in some substrates."},
+  {a:"Ca", b:"Fe", type:"ant", strength:2, note:"High Ca/pH often reduces Fe availability; consider chelation/pH."},
+  {a:"Ca", b:"Mn", type:"ant", strength:2, note:"High Ca/pH can reduce Mn availability."},
+  {a:"Ca", b:"B",  type:"ant", strength:2, note:"High Ca can reduce B mobility/uptake."},
+  {a:"Ca", b:"P",  type:"ant", strength:3, note:"High Ca can precipitate P; manage pH and injection."},
+
+  // Mg
+  {a:"Mg", b:"N",  type:"syn", strength:1, note:"Balanced Mg supports N assimilation."},
+  {a:"Mg", b:"P",  type:"syn", strength:1, note:"Balanced Mg can improve P utilization."},
+  {a:"Mg", b:"K",  type:"ant", strength:3, note:"High Mg can suppress K; common when over-correcting Mg."},
+  {a:"Mg", b:"Ca", type:"ant", strength:3, note:"High Mg can suppress Ca uptake; keep Ca:Mg stable."},
+
+  // Zn
+  {a:"Zn", b:"P",  type:"ant", strength:3, note:"High Zn can also complicate P; balance both directions."},
+  {a:"Zn", b:"Fe", type:"ant", strength:2, note:"Excess Zn can suppress Fe."},
+  {a:"Zn", b:"Ca", type:"ant", strength:1, note:"Excess Zn may interact with Ca uptake."},
+
+  // Fe
+  {a:"Fe", b:"Cu", type:"ant", strength:2, note:"High Fe can reduce Cu availability."},
+  {a:"Fe", b:"Mn", type:"ant", strength:2, note:"High Fe can suppress Mn uptake."},
+  {a:"Fe", b:"Zn", type:"ant", strength:2, note:"High Fe can suppress Zn uptake."},
+  {a:"Fe", b:"K",  type:"syn", strength:2, note:"Balanced K can support Fe function; transport/movement."},
+
+  // Cu
+  {a:"Cu", b:"Mo", type:"syn", strength:2, note:"Cu and Mo can have a synergistic relationship when balanced."},
+  {a:"Cu", b:"Mn", type:"ant", strength:2, note:"High Cu can reduce Mn availability."},
+  {a:"Cu", b:"Fe", type:"ant", strength:2, note:"High Cu can reduce Fe availability."},
+
+  // Mn
+  {a:"Mn", b:"S",  type:"syn", strength:2, note:"Balanced S can improve Mn availability."},
+  {a:"Mn", b:"K",  type:"syn", strength:1, note:"Balanced K can improve Mn function."},
+  {a:"Mn", b:"Ca", type:"ant", strength:2, note:"High Ca/pH can reduce Mn availability."},
+  {a:"Mn", b:"Cu", type:"ant", strength:2, note:"High Mn can interact with Cu; avoid extremes."},
+
+  // B
+  {a:"B",  b:"K",  type:"ant", strength:1, note:"High B can reduce K availability in some crops; manage carefully."},
+  {a:"B",  b:"Ca", type:"ant", strength:2, note:"High B can reduce Ca uptake; watch toxicity risk."},
+
+  // Mo
+  {a:"Mo", b:"N",  type:"syn", strength:3, note:"Mo supports nitrate reduction; low Mo mimics N problems."},
+  {a:"Mo", b:"S",  type:"ant", strength:3, note:"Excess S can reduce Mo uptake."},
+  {a:"Mo", b:"Cu", type:"syn", strength:2, note:"Balanced Cu can support Mo relationship."},
+];
+
+/* -------------------------
+   Rule Engine
+------------------------- */
+function relKey(r){
+  const a = r.a < r.b ? r.a : r.b;
+  const b = r.a < r.b ? r.b : r.a;
+  return `${a}__${b}__${r.type}`;
+}
+
+const RULES = (() => {
+  const mk = (a,b,type)=>relKey({a,b,type});
+  return new Map([
+    [mk("K","Ca","ant"), {
+      id: "A1",
+      classification: "A",
+      title: "High Potassium Can Block Calcium Uptake (Tipburn risk)",
+      confidence: "high",
+      appliesTo: "Hydro lettuce (low / zero CEC)",
+      mechanism: "Cation competition + passive Ca transport failure in hydro under ionic pressure.",
+      signals: ["Tipburn on young leaves","Marginal necrosis on new growth","“Ca deficiency” symptoms despite Ca present in solution"],
+      triggers: [
+        { key:"k_ca_ratio", label:"K:Ca ratio >", unit:"", defaultValue: 2.5, hint:"Ratio guardrail for Ca transport risk." },
+        { key:"ec_high", label:"EC ≥", unit:"mS/cm", defaultValue: 1.8, hint:"High EC amplifies antagonism + passive uptake failure." },
+        { key:"k_ppm", label:"K >", unit:"ppm", defaultValue: 220, hint:"High K often drives Ca suppression first." },
+        { key:"nh4_pct", label:"NH₄ fraction >", unit:"% of total N", defaultValue: 10, hint:"Ammonium increases cation antagonism; Ca fails early." },
+      ],
+      checks: ["EC trend (last 24–72h) vs baseline","K:Ca ratio in solution","NO₃:NH₄ ratio / NH₄ fraction","Recent feed changes (K-forward additives, finishers)"],
+      doFirst: ["Reduce K dominance (rebalance before adding more Ca).","Bring EC back toward baseline range.","Shift N to nitrate-dominant if NH₄ is elevated."],
+      avoid: ["Ca stacking as the first response (can worsen Mg/B balance).","“Chasing” symptoms with multiple supplements at once."],
+      note: "Thresholds are educated defaults for hydro lettuce and should be tuned to your facility."
+    }],
+
+    [mk("K","Mg","ant"), {
+      id: "A2",
+      classification: "A",
+      title: "High Potassium Can Induce Magnesium Deficiency Behavior",
+      confidence: "high",
+      appliesTo: "Hydro lettuce",
+      mechanism: "Cation competition; high K suppresses Mg uptake/utilization.",
+      signals: ["Interveinal chlorosis on older leaves","Weak vigor / slower growth","Mg corrections that don’t “stick” while K remains high"],
+      triggers: [
+        { key:"k_mg_ratio", label:"K:Mg ratio >", unit:"", defaultValue: 4.0, hint:"High K relative to Mg increases Mg suppression risk." },
+        { key:"ec_high", label:"EC ≥", unit:"mS/cm", defaultValue: 1.8, hint:"High EC amplifies antagonism." },
+      ],
+      checks: ["K:Mg and Ca:Mg ratios","EC trend vs baseline","Recent K-forward changes"],
+      doFirst: ["Reduce K dominance first.","Then correct Mg if still low after rebalance."],
+      avoid: ["Repeated Mg additions without reducing K (seesaw corrections)."],
+      note: "Defaults are guesses; tune for your recipe + cultivar."
+    }],
+
+    [mk("Ca","Mg","ant"), {
+      id: "A3",
+      classification: "A",
+      title: "Excess Calcium Can Suppress Magnesium (and destabilize balance)",
+      confidence: "high",
+      appliesTo: "Hydro lettuce",
+      mechanism: "Ca/Mg competition; oversupplying Ca can suppress Mg uptake and trigger seesaw corrections.",
+      signals: ["Mg deficiency appearance (older leaves)","Inconsistent response to Mg corrections"],
+      triggers: [
+        { key:"ca_mg_ratio", label:"Ca:Mg ratio >", unit:"", defaultValue: 3.0, hint:"High Ca relative to Mg increases Mg suppression risk." },
+        { key:"ca_ppm", label:"Ca >", unit:"ppm", defaultValue: 180, hint:"High Ca inputs (including hard water) can push imbalance." },
+      ],
+      checks: ["Ca:Mg ratio","Total Ca sources (nutrients + water)","pH stability (Ca often rises with higher pH strategies)"],
+      doFirst: ["Stop Ca stacking (pause extra Ca additives).","Rebalance Ca:Mg slowly; avoid raising EC to force change."],
+      avoid: ["Large swings (big Mg additions) that overshoot and flip the problem."],
+      note: "Defaults are guesses for hydro lettuce."
+    }],
+
+    [mk("P","Zn","ant"), {
+      id: "A4",
+      classification: "A",
+      title: "Excess Phosphorus Can Lock Out Zinc (Stunting risk)",
+      confidence: "high",
+      appliesTo: "Hydro lettuce",
+      mechanism: "High P suppresses Zn availability/transport; amplified at higher pH.",
+      signals: ["Stunting / slow growth","Pale or uneven color","Zn-like symptoms with high P programs"],
+      triggers: [
+        { key:"p_ppm", label:"P >", unit:"ppm", defaultValue: 70, hint:"Keep P conservative in leafy ops to reduce lockout risk." },
+        { key:"ph_high", label:"pH ≥", unit:"", defaultValue: 6.2, hint:"Higher pH reduces micro availability and worsens lockouts." },
+      ],
+      checks: ["pH trend (stability matters)","P level and sources (phosphate additives)","Zn presence in base program"],
+      doFirst: ["Reduce P loading (return to baseline).","Stabilize pH ~5.8–6.2.","Then consider targeted Zn if symptoms persist."],
+      avoid: ["Adding multiple micros while P remains high (can worsen interactions)."],
+      note: "Defaults are guesses; boss can tune thresholds."
+    }],
+
+    [mk("P","Fe","ant"), {
+      id: "A5",
+      classification: "A",
+      title: "Excess Phosphorus Can Reduce Iron Availability (Chlorosis trap)",
+      confidence: "high",
+      appliesTo: "Hydro lettuce",
+      mechanism: "High P (and/or higher pH) reduces Fe availability; repeated Fe dosing may not resolve without addressing P/pH.",
+      signals: ["Pale new growth / chlorosis-like symptoms","Weak response to repeated Fe additions"],
+      triggers: [
+        { key:"p_ppm", label:"P >", unit:"ppm", defaultValue: 70, hint:"Higher P increases micro lockout risk." },
+        { key:"ph_high", label:"pH ≥", unit:"", defaultValue: 6.2, hint:"Higher pH reduces Fe availability." },
+      ],
+      checks: ["pH trend first","P level and recent P changes","Fe form/chelation (later)"],
+      doFirst: ["Stabilize pH first.","Reduce P toward baseline.","Only then escalate Fe carefully."],
+      avoid: ["Escalating Fe repeatedly without addressing pH/P (often creates Fe↔Mn seesaw)."],
+      note: "Defaults are guesses for v0 prototype."
+    }],
+  ]);
+})();
+
+/* -------------------------
+   State
+------------------------- */
+const state = {
+  view: "overview", // "overview" | "details"
+
+  filter: "all",
+  minStrength: 1,
+  showWeb: true,
+  tooltips: true,
+
+  pinned: null,
+  hover: null,
+  selectedRelKey: null,
+
+  context: {
+    assumed: true,
+    phRange: "5.8-6.2",
+    ecRange: "1.4-1.8",
+    water: "tap",
+    reset: "weekly",
+    nh4PctRange: "0-10",
+  },
+
+  ruleOverrides: new Map(),
+};
+
+/* -------------------------
+   Utilities
+------------------------- */
+const byId = (id)=>document.getElementById(id);
+
+function getActiveSelection(){ return state.pinned ?? state.hover; }
+function nutrientById(id){ return nutrients.find(n=>n.id===id); }
+
+function matchesFilter(r){
+  if(state.filter === "all") return true;
+  if(state.filter === "ant") return r.type === "ant";
+  if(state.filter === "syn") return r.type === "syn";
+  return true;
+}
+function passesStrength(r){ return r.strength >= state.minStrength; }
+function isIncidentToSelection(r, sel){ return !!sel && (r.a === sel || r.b === sel); }
+
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function getCSS(varName){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(varName)); }
+function escapeHTML(str){
+  return String(str)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+/* -------------------------
+   View switching
+------------------------- */
+function setView(next){
+  state.view = next;
+
+  const ov = byId("viewOverview");
+  const dt = byId("viewDetails");
+  const back = byId("btnBack");
+  const title = byId("rightTitle");
+
+  if(next === "overview"){
+    ov.classList.add("active");
+    dt.classList.remove("active");
+    back.style.display = "none";
+    title.textContent = "Explore";
+  } else {
+    ov.classList.remove("active");
+    dt.classList.add("active");
+    back.style.display = "inline-flex";
+
+    const sel = getActiveSelection();
+    if(state.selectedRelKey){
+      const r = relationships.find(x=>relKey(x)===state.selectedRelKey);
+      if(r){
+        title.textContent = `${r.a} ↔ ${r.b}`;
+      } else {
+        title.textContent = "Details";
+      }
+    } else {
+      title.textContent = sel ? nutrientById(sel).label : "Details";
+    }
+  }
+
+  render();
+}
+
+byId("btnBack").addEventListener("click", ()=>{
+  setView("overview");
+});
+
+/* -------------------------
+   Context parsing + warnings
+------------------------- */
+function parseRange(str){
+  if(!str) return null;
+  const s = String(str).replace("–","-").replaceAll("to","-");
+  const m = s.match(/(-?\d+(\.\d+)?)\s*-\s*(-?\d+(\.\d+)?)/);
+  if(m){
+    const a = parseFloat(m[1]), b = parseFloat(m[3]);
+    if(Number.isFinite(a) && Number.isFinite(b)) return {min: Math.min(a,b), max: Math.max(a,b)};
+  }
+  const n = parseFloat(s);
+  if(Number.isFinite(n)) return {min:n, max:n};
+  return null;
+}
+
+function contextMissing(){
+  const missing = [];
+  if(!parseRange(state.context.phRange)) missing.push("pH");
+  if(!parseRange(state.context.ecRange)) missing.push("EC");
+  if(!parseRange(state.context.nh4PctRange)) missing.push("NH₄%");
+  if(state.context.water === "unknown") missing.push("Water source");
+  if(state.context.reset === "unknown") missing.push("Reset schedule");
+  return missing;
+}
+
+function updateContextWarnings(){
+  const warn = byId("ctxWarn");
+  if(!warn) return;
+
+  const miss = contextMissing();
+  if(miss.length === 0){
+    warn.style.display = "none";
+    warn.innerHTML = "";
+    return;
+  }
+  warn.style.display = "block";
+  warn.innerHTML = `
+    <span class="pill" style="border-color:rgba(255,59,59,.25);background:rgba(255,59,59,.10);">Context missing</span>
+    Missing: <b>${escapeHTML(miss.join(", "))}</b>. Rules still render, but confidence is reduced until these are filled.
+  `;
+}
+
+/* -------------------------
+   SVG rendering
+------------------------- */
+const svg = byId("chart");
+const W = 820, H = 520;
+const cx = 410, cy = 270;
+const R  = 175;
+
+let nodePos = new Map();
+let el = {};
+
+function mkG(id){
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("id", id);
+  return g;
+}
+function mkLine(x1,y1,x2,y2){
+  const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+  l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+  return l;
+}
+function mkTitle(text){
+  const t = document.createElementNS("http://www.w3.org/2000/svg", "title");
+  t.textContent = text;
+  return t;
+}
+
+function buildChart(){
+  svg.innerHTML = "";
+
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  defs.innerHTML = `
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  `;
+  svg.appendChild(defs);
+
+  const gWeb   = mkG("gWeb");
+  const gFocus = mkG("gFocus");
+  const gRing  = mkG("gRing");
+  const gNodes = mkG("gNodes");
+  const gLabs  = mkG("gLabels");
+  svg.appendChild(gWeb);
+  svg.appendChild(gFocus);
+  svg.appendChild(gRing);
+  svg.appendChild(gNodes);
+  svg.appendChild(gLabs);
+
+  const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  ring.setAttribute("cx", cx);
+  ring.setAttribute("cy", cy);
+  ring.setAttribute("r", R);
+  ring.setAttribute("fill", "rgba(0,0,0,.14)");
+  ring.setAttribute("stroke", "rgba(234,242,255,.32)");
+  ring.setAttribute("stroke-width", "2");
+  gRing.appendChild(ring);
+
+  nodePos.clear();
+  const N = nutrients.length;
+  const startAngle = -Math.PI/2;
+  for(let i=0;i<N;i++){
+    const a = startAngle + i*(2*Math.PI/N);
+    const x = cx + Math.cos(a)*R;
+    const y = cy + Math.sin(a)*R;
+    nodePos.set(nutrients[i].id, {x,y,angle:a});
+  }
+
+  const labels = nutrients.map(n=>{
+    const p = nodePos.get(n.id);
+    const outR = R + 26;
+    const lx = cx + Math.cos(p.angle)*outR;
+    const ly = cy + Math.sin(p.angle)*outR;
+    const side = (Math.cos(p.angle) >= 0) ? "right" : "left";
+    return { id:n.id, text:n.label, x:lx, y:ly, side, angle:p.angle };
+  });
+
+  const left = labels.filter(d=>d.side==="left").sort((a,b)=>a.y-b.y);
+  const right= labels.filter(d=>d.side==="right").sort((a,b)=>a.y-b.y);
+  function spread(arr){
+    const minGap = 18;
+    for(let i=1;i<arr.length;i++){
+      if(arr[i].y - arr[i-1].y < minGap) arr[i].y = arr[i-1].y + minGap;
+    }
+    const top = 60, bot = H-40;
+    for(const d of arr) d.y = Math.max(top, Math.min(bot, d.y));
+  }
+  spread(left); spread(right);
+
+  el.webLines = new Map();
+  el.focusLines = new Map();
+  el.nodeCircles = new Map();
+  el.labelText = new Map();
+
+  for(const r of relationships){
+    const a = nodePos.get(r.a), b = nodePos.get(r.b);
+    const key = relKey(r);
+
+    const web = mkLine(a.x, a.y, b.x, b.y);
+    web.dataset.key = key;
+    web.dataset.type = r.type;
+    web.dataset.strength = String(r.strength);
+    web.setAttribute("stroke-linecap","round");
+    web.setAttribute("pointer-events","stroke");
+    web.style.cursor = "pointer";
+    web.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      state.selectedRelKey = key;
+      if(!state.pinned && !state.hover) state.pinned = r.a;
+      setView("details");
+    });
+    gWeb.appendChild(web);
+    el.webLines.set(key, web);
+
+    const foc = mkLine(a.x, a.y, b.x, b.y);
+    foc.dataset.key = key;
+    foc.dataset.type = r.type;
+    foc.dataset.strength = String(r.strength);
+    foc.setAttribute("stroke-linecap","round");
+    foc.setAttribute("pointer-events","stroke");
+    foc.style.cursor = "pointer";
+    foc.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      state.selectedRelKey = key;
+      if(!state.pinned && !state.hover) state.pinned = r.a;
+      setView("details");
+    });
+    gFocus.appendChild(foc);
+    el.focusLines.set(key, foc);
+  }
+
+  for(const n of nutrients){
+    const p = nodePos.get(n.id);
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", p.x);
+    c.setAttribute("cy", p.y);
+    c.setAttribute("r", getCSS("--nodeR"));
+    c.setAttribute("fill", "rgba(234,242,255,.92)");
+    c.setAttribute("stroke", "rgba(0,0,0,.35)");
+    c.setAttribute("stroke-width", "1.4");
+    c.style.cursor = "pointer";
+
+    c.addEventListener("mouseenter", ()=>{
+      state.hover = n.id;
+      state.selectedRelKey = null;
+      render();
+    });
+    c.addEventListener("mouseleave", ()=>{
+      state.hover = null;
+      render();
+    });
+    c.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      state.pinned = (state.pinned === n.id) ? null : n.id;
+      state.selectedRelKey = null;
+      if(state.view === "details") render();
+      else render();
+    });
+
+    if(state.tooltips){
+      c.appendChild(mkTitle(`${n.label}\nHover to preview • Click to pin`));
+    }
+
+    gNodes.appendChild(c);
+    el.nodeCircles.set(n.id, c);
+  }
+
+  const labelAll = [...left, ...right];
+  for(const d of labelAll){
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", d.x);
+    t.setAttribute("y", d.y);
+    t.setAttribute("font-size", getCSS("--labelSize"));
+    t.setAttribute("font-weight", "800");
+    t.setAttribute("fill", "rgba(234,242,255,.88)");
+    t.setAttribute("dominant-baseline", "middle");
+    t.setAttribute("text-anchor", d.side==="right" ? "start" : "end");
+    t.textContent = d.text;
+    t.style.cursor = "pointer";
+
+    t.addEventListener("mouseenter", ()=>{
+      state.hover = d.id;
+      state.selectedRelKey = null;
+      render();
+    });
+    t.addEventListener("mouseleave", ()=>{
+      state.hover = null;
+      render();
+    });
+    t.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      state.pinned = (state.pinned === d.id) ? null : d.id;
+      state.selectedRelKey = null;
+      render();
+    });
+
+    if(state.tooltips){
+      t.appendChild(mkTitle(`${nutrientById(d.id).label}`));
+    }
+
+    gLabs.appendChild(t);
+    el.labelText.set(d.id, t);
+  }
+
+  svg.addEventListener("click", ()=>{
+    state.pinned = null;
+    state.selectedRelKey = null;
+    if(state.view === "details") render();
+    else render();
+  });
+
+  render();
+}
+
+/* -------------------------
+   Rendering logic
+------------------------- */
+function render(){
+  // only show context warnings in details (keeps overview clean)
+  if(state.view === "details") updateContextWarnings();
+
+  const sel = getActiveSelection();
+  const pinned = state.pinned;
+
+  byId("uiFilter").textContent = state.filter === "all" ? "All" : (state.filter === "ant" ? "Antagonism" : "Synergy");
+
+  let mode = "Overview";
+  if(sel && pinned) mode = "Pinned focus";
+  else if(sel && !pinned) mode = "Preview focus";
+  byId("uiMode").textContent = mode;
+
+  byId("uiSelection").textContent = sel ? nutrientById(sel).label : "None";
+
+  if(state.selectedRelKey){
+    const r = relationships.find(x=>relKey(x)===state.selectedRelKey);
+    if(r){
+      byId("uiType").textContent = (r.type === "ant") ? "Antagonism" : "Synergy";
+      byId("uiStrength").textContent = String(r.strength);
+    } else {
+      byId("uiType").textContent = "—";
+      byId("uiStrength").textContent = "—";
+    }
+  } else {
+    byId("uiType").textContent = "—";
+    byId("uiStrength").textContent = "—";
+  }
+
+  byId("strengthBadge").textContent = `${state.minStrength}+`;
+
+  const overviewAllBright = (!sel && state.filter === "all");
+
+  const gWeb = byId("gWeb");
+  gWeb.style.display = state.showWeb ? "block" : "none";
+
+  for(const r of relationships){
+    const key = relKey(r);
+    const webL = el.webLines.get(key);
+    const focL = el.focusLines.get(key);
+
+    const allowed = matchesFilter(r) && passesStrength(r);
+    const color = (r.type === "ant") ? cssVar("--ant") : cssVar("--syn");
+
+    let webOpacity = 0;
+    let focusOpacity = 0;
+
+    if(!allowed){
+      webOpacity = overviewAllBright ? (passesStrength(r) ? getCSS("--lineFaintAllBright") : 0) : 0;
+      focusOpacity = 0;
+    } else {
+      if(!sel){
+        if(overviewAllBright){
+          webOpacity = 0;
+          focusOpacity = 1;
+        } else {
+          webOpacity = state.showWeb ? getCSS("--lineFaint") : 0;
+          focusOpacity = 1;
+        }
+      } else {
+        if(isIncidentToSelection(r, sel)){
+          webOpacity = state.showWeb ? getCSS("--lineFaint") : 0;
+          focusOpacity = 1;
+        } else {
+          webOpacity = state.showWeb ? getCSS("--lineFaint") : 0;
+          focusOpacity = 0;
+        }
+      }
+    }
+
+    if(webL){
+      webL.setAttribute("stroke", color);
+      webL.setAttribute("stroke-width", String(getCSS("--strokeFaint")));
+      webL.setAttribute("opacity", String(webOpacity));
+      webL.style.pointerEvents = webOpacity > 0 ? "stroke" : "none";
+    }
+
+    if(focL){
+      focL.setAttribute("stroke", color);
+      focL.setAttribute("stroke-width", String(getCSS("--strokeBright")));
+      focL.setAttribute("opacity", String(focusOpacity));
+      focL.style.pointerEvents = focusOpacity > 0 ? "stroke" : "none";
+    }
+
+    if(state.selectedRelKey && key === state.selectedRelKey){
+      if(focL){
+        focL.setAttribute("stroke-width", String(getCSS("--strokeBright") + 1.2));
+        focL.setAttribute("filter", "url(#glow)");
+      }
+    } else {
+      if(focL) focL.removeAttribute("filter");
+    }
+  }
+
+  for(const n of nutrients){
+    const c = el.nodeCircles.get(n.id);
+    const t = el.labelText.get(n.id);
+    const isSel = (sel === n.id);
+
+    c.setAttribute("r", isSel ? getCSS("--nodeRSelected") : getCSS("--nodeR"));
+    c.setAttribute("fill", isSel ? "rgba(255,255,255,.96)" : "rgba(234,242,255,.92)");
+    c.setAttribute("stroke", isSel ? "rgba(57,217,138,.70)" : "rgba(0,0,0,.35)");
+    c.setAttribute("stroke-width", isSel ? "2.2" : "1.4");
+    c.style.filter = isSel ? "drop-shadow(0 0 8px rgba(57,217,138,.55))" : "none";
+
+    if(t){
+      const base = "rgba(234,242,255,.86)";
+      const faded = "rgba(234,242,255,.45)";
+      t.setAttribute("fill", isSel ? "rgba(255,255,255,.96)" : (sel ? faded : base));
+      t.setAttribute("font-weight", isSel ? "900" : "800");
+      t.style.textShadow = isSel ? "0 2px 10px rgba(57,217,138,.25)" : "none";
+    }
+  }
+
+  // Update Overview preview & Details lists
+  updateOverviewPanel(sel);
+  updateDetailsPanel(sel);
+  updateRelNav(sel);
+
+  // Update right title if in details
+  if(state.view === "details"){
+    const title = byId("rightTitle");
+    const level = byId("rightLevel");
+    if(state.selectedRelKey){
+      const r = relationships.find(x=>relKey(x)===state.selectedRelKey);
+      title.textContent = r ? `${r.a} ↔ ${r.b}` : "Details";
+      if(level) level.textContent = "Level 4 · Relationships";
+    } else {
+      title.textContent = sel ? nutrientById(sel).label : "Details";
+      if(level) level.textContent = "Level 3 · Explore";
+    }
+  } else {
+    const level = byId("rightLevel");
+    if(level) level.textContent = "Level 3 · Explore";
+  }
+}
+
+/* -------------------------
+   OVERVIEW: lightweight preview
+------------------------- */
+function updateOverviewPanel(sel){
+  const block = byId("focusedOverviewBlock");
+  const noSel = byId("noSelectionMsg");
+  const antRow = byId("previewAnt");
+  const synRow = byId("previewSyn");
+  const watchPreview = byId("watchForPreview");
+
+  if(!sel){
+    block.style.display = "none";
+    noSel.style.display = "block";
+    antRow.innerHTML = "";
+    synRow.innerHTML = "";
+    watchPreview.innerHTML = `<div><strong>Tip:</strong> Select a nutrient to see its strongest relationships.</div>`;
+    return;
+  }
+
+  block.style.display = "block";
+  noSel.style.display = "none";
+
+  const incident = relationships
+    .filter(r => passesStrength(r) && isIncidentToSelection(r, sel) && matchesFilter(r))
+    .map(r => ({
+      ...r,
+      key: relKey(r),
+      other: (r.a === sel) ? r.b : r.a,
+    }))
+    .sort((a,b)=> b.strength - a.strength);
+
+  const ants = incident.filter(r=>r.type==="ant").slice(0,6);
+  const syns = incident.filter(r=>r.type==="syn").slice(0,6);
+
+  antRow.innerHTML = ants.length ? "" : `<div style="color:rgba(234,242,255,.55);font-weight:750;">None at this density.</div>`;
+  synRow.innerHTML = syns.length ? "" : `<div style="color:rgba(234,242,255,.55);font-weight:750;">None at this density.</div>`;
+
+  for(const r of ants) antRow.appendChild(makeMiniChip(sel, r));
+  for(const r of syns) synRow.appendChild(makeMiniChip(sel, r));
+
+  // Preview top rule titles only (no bullets) to reduce clutter
+  const rules = [];
+  for(const r of relationships){
+    if(!isIncidentToSelection(r, sel)) continue;
+    if(!passesStrength(r)) continue;
+    if(!matchesFilter(r)) continue;
+    const key = relKey(r);
+    const rule = RULES.get(key);
+    if(rule && rule.classification === "A") rules.push({rule, rel:r});
+  }
+  if(!rules.length){
+    watchPreview.innerHTML = `<div><strong>What to watch for:</strong> Click a relationship to open details.</div>`;
+    return;
+  }
+  const top = rules.sort((a,b)=> (b.rel.strength - a.rel.strength)).slice(0,2);
+  watchPreview.innerHTML = `
+    <div><strong>What to watch for:</strong> Top items for <strong>${escapeHTML(nutrientById(sel).label)}</strong>:</div>
+    <ul class="bul" style="margin-top:8px;">
+      ${top.map(x=>`<li>${escapeHTML(x.rule.title)}</li>`).join("")}
+    </ul>
+    <div style="margin-top:8px;color:rgba(234,242,255,.55);font-weight:750;">
+      Click any relationship chip/line to open details.
+    </div>
+  `;
+}
+
+function makeMiniChip(sel, r){
+  const div = document.createElement("div");
+  div.className = "miniChip";
+  const dotClass = r.type==="ant" ? "ant" : "syn";
+  div.innerHTML = `<span class="dot ${dotClass}"></span>${escapeHTML(sel)} ↔ ${escapeHTML(r.other)} <span class="badge">S${r.strength}</span>`;
+  div.addEventListener("click", ()=>{
+    state.selectedRelKey = r.key;
+    if(!state.pinned) state.pinned = sel;
+    setView("details");
+  });
+  return div;
+}
+
+/* -------------------------
+   NAV: quick hop to other relationships in details
+------------------------- */
+function updateRelNav(sel){
+  const card = byId("navRelCard");
+  const title = byId("navRelTitle");
+  const chips = byId("navRelChips");
+  if(!card || !title || !chips) return;
+
+  if(state.view !== "details" || !sel){
+    card.style.display = "none";
+    chips.innerHTML = "";
+    return;
+  }
+
+  const currentKey = state.selectedRelKey;
+  const incident = relationships
+    .filter(r => passesStrength(r) && isIncidentToSelection(r, sel))
+    .map(r => ({...r, key: relKey(r), other: (r.a === sel) ? r.b : r.a}))
+    .sort((a,b)=> b.strength - a.strength)
+    .filter(r => r.key !== currentKey);
+
+  if(!incident.length){
+    card.style.display = "none";
+    chips.innerHTML = "";
+    return;
+  }
+
+  title.textContent = `Other relationships for ${nutrientById(sel).label}`;
+  chips.innerHTML = "";
+
+  for(const r of incident){
+    const div = document.createElement("div");
+    div.className = "miniChip";
+    const dotClass = r.type === "ant" ? "ant" : "syn";
+    const pair = `${r.a} ↔ ${r.b}`;
+    div.innerHTML = `<span class="dot ${dotClass}"></span>${escapeHTML(pair)} <span class="badge">S${r.strength}</span>`;
+    div.addEventListener("click", ()=>{
+      state.selectedRelKey = r.key;
+      if(!state.pinned) state.pinned = sel;
+      setView("details");
+    });
+    chips.appendChild(div);
+  }
+
+  card.style.display = "block";
+}
+
+/* -------------------------
+   DETAILS: full lists + watch + rule drawer
+------------------------- */
+function updateDetailsPanel(sel){
+  const detailsNo = byId("detailsNoSelection");
+  const detailsBlock = byId("detailsFocusedBlock");
+  const listAnt = byId("listAnt");
+  const listSyn = byId("listSyn");
+
+  if(state.view !== "details"){
+    // keep DOM stable; no need to rebuild lists off-screen
+    return;
+  }
+
+  if(!sel){
+    detailsNo.style.display = "block";
+    detailsBlock.style.display = "none";
+    listAnt.innerHTML = "";
+    listSyn.innerHTML = "";
+    byId("relDrawer").style.display = "none";
+    byId("watchForDetails").innerHTML = "";
+    return;
+  }
+
+  detailsNo.style.display = "none";
+  detailsBlock.style.display = "block";
+
+  const incident = relationships
+    .filter(r => passesStrength(r) && isIncidentToSelection(r, sel))
+    .map(r => ({
+      ...r,
+      key: relKey(r),
+      other: (r.a === sel) ? r.b : r.a,
+      shown: matchesFilter(r),
+    }))
+    .sort((a,b)=> b.strength - a.strength);
+
+  // If a specific relationship is selected, only show that card
+  if(state.selectedRelKey){
+    const hits = incident.filter(r => r.key === state.selectedRelKey);
+    if(hits.length) incident.splice(0, incident.length, ...hits);
+  }
+
+  const ants = incident.filter(r=>r.type==="ant");
+  const syns = incident.filter(r=>r.type==="syn");
+
+  listAnt.innerHTML = ants.length ? "" : `<div style="color:rgba(234,242,255,.55);font-weight:750;">No antagonism relationships at this density.</div>`;
+  listSyn.innerHTML = syns.length ? "" : `<div style="color:rgba(234,242,255,.55);font-weight:750;">No synergy relationships at this density.</div>`;
+
+  for(const r of ants) listAnt.appendChild(makeDetailChip(sel, r));
+  for(const r of syns) listSyn.appendChild(makeDetailChip(sel, r));
+
+  updateWatchForDetails(sel);
+  updateRelDrawer(sel);
+}
+
+function makeDetailChip(sel, r){
+  const div = document.createElement("div");
+  div.className = "miniChip";
+  const dotClass = r.type==="ant" ? "ant" : "syn";
+  const pair = `${r.a} ↔ ${r.b}`;
+  div.innerHTML = `<span class="dot ${dotClass}"></span>${escapeHTML(pair)} <span class="badge">S${r.strength}</span>`;
+  div.addEventListener("click", ()=>{
+    state.selectedRelKey = r.key;
+    if(!state.pinned) state.pinned = sel;
+    setView("details");
+  });
+  return div;
+}
+
+function makeRelCard(sel, r){
+  const other = nutrientById(r.other);
+  const selN = nutrientById(sel);
+  const typeLabel = (r.type==="ant") ? "Antagonism" : "Synergy";
+  const dotClass = (r.type==="ant") ? "ant" : "syn";
+  const shownTag = r.shown ? "" : `<span class="badge" style="opacity:.75">Filtered out</span>`;
+
+  const div = document.createElement("div");
+  div.className = "relCard";
+  div.innerHTML = `
+    <div class="relTop">
+      <div class="relName">${selN.id} ↔ ${other.id}</div>
+      <div class="relMeta">
+        ${shownTag}
+        <span class="chipType"><span class="dot ${dotClass}"></span>${typeLabel}</span>
+        <span class="badge">S${r.strength}</span>
+      </div>
+    </div>
+    <div class="relNote">${escapeHTML(r.note || "")}</div>
+  `;
+  div.addEventListener("click", ()=>{
+    state.selectedRelKey = r.key;
+    if(!state.pinned) state.pinned = sel;
+    setView("details");
+  });
+  return div;
+}
+
+/* Details-only watch-for: actionable bullets when rule exists */
+function updateWatchForDetails(sel){
+  const elw = byId("watchForDetails");
+  if(!elw) return;
+
+  if(state.selectedRelKey){
+    const r = relationships.find(x => relKey(x) === state.selectedRelKey);
+    const rule = RULES.get(state.selectedRelKey);
+
+    if(r && rule){
+      const a = nutrientById(r.a);
+      const b = nutrientById(r.b);
+      const typeLabel = r.type === "ant" ? "Antagonism" : "Synergy";
+
+      elw.innerHTML = `
+        <div><strong>What to watch for:</strong> <span style="color:rgba(255,255,255,.92);font-weight:900;">${escapeHTML(rule.title)}</span></div>
+        <div style="margin-top:6px;color:rgba(234,242,255,.62);font-weight:800;">
+          ${escapeHTML(a.id)} ↔ ${escapeHTML(b.id)} • ${escapeHTML(typeLabel)} • Strength ${r.strength}
+        </div>
+        <div style="margin-top:10px;color:rgba(234,242,255,.74);font-weight:800;">
+          <strong>Do first (safe):</strong>
+        </div>
+        <ul class="bul" style="margin-top:6px;">
+          ${rule.doFirst.slice(0,3).map(s=>`<li>${escapeHTML(s)}</li>`).join("")}
+        </ul>
+        <div style="margin-top:8px;color:rgba(234,242,255,.55);font-weight:750;">
+          (Prototype note: thresholds are educated defaults; boss can tune.)
+        </div>
+      `;
+      return;
+    }
+  }
+
+  elw.innerHTML = `
+    <div><strong>What to watch for:</strong> Click a relationship card to drill in (rule card + thresholds appear below).</div>
+  `;
+}
+
+/* Relationship drawer (unchanged logic, details-only) */
+function updateRelDrawer(sel){
+  const drawer = byId("relDrawer");
+  if(!drawer) return;
+
+  if(!state.selectedRelKey){
+    updateRelNav(null);
+    drawer.style.display = "none";
+    drawer.innerHTML = "";
+    return;
+  }
+
+  const r = relationships.find(x => relKey(x) === state.selectedRelKey);
+  if(!r){
+    drawer.style.display = "none";
+    drawer.innerHTML = "";
+    return;
+  }
+
+  updateRelNav(sel);
+
+  const a = nutrientById(r.a);
+  const b = nutrientById(r.b);
+  const rule = RULES.get(state.selectedRelKey);
+  const baseTypeLabel = r.type === "ant" ? "Antagonism" : "Synergy";
+
+  drawer.style.display = "block";
+
+  if(!rule){
+    drawer.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div><strong>Relationship:</strong> ${a.label} ↔ ${b.label}</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="badge">${baseTypeLabel}</span>
+          <span class="badge">Strength ${r.strength}</span>
+        </div>
+      </div>
+      <div style="margin-top:8px;"><strong>Grower note:</strong> ${escapeHTML(r.note || "—")}</div>
+      <div style="margin-top:10px;color:rgba(234,242,255,.62);font-weight:750;">
+        <strong>v0 note:</strong> This relationship is currently <em>contextual</em> (no rule card yet).
+      </div>
+    `;
+    return;
+  }
+
+  const missing = contextMissing();
+  const downgraded = missing.length > 0;
+  const conf = downgraded ? "low" : rule.confidence;
+
+  const confLabel =
+    conf === "high" ? "High confidence" :
+    conf === "med" ? "Medium confidence" : "Reduced confidence";
+
+  const confClass =
+    conf === "high" ? "high" :
+    conf === "med" ? "med" : "low";
+
+  const overrides = state.ruleOverrides.get(rule.id) || new Map();
+
+  drawer.innerHTML = `
+    <div class="ruleBox">
+      <div class="ruleTitleRow">
+        <div>
+          <div class="ruleTitle">${escapeHTML(rule.title)}</div>
+          <div style="margin-top:4px;color:rgba(234,242,255,.62);font-weight:800;">
+            <strong>Relationship:</strong> ${escapeHTML(a.id)} ↔ ${escapeHTML(b.id)} • ${escapeHTML(baseTypeLabel)} • Strength ${r.strength}
+          </div>
+        </div>
+        <div class="ruleMeta">
+          <span class="chip ${confClass}">${escapeHTML(confLabel)}</span>
+          <span class="chip">${escapeHTML(rule.appliesTo)}</span>
+          <span class="chip">${escapeHTML(rule.classification === "A" ? "Actionable" : "Contextual")}</span>
+        </div>
+      </div>
+
+      ${downgraded ? `
+        <div class="banner warn" style="margin-top:10px;">
+          <span class="pill" style="border-color:rgba(255,59,59,.25);background:rgba(255,59,59,.10);">Heads up</span>
+          Missing context (${escapeHTML(missing.join(", "))}) → confidence reduced. Fill context above to tighten advice.
+        </div>
+      ` : ""}
+
+      <div class="ruleBody">
+        <strong>What’s likely happening:</strong> ${escapeHTML(rule.mechanism)}
+      </div>
+
+      <div class="ruleCols">
+        <div class="ruleSection">
+          <h4>TRIGGERS (EDITABLE DEFAULTS)</h4>
+          <div style="color:rgba(234,242,255,.56);font-weight:750;margin-bottom:8px;">
+            These are educated guesses for v0. Your boss can change them any time.
+          </div>
+          <div class="trigGrid" id="trigGrid"></div>
+        </div>
+
+        <div class="ruleSection">
+          <h4>WHAT YOU MIGHT SEE</h4>
+          <ul class="bul">
+            ${rule.signals.map(s=>`<li>${escapeHTML(s)}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="ruleSection">
+          <h4>CHECK NEXT (ORDER)</h4>
+          <ul class="bul">
+            ${rule.checks.map(s=>`<li>${escapeHTML(s)}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="ruleSection">
+          <h4>RECOMMENDED RESPONSE (SAFE FIRST)</h4>
+          <ul class="bul">
+            ${rule.doFirst.map(s=>`<li>${escapeHTML(s)}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="ruleSection">
+          <h4>AVOID</h4>
+          <ul class="bul">
+            ${rule.avoid.map(s=>`<li>${escapeHTML(s)}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="ruleSection">
+          <h4>NOTES</h4>
+          <div style="color:rgba(234,242,255,.62);font-weight:750;">${escapeHTML(rule.note || "")}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const grid = drawer.querySelector("#trigGrid");
+  grid.innerHTML = "";
+
+  for(const t of rule.triggers){
+    const cur = (overrides.has(t.key) ? overrides.get(t.key) : t.defaultValue);
+    const row = document.createElement("div");
+    row.className = "trigRow";
+    row.innerHTML = `
+      <div>
+        <div class="lbl">${escapeHTML(t.label)} <span style="opacity:.85">${escapeHTML(String(cur))}${escapeHTML(t.unit ? " " + t.unit : "")}</span></div>
+        <div class="sub">${escapeHTML(t.hint || "")}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" step="0.1" value="${escapeHTML(String(cur))}" data-rule="${escapeHTML(rule.id)}" data-trig="${escapeHTML(t.key)}" />
+        <span class="badge">${escapeHTML(t.unit || "")}</span>
+      </div>
+    `;
+    row.querySelector("input").addEventListener("input", (e)=>{
+      const v = parseFloat(e.target.value);
+      if(!Number.isFinite(v)) return;
+      let m = state.ruleOverrides.get(rule.id);
+      if(!m){ m = new Map(); state.ruleOverrides.set(rule.id, m); }
+      m.set(t.key, v);
+      render();
+    });
+    grid.appendChild(row);
+  }
+}
+
+/* -------------------------
+   Controls, search, keyboard
+------------------------- */
+function setFilter(next){
+  state.filter = next;
+  state.selectedRelKey = null;
+
+  byId("btnAll").setAttribute("aria-pressed", String(next==="all"));
+  byId("btnAnt").setAttribute("aria-pressed", String(next==="ant"));
+  byId("btnSyn").setAttribute("aria-pressed", String(next==="syn"));
+  render();
+}
+
+byId("btnAll").addEventListener("click", ()=>setFilter("all"));
+byId("btnAnt").addEventListener("click", ()=>setFilter("ant"));
+byId("btnSyn").addEventListener("click", ()=>setFilter("syn"));
+
+byId("btnReset").addEventListener("click", ()=>{
+  state.view = "overview";
+  state.filter = "all";
+  state.minStrength = 1;
+  state.showWeb = true;
+  state.tooltips = true;
+  state.pinned = null;
+  state.hover = null;
+  state.selectedRelKey = null;
+  state.ruleOverrides = new Map();
+
+  byId("toggleWeb").checked = true;
+  byId("toggleTooltips").checked = true;
+  byId("strengthSlider").value = "1";
+  setView("overview");
+  setFilter("all");
+});
+
+byId("btnPresent").addEventListener("click", ()=>{
+  const pressed = byId("btnPresent").getAttribute("aria-pressed") === "true";
+  byId("btnPresent").setAttribute("aria-pressed", String(!pressed));
+  document.documentElement.classList.toggle("present", !pressed);
+  buildChart();
+});
+
+byId("toggleWeb").addEventListener("change", (e)=>{
+  state.showWeb = e.target.checked;
+  render();
+});
+byId("toggleTooltips").addEventListener("change", (e)=>{
+  state.tooltips = e.target.checked;
+  buildChart();
+});
+byId("strengthSlider").addEventListener("input", (e)=>{
+  state.minStrength = parseInt(e.target.value, 10);
+  state.selectedRelKey = null;
+  render();
+});
+
+byId("searchInput").addEventListener("input", (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  if(!q){
+    state.hover = null;
+    render();
+    return;
+  }
+  const hit = nutrients.find(n =>
+    n.id.toLowerCase() === q ||
+    n.name.toLowerCase().includes(q) ||
+    n.label.toLowerCase().includes(q)
+  );
+  if(hit){
+    state.hover = hit.id;
+    state.selectedRelKey = null;
+    render();
+  }
+});
+
+byId("searchInput").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){
+    const sel = getActiveSelection();
+    if(sel){
+      state.pinned = sel;
+      state.hover = null;
+      state.selectedRelKey = null;
+      render();
+      byId("searchInput").blur();
+    }
+  }
+  if(e.key === "Escape"){
+    byId("searchInput").value = "";
+    state.hover = null;
+    render();
+    byId("searchInput").blur();
+  }
+});
+
+document.addEventListener("keydown", (e)=>{
+  if(document.activeElement && document.activeElement.tagName === "INPUT") return;
+
+  const order = nutrients.map(n=>n.id);
+  const current = getActiveSelection();
+
+  if(e.key === "Escape"){
+    state.pinned = null;
+    state.hover = null;
+    state.selectedRelKey = null;
+    if(state.view === "details") setView("overview");
+    else render();
+    return;
+  }
+  if(e.key === "ArrowRight" || e.key === "ArrowLeft"){
+    e.preventDefault();
+    let idx = current ? order.indexOf(current) : 0;
+    if(idx < 0) idx = 0;
+    idx += (e.key === "ArrowRight") ? 1 : -1;
+    if(idx < 0) idx = order.length - 1;
+    if(idx >= order.length) idx = 0;
+    state.hover = order[idx];
+    state.selectedRelKey = null;
+    render();
+    return;
+  }
+  if(e.key === "Enter"){
+    const sel = getActiveSelection();
+    if(sel){
+      state.pinned = sel;
+      state.hover = null;
+      state.selectedRelKey = null;
+      render();
+    }
+  }
+});
+
+/* -------------------------
+   Context editor wiring
+------------------------- */
+function loadContextIntoUI(){
+  byId("ctxPH").value = state.context.phRange || "";
+  byId("ctxEC").value = state.context.ecRange || "";
+  byId("ctxWater").value = state.context.water || "unknown";
+  byId("ctxReset").value = state.context.reset || "unknown";
+  byId("ctxNH4").value = state.context.nh4PctRange || "";
+  byId("ctxAssumptionBadge").textContent = state.context.assumed ? "Assumed" : "Custom";
+}
+
+function readContextFromUI(markAssumed = false){
+  state.context.phRange = byId("ctxPH").value.trim();
+  state.context.ecRange = byId("ctxEC").value.trim();
+  state.context.water = byId("ctxWater").value;
+  state.context.reset = byId("ctxReset").value;
+  state.context.nh4PctRange = byId("ctxNH4").value.trim();
+  state.context.assumed = markAssumed ? true : false;
+  byId("ctxAssumptionBadge").textContent = state.context.assumed ? "Assumed" : "Custom";
+}
+
+function setRecommendedGuesses(){
+  state.context = {
+    assumed: true,
+    phRange: "5.8-6.2",
+    ecRange: "1.4-1.8",
+    water: "tap",
+    reset: "weekly",
+    nh4PctRange: "0-10",
+  };
+  loadContextIntoUI();
+  render();
+}
+
+function setUnknownContext(){
+  state.context = {
+    assumed: false,
+    phRange: "",
+    ecRange: "",
+    water: "unknown",
+    reset: "unknown",
+    nh4PctRange: "",
+  };
+  loadContextIntoUI();
+  render();
+}
+
+["ctxPH","ctxEC","ctxNH4"].forEach(id=>{
+  byId(id).addEventListener("input", ()=>{
+    readContextFromUI(false);
+    render();
+  });
+});
+["ctxWater","ctxReset"].forEach(id=>{
+  byId(id).addEventListener("change", ()=>{
+    readContextFromUI(false);
+    render();
+  });
+});
+
+byId("btnCtxAssume").addEventListener("click", ()=>setRecommendedGuesses());
+byId("btnCtxUnknown").addEventListener("click", ()=>setUnknownContext());
+
+(function wireContextCollapse(){
+  const box = byId("contextBox");
+  const caret = byId("ctxCaret");
+  const toggle = byId("ctxToggle");
+  function sync(){
+    const collapsed = box.classList.contains("collapsed");
+    caret.textContent = collapsed ? "+" : "–";
+  }
+  toggle.addEventListener("click", ()=>{
+    box.classList.toggle("collapsed");
+    sync();
+  });
+  sync();
+})();
+
+/* -------------------------
+   Init
+------------------------- */
+function init(){
+  setRecommendedGuesses();
+  loadContextIntoUI();
+
+  buildChart();
+  setFilter("all");
+  setView("overview");
+  render();
+
+  requestAnimationFrame(()=>buildChart());
+}
+
+function ensureChartDrawn(){
+  if(!svg) return;
+  if(svg.childElementCount === 0){
+    buildChart();
+  }
+}
+
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", ()=>init());
+} else {
+  init();
+}
+
+window.addEventListener("load", ensureChartDrawn);
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible") ensureChartDrawn();
+});
+</script>
+</body>
+</html>

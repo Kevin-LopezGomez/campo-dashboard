@@ -1,0 +1,2669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Procurement Material Requirement Planning (MRP) and COGS</title>
+  <style>
+    :root{
+      --bg:#020617;
+      --bg-alt:#020617;
+      --panel:#020617;
+      --panel-soft:#020617;
+      --card:#020617;
+      --border:#1f2937;
+      --border-subtle:#1e293b;
+      --ink:#e5e7eb;
+      --muted:#94a3b8;
+      --accent:#22c55e;
+      --accent-soft:rgba(34,197,94,0.16);
+      --accent-strong:#4ade80;
+      --danger:#ef4444;
+      --danger-soft:rgba(239,68,68,0.16);
+    }
+
+    *{box-sizing:border-box;}
+
+    html,body{
+      margin:0;
+      padding:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,
+        Cantarell,Noto Sans,Helvetica Neue,Arial,sans-serif;
+      background:radial-gradient(circle at top,#020617 0,#020617 40%,#020617 100%);
+      color:var(--ink);
+    }
+
+    body{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* TOP UNIFIED HEADER (mimic Seeding dashboard) */
+    .app-shell{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      background:
+        radial-gradient(circle at 0% 0%,rgba(34,197,94,0.18) 0,transparent 45%),
+        radial-gradient(circle at 80% 0%,rgba(56,189,248,0.25) 0,transparent 55%),
+        #020617;
+      border-bottom:1px solid #0b1120;
+      padding:10px 24px 6px;
+      box-shadow:0 22px 40px rgba(15,23,42,0.9);
+      position:relative;
+      z-index:10;
+    }
+
+    .topbar-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+      letter-spacing:0.02em;
+    }
+
+    .brand-badge{
+      width:26px;
+      height:26px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.5);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:11px;
+      background:radial-gradient(circle at 30% 0%,#22c55e,transparent 60%);
+      box-shadow:0 0 0 1px rgba(15,23,42,0.9),0 18px 35px rgba(15,23,42,0.9);
+    }
+
+    .brand-title{
+      font-size:15px;
+      color:#e5e7eb;
+    }
+
+    .brand-sub{
+      font-size:11px;
+      color:#9ca3af;
+    }
+
+    .brand-stack{
+      display:flex;
+      flex-direction:column;
+    }
+
+    .header-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .header-pill{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.35);
+      background:rgba(15,23,42,0.7);
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .pill-toggle{
+      display:flex;
+      align-items:center;
+      border:1px solid var(--border);
+      border-radius:999px;
+      overflow:hidden;
+      background:#0b1220;
+    }
+    .pill-toggle .pill-option{
+      border:0;
+      background:transparent;
+      color:#cbd5e1;
+      padding:6px 10px;
+      font-size:11px;
+      cursor:pointer;
+    }
+    .pill-toggle .pill-option.active{
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#0b1220;
+      font-weight:700;
+    }
+
+    .status-dot{
+      width:7px;
+      height:7px;
+      border-radius:999px;
+      background:var(--accent);
+      box-shadow:0 0 0 4px rgba(34,197,94,0.25);
+    }
+
+    .nav-tabs{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      font-size:12px;
+    }
+
+    .nav-tab{
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid rgba(51,65,85,0.9);
+      background:rgba(15,23,42,0.9);
+      color:#9ca3af;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      user-select:none;
+    }
+
+    .nav-tab span.emoji{
+      font-size:14px;
+    }
+
+    .nav-tab.active{
+      background:linear-gradient(to right,#22c55e,#2dd4bf);
+      border-color:transparent;
+      color:#022c22;
+      box-shadow:0 12px 35px rgba(34,197,94,0.45);
+    }
+
+    .nav-tab.badge{
+      padding:4px 10px;
+      font-size:11px;
+      opacity:0.85;
+    }
+
+    /* PAGE TITLE BAND */
+    .page-header{
+      padding:18px 24px 8px;
+      border-bottom:1px solid #020617;
+      background:linear-gradient(to right,rgba(15,23,42,0.8),rgba(15,23,42,0.4));
+    }
+
+    .page-header-inner{
+      max-width:1240px;
+      margin:0 auto;
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+    }
+
+    .page-title-block{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .page-kicker{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:0.16em;
+      color:#6b7280;
+    }
+
+    .page-title{
+      font-size:20px;
+      font-weight:750;
+      letter-spacing:0.02em;
+    }
+
+    .page-sub{
+      font-size:12px;
+      color:var(--muted);
+      max-width:520px;
+    }
+
+    .page-controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+
+    .time-range-pill{
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.6);
+      background:rgba(15,23,42,0.85);
+      font-size:11px;
+      color:#e5e7eb;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    /* MAIN LAYOUT */
+    .wrap{
+      max-width:1240px;
+      margin:12px auto 32px;
+      padding:0 16px 24px;
+    }
+
+    /* KPI ROW */
+    .kpi-row{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    @media (max-width:900px){
+      .kpi-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media (max-width:640px){
+      .kpi-row{grid-template-columns:1fr;}
+    }
+
+    .kpi-card{
+      background:
+        radial-gradient(circle at 0 0,rgba(34,197,94,0.16) 0,transparent 55%),
+        rgba(15,23,42,0.95);
+      border-radius:16px;
+      padding:10px 12px;
+      border:1px solid rgba(51,65,85,0.9);
+      box-shadow:0 14px 40px rgba(15,23,42,0.9);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .kpi-label{
+      font-size:11px;
+      color:#9ca3af;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      margin-bottom:4px;
+    }
+
+    .kpi-value{
+      font-size:20px;
+      font-weight:700;
+    }
+
+    .kpi-sub{
+      margin-top:2px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .kpi-tag{
+      position:absolute;
+      right:10px;
+      top:10px;
+      font-size:10px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.5);
+      color:#cbd5f5;
+      background:rgba(15,23,42,0.9);
+    }
+
+    /* Toolbar */
+    .toolbar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:0 0 14px;
+    }
+
+    .btn{
+      background:rgba(15,23,42,0.9);
+      border:1px solid rgba(51,65,85,0.9);
+      color:#e5e7eb;
+      border-radius:999px;
+      padding:5px 12px;
+      cursor:pointer;
+      font-size:11px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .btn:hover{
+      border-color:rgba(148,163,184,0.95);
+      background:rgba(15,23,42,1);
+    }
+
+    .btn-icon{
+      font-size:13px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1.1fr 1.2fr;
+      gap:16px;
+    }
+
+    @media (max-width:1024px){
+      .grid{grid-template-columns:1fr;}
+    }
+
+    .card{
+      background:rgba(15,23,42,0.96);
+      border:1px solid rgba(30,64,175,0.4);
+      border-radius:18px;
+      box-shadow:0 20px 45px rgba(15,23,42,0.95);
+      overflow:hidden;
+    }
+
+    .card.pad{
+      padding:10px 12px 10px;
+    }
+
+    .card h2{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:13px;
+      color:#e5e7eb;
+      margin:0;
+      padding-bottom:8px;
+      border-bottom:1px solid rgba(30,64,175,0.45);
+    }
+
+    .card h2 span.title-pill{
+      font-size:10px;
+      padding:2px 7px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.6);
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      color:#9ca3af;
+    }
+
+    .collapse-btn{
+      background:rgba(15,23,42,0.95);
+      border:1px solid rgba(51,65,85,0.9);
+      color:var(--muted);
+      border-radius:999px;
+      padding:2px 8px;
+      cursor:pointer;
+      font-size:11px;
+      min-width:26px;
+      text-align:center;
+    }
+
+    .pad-content{margin-top:8px;}
+
+    label{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-bottom:4px;
+    }
+
+    input[type="number"],
+    input[type="range"],
+    select{
+      width:100%;
+      padding:7px 8px;
+      border-radius:9px;
+      border:1px solid var(--border-subtle);
+      background:#020617;
+      color:var(--ink);
+      font-size:11px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .row3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+
+    .mix-compact{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+      margin-top:6px;
+    }
+
+    @media(max-width:700px){
+      .mix-compact{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media(max-width:520px){
+      .mix-compact{grid-template-columns:1fr;}
+    }
+
+    .mix-input{width:70px;text-align:right;}
+
+  </style>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="page-header-inner">
+      <div class="page-title-block">
+        <div class="page-kicker">PROCUREMENT · MRP & COGS</div>
+        <div class="page-title">Procurement Material Requirement Planning (MRP) and COGS</div>
+        <div class="page-sub">
+          Adjust weekly output, mix (with locks), assumptions, inventory, COGS, and waste.
+          Outputs remain your target; waste affects Materials Plan and COGS only.
+        </div>
+      </div>
+
+      <div class="page-controls">
+        <div class="time-range-pill">
+          <span>Simulation horizon</span>
+          <strong><span id="pageHorizonLabel">1 week</span></strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN WRAPPER -->
+  <div class="wrap">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total lbs</div>
+        <div class="kpi-value" id="kpiTotalLbs">20,000</div>
+        <div class="kpi-sub">Across all sizes, over horizon</div>
+        <div class="kpi-tag">Output</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Total cases</div>
+        <div class="kpi-value" id="kpiTotalCases">0</div>
+        <div class="kpi-sub">Based on packs / case & mix</div>
+        <div class="kpi-tag">Output</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Total COGS</div>
+        <div class="kpi-value" id="kpiTotalCogs">$0.00</div>
+        <div class="kpi-sub">All packaging components over horizon</div>
+        <div class="kpi-tag">COGS</div>
+      </div>
+    </div>
+
+    <!-- EXPAND / COLLAPSE -->
+    <div class="toolbar">
+      <button id="expandAll" class="btn"><span class="btn-icon">⮟</span> Expand all panels</button>
+      <button id="collapseAll" class="btn"><span class="btn-icon">⮝</span> Collapse all</button>
+    </div>
+
+    <div class="grid">
+
+      <!-- LEFT SIDE INPUTS -->
+      <div class="inputs-grid">
+
+        <!-- VOLUME & MIX -->
+        <div class="card pad collapsed">
+          <h2>
+            <span><span class="title-pill">Inputs</span> Volume & Mix</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:#94a3b8;">Mix mode</span>
+              <div class="pill-toggle" id="mixModeToggle">
+                <button type="button" class="pill-option active" data-mode="size">Size</button>
+                <button type="button" class="pill-option" data-mode="sku">SKU</button>
+              </div>
+              <select id="mixMode" style="display:none;">
+                <option value="size" selected>Size mode</option>
+                <option value="sku">SKU mode</option>
+              </select>
+              <button class="collapse-btn">+</button>
+            </div>
+          </h2>
+
+          <div class="pad-content">
+
+            <div class="row">
+              <div>
+                <label>Total lbs per week</label>
+                <input type="number" id="lbs" value="20000"/>
+              </div>
+
+              <div>
+                <label>Weeks to simulate</label>
+                <input type="number" id="weeks" value="1"/>
+                <div style="color:#94a3b8;font-size:11px;">All materials scale to this horizon.</div>
+              </div>
+            </div>
+
+            <!-- SIZE MODE PRODUCT MIX -->
+            <div id="productMixContainer" style="margin-top:12px;">
+              <div style="display:flex;justify-content:space-between;">
+                <div style="color:#94a3b8;font-size:11px;">
+                  Product Mix by Size
+                  <span class="pill">SUM <strong id="mixSumPill">100.00%</strong></span>
+                </div>
+
+                <label style="display:flex;gap:6px;align-items:center;color:#d1d5db;">
+                  <input type="checkbox" id="autoBalance" checked/> Auto-balance
+                </label>
+              </div>
+
+              <div class="mix-compact">
+
+                <!-- 5oz -->
+                <div class="item">
+                  <label>
+                    <span>5oz: <strong id="mix5val">40.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock5"/> Lock</span>
+                  </label>
+
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="mix5" min="0" max="100" value="40"/>
+                    <input type="number" id="mix5Input" class="mix-input" data-mix-idx="0" value="40"/>
+                  </div>
+                </div>
+
+                <!-- 10oz -->
+                <div class="item">
+                  <label>
+                    <span>10oz: <strong id="mix10val">35.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock10"/> Lock</span>
+                  </label>
+
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="mix10" min="0" max="100" value="35"/>
+                    <input type="number" id="mix10Input" class="mix-input" data-mix-idx="1" value="35"/>
+                  </div>
+                </div>
+
+                <!-- 16oz -->
+                <div class="item">
+                  <label>
+                    <span>16oz: <strong id="mix16val">25.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock16"/> Lock</span>
+                  </label>
+
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="mix16" min="0" max="100" value="25"/>
+                    <input type="number" id="mix16Input" class="mix-input" data-mix-idx="2" value="25"/>
+                  </div>
+                </div>
+
+                <!-- 1lb -->
+                <div class="item">
+                  <label>
+                    <span>1lb: <strong id="mix1lbval">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock1lb"/> Lock</span>
+                  </label>
+
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="mix1lb" min="0" max="100" value="0"/>
+                    <input type="number" id="mix1lbInput" class="mix-input" data-mix-idx="3" value="0"/>
+                  </div>
+                </div>
+
+                <!-- 3lb -->
+                <div class="item">
+                  <label>
+                    <span>3lb: <strong id="mix3lbval">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock3lb"/> Lock</span>
+                  </label>
+
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="mix3lb" min="0" max="100" value="0"/>
+                    <input type="number" id="mix3lbInput" class="mix-input" data-mix-idx="4" value="0"/>
+                  </div>
+                </div>
+
+              </div> <!-- mix-compact -->
+
+              <div id="mixWarning" style="color:#ef4444;font-size:11px;display:none;margin-top:6px;">
+                Mix must equal 100%.
+              </div>
+
+            </div> <!-- productMixContainer -->
+
+            <!-- SKU MODE MIX (appears only when SKU mode selected) -->
+            <div id="filmMixContainer" style="margin-top:12px;display:none;">
+
+              <div style="text-align:right;margin-bottom:4px;">
+                <label style="display:flex;justify-content:flex-end;gap:6px;color:#d1d5db;">
+                  <input type="checkbox" id="skuAutoBalance" checked/> Auto-balance SKU mix
+                </label>
+              </div>
+
+              <h4 class="section-title" style="font-size:13px;">SKU Mode Size Mix</h4>
+
+              <div class="mix-compact">
+                <div class="item">
+                  <label>
+                    <span>5oz share: <strong id="skuSize5Val">40.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lockSkuSize5"/> Lock</span>
+                  </label>
+                  <input type="number" id="skuSize5" value="40" class="mix-input"/>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>10oz share: <strong id="skuSize10Val">35.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lockSkuSize10"/> Lock</span>
+                  </label>
+                  <input type="number" id="skuSize10" value="35" class="mix-input"/>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>16oz share: <strong id="skuSize16Val">25.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lockSkuSize16"/> Lock</span>
+                  </label>
+                  <input type="number" id="skuSize16" value="25" class="mix-input"/>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>1lb share: <strong id="skuSize1lbVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lockSkuSize1lb"/> Lock</span>
+                  </label>
+                  <input type="number" id="skuSize1lb" value="0" class="mix-input"/>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>3lb share: <strong id="skuSize3lbVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lockSkuSize3lb"/> Lock</span>
+                  </label>
+                  <input type="number" id="skuSize3lb" value="0" class="mix-input"/>
+                </div>
+              </div>
+
+              <div style="text-align:right;margin-top:4px;color:#94a3b8;font-size:11px;">
+                Normalized total: <strong id="skuSizeTotal">100.00%</strong>
+              </div>
+
+              <!-- 5oz -->
+              <h4 class="section-title" style="font-size:13px;margin-top:12px;">5OZ Mix</h4>
+              <div class="row3">
+                <div class="item">
+                  <label>
+                    <span>Super Crunchy: <strong id="filmMix5CrunchyVal">100.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock5Crunchy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix5Crunchy" min="0" max="100" value="100"/>
+                    <input type="number" class="sku-mix-input" data-size="5oz" data-sku="superCrunchy" value="100"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Crispy: <strong id="filmMix5CrispyVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock5Crispy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix5Crispy" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="5oz" data-sku="superCrispy" value="0"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Combo: <strong id="filmMix5ComboVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock5Combo"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix5Combo" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="5oz" data-sku="superCombo" value="0"/>
+                  </div>
+                </div>
+              </div>
+
+              <div style="text-align:right;color:#94a3b8;font-size:11px;margin-top:4px;">
+                Total: <strong id="filmMix5Total">100.00%</strong>
+              </div>
+
+              <!-- 10oz -->
+              <h4 class="section-title" style="font-size:13px;margin-top:12px;">10OZ Mix</h4>
+              <div class="row3">
+                <div class="item">
+                  <label>
+                    <span>Super Crunchy: <strong id="filmMix10CrunchyVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock10Crunchy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix10Crunchy" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="10oz" data-sku="superCrunchy" value="0"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Crispy: <strong id="filmMix10CrispyVal">100.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock10Crispy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix10Crispy" min="0" max="100" value="100"/>
+                    <input type="number" class="sku-mix-input" data-size="10oz" data-sku="superCrispy" value="100"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Combo: <strong id="filmMix10ComboVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock10Combo"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix10Combo" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="10oz" data-sku="superCombo" value="0"/>
+                  </div>
+                </div>
+              </div>
+
+              <div style="text-align:right;color:#94a3b8;font-size:11px;margin-top:4px;">
+                Total: <strong id="filmMix10Total">100.00%</strong>
+              </div>
+
+              <!-- 16oz -->
+              <h4 class="section-title" style="font-size:13px;margin-top:12px;">16OZ Mix</h4>
+              <div class="row3">
+                <div class="item">
+                  <label>
+                    <span>Super Crunchy: <strong id="filmMix16CrunchyVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock16Crunchy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix16Crunchy" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="16oz" data-sku="superCrunchy" value="0"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Crispy: <strong id="filmMix16CrispyVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock16Crispy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix16Crispy" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="16oz" data-sku="superCrispy" value="0"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Combo: <strong id="filmMix16ComboVal">100.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock16Combo"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix16Combo" min="0" max="100" value="100"/>
+                    <input type="number" class="sku-mix-input" data-size="16oz" data-sku="superCombo" value="100"/>
+                  </div>
+                </div>
+              </div>
+
+              <div style="text-align:right;color:#94a3b8;font-size:11px;margin-top:4px;">
+                Total: <strong id="filmMix16Total">100.00%</strong>
+              </div>
+
+              <!-- 1LB -->
+              <h4 class="section-title" style="font-size:13px;margin-top:12px;">1LB Mix</h4>
+              <div class="row3">
+                <div class="item">
+                  <label>
+                    <span>Super Crunchy: <strong id="filmMix1CrunchyVal">100.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock1Crunchy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix1Crunchy" min="0" max="100" value="100"/>
+                    <input type="number" class="sku-mix-input" data-size="1lb" data-sku="superCrunchy" value="100"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Crispy: <strong id="filmMix1CrispyVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock1Crispy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix1Crispy" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="1lb" data-sku="superCrispy" value="0"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Combo: <strong id="filmMix1ComboVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock1Combo"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix1Combo" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="1lb" data-sku="superCombo" value="0"/>
+                  </div>
+                </div>
+              </div>
+
+              <div style="text-align:right;color:#94a3b8;font-size:11px;margin-top:4px;">
+                Total: <strong id="filmMix1Total">100.00%</strong>
+              </div>
+
+              <!-- 3LB -->
+              <h4 class="section-title" style="font-size:13px;margin-top:12px;">3LB Mix</h4>
+              <div class="row3">
+                <div class="item">
+                  <label>
+                    <span>Super Crunchy: <strong id="filmMix3CrunchyVal">100.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock3Crunchy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix3Crunchy" min="0" max="100" value="100"/>
+                    <input type="number" class="sku-mix-input" data-size="3lb" data-sku="superCrunchy" value="100"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Crispy: <strong id="filmMix3CrispyVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock3Crispy"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix3Crispy" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="3lb" data-sku="superCrispy" value="0"/>
+                  </div>
+                </div>
+
+                <div class="item">
+                  <label>
+                    <span>Super Combo: <strong id="filmMix3ComboVal">0.00%</strong></span>
+                    <span style="color:#94a3b8;"><input type="checkbox" id="lock3Combo"/> Lock</span>
+                  </label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="range" id="filmMix3Combo" min="0" max="100" value="0"/>
+                    <input type="number" class="sku-mix-input" data-size="3lb" data-sku="superCombo" value="0"/>
+                  </div>
+                </div>
+              </div>
+
+              <div style="text-align:right;color:#94a3b8;font-size:11px;margin-top:4px;">
+                Total: <strong id="filmMix3Total">100.00%</strong>
+              </div>
+
+            </div> <!-- end filmMixContainer -->
+
+          </div> <!-- pad-content -->
+        </div> <!-- Volume & Mix card -->
+
+        <!-- WASTE -->
+        <div class="card pad collapsed">
+          <h2>
+            <span><span class="title-pill">Assumptions</span> Waste (does not reduce Outputs)</span>
+            <button class="collapse-btn">+</button>
+          </h2>
+
+          <div class="pad-content">
+            <div style="color:#94a3b8;font-size:11px;margin-bottom:8px;">
+              Applies to materials usage and COGS only.
+            </div>
+
+            <!-- (rest of Waste section stays identical) -->
+            <h3 class="section-title">Clamshell Waste % (by size)</h3>
+            <div class="row">
+               <div>
+                <label>5oz clamshell waste %</label>
+                <input type="number" id="wClam5" value="0" min="0" step="0.1" />
+              </div>
+              <div>
+                <label>10oz clamshell waste %</label>
+                <input type="number" id="wClam10" value="0" min="0" step="0.1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz clamshell waste %</label>
+                <input type="number" id="wClam16" value="0" min="0" step="0.1" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Film / Bag Impression Waste % (by size)</h3>
+            <div class="row">
+              <div>
+                <label>5oz film waste %</label>
+                <input type="number" id="wFilm5" value="0" min="0" step="0.1" />
+              </div>
+              <div>
+                <label>10oz film waste %</label>
+                <input type="number" id="wFilm10" value="0" min="0" step="0.1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz film waste %</label>
+                <input type="number" id="wFilm16" value="0" min="0" step="0.1" />
+              </div>
+              <div>
+                <label>1lb bag waste %</label>
+                <input type="number" id="wFilm1" value="0" min="0" step="0.1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>3lb bag waste %</label>
+                <input type="number" id="wFilm3" value="0" min="0" step="0.1" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Other Waste %</h3>
+            <div class="row3">
+              <div>
+                <label>Cases waste %</label>
+                <input type="number" id="wCases" value="0" min="0" step="0.1" />
+              </div>
+              <div>
+                <label>Pallets waste %</label>
+                <input type="number" id="wPallets" value="0" min="0" step="0.1" />
+              </div>
+              <div>
+                <label>Wrap rolls waste %</label>
+                <input type="number" id="wWrap" value="0" min="0" step="0.1" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assumptions -->
+        <div class="card pad collapsed">
+          <h2>
+            <span>
+              <span class="title-pill">Parameters</span>
+              Assumptions
+            </span>
+            <button class="collapse-btn" type="button">+</button>
+          </h2>
+          <div class="pad-content">
+            <div class="row">
+              <div>
+                <label>Cases per pallet</label>
+                <input type="number" id="casesPerPallet" value="25" min="1" step="1" />
+              </div>
+              <div>
+                <label>Wrap rolls per pallet</label>
+                <input type="number" id="rollsPerPallet" value="0.1667" min="0" step="0.0001" />
+                <div class="muted">Default ≈ 1/6 (one roll wraps 6 pallets)</div>
+              </div>
+            </div>
+
+            <h3 class="section-title">Film / Bag Impressions per Unit (by size)</h3>
+            <div class="row">
+              <div>
+                <label>5oz impressions / unit</label>
+                <input type="number" id="imp5" value="1" min="0" step="0.01" />
+              </div>
+              <div>
+                <label>10oz impressions / unit</label>
+                <input type="number" id="imp10" value="1" min="0" step="0.01" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz impressions / unit</label>
+                <input type="number" id="imp16" value="1" min="0" step="0.01" />
+              </div>
+              <div>
+                <label>1lb impressions / unit</label>
+                <input type="number" id="imp1" value="1" min="0" step="0.01" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>3lb impressions / unit</label>
+                <input type="number" id="imp3" value="1" min="0" step="0.01" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Film Type by Size (fallback)</h3>
+            <div class="muted" style="margin-bottom:6px">
+              Used when Mix mode is “Size” or when SKU mix for a size is all 0.
+            </div>
+            <div class="row">
+              <div>
+                <label>5oz film type</label>
+                <select id="filmType5">
+                  <option value="superCrunchy" selected>Super Crunchy</option>
+                  <option value="superCrispy">Super Crispy</option>
+                  <option value="superCombo">Super Combo</option>
+                </select>
+              </div>
+              <div>
+                <label>10oz film type</label>
+                <select id="filmType10">
+                  <option value="superCrunchy">Super Crunchy</option>
+                  <option value="superCrispy" selected>Super Crispy</option>
+                  <option value="superCombo">Super Combo</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz film type</label>
+                <select id="filmType16">
+                  <option value="superCrunchy">Super Crunchy</option>
+                  <option value="superCrispy">Super Crispy</option>
+                  <option value="superCombo" selected>Super Combo</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Packs per Case</h3>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>5oz packs / case</label>
+                <input type="number" id="cpc5" value="18" min="1" step="1" />
+              </div>
+              <div>
+                <label>10oz packs / case</label>
+                <input type="number" id="cpc10" value="12" min="1" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz packs / case</label>
+                <input type="number" id="cpc16" value="8" min="1" step="1" />
+              </div>
+              <div>
+                <label>1lb packs / case</label>
+                <input type="number" id="cpc1" value="10" min="1" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>3lb packs / case</label>
+                <input type="number" id="cpc3" value="3" min="1" step="1" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Weight per Unit (lb)</h3>
+            <div class="row">
+              <div>
+                <label>5oz</label>
+                <input type="number" id="lb5" value="0.3125" min="0.0001" step="0.0001" />
+              </div>
+              <div>
+                <label>10oz</label>
+                <input type="number" id="lb10" value="0.625" min="0.0001" step="0.0001" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz</label>
+                <input type="number" id="lb16" value="1" min="0.0001" step="0.0001" />
+              </div>
+              <div>
+                <label>1lb</label>
+                <input type="number" id="lb1" value="1" min="0.0001" step="0.0001" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>3lb</label>
+                <input type="number" id="lb3" value="3" min="0.0001" step="0.0001" />
+              </div>
+              <div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory on Hand -->
+        <div class="card pad collapsed">
+          <h2>
+            <span>
+              <span class="title-pill">Inventory</span>
+              Inventory on Hand
+            </span>
+            <button class="collapse-btn" type="button">+</button>
+          </h2>
+          <div class="pad-content">
+            <h3 class="section-title">Clamshells</h3>
+            <div class="row">
+              <div>
+                <label>5oz clamshells (ea)</label>
+                <input type="number" id="invClam5" value="795956" min="0" step="1" />
+              </div>
+              <div>
+                <label>10oz clamshells (ea)</label>
+                <input type="number" id="invClam10" value="247170" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz clamshells (ea)</label>
+                <input type="number" id="invClam16" value="154317" min="0" step="1" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Cases, Pallets & Film / Bags</h3>
+            <div class="row">
+              <div>
+                <label>Cases (ea)</label>
+                <input type="number" id="invCases" value="0" min="0" step="1" />
+              </div>
+              <div>
+                <label>Pallets (ea)</label>
+                <input type="number" id="invPallets" value="0" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Super Crunchy 5oz film impressions (ea)</label>
+                <input type="number" id="invFilmCrunchy5" value="280704" min="0" step="1" />
+              </div>
+              <div>
+                <label>Super Crunchy 10oz film impressions (ea)</label>
+                <input type="number" id="invFilmCrunchy10" value="0" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Super Crunchy 16oz film impressions (ea)</label>
+                <input type="number" id="invFilmCrunchy16" value="0" min="0" step="1" />
+              </div>
+              <div>
+                <label>1lb bag impressions (ea)</label>
+                <input type="number" id="invFilm1" value="0" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Super Crispy 5oz film impressions (ea)</label>
+                <input type="number" id="invFilmCrispy5" value="95410" min="0" step="1" />
+              </div>
+              <div>
+                <label>Super Crispy 10oz film impressions (ea)</label>
+                <input type="number" id="invFilmCrispy10" value="0" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Super Crispy 16oz film impressions (ea)</label>
+                <input type="number" id="invFilmCrispy16" value="0" min="0" step="1" />
+              </div>
+              <div>
+                <label>Super Combo 5oz film impressions (ea)</label>
+                <input type="number" id="invFilmCombo5" value="39480" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Super Combo 10oz film impressions (ea)</label>
+                <input type="number" id="invFilmCombo10" value="0" min="0" step="1" />
+              </div>
+              <div>
+                <label>Super Combo 16oz film impressions (ea)</label>
+                <input type="number" id="invFilmCombo16" value="0" min="0" step="1" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>3lb bag impressions (ea)</label>
+                <input type="number" id="invFilm3" value="0" min="0" step="1" />
+              </div>
+              <div>
+                <label>Wrap rolls (ea)</label>
+                <input type="number" id="invWrapRolls" value="0" min="0" step="1" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COGS -->
+        <div class="card pad collapsed">
+          <h2>
+            <span>
+              <span class="title-pill">Costs</span>
+              COGS (Adjustable)
+            </span>
+            <button class="collapse-btn" type="button">+</button>
+          </h2>
+          <div class="pad-content">
+            <h3 class="section-title">Per Clamshell (rigid)</h3>
+            <div class="row">
+              <div>
+                <label>5oz clamshell ($/ea)</label>
+                <input type="number" id="costClam5" value="0.23" min="0" step="0.0001" />
+              </div>
+              <div>
+                <label>10oz clamshell ($/ea)</label>
+                <input type="number" id="costClam10" value="0.25" min="0" step="0.0001" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz clamshell ($/ea)</label>
+                <input type="number" id="costClam16" value="0.25299" min="0" step="0.00001" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Film / Bag Impression (per unit)</h3>
+            <div class="row">
+              <div>
+                <label>5oz impression ($/ea)</label>
+                <input type="number" id="costImp5" value="0.20" min="0" step="0.0001" />
+              </div>
+              <div>
+                <label>10oz impression ($/ea)</label>
+                <input type="number" id="costImp10" value="0.221" min="0" step="0.0001" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>16oz impression ($/ea)</label>
+                <input type="number" id="costImp16" value="0.221" min="0" step="0.0001" />
+              </div>
+              <div>
+                <label>1lb bag impression ($/ea)</label>
+                <input type="number" id="costImp1" value="0.18" min="0" step="0.0001" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>3lb bag impression ($/ea)</label>
+                <input type="number" id="costImp3" value="0.25" min="0" step="0.0001" />
+              </div>
+              <div></div>
+            </div>
+
+            <h3 class="section-title">Cases & Pallets</h3>
+            <div class="row">
+              <div>
+                <label>Box cost</label>
+                <input type="number" id="boxCost" value="1.211" min="0" step="0.0001" />
+              </div>
+              <div>
+                <label>Box cost unit</label>
+                <select id="boxUnit">
+                  <option value="per_case" selected>per case</option>
+                  <option value="per_clamshell">per unit</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Pallet cost ($/pallet)</label>
+                <input type="number" id="palletCost" value="7.00" min="0" step="0.01" />
+              </div>
+              <div>
+                <label>Wrap cost mode</label>
+                <select id="wrapMode">
+                  <option value="fixed" selected>Fixed $/pallet</option>
+                  <option value="derived">Derived from roll</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div>
+                <label>Wrap cost ($/pallet, fixed)</label>
+                <input type="number" id="wrapCostPerPallet" value="1.75" min="0" step="0.01" />
+              </div>
+              <div>
+                <label>Wrap roll cost ($/roll)</label>
+                <input type="number" id="wrapRollCost" value="10.50" min="0" step="0.01" />
+                <div class="muted">Default assumes $1.75 per pallet × 6 pallets/roll</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE: OUTPUTS -->
+      <div>
+        <div class="card pad">
+          <h2 id="outputsTitle">
+            <span>
+              <span class="title-pill">Outputs</span>
+              <span id="outputsTitleText">Outputs (Weekly)</span>
+            </span>
+            <button class="collapse-btn" type="button">−</button>
+          </h2>
+          <div class="pad-content">
+            <table id="results">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Mix %</th>
+                  <th>Lbs</th>
+                  <th>Units</th>
+                  <th>Cases</th>
+                  <th>Pallets</th>
+                  <th>Film / Bag Impressions</th>
+                  <th>Pallet Wrap (rolls)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="card pad">
+          <h2>
+            <span>
+              <span class="title-pill">Materials</span>
+              Materials Plan (<span id="horizon">1</span> week<span id="plural"></span>)
+            </span>
+            <button class="collapse-btn" type="button">−</button>
+          </h2>
+          <div class="pad-content">
+            <table id="materials">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Required</th>
+                  <th>On Hand</th>
+                  <th>Net Buy</th>
+                  <th>Surplus / (Short)</th>
+                  <th>Weeks Remaining (after horizon)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card pad">
+          <h2 id="cogsTitle">
+            <span>
+              <span class="title-pill">Costs</span>
+              <span id="cogsTitleText">COGS Summary (Weekly)</span>
+            </span>
+            <button class="collapse-btn" type="button">−</button>
+          </h2>
+          <div class="pad-content">
+            <table id="cogs">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Clamshell $</th>
+                  <th>Impression $</th>
+                  <th>Box $</th>
+                  <th>Pallet $</th>
+                  <th>Wrap $</th>
+                  <th><em>Total $</em></th>
+                  <th>$ / lb</th>
+                  <th>$ / case</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> <!-- /.wrap -->
+</div> <!-- /.app-shell -->
+
+<script>
+(function(){
+  const els = {
+    lbs: document.getElementById('lbs'),
+    weeks: document.getElementById('weeks'),
+    auto: document.getElementById('autoBalance'),
+
+    // new KPI + header labels
+    kpiTotalLbs: document.getElementById('kpiTotalLbs'),
+    kpiTotalCases: document.getElementById('kpiTotalCases'),
+    kpiTotalCogs: document.getElementById('kpiTotalCogs'),
+    headerHorizonLabel: document.getElementById('headerHorizonLabel'),
+    pageHorizonLabel: document.getElementById('pageHorizonLabel'),
+
+    productMixContainer: document.getElementById('productMixContainer'),
+
+    mix: [
+      document.getElementById('mix5'),
+      document.getElementById('mix10'),
+      document.getElementById('mix16'),
+      document.getElementById('mix1lb'),
+      document.getElementById('mix3lb')
+    ],
+    locks: [
+      document.getElementById('lock5'),
+      document.getElementById('lock10'),
+      document.getElementById('lock16'),
+      document.getElementById('lock1lb'),
+      document.getElementById('lock3lb')
+    ],
+    mixVal: [
+      document.getElementById('mix5val'),
+      document.getElementById('mix10val'),
+      document.getElementById('mix16val'),
+      document.getElementById('mix1lbval'),
+      document.getElementById('mix3lbval')
+    ],
+    mixNum: [
+      document.getElementById('mix5Input'),
+      document.getElementById('mix10Input'),
+      document.getElementById('mix16Input'),
+      document.getElementById('mix1lbInput'),
+      document.getElementById('mix3lbInput')
+    ],
+
+    mixSumPill: document.getElementById('mixSumPill'),
+    warning: document.getElementById('mixWarning'),
+    horizon: document.getElementById('horizon'),
+    plural: document.getElementById('plural'),
+    outputsTitleText: document.getElementById('outputsTitleText'),
+    cogsTitleText: document.getElementById('cogsTitleText'),
+
+    mixMode: document.getElementById('mixMode'),
+    mixModeToggle: document.getElementById('mixModeToggle'),
+    filmMixContainer: document.getElementById('filmMixContainer'),
+    skuAutoBalance: document.getElementById('skuAutoBalance'),
+
+    // SKU mode size % inputs
+    skuSize: {
+      '5oz': document.getElementById('skuSize5'),
+      '10oz': document.getElementById('skuSize10'),
+      '16oz': document.getElementById('skuSize16'),
+      '1lb': document.getElementById('skuSize1lb'),
+      '3lb': document.getElementById('skuSize3lb')
+    },
+    skuSizeLocks: {
+      '5oz': document.getElementById('lockSkuSize5'),
+      '10oz': document.getElementById('lockSkuSize10'),
+      '16oz': document.getElementById('lockSkuSize16'),
+      '1lb': document.getElementById('lockSkuSize1lb'),
+      '3lb': document.getElementById('lockSkuSize3lb')
+    },
+    skuSizeVal: {
+      '5oz': document.getElementById('skuSize5Val'),
+      '10oz': document.getElementById('skuSize10Val'),
+      '16oz': document.getElementById('skuSize16Val'),
+      '1lb': document.getElementById('skuSize1lbVal'),
+      '3lb': document.getElementById('skuSize3lbVal')
+    },
+    skuSizeTotal: document.getElementById('skuSizeTotal'),
+
+    casesPerPallet: document.getElementById('casesPerPallet'),
+    rollsPerPallet: document.getElementById('rollsPerPallet'),
+
+    impPer: {
+      '5oz': document.getElementById('imp5'),
+      '10oz': document.getElementById('imp10'),
+      '16oz': document.getElementById('imp16'),
+      '1lb': document.getElementById('imp1'),
+      '3lb': document.getElementById('imp3')
+    },
+    cpc: {
+      '5oz': document.getElementById('cpc5'),
+      '10oz': document.getElementById('cpc10'),
+      '16oz': document.getElementById('cpc16'),
+      '1lb': document.getElementById('cpc1'),
+      '3lb': document.getElementById('cpc3')
+    },
+    lbPer: {
+      '5oz': document.getElementById('lb5'),
+      '10oz': document.getElementById('lb10'),
+      '16oz': document.getElementById('lb16'),
+      '1lb': document.getElementById('lb1'),
+      '3lb': document.getElementById('lb3')
+    },
+
+    filmType: {
+      '5oz': document.getElementById('filmType5'),
+      '10oz': document.getElementById('filmType10'),
+      '16oz': document.getElementById('filmType16')
+    },
+
+    filmMix: {
+      '5oz': {
+        superCrunchy: document.getElementById('filmMix5Crunchy'),
+        superCrispy:  document.getElementById('filmMix5Crispy'),
+        superCombo:   document.getElementById('filmMix5Combo')
+      },
+      '10oz': {
+        superCrunchy: document.getElementById('filmMix10Crunchy'),
+        superCrispy:  document.getElementById('filmMix10Crispy'),
+        superCombo:   document.getElementById('filmMix10Combo')
+      },
+      '16oz': {
+        superCrunchy: document.getElementById('filmMix16Crunchy'),
+        superCrispy:  document.getElementById('filmMix16Crispy'),
+        superCombo:   document.getElementById('filmMix16Combo')
+      },
+      '1lb': {
+        superCrunchy: document.getElementById('filmMix1Crunchy'),
+        superCrispy:  document.getElementById('filmMix1Crispy'),
+        superCombo:   document.getElementById('filmMix1Combo')
+      },
+      '3lb': {
+        superCrunchy: document.getElementById('filmMix3Crunchy'),
+        superCrispy:  document.getElementById('filmMix3Crispy'),
+        superCombo:   document.getElementById('filmMix3Combo')
+      }
+    },
+
+    filmMixLocks: {
+      '5oz': {
+        superCrunchy: document.getElementById('lock5Crunchy'),
+        superCrispy:  document.getElementById('lock5Crispy'),
+        superCombo:   document.getElementById('lock5Combo')
+      },
+      '10oz': {
+        superCrunchy: document.getElementById('lock10Crunchy'),
+        superCrispy:  document.getElementById('lock10Crispy'),
+        superCombo:   document.getElementById('lock10Combo')
+      },
+      '16oz': {
+        superCrunchy: document.getElementById('lock16Crunchy'),
+        superCrispy:  document.getElementById('lock16Crispy'),
+        superCombo:   document.getElementById('lock16Combo')
+      },
+      '1lb': {
+        superCrunchy: document.getElementById('lock1Crunchy'),
+        superCrispy:  document.getElementById('lock1Crispy'),
+        superCombo:   document.getElementById('lock1Combo')
+      },
+      '3lb': {
+        superCrunchy: document.getElementById('lock3Crunchy'),
+        superCrispy:  document.getElementById('lock3Crispy'),
+        superCombo:   document.getElementById('lock3Combo')
+      }
+    },
+
+    filmMixVal: {
+      '5oz': {
+        superCrunchy: document.getElementById('filmMix5CrunchyVal'),
+        superCrispy:  document.getElementById('filmMix5CrispyVal'),
+        superCombo:   document.getElementById('filmMix5ComboVal')
+      },
+      '10oz': {
+        superCrunchy: document.getElementById('filmMix10CrunchyVal'),
+        superCrispy:  document.getElementById('filmMix10CrispyVal'),
+        superCombo:   document.getElementById('filmMix10ComboVal')
+      },
+      '16oz': {
+        superCrunchy: document.getElementById('filmMix16CrunchyVal'),
+        superCrispy:  document.getElementById('filmMix16CrispyVal'),
+        superCombo:   document.getElementById('filmMix16ComboVal')
+      },
+      '1lb': {
+        superCrunchy: document.getElementById('filmMix1CrunchyVal'),
+        superCrispy:  document.getElementById('filmMix1CrispyVal'),
+        superCombo:   document.getElementById('filmMix1ComboVal')
+      },
+      '3lb': {
+        superCrunchy: document.getElementById('filmMix3CrunchyVal'),
+        superCrispy:  document.getElementById('filmMix3CrispyVal'),
+        superCombo:   document.getElementById('filmMix3ComboVal')
+      }
+    },
+
+    filmMixTotal: {
+      '5oz': document.getElementById('filmMix5Total'),
+      '10oz': document.getElementById('filmMix10Total'),
+      '16oz': document.getElementById('filmMix16Total'),
+      '1lb': document.getElementById('filmMix1Total'),
+      '3lb': document.getElementById('filmMix3Total')
+    },
+
+    inv: {
+      clam: {
+        '5oz': document.getElementById('invClam5'),
+        '10oz': document.getElementById('invClam10'),
+        '16oz': document.getElementById('invClam16')
+      },
+      cases: document.getElementById('invCases'),
+      pallets: document.getElementById('invPallets'),
+      filmTypes: {
+        superCrunchy: {
+          '5oz': document.getElementById('invFilmCrunchy5'),
+          '10oz': document.getElementById('invFilmCrunchy10'),
+          '16oz': document.getElementById('invFilmCrunchy16')
+        },
+        superCrispy: {
+          '5oz': document.getElementById('invFilmCrispy5'),
+          '10oz': document.getElementById('invFilmCrispy10'),
+          '16oz': document.getElementById('invFilmCrispy16')
+        },
+        superCombo: {
+          '5oz': document.getElementById('invFilmCombo5'),
+          '10oz': document.getElementById('invFilmCombo10'),
+          '16oz': document.getElementById('invFilmCombo16')
+        }
+      },
+      film: {
+        '1lb': document.getElementById('invFilm1'),
+        '3lb': document.getElementById('invFilm3')
+      },
+      wrapRolls: document.getElementById('invWrapRolls')
+    },
+
+    costClam: {
+      '5oz': document.getElementById('costClam5'),
+      '10oz': document.getElementById('costClam10'),
+      '16oz': document.getElementById('costClam16')
+    },
+    costImp: {
+      '5oz': document.getElementById('costImp5'),
+      '10oz': document.getElementById('costImp10'),
+      '16oz': document.getElementById('costImp16'),
+      '1lb': document.getElementById('costImp1'),
+      '3lb': document.getElementById('costImp3')
+    },
+
+    boxCost: document.getElementById('boxCost'),
+    boxUnit: document.getElementById('boxUnit'),
+    palletCost: document.getElementById('palletCost'),
+    wrapMode: document.getElementById('wrapMode'),
+    wrapCostPerPallet: document.getElementById('wrapCostPerPallet'),
+    wrapRollCost: document.getElementById('wrapRollCost'),
+
+    waste: {
+      clam: {
+        '5oz': document.getElementById('wClam5'),
+        '10oz': document.getElementById('wClam10'),
+        '16oz': document.getElementById('wClam16')
+      },
+      film: {
+        '5oz': document.getElementById('wFilm5'),
+        '10oz': document.getElementById('wFilm10'),
+        '16oz': document.getElementById('wFilm16'),
+        '1lb': document.getElementById('wFilm1'),
+        '3lb': document.getElementById('wFilm3')
+      },
+      cases: document.getElementById('wCases'),
+      pallets: document.getElementById('wPallets'),
+      wrap: document.getElementById('wWrap')
+    },
+
+    tbody: document.querySelector('#results tbody'),
+    tfoot: document.querySelector('#results tfoot'),
+    mbody: document.querySelector('#materials tbody'),
+    ctbody: document.querySelector('#cogs tbody'),
+    ctfoot: document.querySelector('#cogs tfoot')
+  };
+
+  const skuKeysBySize = {
+    '5oz': ['superCrunchy','superCrispy','superCombo'],
+    '10oz': ['superCrunchy','superCrispy','superCombo'],
+    '16oz': ['superCrunchy','superCrispy','superCombo'],
+    '1lb': ['superCrunchy','superCrispy','superCombo'],
+    '3lb': ['superCrunchy','superCrispy','superCombo']
+  };
+
+  const onHandTargets = {
+    clam5: els.inv.clam['5oz'],
+    clam10: els.inv.clam['10oz'],
+    clam16: els.inv.clam['16oz'],
+    filmCrunchy5: els.inv.filmTypes.superCrunchy['5oz'],
+    filmCrunchy10: els.inv.filmTypes.superCrunchy['10oz'],
+    filmCrunchy16: els.inv.filmTypes.superCrunchy['16oz'],
+    filmCrispy5: els.inv.filmTypes.superCrispy['5oz'],
+    filmCrispy10: els.inv.filmTypes.superCrispy['10oz'],
+    filmCrispy16: els.inv.filmTypes.superCrispy['16oz'],
+    filmCombo5: els.inv.filmTypes.superCombo['5oz'],
+    filmCombo10: els.inv.filmTypes.superCombo['10oz'],
+    filmCombo16: els.inv.filmTypes.superCombo['16oz'],
+    film1: els.inv.film['1lb'],
+    film3: els.inv.film['3lb'],
+    cases: els.inv.cases,
+    pallets: els.inv.pallets,
+    wrapRolls: els.inv.wrapRolls
+  };
+
+  const sizes = ['5oz','10oz','16oz','1lb','3lb'];
+  const skuSizes = ['5oz','10oz','16oz','1lb','3lb'];
+
+  let adjusting = false;
+  let adjustingSku = false;
+
+  const toNum = x => {
+    const v = parseFloat(x);
+    return Number.isFinite(v) ? v : 0;
+  };
+  const fmt = (n,d=2) =>
+    Number(n||0).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+  const fmt0 = n => Math.round(n||0).toLocaleString();
+  const cur = n =>
+    Number(n||0).toLocaleString(undefined,{
+      style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2
+    });
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const setCollapsed = (card,isCollapsed)=>{
+    if(!card) return;
+    const content = card.querySelector('.pad-content');
+    card.classList[isCollapsed?'add':'remove']('collapsed');
+    if(content){
+      content.style.display = isCollapsed ? 'none' : '';
+    }
+    const btn = card.querySelector('.collapse-btn');
+    if(btn) btn.textContent = isCollapsed?'+':'−';
+  };
+  const roundToStep = (v,step=0.25)=>{
+    if(!step) return v;
+    return Math.round(v/step)*step;
+  };
+
+  function updateMixLabels(){
+    const vals = els.mix.map(el => toNum(el.value));
+    vals.forEach((v,i)=>{
+      if(els.mixVal[i]) els.mixVal[i].textContent = fmt(v,2)+'%';
+      if(els.mixNum[i]) els.mixNum[i].value = v.toFixed(2);
+    });
+    const sum = vals.reduce((a,b)=>a+b,0);
+    if (els.mixSumPill) els.mixSumPill.textContent = fmt(sum,2)+'%';
+    if (els.warning) els.warning.style.display = Math.abs(sum-100)<1e-6 ? 'none':'block';
+  }
+
+  function applyLockStates(){
+    const n = els.mix.length;
+    const locked = els.locks.map(chk=>!!(chk && chk.checked));
+    const vals = els.mix.map(el=>clamp(toNum(el.value),0,100));
+    const lockedCount = locked.filter(Boolean).length;
+
+    els.locks.forEach((chk,i)=>{
+      if(els.mix[i]) els.mix[i].disabled = !!(chk && chk.checked);
+    });
+
+    if(lockedCount === n-1){
+      const fixedIdxs = locked.map((v,i)=>v?i:null).filter(i=>i!==null);
+      const freeIdx = locked.findIndex(v=>!v);
+      const fixedSum = fixedIdxs.reduce((s,i)=>s+vals[i],0);
+      if(freeIdx>=0){
+        els.mix[freeIdx].value = clamp(100-fixedSum,0,100);
+        els.mix[freeIdx].disabled = true;
+      }
+    }
+  }
+
+  function applySkuSizeLockStates(){
+    sizes.forEach(size=>{
+      const lock = els.skuSizeLocks && els.skuSizeLocks[size];
+      const input = els.skuSize && els.skuSize[size];
+      if(lock && input){
+        input.disabled = lock.checked;
+      }
+    });
+  }
+
+  function redistribute(idxChanged){
+    if(!els.auto || !els.auto.checked) return;
+    const n = els.mix.length;
+    const step = toNum(els.mix[idxChanged].step)||0.25;
+    let vals = els.mix.map(el=>clamp(toNum(el.value),0,100));
+    const locked = els.locks.map(chk=>!!(chk && chk.checked));
+
+    if(locked[idxChanged]) return;
+
+    const others = [...Array(n).keys()].filter(i=>i!==idxChanged);
+    const fixed = others.filter(i=>locked[i]);
+    const adjustable = others.filter(i=>!locked[i]);
+
+    const fixedSum = fixed.reduce((s,i)=>s+vals[i],0);
+    const maxForChanged = 100 - fixedSum;
+    vals[idxChanged] = clamp(vals[idxChanged],0,maxForChanged);
+
+    if(adjustable.length===0){
+      vals[idxChanged] = clamp(100-fixedSum,0,100);
+    } else {
+      const remaining = 100 - (vals[idxChanged] + fixedSum);
+      const sumAdj = adjustable.reduce((s,i)=>s+vals[i],0);
+
+      if(sumAdj<=0){
+        const even = adjustable.length>0 ? Math.round((remaining/adjustable.length)/step)*step : 0;
+        let allocated = 0;
+        adjustable.forEach((i,k)=>{
+          if(k===adjustable.length-1){
+            vals[i] = remaining-allocated;
+          }else{
+            vals[i] = even;
+            allocated += even;
+          }
+        });
+      } else {
+        let alloc = 0;
+        adjustable.forEach((i,k)=>{
+          let share = (k===adjustable.length-1)
+            ? (remaining-alloc)
+            : (remaining * (vals[i]/sumAdj));
+          share = Math.round(share/step)*step;
+          alloc += share;
+          vals[i] = share;
+        });
+        const now = vals.reduce((a,b)=>a+b,0);
+        const drift = 100-now;
+        if(Math.abs(drift)>=1e-6 && adjustable.length>0){
+          const largest = adjustable.reduce((best,i)=>vals[i]>vals[best]?i:best,adjustable[0]);
+          vals[largest] = clamp(vals[largest]+drift,0,100);
+        }
+      }
+    }
+
+    adjusting = true;
+    els.mix.forEach((el,i)=>{el.value = vals[i];});
+    adjusting = false;
+  }
+
+  function updateSkuLabels(size){
+    const row = els.filmMix[size];
+    const lockRow = els.filmMixLocks[size];
+    const valRow = els.filmMixVal[size];
+    const totalEl = els.filmMixTotal[size];
+    if(!row) return;
+    const keys = skuKeysBySize[size] || [];
+    let total = 0;
+    keys.forEach(k=>{
+      const v = toNum(row[k].value);
+      total += v;
+      if(valRow && valRow[k]){
+        valRow[k].textContent = fmt(v,2)+'%';
+      }
+      if(lockRow && lockRow[k] && row[k]){
+        row[k].disabled = lockRow[k].checked;
+      }
+      const numInput = document.querySelector(
+        'input.sku-mix-input[data-size="'+size+'"][data-sku="'+k+'"]'
+      );
+      if(numInput) numInput.value = v.toFixed(2);
+    });
+    if(totalEl){
+      totalEl.textContent = fmt(total,2)+'%';
+    }
+  }
+
+  function updateAllSkuLabels(){
+    skuSizes.forEach(updateSkuLabels);
+  }
+
+  function syncMixModeToggle(){
+    if(!els.mixModeToggle || !els.mixMode) return;
+    const mode = els.mixMode.value;
+    els.mixModeToggle.querySelectorAll('.pill-option').forEach(btn=>{
+      const isActive = btn.dataset.mode === mode;
+      btn.classList.toggle('active',isActive);
+    });
+  }
+
+  function syncMixModeVisibility(){
+    if(!els.mixMode) return;
+    const mode = els.mixMode.value;
+
+    if(els.productMixContainer){
+      els.productMixContainer.style.display = (mode === 'size') ? 'block' : 'none';
+    }
+    if(els.filmMixContainer){
+      els.filmMixContainer.style.display = (mode === 'sku') ? 'block' : 'none';
+    }
+    syncMixModeToggle();
+  }
+
+  // SKU mode size shares (simple inputs, auto-normalized)
+  function getSkuModeSizeShares(){
+    const raw = {};
+    const locked = {};
+    const sharesPct = {};
+    let lockedSum = 0;
+    let freeSum = 0;
+
+    sizes.forEach(size=>{
+      const input = els.skuSize[size];
+      const lockEl = els.skuSizeLocks && els.skuSizeLocks[size];
+      const v = input ? Math.max(0,toNum(input.value)) : 0;
+      raw[size] = v;
+      const isLocked = !!(lockEl && lockEl.checked);
+      locked[size] = isLocked;
+      if(isLocked) lockedSum += v;
+      else freeSum += v;
+    });
+
+    const unlocked = sizes.filter(size=>!locked[size]);
+    if(lockedSum === 0 && freeSum === 0){
+      sizes.forEach(size=>{
+        sharesPct[size] = 0;
+      });
+    } else if(lockedSum >= 100 || unlocked.length === 0){
+      const scale = lockedSum>0 ? 100/lockedSum : 0;
+      sizes.forEach(size=>{
+        sharesPct[size] = locked[size] ? raw[size]*scale : 0;
+      });
+    } else {
+      const remaining = 100 - lockedSum;
+      if(freeSum > 0){
+        sizes.forEach(size=>{
+          sharesPct[size] = locked[size] ? raw[size] : remaining * (raw[size]/freeSum);
+        });
+      } else {
+        const even = remaining / (unlocked.length || 1);
+        sizes.forEach(size=>{
+          sharesPct[size] = locked[size] ? raw[size] : even;
+        });
+      }
+    }
+
+    let totalPct = 0;
+    const hasInput = (lockedSum + freeSum) > 0;
+    sizes.forEach(size=>{
+      const input = els.skuSize[size];
+      const step = input ? toNum(input.step)||0.25 : 0.25;
+      const pct = clamp(roundToStep(sharesPct[size]||0,step),0,100);
+      sharesPct[size] = pct;
+      totalPct += pct;
+    });
+
+    if(hasInput){
+      const drift = 100 - totalPct;
+      if(Math.abs(drift) > 1e-6){
+        const adjustTarget = sizes.find(s=>!locked[s]) || sizes[sizes.length-1];
+        if(adjustTarget){
+          sharesPct[adjustTarget] = clamp((sharesPct[adjustTarget]||0)+drift,0,100);
+        }
+      }
+    }
+
+    totalPct = sizes.reduce((s,size)=>s+(sharesPct[size]||0),0);
+
+    sizes.forEach(size=>{
+      const pct = sharesPct[size] || 0;
+      const label = els.skuSizeVal && els.skuSizeVal[size];
+      if(label){
+        label.textContent = fmt(pct,2) + '%';
+      }
+      if(els.skuSize && els.skuSize[size]){
+        els.skuSize[size].value = pct.toFixed(2);
+      }
+    });
+
+    if(els.skuSizeTotal){
+      els.skuSizeTotal.textContent = fmt(totalPct,2) + '%';
+    }
+
+    const shares = {};
+    sizes.forEach(size=>{
+      shares[size] = (sharesPct[size]||0)/100;
+    });
+
+    return shares;
+  }
+
+  function adjustSkuRow(size, changedKey){
+    const row = els.filmMix[size];
+    if(!row) return;
+    const locks = els.filmMixLocks[size] || {};
+    const auto = els.skuAutoBalance && els.skuAutoBalance.checked;
+    const keys = skuKeysBySize[size] || [];
+
+    const vals = {};
+    keys.forEach(k=>{
+      vals[k] = clamp(toNum(row[k].value),0,100);
+    });
+
+    if(!auto){
+      row[changedKey].value = vals[changedKey];
+      updateSkuLabels(size);
+      return;
+    }
+
+    if(locks[changedKey] && locks[changedKey].checked){
+      row[changedKey].value = vals[changedKey];
+      updateSkuLabels(size);
+      return;
+    }
+
+    const otherKeys = keys.filter(k=>k!==changedKey);
+    const lockedOthers = otherKeys.filter(k=>locks[k] && locks[k].checked);
+    const freeOthers = otherKeys.filter(k=>!locks[k] || !locks[k].checked);
+
+    const lockedSum = lockedOthers.reduce((s,k)=>s+vals[k],0);
+    const maxForChanged = 100 - lockedSum;
+    vals[changedKey] = clamp(vals[changedKey],0,maxForChanged);
+
+    let remaining = 100 - (vals[changedKey] + lockedSum);
+
+    if(freeOthers.length === 0){
+      vals[changedKey] = clamp(100 - lockedSum,0,100);
+      remaining = 0;
+    } else {
+      const sumFree = freeOthers.reduce((s,k)=>s+vals[k],0);
+      if(sumFree <= 0){
+        const even = remaining/freeOthers.length;
+        freeOthers.forEach(k=>{ vals[k] = even; });
+      } else {
+        let acc = 0;
+        freeOthers.forEach((k,idx)=>{
+          let share = (idx===freeOthers.length-1)
+            ? (remaining-acc)
+            : remaining * (vals[k]/sumFree);
+          acc += share;
+          vals[k] = share;
+        });
+      }
+    }
+
+    adjustingSku = true;
+    keys.forEach(k=>{
+      row[k].value = vals[k];
+    });
+    adjustingSku = false;
+
+    updateSkuLabels(size);
+  }
+
+  function compute(){
+    applyLockStates();
+    applySkuSizeLockStates();
+    updateMixLabels();
+    syncMixModeVisibility();
+    updateAllSkuLabels();
+
+    const totalLbs = toNum(els.lbs.value);
+    const weeks = Math.max(1,Math.floor(toNum(els.weeks.value)));
+    if (els.horizon) els.horizon.textContent = weeks;
+    if (els.plural) els.plural.textContent = weeks>1 ? 's':'';
+
+    if(els.outputsTitleText)
+      els.outputsTitleText.textContent = weeks>1
+        ? `Outputs (${weeks} weeks)` : 'Outputs (Weekly)';
+    if(els.cogsTitleText)
+      els.cogsTitleText.textContent = weeks>1
+        ? `COGS Summary (${weeks} weeks)` : 'COGS Summary (Weekly)';
+
+    // update header + page horizon labels
+    const horizonLabel = weeks === 1 ? '1 week' : `${weeks} weeks`;
+    if (els.headerHorizonLabel) els.headerHorizonLabel.textContent = horizonLabel;
+    if (els.pageHorizonLabel) els.pageHorizonLabel.textContent = horizonLabel;
+
+    const cpp = toNum(els.casesPerPallet.value);
+    const rollsPerPallet = toNum(els.rollsPerPallet.value);
+
+    const mixMode = els.mixMode ? els.mixMode.value : 'size';
+    const mixVals = els.mix.map(el=>toNum(el.value));
+
+    // Per-size share of total lbs (independent per mode)
+    let sizeShares = {};
+    if(mixMode === 'sku'){
+      // Use SKU-mode size inputs (auto-normalized)
+      sizeShares = getSkuModeSizeShares();
+    } else {
+      // Size mode: use sliders directly
+      sizes.forEach((s,i)=>{
+        sizeShares[s] = mixVals[i]/100;
+      });
+    }
+
+    const weeklyRows = sizes.map((s,i)=>{
+      const pct = sizeShares[s] || 0;
+
+      const lbpp = toNum(els.lbPer[s].value);
+      const cpc = toNum(els.cpc[s].value);
+      const imp = toNum(els.impPer[s].value);
+
+      const lbs = totalLbs*pct;
+      const units = lbpp>0 ? (lbs/lbpp) : 0;
+      const cases = cpc>0 ? (units/cpc) : 0;
+      const pallets = cpp>0 ? (cases/cpp) : 0;
+      const impressions = units*imp;
+      const wrapRolls = pallets*rollsPerPallet;
+
+      return {
+        size:s,
+        mix:pct*100,
+        lbs,
+        clams:units,
+        cases,
+        pallets,
+        impressions,
+        wrapRolls
+      };
+    });
+
+    const rows = weeklyRows.map(r=>({
+      ...r,
+      lbs: r.lbs*weeks,
+      clams: r.clams*weeks,
+      cases: r.cases*weeks,
+      pallets: r.pallets*weeks,
+      impressions: r.impressions*weeks,
+      wrapRolls: r.wrapRolls*weeks
+    }));
+
+    // Outputs table
+    els.tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${r.size}</td>
+        <td>${fmt(r.mix,2)}%</td>
+        <td>${fmt(r.lbs)}</td>
+        <td>${fmt0(r.clams)}</td>
+        <td>${fmt(r.cases)}</td>
+        <td>${fmt(r.pallets)}</td>
+        <td>${fmt0(r.impressions)}</td>
+        <td>${fmt(r.wrapRolls)}</td>
+      </tr>
+    `).join('');
+
+    const tot = rows.reduce((t,r)=>({
+      mix:(t.mix||0)+r.mix,
+      lbs:(t.lbs||0)+r.lbs,
+      clams:(t.clams||0)+r.clams,
+      cases:(t.cases||0)+r.cases,
+      pallets:(t.pallets||0)+r.pallets,
+      impressions:(t.impressions||0)+r.impressions,
+      wrapRolls:(t.wrapRolls||0)+r.wrapRolls
+    }),{});
+
+    els.tfoot.innerHTML = `
+      <tr>
+        <td><b>TOTAL</b></td>
+        <td><b>${fmt(tot.mix,2)}%</b></td>
+        <td><b>${fmt(tot.lbs)}</b></td>
+        <td><b>${fmt0(tot.clams)}</b></td>
+        <td><b>${fmt(tot.cases)}</b></td>
+        <td><b>${fmt(tot.pallets)}</b></td>
+        <td><b>${fmt0(tot.impressions)}</b></td>
+        <td><b>${fmt(tot.wrapRolls)}</b></td>
+      </tr>
+    `;
+
+    // update KPI cards (lbs and cases from totals)
+    if (els.kpiTotalLbs) els.kpiTotalLbs.textContent = fmt(tot.lbs);
+    if (els.kpiTotalCases) els.kpiTotalCases.textContent = fmt(tot.cases);
+
+    // Waste factors
+    const fClam = {
+      '5oz': 1 + toNum(els.waste.clam['5oz'].value)/100,
+      '10oz': 1 + toNum(els.waste.clam['10oz'].value)/100,
+      '16oz': 1 + toNum(els.waste.clam['16oz'].value)/100
+    };
+    const fFilm = {
+      '5oz': 1 + toNum(els.waste.film['5oz'].value)/100,
+      '10oz': 1 + toNum(els.waste.film['10oz'].value)/100,
+      '16oz': 1 + toNum(els.waste.film['16oz'].value)/100,
+      '1lb': 1 + toNum(els.waste.film['1lb'].value)/100,
+      '3lb': 1 + toNum(els.waste.film['3lb'].value)/100
+    };
+    const fCases   = 1 + toNum(els.waste.cases.value)/100;
+    const fPallets = 1 + toNum(els.waste.pallets.value)/100;
+    const fWrap    = 1 + toNum(els.waste.wrap.value)/100;
+
+    function findRow(size){return weeklyRows.find(r=>r.size===size) || {clams:0,impressions:0,cases:0,pallets:0,wrapRolls:0};}
+
+    // Base per-size film requirements (weekly) for 5/10/16 only (1lb & 3lb share generic bag)
+    const filmReqPerSize = {
+      '5oz': findRow('5oz').impressions * fFilm['5oz'],
+      '10oz': findRow('10oz').impressions * fFilm['10oz'],
+      '16oz': findRow('16oz').impressions * fFilm['16oz']
+    };
+
+    // Fallback film type by size
+    const filmTypeForSize = {
+      '5oz': (els.filmType['5oz'] && els.filmType['5oz'].value) || 'superCrunchy',
+      '10oz': (els.filmType['10oz'] && els.filmType['10oz'].value) || 'superCrunchy',
+      '16oz': (els.filmType['16oz'] && els.filmType['16oz'].value) || 'superCrunchy'
+    };
+
+    const filmTypeReqW = {
+      superCrunchy:{'5oz':0,'10oz':0,'16oz':0},
+      superCrispy:{'5oz':0,'10oz':0,'16oz':0},
+      superCombo:{'5oz':0,'10oz':0,'16oz':0}
+    };
+
+    ['5oz','10oz','16oz'].forEach(size=>{
+      const totalImp = filmReqPerSize[size] || 0;
+      if(totalImp <= 0) return;
+
+      const mode = mixMode;
+
+      if(mode === 'size' || !els.filmMix[size]){
+        const t = filmTypeForSize[size];
+        filmTypeReqW[t][size] += totalImp;
+        return;
+      }
+
+      const mixEls = els.filmMix[size];
+      const vCrunchy = Math.max(0,toNum(mixEls.superCrunchy.value));
+      const vCrispy  = Math.max(0,toNum(mixEls.superCrispy.value));
+      const vCombo   = Math.max(0,toNum(mixEls.superCombo.value));
+      const sum = vCrunchy + vCrispy + vCombo;
+
+      if(sum <= 0){
+        const t = filmTypeForSize[size];
+        filmTypeReqW[t][size] += totalImp;
+      } else {
+        filmTypeReqW.superCrunchy[size] += totalImp * (vCrunchy / sum);
+        filmTypeReqW.superCrispy[size]  += totalImp * (vCrispy  / sum);
+        filmTypeReqW.superCombo[size]   += totalImp * (vCombo   / sum);
+      }
+    });
+
+    // Weekly requirements (before horizon)
+    const reqW = {
+      clam5: findRow('5oz').clams * (fClam['5oz']||1),
+      clam10: findRow('10oz').clams * (fClam['10oz']||1),
+      clam16: findRow('16oz').clams * (fClam['16oz']||1),
+
+      filmCrunchy5: filmTypeReqW.superCrunchy['5oz'],
+      filmCrunchy10: filmTypeReqW.superCrunchy['10oz'],
+      filmCrunchy16: filmTypeReqW.superCrunchy['16oz'],
+      filmCrispy5: filmTypeReqW.superCrispy['5oz'],
+      filmCrispy10: filmTypeReqW.superCrispy['10oz'],
+      filmCrispy16: filmTypeReqW.superCrispy['16oz'],
+      filmCombo5: filmTypeReqW.superCombo['5oz'],
+      filmCombo10: filmTypeReqW.superCombo['10oz'],
+      filmCombo16: filmTypeReqW.superCombo['16oz'],
+
+      film1: findRow('1lb').impressions * fFilm['1lb'],
+      film3: findRow('3lb').impressions * fFilm['3lb'],
+
+      cases: weeklyRows.reduce((s,r)=>s+r.cases,0) * fCases,
+      pallets: weeklyRows.reduce((s,r)=>s+r.pallets,0) * fPallets,
+      wrapRolls: weeklyRows.reduce((s,r)=>s+r.wrapRolls,0) * fPallets * fWrap
+    };
+
+    const reqH = {
+      clam5: reqW.clam5*weeks,
+      clam10: reqW.clam10*weeks,
+      clam16: reqW.clam16*weeks,
+      filmCrunchy5: reqW.filmCrunchy5*weeks,
+      filmCrunchy10: reqW.filmCrunchy10*weeks,
+      filmCrunchy16: reqW.filmCrunchy16*weeks,
+      filmCrispy5: reqW.filmCrispy5*weeks,
+      filmCrispy10: reqW.filmCrispy10*weeks,
+      filmCrispy16: reqW.filmCrispy16*weeks,
+      filmCombo5: reqW.filmCombo5*weeks,
+      filmCombo10: reqW.filmCombo10*weeks,
+      filmCombo16: reqW.filmCombo16*weeks,
+      film1: reqW.film1*weeks,
+      film3: reqW.film3*weeks,
+      cases: reqW.cases*weeks,
+      pallets: reqW.pallets*weeks,
+      wrapRolls: reqW.wrapRolls*weeks
+    };
+
+    const onHandBase = {
+      clam5: toNum(els.inv.clam['5oz'].value),
+      clam10: toNum(els.inv.clam['10oz'].value),
+      clam16: toNum(els.inv.clam['16oz'].value),
+
+      filmCrunchy5: toNum(els.inv.filmTypes.superCrunchy['5oz'].value),
+      filmCrunchy10: toNum(els.inv.filmTypes.superCrunchy['10oz'].value),
+      filmCrunchy16: toNum(els.inv.filmTypes.superCrunchy['16oz'].value),
+      filmCrispy5: toNum(els.inv.filmTypes.superCrispy['5oz'].value),
+      filmCrispy10: toNum(els.inv.filmTypes.superCrispy['10oz'].value),
+      filmCrispy16: toNum(els.inv.filmTypes.superCrispy['16oz'].value),
+      filmCombo5: toNum(els.inv.filmTypes.superCombo['5oz'].value),
+      filmCombo10: toNum(els.inv.filmTypes.superCombo['10oz'].value),
+      filmCombo16: toNum(els.inv.filmTypes.superCombo['16oz'].value),
+      film1: toNum(els.inv.film['1lb'].value),
+      film3: toNum(els.inv.film['3lb'].value),
+
+      cases: toNum(els.inv.cases.value),
+      pallets: toNum(els.inv.pallets.value),
+      wrapRolls: toNum(els.inv.wrapRolls.value)
+    };
+    const onHand = onHandBase;
+
+    function weeksRemain(key){
+      const weeklyNeed = reqW[key];
+      if(weeklyNeed<=0) return Infinity;
+      const remaining = onHand[key] - reqH[key];
+      return Math.max(remaining/weeklyNeed,0);
+    }
+
+    function netRow(label,key,digits=0){
+      const step = digits===0 ? '1' : ('0.' + '0'.repeat(digits-1) + '1');
+      const required = reqH[key];
+      const have = onHand[key];
+      const netBuy = Math.max(required-have,0);
+      const surplus = have-required;
+      const wr = weeksRemain(key);
+      const wrText = (wr===Infinity?'∞':fmt(wr,2));
+      const F = (digits===0 ? (n=>fmt0(n)) : (n=>fmt(n,digits)));
+
+      const onHandCell = `<input class="req-input" data-onhand-key="${key}" type="number" step="${step}" value="${have}">`;
+
+      return `
+        <tr>
+          <td>${label}</td>
+          <td>${F(required)}</td>
+          <td>${onHandCell}</td>
+          <td>${F(netBuy)}</td>
+          <td>${F(surplus)}</td>
+          <td>${wrText}</td>
+        </tr>
+      `;
+    }
+
+    els.mbody.innerHTML = [
+      netRow('Clamshells – 5oz','clam5',0),
+      netRow('Clamshells – 10oz','clam10',0),
+      netRow('Clamshells – 16oz','clam16',0),
+      netRow('Film impressions – Super Crunchy 5oz','filmCrunchy5',0),
+      netRow('Film impressions – Super Crunchy 10oz','filmCrunchy10',0),
+      netRow('Film impressions – Super Crunchy 16oz','filmCrunchy16',0),
+      netRow('Film impressions – Super Crispy 5oz','filmCrispy5',0),
+      netRow('Film impressions – Super Crispy 10oz','filmCrispy10',0),
+      netRow('Film impressions – Super Crispy 16oz','filmCrispy16',0),
+      netRow('Film impressions – Super Combo 5oz','filmCombo5',0),
+      netRow('Film impressions – Super Combo 10oz','filmCombo10',0),
+      netRow('Film impressions – Super Combo 16oz','filmCombo16',0),
+      netRow('Bag impressions – 1lb','film1',0),
+      netRow('Bag impressions – 3lb','film3',0),
+      netRow('Cases','cases',2),
+      netRow('Pallets','pallets',2),
+      netRow('Wrap rolls','wrapRolls',2)
+    ].join('');
+
+    // COGS
+    const boxCost = toNum(els.boxCost.value);
+    const boxUnit = els.boxUnit.value;
+    const palletCost = toNum(els.palletCost.value);
+    const wrapMode = els.wrapMode.value;
+    const wrapCostPerPallet = toNum(els.wrapCostPerPallet.value);
+    const wrapRollCost = toNum(els.wrapRollCost.value);
+
+    const cogsRows = rows.map(r=>{
+      const wClamF = (fClam[r.size] !== undefined ? fClam[r.size] : 0);
+      const wFilmF = fFilm[r.size] || 1;
+
+      const clamQtyH = r.clams * wClamF;
+      const filmQtyH = r.impressions * wFilmF;
+      const casesQtyH = r.cases * fCases;
+      const palletsQtyH = r.pallets * fPallets;
+      const wrapRollsQtyH = r.pallets * fPallets * fWrap * toNum(els.rollsPerPallet.value);
+
+      const clamUnitCost = (els.costClam[r.size] ? toNum(els.costClam[r.size].value) : 0);
+      const clamCost = clamQtyH * clamUnitCost;
+
+      const impUnitCost = (els.costImp[r.size] ? toNum(els.costImp[r.size].value) : 0);
+      const impCost = filmQtyH * impUnitCost;
+
+      const boxC = (boxUnit==='per_case')
+        ? (casesQtyH * boxCost)
+        : (clamQtyH * boxCost);
+
+      const palletC = palletsQtyH * palletCost;
+      const wrapC = (wrapMode==='fixed')
+        ? (palletsQtyH * wrapCostPerPallet)
+        : (wrapRollsQtyH * wrapRollCost);
+
+      const totalC = clamCost + impCost + boxC + palletC + wrapC;
+      const costPerLb = r.lbs>0 ? (totalC/r.lbs) : 0;
+      const costPerCase = r.cases>0 ? (totalC/r.cases) : 0;
+
+      return {
+        size:r.size,
+        clamCost,
+        impCost,
+        boxC,
+        palletC,
+        wrapC,
+        totalC,
+        costPerLb,
+        costPerCase,
+        lbs:r.lbs,
+        cases:r.cases
+      };
+    });
+
+    els.ctbody.innerHTML = cogsRows.map(c=>`
+      <tr>
+        <td>${c.size}</td>
+        <td>${cur(c.clamCost)}</td>
+        <td>${cur(c.impCost)}</td>
+        <td>${cur(c.boxC)}</td>
+        <td>${cur(c.palletC)}</td>
+        <td>${cur(c.wrapC)}</td>
+        <td><em>${cur(c.totalC)}</em></td>
+        <td>${cur(c.costPerLb)}</td>
+        <td>${cur(c.costPerCase)}</td>
+      </tr>
+    `).join('');
+
+    const ctot = cogsRows.reduce((t,c)=>({
+      clam:(t.clam||0)+c.clamCost,
+      imp:(t.imp||0)+c.impCost,
+      box:(t.box||0)+c.boxC,
+      pal:(t.pal||0)+c.palletC,
+      wrap:(t.wrap||0)+c.wrapC,
+      total:(t.total||0)+c.totalC,
+      lbs:(t.lbs||0)+c.lbs,
+      cases:(t.cases||0)+c.cases
+    }),{});
+
+    const $perLb = ctot.lbs>0 ? (ctot.total/ctot.lbs) : 0;
+    const $perCase = ctot.cases>0 ? (ctot.total/ctot.cases) : 0;
+
+    if (els.kpiTotalCogs) els.kpiTotalCogs.textContent = cur(ctot.total);
+
+    els.ctfoot.innerHTML = `
+      <tr>
+        <td><b>TOTAL</b></td>
+        <td><b>${cur(ctot.clam)}</b></td>
+        <td><b>${cur(ctot.imp)}</b></td>
+        <td><b>${cur(ctot.box)}</b></td>
+        <td><b>${cur(ctot.pal)}</b></td>
+        <td><b>${cur(ctot.wrap)}</b></td>
+        <td><b><em>${cur(ctot.total)}</em></b></td>
+        <td><b>${cur($perLb)}</b></td>
+        <td><b>${cur($perCase)}</b></td>
+      </tr>
+    `;
+  }
+
+  function makeCollapsible(){
+    document.querySelectorAll('.card.pad').forEach(card=>{
+      const title = card.querySelector('h2');
+      if(!title) return;
+      let btn = title.querySelector('.collapse-btn');
+
+      if(!card.querySelector('.pad-content')){
+        const content = document.createElement('div');
+        content.className = 'pad-content';
+        let n = title.nextSibling;
+        while(n){
+          const nx = n.nextSibling;
+          content.appendChild(n);
+          n = nx;
+        }
+        card.appendChild(content);
+      }
+
+      if(!btn){
+        btn = document.createElement('button');
+        btn.className = 'collapse-btn';
+        btn.type = 'button';
+        btn.textContent = '−';
+        title.appendChild(btn);
+      }
+
+      const toggle = ()=>{setCollapsed(card,!card.classList.contains('collapsed'));};
+
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        toggle();
+      });
+      title.addEventListener('click',e=>{
+        if(e.target===btn) return;
+        toggle();
+      });
+      setCollapsed(card, card.classList.contains('collapsed'));
+    });
+  }
+
+  document.addEventListener('input',ev=>{
+    const el = ev.target;
+    if(el && el.dataset && el.dataset.onhandKey) return;
+
+    // Size mix numeric input
+    if(el.classList && el.classList.contains('mix-input') && el.dataset.mixIdx !== undefined){
+      const idx = parseInt(el.dataset.mixIdx,10);
+      const v = clamp(toNum(el.value),0,100);
+      el.value = v.toFixed(2);
+      if(els.mix[idx]){
+        els.mix[idx].value = v;
+        if(!adjusting){
+          redistribute(idx);
+          compute();
+        }
+      }
+      return;
+    }
+
+    // Size-mix sliders
+    const idx = els.mix.indexOf(el);
+    if(idx!==-1){
+      if(!adjusting){
+        redistribute(idx);
+        compute();
+      }
+      return;
+    }
+
+    // SKU numeric input
+    if(el.classList && el.classList.contains('sku-mix-input')){
+      const size = el.dataset.size;
+      const sku = el.dataset.sku;
+      const row = els.filmMix[size];
+      if(row && row[sku]){
+        const v = clamp(toNum(el.value),0,100);
+        el.value = v.toFixed(2);
+        row[sku].value = v;
+        if(!adjustingSku){
+          adjustSkuRow(size,sku);
+          compute();
+        }
+      }
+      return;
+    }
+
+    // SKU mix sliders
+    for(const size of skuSizes){
+      const row = els.filmMix[size];
+      if(!row) continue;
+      const keys = skuKeysBySize[size] || [];
+      for(const key of keys){
+        if(el === row[key]){
+          if(!adjustingSku){
+            adjustSkuRow(size,key);
+            compute();
+          }
+          return;
+        }
+      }
+    }
+
+    // SKU mode size % inputs
+    if(el && Object.values(els.skuSize).includes(el)){
+      // Just recompute; getSkuModeSizeShares will normalize and update labels
+      compute();
+      return;
+    }
+
+    compute();
+  },true);
+
+  document.addEventListener('change',ev=>{
+    const el = ev.target;
+    if(el && el.dataset && el.dataset.onhandKey){
+      const key = el.dataset.onhandKey;
+      const val = el.value.trim();
+      const num = toNum(val);
+      if(onHandTargets[key]){
+        onHandTargets[key].value = num;
+      }
+      compute();
+      return;
+    }
+    if(el === els.mixMode){
+      syncMixModeVisibility();
+    }
+    compute();
+  },true);
+
+  els.locks.forEach((chk,i)=>{
+    if(chk){
+      chk.addEventListener('change',()=>{
+        applyLockStates();
+        redistribute(i);
+        compute();
+      });
+    }
+  });
+
+  Object.values(els.skuSizeLocks || {}).forEach(chk=>{
+    if(chk){
+      chk.addEventListener('change',()=>{
+        applySkuSizeLockStates();
+        compute();
+      });
+    }
+  });
+
+  // SKU lock listeners
+  skuSizes.forEach(size=>{
+    const lockRow = els.filmMixLocks[size];
+    if(!lockRow) return;
+    const keys = skuKeysBySize[size] || [];
+    keys.forEach(key=>{
+      const chk = lockRow[key];
+      if(chk){
+        chk.addEventListener('change',()=>{
+          updateSkuLabels(size);
+          if(els.skuAutoBalance && els.skuAutoBalance.checked){
+            const firstFree = (skuKeysBySize[size] || [])
+              .find(k=>!lockRow[k] || !lockRow[k].checked) || key;
+            adjustSkuRow(size,firstFree);
+          }
+          compute();
+        });
+      }
+    });
+  });
+
+  const expandBtn = document.getElementById('expandAll');
+  const collapseBtn = document.getElementById('collapseAll');
+
+  if(els.mixModeToggle){
+    els.mixModeToggle.addEventListener('click',e=>{
+      e.stopPropagation();
+      const btn = e.target.closest('[data-mode]');
+      if(!btn) return;
+      const mode = btn.dataset.mode === 'sku' ? 'sku' : 'size';
+      if(els.mixMode){
+        els.mixMode.value = mode;
+      }
+      syncMixModeVisibility();
+      compute();
+    });
+  }
+
+  function setAll(open){
+    document.querySelectorAll('.card').forEach(card=>{
+      setCollapsed(card,!open);
+    });
+  }
+
+  if(expandBtn) expandBtn.addEventListener('click',()=>setAll(true));
+  if(collapseBtn) collapseBtn.addEventListener('click',()=>setAll(false));
+
+  makeCollapsible();
+  syncMixModeVisibility();
+  syncMixModeToggle();
+  updateAllSkuLabels();
+  compute();
+})();
+</script>
+</body>
+</html>

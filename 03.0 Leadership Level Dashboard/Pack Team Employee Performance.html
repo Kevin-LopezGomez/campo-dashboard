@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pack Team Staff Performance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#071026;
+      --card:#0b1222;
+      --card2:#0a1020;
+      --border:#1f2937;
+      --border-subtle:#334155;
+      --text:#e5e7eb;
+      --sub:#a7b0bf;
+      --muted:#7b8798;
+
+      --accent:#22c55e;
+      --accent-soft: rgba(34,197,94,.16);
+
+      --blue:#60a5fa;
+      --blue-soft: rgba(96,165,250,.16);
+
+      --warn:#fbbf24;
+      --warn-soft: rgba(251,191,36,.16);
+
+      --danger:#fb7185;
+      --danger-soft: rgba(251,113,133,.16);
+
+      --shadow: 0 22px 80px rgba(0,0,0,.6);
+      --radius: 18px;
+      --radius2: 14px;
+
+      /* Legibility scale */
+      --fs-xxs: 11px;
+      --fs-xs: 12px;
+      --fs-sm: 13px;
+      --fs-md: 14px;
+      --fs-lg: 16px;
+      --fs-xl: 20px;
+      --fs-2xl: 28px;
+
+      --rowH: 44px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      letter-spacing:.2px;
+      background:
+        radial-gradient(1200px 650px at 18% 0%, rgba(96,165,250,.14), transparent 55%),
+        radial-gradient(900px 520px at 85% 12%, rgba(34,197,94,.12), transparent 55%),
+        radial-gradient(900px 520px at 60% 90%, rgba(251,191,36,.08), transparent 55%),
+        var(--bg);
+    }
+
+    .wrap{max-width: 1380px;margin: 0 auto;padding: 18px 16px 34px;}
+
+    /* Header */
+    .topbar{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+      padding: 18px 18px 14px;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+    }
+    .title{display:flex;flex-direction:column;gap:8px;}
+    .title h1{
+      margin:0;
+      font-size: var(--fs-xl);
+      font-weight: 950;
+      letter-spacing:.35px;
+    }
+    .title .sub{
+      color:var(--sub);
+      font-size: var(--fs-md);
+      line-height: 1.35rem;
+      max-width: 980px;
+    }
+    .meta{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width: 300px;}
+    .pillrow{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;}
+    .pill{
+      border:1px solid var(--border-subtle);
+      color:var(--sub);
+      background: rgba(255,255,255,.03);
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: var(--fs-sm);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:999px;background:var(--accent);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+
+    /* Controls */
+    .filters{
+      margin-top: 14px;
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    }
+    .filterLeft, .filterRight{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .control{
+      display:flex;align-items:center;gap:10px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      padding: 11px 12px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .control label{color:var(--sub);font-size: var(--fs-sm);white-space:nowrap;font-weight:850;}
+    select, input, textarea{
+      background: rgba(2,6,23,.55);
+      color: var(--text);
+      border:1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: var(--fs-md);
+      outline:none;
+    }
+    select{min-width: 170px;}
+    input[type="search"]{min-width: 240px;}
+    textarea{
+      width:100%;
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.5px;
+    }
+
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--border-subtle);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-weight: 950;
+      font-size: var(--fs-md);
+    }
+    .btn.primary{border-color: rgba(34,197,94,.45);background: rgba(34,197,94,.14);}
+    .btn.warn{border-color: rgba(251,191,36,.45);background: rgba(251,191,36,.12);}
+    .btn:hover{filter: brightness(1.06);}
+
+    /* Toggle */
+    .seg{
+      display:inline-flex;
+      border:1px solid var(--border-subtle);
+      border-radius: 999px;
+      overflow:hidden;
+      background: rgba(255,255,255,.02);
+    }
+    .seg button{
+      border:0;
+      padding: 9px 12px;
+      background: transparent;
+      color: var(--sub);
+      cursor:pointer;
+      font-weight: 950;
+      font-size: var(--fs-sm);
+    }
+    .seg button.active{
+      background: rgba(96,165,250,.16);
+      color: #dbeafe;
+    }
+
+    /* Grid / cards */
+    .grid{margin-top: 16px;display:grid;grid-template-columns: repeat(12, 1fr);gap: 12px;}
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card .hdr{
+      padding: 12px 14px 11px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .card .hdr .h{display:flex;flex-direction:column;gap:3px;}
+    .card .hdr .h .t{
+      font-weight: 950;
+      letter-spacing: .45px;
+      font-size: var(--fs-sm);
+      color: var(--text);
+      text-transform: uppercase;
+      opacity:.95;
+    }
+    .card .hdr .h .s{font-size: var(--fs-sm);color: var(--sub);}
+    .card .body{padding: 14px;}
+
+    .glow{
+      position:absolute; inset:-40px -80px auto auto;
+      width: 240px; height: 170px; border-radius: 999px;
+      filter: blur(32px); opacity: .46; pointer-events:none;
+      background: radial-gradient(circle at 30% 30%, rgba(34,197,94,.48), transparent 60%);
+    }
+    .glow.blue{background: radial-gradient(circle at 30% 30%, rgba(96,165,250,.52), transparent 60%);}
+    .glow.warn{background: radial-gradient(circle at 30% 30%, rgba(251,191,36,.48), transparent 60%);}
+
+    /* KPIs */
+    .kpi{padding: 14px 14px 13px;}
+    .kpi .k{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom: 7px;}
+    .kpi .unit{
+      font-size: var(--fs-xs);
+      color: var(--sub);
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing:.6px;
+    }
+    .kpi .val{font-size: var(--fs-2xl);font-weight: 980;letter-spacing:.3px;}
+    .kpi .note{color: var(--sub);font-size: var(--fs-sm);line-height: 1.2rem;}
+
+    /* Badge */
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding: 7px 10px;border-radius: 999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--sub);
+      font-weight: 950;font-size: var(--fs-xs);
+      text-transform: uppercase;letter-spacing:.45px;white-space:nowrap;
+    }
+    .badge.good{border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.14); color: #bbf7d0;}
+    .badge.mid{border-color: rgba(251,191,36,.45); background: rgba(251,191,36,.12); color: #fde68a;}
+    .badge.low{border-color: rgba(251,113,133,.45); background: rgba(251,113,133,.12); color: #fecdd3;}
+    .badge.info{border-color: rgba(96,165,250,.45); background: rgba(96,165,250,.12); color: #dbeafe;}
+
+    /* Charts */
+    .chartWrap{height: 330px;}
+    .chartWrap.tall{height: 390px;}
+    canvas{width:100% !important; height:100% !important;}
+
+    /* Table */
+    .tableWrap{
+      overflow:auto;
+      border-radius: var(--radius2);
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.18);
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      min-width: 1040px;
+      font-size: var(--fs-md);
+    }
+    thead th{
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(2,6,23,.96);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 12px 12px;
+      text-align:left;
+      color: var(--sub);
+      font-weight: 980;
+      text-transform: uppercase;
+      letter-spacing: .45px;
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    tbody td{
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.055);
+      color: var(--text);
+      vertical-align: middle;
+      height: var(--rowH);
+      white-space:nowrap;
+    }
+    tbody tr:nth-child(odd){background: rgba(255,255,255,.015);}
+    tbody tr:hover{background: rgba(96,165,250,.08);}
+    tbody tr.selected{
+      outline: 2px solid rgba(34,197,94,.42);
+      background: rgba(34,197,94,.10);
+    }
+
+    .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;}
+    .trend{font-weight: 980;}
+    .trend.up{color:#86efac;}
+    .trend.flat{color:#e2e8f0;}
+    .trend.down{color:#fda4af;}
+
+    /* Detail panel */
+    .detail{display:flex;flex-direction:column;gap:12px;}
+    .detailTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+    .empName{font-size: var(--fs-lg);font-weight: 980;margin:0;letter-spacing:.2px;}
+    .empHint{margin-top: 6px;color: var(--sub);font-size: var(--fs-md);line-height:1.25rem;}
+    .miniGrid{display:grid;grid-template-columns: repeat(2, 1fr);gap:10px;}
+    .mini{
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.14);
+      border-radius: var(--radius2);
+      padding: 12px;
+    }
+    .mini .lab{color: var(--sub);font-size: var(--fs-xs);font-weight: 980;text-transform: uppercase;letter-spacing:.45px;}
+    .mini .num{margin-top: 7px;font-size: 18px;font-weight: 980;}
+
+    .foot{margin-top: 10px;color: var(--muted);font-size: var(--fs-sm);line-height:1.25rem;}
+
+    /* Layout spans */
+    .span-3{grid-column: span 3;}
+    .span-4{grid-column: span 4;}
+    .span-6{grid-column: span 6;}
+    .span-8{grid-column: span 8;}
+    .span-12{grid-column: span 12;}
+
+    @media (max-width: 1120px){
+      .wrap{max-width: 980px;}
+      .span-3,.span-4,.span-6,.span-8{grid-column: span 12;}
+      .meta{align-items:flex-start}
+      .pillrow{justify-content:flex-start}
+      select{min-width: 150px;}
+      input[type="search"]{min-width: 200px;}
+      table{min-width: 920px;}
+      .chartWrap{height: 300px;}
+      .chartWrap.tall{height: 340px;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- HEADER -->
+    <div class="topbar">
+      <div class="title">
+        <h1>Pack Team Staff Performance</h1>
+        <div class="sub">
+          Paste pack performance rows below. This dashboard computes long-term productivity, participation, and consistency.
+          <b>Rates are recalculated</b> from Pack Cant ÷ Pack Hr where hours &gt; 0. Blank / #DIV/0! rows are treated as non-working entries.
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="pillrow">
+          <div class="pill"><span class="dot"></span> Live from Data Input</div>
+          <div class="pill" id="pillEmphasis">Emphasis: Units</div>
+        </div>
+        <div class="pillrow">
+          <div class="pill">Rows: <span class="mono" id="metaRows">—</span></div>
+          <div class="pill">Range: <span class="mono" id="metaRange">—</span></div>
+          <div class="pill">Excluded: <span class="mono" id="metaExcluded">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="filters">
+      <div class="filterLeft">
+        <div class="control">
+          <label for="rangeSel">Date range</label>
+          <select id="rangeSel">
+            <option value="all">All time</option>
+            <option value="90">Last 90 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="7">Last 7 days</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="empSel">Employee</label>
+          <select id="empSel">
+            <option value="__all__">All employees</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="searchEmp">Search</label>
+          <input id="searchEmp" type="search" placeholder="Type a name…" />
+        </div>
+
+        <div class="control">
+          <label>Focus</label>
+          <div class="seg" role="tablist" aria-label="Units vs Hours emphasis">
+            <button id="segUnits" class="active" type="button">Units</button>
+            <button id="segHours" type="button">Hours</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="filterRight">
+        <button class="btn warn" id="btnLoadSample">Load sample</button>
+        <button class="btn primary" id="btnCompute">Compute</button>
+        <button class="btn" id="btnReset">Reset</button>
+        <button class="btn" id="btnExport">Export CSV</button>
+      </div>
+    </div>
+
+    <!-- DATA INPUT -->
+    <div class="grid">
+      <div class="card span-12">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Data input</div>
+            <div class="s">Paste tab-separated or comma-separated data (header row allowed)</div>
+          </div>
+          <div class="pill">Tip: Keep the 5 columns in order</div>
+        </div>
+        <div class="body">
+          <textarea id="dataBox" spellcheck="false"></textarea>
+          <div class="foot">
+            Expected columns:
+            <span class="mono">Pack Nombre del Empleyado</span>,
+            <span class="mono">Pack Fecha Performance</span>,
+            <span class="mono">Pack Cant</span>,
+            <span class="mono">Pack Hr</span>,
+            <span class="mono">Pack Cant/Hr</span> (ignored; recomputed)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUALITY STRIP -->
+    <div class="grid">
+      <div class="card span-12">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Data quality</div>
+            <div class="s">Quick integrity checks for trust and coaching conversations</div>
+          </div>
+          <div class="pill" id="qualityStatus">Waiting for compute…</div>
+        </div>
+        <div class="body" style="display:grid;grid-template-columns: repeat(12, 1fr);gap:12px;">
+          <div class="card" style="grid-column: span 3; border-radius: var(--radius2); box-shadow:none;">
+            <div class="glow warn"></div>
+            <div class="kpi">
+              <div class="k"><div class="unit">Missing hours</div><div class="badge mid">hr blank</div></div>
+              <div class="val mono" id="qMissingHr">—</div>
+              <div class="note">Rows where Pack Hr is blank / invalid.</div>
+            </div>
+          </div>
+          <div class="card" style="grid-column: span 3; border-radius: var(--radius2); box-shadow:none;">
+            <div class="glow warn"></div>
+            <div class="kpi">
+              <div class="k"><div class="unit">Zero hours</div><div class="badge mid">hr = 0</div></div>
+              <div class="val mono" id="qZeroHr">—</div>
+              <div class="note">Rows with 0 hours (won’t count for rate).</div>
+            </div>
+          </div>
+          <div class="card" style="grid-column: span 3; border-radius: var(--radius2); box-shadow:none;">
+            <div class="glow"></div>
+            <div class="kpi">
+              <div class="k"><div class="unit">Missing units</div><div class="badge mid">cant blank</div></div>
+              <div class="val mono" id="qMissingUnits">—</div>
+              <div class="note">Rows where Pack Cant is blank / invalid.</div>
+            </div>
+          </div>
+          <div class="card" style="grid-column: span 3; border-radius: var(--radius2); box-shadow:none;">
+            <div class="glow blue"></div>
+            <div class="kpi">
+              <div class="k"><div class="unit">Rate-invalid rows</div><div class="badge info">excluded from rate</div></div>
+              <div class="val mono" id="qRateInvalid">—</div>
+              <div class="note">Rows that won’t be used for units/hr.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="grid">
+
+      <!-- KPI ROW -->
+      <div class="card span-3">
+        <div class="glow"></div>
+        <div class="kpi">
+          <div class="k">
+            <div class="unit">Total units packed</div>
+            <div class="badge" id="kpiUnitsNote">Selection</div>
+          </div>
+          <div class="val mono" id="kpiUnits">—</div>
+          <div class="note">Sum of Pack Cant (all rows).</div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="glow blue"></div>
+        <div class="kpi">
+          <div class="k">
+            <div class="unit">Total valid hours</div>
+            <div class="badge" id="kpiHoursNote">hrs &gt; 0</div>
+          </div>
+          <div class="val mono" id="kpiHours">—</div>
+          <div class="note">Sum of Pack Hr where hours &gt; 0.</div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="glow warn"></div>
+        <div class="kpi">
+          <div class="k">
+            <div class="unit">Team avg units/hr</div>
+            <div class="badge" id="kpiRateNote">Weighted</div>
+          </div>
+          <div class="val mono" id="kpiRate">—</div>
+          <div class="note">Total units ÷ total valid hours.</div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="glow"></div>
+        <div class="kpi">
+          <div class="k">
+            <div class="unit">Active packers</div>
+            <div class="badge" id="kpiActiveNote">worked</div>
+          </div>
+          <div class="val mono" id="kpiActive">—</div>
+          <div class="note">Employees with ≥ 1 valid working day.</div>
+        </div>
+      </div>
+
+      <!-- TEAM PERFORMANCE OVER TIME -->
+      <div class="card span-8">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Team performance over time</div>
+            <div class="s">Daily output (bars) with weighted team rate (line)</div>
+          </div>
+          <div class="badge info" id="pillTeamTrend">Daily</div>
+        </div>
+        <div class="body">
+          <div class="chartWrap tall">
+            <canvas id="chartTeam"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATTERNS -->
+      <div class="card span-4">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Pattern insights</div>
+            <div class="s">Day-of-week and rolling averages</div>
+          </div>
+          <div class="badge" id="pillPatterns">Weighted</div>
+        </div>
+        <div class="body" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card" style="border-radius:var(--radius2); box-shadow:none;">
+            <div class="hdr" style="border-bottom:1px solid rgba(255,255,255,.06);">
+              <div class="h">
+                <div class="t">Avg rate by day of week</div>
+                <div class="s">Weighted</div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="chartWrap">
+                <canvas id="chartDow"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="border-radius:var(--radius2); box-shadow:none;">
+            <div class="hdr" style="border-bottom:1px solid rgba(255,255,255,.06);">
+              <div class="h">
+                <div class="t">Rolling team rate</div>
+                <div class="s">7-day moving avg</div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="chartWrap">
+                <canvas id="chartRolling"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE VIEW -->
+      <div class="card span-12">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Attendance & utilization</div>
+            <div class="s">Presence, average shift length, and participation against active days</div>
+          </div>
+          <div class="badge" id="pillAttendance">Selection</div>
+        </div>
+        <div class="body">
+          <div class="tableWrap">
+            <table id="tblAttendance">
+              <thead>
+                <tr>
+                  <th data-sort-att="name">Employee</th>
+                  <th data-sort-att="days" class="mono">Days present</th>
+                  <th data-sort-att="maxDays" class="mono">Active days</th>
+                  <th data-sort-att="pct" class="mono">% participation</th>
+                  <th data-sort-att="hours" class="mono">Total hours</th>
+                  <th data-sort-att="avgHrs" class="mono">Avg hrs/shift</th>
+                </tr>
+              </thead>
+              <tbody id="attBody"></tbody>
+            </table>
+          </div>
+          <div class="foot">
+            Participation % is calculated as <span class="mono">days present ÷ active days</span> (where active days are days with any valid hours logged by anyone in the selection).
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEE LEADERBOARD -->
+      <div class="card span-8">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Employee leaderboard</div>
+            <div class="s">Sortable long-term stats (click a row to inspect)</div>
+          </div>
+          <div class="badge info" id="pillSort">Sort: Avg rate ↓</div>
+        </div>
+        <div class="body">
+          <div class="tableWrap">
+            <table id="tblEmployees">
+              <thead>
+                <tr>
+                  <th data-sort="name">Employee</th>
+                  <th data-sort="days" class="mono">Days</th>
+                  <th data-sort="units" class="mono">Units</th>
+                  <th data-sort="hours" class="mono">Hours</th>
+                  <th data-sort="rate" class="mono">Avg u/hr</th>
+                  <th data-sort="consistency">Consistency</th>
+                  <th data-sort="trend">Trend</th>
+                  <th data-sort="share" class="mono">Share</th>
+                </tr>
+              </thead>
+              <tbody id="tblBody"></tbody>
+            </table>
+          </div>
+          <div class="foot" id="footNote">
+            Notes: Avg u/hr is weighted (units ÷ valid hours). Trend compares last 7 active days vs prior 7 active days inside the selected range.
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEE DETAIL -->
+      <div class="card span-4">
+        <div class="hdr">
+          <div class="h">
+            <div class="t">Employee deep dive</div>
+            <div class="s">Select a packer from the leaderboard</div>
+          </div>
+          <div class="badge" id="detailStatus">No selection</div>
+        </div>
+
+        <div class="body">
+          <div class="detail" id="detailPanel">
+            <div class="detailTop">
+              <div>
+                <p class="empName" id="detailName">—</p>
+                <div class="empHint" id="detailHint">
+                  Click an employee row to view trend, best/worst days, and utilization.
+                </div>
+              </div>
+              <div class="badge" id="detailBadge">—</div>
+            </div>
+
+            <div class="miniGrid">
+              <div class="mini">
+                <div class="lab">Avg u/hr</div>
+                <div class="num mono" id="detailRate">—</div>
+              </div>
+              <div class="mini">
+                <div class="lab">Days present</div>
+                <div class="num mono" id="detailDays">—</div>
+              </div>
+              <div class="mini">
+                <div class="lab">Total units</div>
+                <div class="num mono" id="detailUnits">—</div>
+              </div>
+              <div class="mini">
+                <div class="lab">Avg hrs/shift</div>
+                <div class="num mono" id="detailHrsShift">—</div>
+              </div>
+            </div>
+
+            <div class="card" style="border-radius:var(--radius2); box-shadow:none;">
+              <div class="hdr" style="border-bottom:1px solid rgba(255,255,255,.06);">
+                <div class="h">
+                  <div class="t">Personal rate trend</div>
+                  <div class="s">Daily u/hr (valid hours only)</div>
+                </div>
+              </div>
+              <div class="body">
+                <div class="chartWrap">
+                  <canvas id="chartEmpTrend"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="border-radius:var(--radius2); box-shadow:none;">
+              <div class="hdr" style="border-bottom:1px solid rgba(255,255,255,.06);">
+                <div class="h">
+                  <div class="t">Best / worst days</div>
+                  <div class="s">From valid working days</div>
+                </div>
+              </div>
+              <div class="body">
+                <div class="miniGrid">
+                  <div class="mini">
+                    <div class="lab">Best day</div>
+                    <div class="num mono" id="detailBest">—</div>
+                  </div>
+                  <div class="mini">
+                    <div class="lab">Worst day</div>
+                    <div class="num mono" id="detailWorst">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="foot" id="detailFoot">
+              Rates are computed as units ÷ valid hours. Rows with blank/zero hours are excluded from rate math.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+
+  </div><!-- /wrap -->
+
+  <script>
+    // ----------------------------
+    // Sample Data (your starting point)
+    // ----------------------------
+    const SAMPLE = `Pack Nombre del Empleyado\tPack Fecha Performance\tPack Cant\tPack Hr\tPack Cant/Hr
+Edgardo\tMonday, December 8, 2025\t6.5\t1.2\t5.4
+Evangelio\tMonday, December 8, 2025\t8\t1.2\t6.7
+Jessi\tMonday, December 8, 2025\t0\t\t#DIV/0!
+Ana\tMonday, December 8, 2025\t11\t4.5\t2.4
+Claribel\tMonday, December 8, 2025\t24\t4.5\t5.3
+Nicole\tMonday, December 8, 2025\t16\t4.5\t3.6
+Angelica\tMonday, December 8, 2025\t17\t4.5\t3.8
+Carlos\tMonday, December 8, 2025\t17\t4.5\t3.8
+William\tMonday, December 8, 2025\t0\t\t#DIV/0!
+Javier\tMonday, December 8, 2025\t8\t3\t2.7
+Yari\tMonday, December 8, 2025\t6\t3\t2.0
+Genesis\tMonday, December 8, 2025\t6.5\t3\t2.2
+Eddie\tMonday, December 8, 2025\t0\t\t#DIV/0!
+Luis\tMonday, December 8, 2025\t4\t1.2\t3.3
+Edgardo\tTuesday, December 9, 2025\t10\t2\t5.0
+Evangelio\tTuesday, December 9, 2025\t10\t2\t5.0
+Jessi\tTuesday, December 9, 2025\t13.5\t2\t6.8
+Ana\tTuesday, December 9, 2025\t9\t2\t4.5
+Claribel\tTuesday, December 9, 2025\t16\t2\t8.0
+Nicole\tTuesday, December 9, 2025\t15\t2\t7.5
+Angelica\tTuesday, December 9, 2025\t14\t2\t7.0
+Carlos\tTuesday, December 9, 2025\t\t\t#DIV/0!
+William\tTuesday, December 9, 2025\t10\t2\t5.0
+Javier\tTuesday, December 9, 2025\t6\t2\t3.0
+Yari\tTuesday, December 9, 2025\t15\t2\t7.5
+Genesis\tTuesday, December 9, 2025\t10.5\t\t#DIV/0!
+Eddie\tTuesday, December 9, 2025\t4\t1\t4.0
+Luis\tTuesday, December 9, 2025\t10\t2\t5.0
+Edgardo\tWednesday, December 10, 2025\t6\t2\t3.0
+Evangelio\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Jessi\tWednesday, December 10, 2025\t5\t2\t2.5
+Ana\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Claribel\tWednesday, December 10, 2025\t7\t2\t3.5
+Nicole\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Angelica\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Carlos\tWednesday, December 10, 2025\t\t\t#DIV/0!
+William\tWednesday, December 10, 2025\t6\t2\t3.0
+Javier\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Yari\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Genesis\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Eddie\tWednesday, December 10, 2025\t4\t2\t2.0
+Luis\tWednesday, December 10, 2025\t\t\t#DIV/0!
+Edgardo\tFriday, December 12, 2025\t6\t1\t6.0
+Evangelio\tFriday, December 12, 2025\t10\t1\t10.0
+Jessi\tFriday, December 12, 2025\t21\t4\t5.3
+Ana\tFriday, December 12, 2025\t16\t4\t4.0
+Claribel\tFriday, December 12, 2025\t0\t\t#DIV/0!
+Nicole\tFriday, December 12, 2025\t8\t1\t8.0
+Angelica\tFriday, December 12, 2025\t27\t4\t6.8
+Carlos\tFriday, December 12, 2025\t0\t\t#DIV/0!
+William\tFriday, December 12, 2025\t2\t0.25\t8.0
+Javier\tFriday, December 12, 2025\t10\t1\t10.0
+Yari\tFriday, December 12, 2025\t9\t1\t9.0
+Genesis\tFriday, December 12, 2025\t10\t1\t10.0
+Eddie\tFriday, December 12, 2025\t21\t4\t5.3
+Luis\tFriday, December 12, 2025\t17\t3.5\t4.9
+Edgardo\tMonday, December 15, 2025\t3\t0.75\t4.0
+Evangelio\tMonday, December 15, 2025\t7\t1\t7.0
+Jessi\tMonday, December 15, 2025\t5\t1\t5.0
+Ana\tMonday, December 15, 2025\t17\t2.25\t7.6
+Claribel\tMonday, December 15, 2025\t24\t2.25\t10.7
+Nicole\tMonday, December 15, 2025\t22\t2.15\t10.2
+Angelica\tMonday, December 15, 2025\t22\t2.25\t9.8
+Carlos\tMonday, December 15, 2025\t0\t0\t#DIV/0!
+William\tMonday, December 15, 2025\t7\t1\t7.0
+Javier\tMonday, December 15, 2025\t7\t1\t7.0
+Yari\tMonday, December 15, 2025\t\t\t#DIV/0!
+Genesis\tMonday, December 15, 2025\t6\t1\t6.0
+Eddie\tMonday, December 15, 2025\t18\t2.25\t8.0
+Luis\tMonday, December 15, 2025\t4\t1\t4.0
+Edgardo\tTuesday, December 16, 2025\t15\t1.46\t10.3
+Evangelio\tTuesday, December 16, 2025\t18\t1.21\t14.9
+Jessi\tTuesday, December 16, 2025\t17\t1.46\t11.6
+Ana\tTuesday, December 16, 2025\t0\t\t#DIV/0!
+Claribel\tTuesday, December 16, 2025\t0\t\t#DIV/0!
+Nicole\tTuesday, December 16, 2025\t16\t1.21\t13.2
+Angelica\tTuesday, December 16, 2025\t15\t1.21\t12.4
+Carlos\tTuesday, December 16, 2025\t7\t1\t7.0
+William\tTuesday, December 16, 2025\t14\t1.21\t11.6
+Javier\tTuesday, December 16, 2025\t13\t1.21\t10.7
+Yari\tTuesday, December 16, 2025\t0\t\t#DIV/0!
+Genesis\tTuesday, December 16, 2025\t0\t\t#DIV/0!
+Eddie\tTuesday, December 16, 2025\t0\t\t#DIV/0!
+Luis\tTuesday, December 16, 2025\t11\t1.21\t9.1
+Edgardo\tWednesday, December 17, 2025\t8\t1.5\t5.3
+Evangelio\tWednesday, December 17, 2025\t13\t1.5\t8.7
+Jessi\tWednesday, December 17, 2025\t19\t1.5\t12.7
+Ana\tWednesday, December 17, 2025\t10\t1.5\t6.7
+Claribel\tWednesday, December 17, 2025\t0\t0\t#DIV/0!
+Nicole\tWednesday, December 17, 2025\t19\t1.5\t12.7
+Angelica\tWednesday, December 17, 2025\t19\t1.5\t12.7
+Carlos\tWednesday, December 17, 2025\t0\t0\t#DIV/0!
+William\tWednesday, December 17, 2025\t23\t1.5\t15.3
+Javier\tWednesday, December 17, 2025\t15\t1.5\t10.0
+Yari\tWednesday, December 17, 2025\t0\t1.5\t0.0
+Genesis\tWednesday, December 17, 2025\t16\t1.5\t10.7
+Eddie\tWednesday, December 17, 2025\t0\t0\t#DIV/0!
+Luis\tWednesday, December 17, 2025\t10\t1.5\t6.7
+Edgardo\tMonday, December 22, 2025\t8\t1\t8.0
+Evangelio\tMonday, December 22, 2025\t7\t1\t7.0
+Jessi\tMonday, December 22, 2025\t0\t0\t#DIV/0!
+Ana\tMonday, December 22, 2025\t7\t1\t7.0
+Claribel\tMonday, December 22, 2025\t14\t1\t14.0
+Nicole\tMonday, December 22, 2025\t10\t1\t10.0
+Angelica\tMonday, December 22, 2025\t9\t1\t9.0
+Carlos\tMonday, December 22, 2025\t10\t1\t10.0
+William\tMonday, December 22, 2025\t11\t1\t11.0
+Javier\tMonday, December 22, 2025\t13\t1\t13.0
+Yari\tMonday, December 22, 2025\t11\t1\t11.0
+Genesis\tMonday, December 22, 2025\t0\t0\t#DIV/0!
+Eddie\tMonday, December 22, 2025\t6\t1\t6.0
+Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
+
+    // ----------------------------
+    // Utilities
+    // ----------------------------
+    const $ = (id) => document.getElementById(id);
+
+    function fmtNum(x, d=2){
+      if (!isFinite(x)) return "—";
+      const p = Math.pow(10, d);
+      const v = Math.round(x * p) / p;
+      return v.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+    function fmtNum1(x){ return fmtNum(x,1); }
+    function fmtInt(x){
+      if (!isFinite(x)) return "—";
+      return Math.round(x).toLocaleString();
+    }
+    function parseNumber(raw){
+      if (raw === undefined || raw === null) return NaN;
+      const s = String(raw).trim();
+      if (!s) return NaN;
+      if (s.toUpperCase().includes("DIV/0")) return NaN;
+      const v = Number(s);
+      return isFinite(v) ? v : NaN;
+    }
+    function parseDate(raw){
+      if (!raw) return null;
+      const t = Date.parse(String(raw).trim());
+      if (!isFinite(t)) return null;
+      const d = new Date(t);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    function toISODate(d){
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const day = String(d.getDate()).padStart(2,"0");
+      return `${y}-${m}-${day}`;
+    }
+    function dowName(d){
+      return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(d);
+    }
+    function longDate(d){
+      return new Intl.DateTimeFormat(undefined, { year:"numeric", month:"short", day:"2-digit" }).format(d);
+    }
+    function stddev(arr){
+      const xs = arr.filter(v => isFinite(v));
+      if (xs.length < 2) return 0;
+      const mean = xs.reduce((a,b)=>a+b,0)/xs.length;
+      const varr = xs.reduce((a,b)=>a + (b-mean)*(b-mean), 0) / (xs.length - 1);
+      return Math.sqrt(varr);
+    }
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // ----------------------------
+    // Parsing (TSV/CSV-ish)
+    // ----------------------------
+    function splitLine(line){
+      if (line.includes("\t")) return line.split("\t");
+      return line.split(",");
+    }
+
+    function parseInput(text){
+      const lines = String(text || "")
+        .split(/\r?\n/)
+        .map(s => s.trim())
+        .filter(s => s.length);
+
+      const quality = {
+        missingHr: 0,
+        zeroHr: 0,
+        missingUnits: 0,
+        invalidNameOrDate: 0,
+        rateInvalid: 0
+      };
+
+      if (!lines.length) return { rows: [], excluded: 0, errors: 0, quality };
+
+      const headerish = lines[0].toLowerCase().includes("empleyado")
+        || lines[0].toLowerCase().includes("employee")
+        || lines[0].toLowerCase().includes("fecha");
+      const start = headerish ? 1 : 0;
+
+      const out = [];
+      let excluded = 0;
+      let errors = 0;
+
+      for (let i = start; i < lines.length; i++){
+        const parts = splitLine(lines[i]).map(x => (x ?? "").trim());
+        if (parts.length < 2){ excluded++; continue; }
+
+        const name = (parts[0] || "").trim();
+        const d = parseDate(parts[1]);
+
+        const cantRaw = parts[2];
+        const hrRaw = parts[3];
+
+        const cant = parseNumber(cantRaw);
+        const hr = parseNumber(hrRaw);
+
+        if (!name || !d){
+          excluded++; errors++;
+          quality.invalidNameOrDate++;
+          continue;
+        }
+
+        const validUnits = isFinite(cant) && cant >= 0;
+        const validHrNum = isFinite(hr);
+
+        if (!validUnits) quality.missingUnits++;
+        if (!validHrNum) quality.missingHr++;
+        if (validHrNum && hr === 0) quality.zeroHr++;
+
+        const validHours = validHrNum && hr > 0;
+        const rate = (validHours && validUnits) ? (cant / hr) : NaN;
+        const validWorkRow = (validHours && validUnits);
+
+        if (!validWorkRow) quality.rateInvalid++;
+
+        // If both missing, drop entirely
+        if (!validUnits && !validHrNum){
+          excluded++;
+          continue;
+        }
+
+        out.push({
+          name,
+          date: d,
+          dateISO: toISODate(d),
+          dow: dowName(d),
+          cant: validUnits ? cant : 0,
+          hr: validHours ? hr : 0,
+          rate,
+          validWorkRow
+        });
+      }
+
+      return { rows: out, excluded, errors, quality };
+    }
+
+    // ----------------------------
+    // Selection filters
+    // ----------------------------
+    function filterBySelection(allRows){
+      const range = $("rangeSel").value;
+      const emp = $("empSel").value;
+      const q = $("searchEmp").value.trim().toLowerCase();
+
+      let rows = allRows.slice();
+
+      if (emp && emp !== "__all__"){
+        rows = rows.filter(r => r.name === emp);
+      }
+      if (q){
+        rows = rows.filter(r => r.name.toLowerCase().includes(q));
+      }
+
+      if (range !== "all"){
+        const days = Number(range);
+        const maxT = rows.length ? Math.max(...rows.map(r => r.date.getTime())) : -Infinity;
+        if (isFinite(maxT)){
+          const minT = maxT - (days-1) * 86400000;
+          rows = rows.filter(r => r.date.getTime() >= minT && r.date.getTime() <= maxT);
+        }
+      }
+
+      return rows;
+    }
+
+    // ----------------------------
+    // Aggregations
+    // ----------------------------
+    function groupDaily(rows){
+      const m = new Map();
+      for (const r of rows){
+        if (!m.has(r.dateISO)){
+          m.set(r.dateISO, { dateISO: r.dateISO, date: r.date, units: 0, hours: 0 });
+        }
+        const g = m.get(r.dateISO);
+        g.units += (isFinite(r.cant) ? r.cant : 0);
+        g.hours += (isFinite(r.hr) ? r.hr : 0);
+      }
+      const daily = Array.from(m.values()).sort((a,b) => a.date.getTime() - b.date.getTime());
+      for (const d of daily){
+        d.rate = d.hours > 0 ? d.units / d.hours : NaN;
+        d.dow = dowName(d.date);
+        d.label = longDate(d.date);
+      }
+      return daily;
+    }
+
+    function rollingAvg(series, window=7){
+      const out = new Array(series.length).fill(NaN);
+      for (let i = 0; i < series.length; i++){
+        let sum = 0, n = 0;
+        for (let j = Math.max(0, i-window+1); j <= i; j++){
+          const v = series[j];
+          if (isFinite(v)){ sum += v; n++; }
+        }
+        out[i] = n ? sum / n : NaN;
+      }
+      return out;
+    }
+
+    function consistencyLabel(sd, days){
+      if (!days || days < 3) return { text: "Limited", cls: "mid" };
+      if (sd < 1.5) return { text: "Stable", cls: "good" };
+      if (sd < 3.0) return { text: "Variable", cls: "mid" };
+      return { text: "Inconsistent", cls: "low" };
+    }
+
+    function computeTrendFromPairs(pairs){
+      const valid = pairs.filter(p => isFinite(p.rate)).sort((a,b)=>a.dateISO.localeCompare(b.dateISO));
+      if (valid.length < 4) return { dir:"flat", text:"—", delta:0 };
+
+      const dates = Array.from(new Set(valid.map(v=>v.dateISO))).sort();
+      const lastIdx = dates.length - 1;
+
+      const recentDates = dates.slice(Math.max(0, lastIdx-6), lastIdx+1);
+      const priorDates  = dates.slice(Math.max(0, lastIdx-13), Math.max(0, lastIdx-6));
+
+      function weightedAvg(dateList){
+        let u=0,h=0;
+        for (const d of dateList){
+          const p = valid.find(x => x.dateISO === d);
+          if (!p) continue;
+          u += p.units;
+          h += p.hours;
+        }
+        return h > 0 ? u/h : NaN;
+      }
+
+      const recent = weightedAvg(recentDates);
+      const prior  = weightedAvg(priorDates);
+
+      if (!isFinite(recent) || !isFinite(prior) || prior <= 0) return { dir:"flat", text:"—", delta:0 };
+
+      const delta = (recent - prior) / prior;
+      if (Math.abs(delta) < 0.05) return { dir:"flat", text:"→", delta };
+      if (delta > 0) return { dir:"up", text:"↑", delta };
+      return { dir:"down", text:"↓", delta };
+    }
+
+    function groupByEmployee(rows){
+      const m = new Map();
+      for (const r of rows){
+        if (!m.has(r.name)){
+          m.set(r.name, {
+            name: r.name,
+            units: 0,
+            hours: 0,
+            daysSet: new Set(),
+            dailyUnits: new Map(),
+            dailyHours: new Map()
+          });
+        }
+        const e = m.get(r.name);
+        e.units += (isFinite(r.cant) ? r.cant : 0);
+        e.hours += (isFinite(r.hr) ? r.hr : 0);
+        if (r.hr > 0) e.daysSet.add(r.dateISO);
+
+        e.dailyUnits.set(r.dateISO, (e.dailyUnits.get(r.dateISO) || 0) + (isFinite(r.cant) ? r.cant : 0));
+        e.dailyHours.set(r.dateISO, (e.dailyHours.get(r.dateISO) || 0) + (isFinite(r.hr) ? r.hr : 0));
+      }
+
+      const employees = Array.from(m.values());
+      for (const e of employees){
+        e.days = e.daysSet.size;
+        e.rate = e.hours > 0 ? e.units / e.hours : NaN;
+
+        const dayKeys = Array.from(e.dailyUnits.keys()).sort();
+        const dailyRates = [];
+        const dailyPairs = [];
+        for (const k of dayKeys){
+          const u = e.dailyUnits.get(k) || 0;
+          const h = e.dailyHours.get(k) || 0;
+          const rr = (h > 0) ? (u / h) : NaN;
+          if (isFinite(rr)) dailyRates.push(rr);
+          dailyPairs.push({ dateISO: k, units: u, hours: h, rate: rr });
+        }
+        e.dailyPairs = dailyPairs;
+        e.consistencySD = stddev(dailyRates);
+        e.consistencyLabel = consistencyLabel(e.consistencySD, e.days);
+        e.trend = computeTrendFromPairs(dailyPairs);
+      }
+      return employees;
+    }
+
+    function dowWeighted(daily){
+      const order = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      const m = new Map();
+      for (const d of daily){
+        const key = d.dow;
+        if (!m.has(key)) m.set(key, { dow:key, units:0, hours:0 });
+        const g = m.get(key);
+        g.units += d.units;
+        g.hours += d.hours;
+      }
+      return order.filter(k => m.has(k)).map(k => {
+        const g = m.get(k);
+        return { dow:k, rate: g.hours>0 ? g.units/g.hours : NaN };
+      });
+    }
+
+    function computeTeamTrend(daily){
+      const valid = daily.filter(d => isFinite(d.rate)).sort((a,b)=>a.date.getTime()-b.date.getTime());
+      if (valid.length < 4) return { cls:"info", text:"Daily" };
+
+      const recent = valid.slice(Math.max(0, valid.length-7));
+      const prior  = valid.slice(Math.max(0, valid.length-14), Math.max(0, valid.length-7));
+
+      function weightedAvg(list){
+        const u = list.reduce((a,x)=>a+x.units,0);
+        const h = list.reduce((a,x)=>a+x.hours,0);
+        return h>0 ? u/h : NaN;
+      }
+
+      const r = weightedAvg(recent);
+      const p = weightedAvg(prior);
+
+      if (!isFinite(r) || !isFinite(p) || p<=0) return { cls:"info", text:"Daily" };
+
+      const delta = (r-p)/p;
+      if (Math.abs(delta) < 0.05) return { cls:"info", text:"Stable (7d)" };
+      if (delta > 0) return { cls:"good", text:"Improving (7d)" };
+      return { cls:"low", text:"Slowing (7d)" };
+    }
+
+    // ----------------------------
+    // Charts
+    // ----------------------------
+    const chartTeam = new Chart($("chartTeam"), {
+      type: "bar",
+      data: { labels: [], datasets: [
+        { label: "Units", data: [] },
+        { label: "Team u/hr", data: [], type: "line", yAxisID: "y1" }
+      ]},
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:"#a7b0bf", font:{ size: 13, weight: "700" } } } },
+        scales:{
+          x:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } },
+          y:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" }, title:{ display:true, text:"Units", color:"#a7b0bf" } },
+          y1:{ position:"right", ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ drawOnChartArea:false }, title:{ display:true, text:"u/hr", color:"#a7b0bf" } }
+        }
+      }
+    });
+
+    const chartDow = new Chart($("chartDow"), {
+      type: "bar",
+      data: { labels: [], datasets: [{ label:"Avg u/hr", data: [] }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } },
+          y:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } }
+        }
+      }
+    });
+
+    const chartRolling = new Chart($("chartRolling"), {
+      type: "line",
+      data: { labels: [], datasets: [{ label:"Rolling u/hr", data: [] }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } },
+          y:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } }
+        }
+      }
+    });
+
+    const chartEmpTrend = new Chart($("chartEmpTrend"), {
+      type: "line",
+      data: { labels: [], datasets: [{ label:"Daily u/hr", data: [] }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } },
+          y:{ ticks:{ color:"#a7b0bf", font:{ size: 12 } }, grid:{ color:"rgba(255,255,255,.07)" } }
+        }
+      }
+    });
+
+    // ----------------------------
+    // State
+    // ----------------------------
+    let ALL_ROWS = [];
+    let CURRENT_EMPLOYEES = [];
+    let sortKey = "rate";
+    let sortDir = "desc";
+    let attSortKey = "pct";
+    let attSortDir = "desc";
+    let selectedEmployee = null;
+
+    let emphasis = "units"; // or "hours"
+
+    // ----------------------------
+    // UI helpers
+    // ----------------------------
+    function setEmphasis(mode){
+      emphasis = mode;
+      $("segUnits").classList.toggle("active", mode === "units");
+      $("segHours").classList.toggle("active", mode === "hours");
+      $("pillEmphasis").textContent = `Emphasis: ${mode === "units" ? "Units" : "Hours"}`;
+
+      // sensible default sort depending on focus
+      if (mode === "units"){
+        sortKey = "units"; sortDir = "desc";
+        attSortKey = "pct"; attSortDir = "desc";
+      } else {
+        sortKey = "hours"; sortDir = "desc";
+        attSortKey = "hours"; attSortDir = "desc";
+      }
+      computeAndRender();
+    }
+
+    function refreshEmployeeDropdown(rows){
+      const names = Array.from(new Set(rows.map(r => r.name))).sort((a,b)=>a.localeCompare(b));
+      const sel = $("empSel");
+      const keep = sel.value;
+      sel.innerHTML = `<option value="__all__">All employees</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+      sel.value = names.includes(keep) ? keep : "__all__";
+    }
+
+    // ----------------------------
+    // Render
+    // ----------------------------
+    function computeAndRender(){
+      const rows = filterBySelection(ALL_ROWS);
+
+      $("metaRows").textContent = fmtInt(rows.length);
+      const allDates = rows.map(r => r.date.getTime());
+      if (allDates.length){
+        const minD = new Date(Math.min(...allDates));
+        const maxD = new Date(Math.max(...allDates));
+        $("metaRange").textContent = `${toISODate(minD)} → ${toISODate(maxD)}`;
+      } else {
+        $("metaRange").textContent = "—";
+      }
+
+      // KPIs
+      const totalUnits = rows.reduce((a,r)=>a + (isFinite(r.cant)?r.cant:0), 0);
+      const totalHours = rows.reduce((a,r)=>a + (isFinite(r.hr)?r.hr:0), 0);
+      const teamRate = totalHours > 0 ? totalUnits / totalHours : NaN;
+
+      const empAgg = groupByEmployee(rows);
+      const active = empAgg.filter(e => e.days > 0).length;
+
+      $("kpiUnits").textContent = fmtNum1(totalUnits);
+      $("kpiHours").textContent = fmtNum(totalHours, 2);
+      $("kpiRate").textContent  = fmtNum(teamRate, 2);
+      $("kpiActive").textContent = fmtInt(active);
+
+      // charts
+      const daily = groupDaily(rows);
+      chartTeam.data.labels = daily.map(d => d.label);
+      chartTeam.data.datasets[0].data = daily.map(d => Math.round(d.units * 10) / 10);
+      chartTeam.data.datasets[1].data = daily.map(d => isFinite(d.rate) ? Math.round(d.rate * 100) / 100 : null);
+      chartTeam.update();
+
+      const dow = dowWeighted(daily);
+      chartDow.data.labels = dow.map(d => d.dow);
+      chartDow.data.datasets[0].data = dow.map(d => isFinite(d.rate) ? Math.round(d.rate * 100) / 100 : null);
+      chartDow.update();
+
+      const rolling = rollingAvg(daily.map(d => d.rate), 7);
+      chartRolling.data.labels = daily.map(d => d.label);
+      chartRolling.data.datasets[0].data = rolling.map(v => isFinite(v) ? Math.round(v * 100) / 100 : null);
+      chartRolling.update();
+
+      // team trend badge
+      const t = computeTeamTrend(daily);
+      $("pillTeamTrend").className = `badge ${t.cls}`;
+      $("pillTeamTrend").textContent = t.text;
+
+      // leaderboard shares
+      const totalUnitsForShare = empAgg.reduce((a,e)=>a + (isFinite(e.units)?e.units:0), 0);
+      for (const e of empAgg){
+        e.share = totalUnitsForShare > 0 ? (e.units / totalUnitsForShare) : 0;
+      }
+      CURRENT_EMPLOYEES = empAgg;
+
+      // Attendance view
+      renderAttendance(rows, empAgg);
+
+      // Leaderboard
+      renderLeaderboard(empAgg);
+
+      // keep selection
+      if (selectedEmployee){
+        const still = empAgg.find(e => e.name === selectedEmployee);
+        if (still) setSelectedEmployee(still.name);
+        else clearSelectedEmployee();
+      } else {
+        clearSelectedEmployee();
+      }
+
+      // footer pills
+      $("pillPatterns").textContent = "Weighted";
+      $("pillAttendance").textContent = $("rangeSel").value === "all" ? "All time" : `Last ${$("rangeSel").value} days`;
+      refreshEmployeeDropdown(ALL_ROWS);
+    }
+
+    function sortLabel(k){
+      if (k === "name") return "Employee";
+      if (k === "days") return "Days";
+      if (k === "units") return "Units";
+      if (k === "hours") return "Hours";
+      if (k === "rate") return "Avg rate";
+      if (k === "consistency") return "Consistency";
+      if (k === "trend") return "Trend";
+      if (k === "share") return "Share";
+      return k;
+    }
+
+    function renderLeaderboard(empAgg){
+      const tb = $("tblBody");
+      tb.innerHTML = "";
+
+      const sorted = empAgg.slice().sort((a,b)=>{
+        let cmp = 0;
+        if (sortKey === "name"){
+          cmp = a.name.localeCompare(b.name);
+        } else if (sortKey === "consistency"){
+          cmp = (a.consistencySD ?? 0) - (b.consistencySD ?? 0);
+        } else if (sortKey === "trend"){
+          const score = (t) => t.dir === "up" ? 2 : (t.dir === "flat" ? 1 : 0);
+          cmp = score(a.trend) - score(b.trend);
+        } else {
+          cmp = (a[sortKey] ?? 0) - (b[sortKey] ?? 0);
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+
+      $("pillSort").textContent = `Sort: ${sortLabel(sortKey)} ${sortDir === "desc" ? "↓" : "↑"}`;
+
+      if (!sorted.length){
+        tb.innerHTML = `<tr><td colspan="8" style="color:var(--sub);padding:14px;">No rows match the current filters.</td></tr>`;
+        return;
+      }
+
+      for (const e of sorted){
+        const tr = document.createElement("tr");
+        tr.dataset.name = e.name;
+        if (selectedEmployee === e.name) tr.classList.add("selected");
+
+        const cons = e.consistencyLabel;
+        const trend = e.trend;
+
+        // Emphasis highlight
+        const nameCell = emphasis === "units" ? `<b>${escapeHtml(e.name)}</b>` : `${escapeHtml(e.name)}`;
+        const hoursCell = emphasis === "hours" ? `<b>${fmtNum(e.hours,2)}</b>` : fmtNum(e.hours,2);
+        const unitsCell = emphasis === "units" ? `<b>${fmtNum1(e.units)}</b>` : fmtNum1(e.units);
+
+        tr.innerHTML = `
+          <td>${nameCell}</td>
+          <td class="mono">${fmtInt(e.days)}</td>
+          <td class="mono">${unitsCell}</td>
+          <td class="mono">${hoursCell}</td>
+          <td class="mono">${fmtNum(e.rate, 2)}</td>
+          <td><span class="badge ${cons.cls}">${escapeHtml(cons.text)}</span></td>
+          <td><span class="trend ${trend.dir}">${trend.text}</span></td>
+          <td class="mono">${(e.share*100).toFixed(1)}%</td>
+        `;
+        tr.addEventListener("click", () => setSelectedEmployee(e.name));
+        tb.appendChild(tr);
+      }
+    }
+
+    function renderAttendance(rows, empAgg){
+      // active days = unique dateISO where total hours > 0 for anyone
+      const activeDaySet = new Set(rows.filter(r => r.hr > 0).map(r => r.dateISO));
+      const maxDays = activeDaySet.size;
+
+      const att = empAgg.map(e => {
+        const pct = maxDays > 0 ? (e.days / maxDays) : 0;
+        const avgHrs = e.days > 0 ? (e.hours / e.days) : NaN;
+        return { name: e.name, days: e.days, maxDays, pct, hours: e.hours, avgHrs };
+      });
+
+      const sorted = att.slice().sort((a,b)=>{
+        let cmp = 0;
+        if (attSortKey === "name") cmp = a.name.localeCompare(b.name);
+        else cmp = (a[attSortKey] ?? 0) - (b[attSortKey] ?? 0);
+        return attSortDir === "asc" ? cmp : -cmp;
+      });
+
+      const tb = $("attBody");
+      tb.innerHTML = "";
+
+      if (!sorted.length){
+        tb.innerHTML = `<tr><td colspan="6" style="color:var(--sub);padding:14px;">No rows match the current filters.</td></tr>`;
+        return;
+      }
+
+      for (const r of sorted){
+        const badge = r.pct >= 0.8 ? "good" : (r.pct >= 0.5 ? "mid" : "low");
+        const pctText = (r.pct*100).toFixed(0) + "%";
+        tb.innerHTML += `
+          <tr>
+            <td><b>${escapeHtml(r.name)}</b></td>
+            <td class="mono">${fmtInt(r.days)}</td>
+            <td class="mono">${fmtInt(r.maxDays)}</td>
+            <td class="mono"><span class="badge ${badge}">${pctText}</span></td>
+            <td class="mono">${fmtNum(r.hours,2)}</td>
+            <td class="mono">${fmtNum(r.avgHrs,2)}</td>
+          </tr>
+        `;
+      }
+    }
+
+    function clearSelectedEmployee(){
+      selectedEmployee = null;
+      $("detailStatus").className = "badge";
+      $("detailStatus").textContent = "No selection";
+      $("detailName").textContent = "—";
+      $("detailBadge").className = "badge";
+      $("detailBadge").textContent = "—";
+      $("detailRate").textContent = "—";
+      $("detailDays").textContent = "—";
+      $("detailUnits").textContent = "—";
+      $("detailHrsShift").textContent = "—";
+      $("detailBest").textContent = "—";
+      $("detailWorst").textContent = "—";
+      chartEmpTrend.data.labels = [];
+      chartEmpTrend.data.datasets[0].data = [];
+      chartEmpTrend.update();
+    }
+
+    function setSelectedEmployee(name){
+      selectedEmployee = name;
+      document.querySelectorAll("#tblEmployees tbody tr").forEach(tr=>{
+        tr.classList.toggle("selected", tr.dataset.name === name);
+      });
+
+      const e = CURRENT_EMPLOYEES.find(x => x.name === name);
+      if (!e){ clearSelectedEmployee(); return; }
+
+      $("detailStatus").className = "badge info";
+      $("detailStatus").textContent = "Selected";
+      $("detailName").textContent = e.name;
+
+      // performance badge by rate
+      let badge = { text:"—", cls:"" };
+      if (isFinite(e.rate)){
+        if (e.rate >= 12) badge = { text:"Elite pace", cls:"good" };
+        else if (e.rate >= 8) badge = { text:"Strong", cls:"good" };
+        else if (e.rate >= 4) badge = { text:"Developing", cls:"mid" };
+        else badge = { text:"Low", cls:"low" };
+      }
+      $("detailBadge").className = `badge ${badge.cls}`;
+      $("detailBadge").textContent = badge.text;
+
+      $("detailRate").textContent = fmtNum(e.rate, 2);
+      $("detailDays").textContent = fmtInt(e.days);
+      $("detailUnits").textContent = fmtNum1(e.units);
+
+      const avgHrsShift = e.days > 0 ? (e.hours / e.days) : NaN;
+      $("detailHrsShift").textContent = fmtNum(avgHrsShift, 2);
+
+      const validDays = e.dailyPairs.filter(p => isFinite(p.rate)).sort((a,b)=>a.rate-b.rate);
+      if (validDays.length){
+        const worst = validDays[0];
+        const best = validDays[validDays.length-1];
+        $("detailBest").textContent = `${best.dateISO} · ${fmtNum(best.rate,2)} u/hr`;
+        $("detailWorst").textContent = `${worst.dateISO} · ${fmtNum(worst.rate,2)} u/hr`;
+      }
+
+      const pairs = e.dailyPairs.slice().sort((a,b)=>a.dateISO.localeCompare(b.dateISO)).filter(p => isFinite(p.rate));
+      chartEmpTrend.data.labels = pairs.map(p => p.dateISO);
+      chartEmpTrend.data.datasets[0].data = pairs.map(p => Math.round(p.rate * 100) / 100);
+      chartEmpTrend.update();
+    }
+
+    // ----------------------------
+    // Export
+    // ----------------------------
+    function exportCSV(){
+      const rows = CURRENT_EMPLOYEES.slice();
+      const header = ["Employee","DaysWorked","TotalUnits","TotalHours","AvgUnitsPerHour","ConsistencySD","ConsistencyLabel","TrendDir","TrendDelta","SharePct"];
+      const lines = [header.join(",")];
+
+      const totalUnits = rows.reduce((a,e)=>a + (isFinite(e.units)?e.units:0), 0);
+
+      for (const e of rows){
+        const share = totalUnits > 0 ? (e.units/totalUnits*100) : 0;
+        lines.push([
+          `"${String(e.name).replaceAll('"','""')}"`,
+          e.days ?? 0,
+          (isFinite(e.units)?e.units:0),
+          (isFinite(e.hours)?e.hours:0),
+          (isFinite(e.rate)?e.rate:""),
+          (isFinite(e.consistencySD)?e.consistencySD:""),
+          `"${e.consistencyLabel?.text ?? ""}"`,
+          `"${e.trend?.dir ?? ""}"`,
+          (isFinite(e.trend?.delta)?e.trend.delta:""),
+          share.toFixed(2)
+        ].join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type:"text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pack_team_staff_performance_leaderboard.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // ----------------------------
+    // Load from Input + Quality strip
+    // ----------------------------
+    let lastParseMeta = { excluded: 0, errors: 0, quality: null };
+
+    function loadFromInput(){
+      const text = $("dataBox").value;
+      const parsed = parseInput(text);
+      ALL_ROWS = parsed.rows;
+      lastParseMeta = parsed;
+
+      $("metaExcluded").textContent = fmtInt(parsed.excluded);
+
+      // Quality strip counts
+      $("qMissingHr").textContent = fmtInt(parsed.quality.missingHr);
+      $("qZeroHr").textContent = fmtInt(parsed.quality.zeroHr);
+      $("qMissingUnits").textContent = fmtInt(parsed.quality.missingUnits);
+      $("qRateInvalid").textContent = fmtInt(parsed.quality.rateInvalid);
+
+      // Quality status badge
+      const total = parsed.rows.length + parsed.excluded;
+      const rateInvalid = parsed.quality.rateInvalid;
+      const pctInvalid = total > 0 ? (rateInvalid/total) : 0;
+
+      let cls = "info";
+      let msg = "Looks good";
+      if (pctInvalid >= 0.40){ cls = "low"; msg = "Needs attention"; }
+      else if (pctInvalid >= 0.20){ cls = "mid"; msg = "Some gaps"; }
+
+      $("qualityStatus").className = `badge ${cls}`;
+      $("qualityStatus").textContent = `${msg} · ${Math.round(pctInvalid*100)}% rate-invalid`;
+
+      refreshEmployeeDropdown(ALL_ROWS);
+      computeAndRender();
+    }
+
+    // ----------------------------
+    // Wiring
+    // ----------------------------
+    document.querySelectorAll("#tblEmployees thead th").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const k = th.dataset.sort;
+        if (!k) return;
+        if (sortKey === k){
+          sortDir = (sortDir === "desc") ? "asc" : "desc";
+        } else {
+          sortKey = k;
+          sortDir = (k === "name") ? "asc" : "desc";
+          if (k === "consistency") sortDir = "asc";
+        }
+        computeAndRender();
+      });
+    });
+
+    document.querySelectorAll("#tblAttendance thead th").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const k = th.dataset.sortAtt;
+        if (!k) return;
+        if (attSortKey === k){
+          attSortDir = (attSortDir === "desc") ? "asc" : "desc";
+        } else {
+          attSortKey = k;
+          attSortDir = (k === "name") ? "asc" : "desc";
+        }
+        computeAndRender();
+      });
+    });
+
+    $("rangeSel").addEventListener("change", computeAndRender);
+    $("empSel").addEventListener("change", ()=>{
+      selectedEmployee = null;
+      clearSelectedEmployee();
+      computeAndRender();
+    });
+    $("searchEmp").addEventListener("input", ()=>{
+      selectedEmployee = null;
+      clearSelectedEmployee();
+      computeAndRender();
+    });
+
+    $("btnCompute").addEventListener("click", loadFromInput);
+    $("btnLoadSample").addEventListener("click", ()=>{
+      $("dataBox").value = SAMPLE;
+      loadFromInput();
+    });
+    $("btnReset").addEventListener("click", ()=>{
+      $("rangeSel").value = "all";
+      $("empSel").value = "__all__";
+      $("searchEmp").value = "";
+      selectedEmployee = null;
+      clearSelectedEmployee();
+      setEmphasis("units");
+      computeAndRender();
+    });
+    $("btnExport").addEventListener("click", exportCSV);
+
+    $("segUnits").addEventListener("click", ()=>setEmphasis("units"));
+    $("segHours").addEventListener("click", ()=>setEmphasis("hours"));
+
+    // Initial load
+    $("dataBox").value = SAMPLE;
+    loadFromInput();
+  </script>
+</body>
+</html>

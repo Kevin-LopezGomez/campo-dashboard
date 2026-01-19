@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sales Productivity Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-alt: #020617;
+      --panel: #020617;
+      --panel-soft: #020617;
+      --card: #020617;
+      --border: #1f2937;
+      --border-subtle: #374151;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.18);
+      --accent-strong: rgba(34, 197, 94, 0.45);
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --muted: #6b7280;
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+      color: var(--text);
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .dashboard {
+      width: 100%;
+      max-width: 1440px;
+      background: rgba(15, 23, 42, 0.94);
+      border-radius: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.9);
+      padding: 16px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ===== HEADER ===== */
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, #4ade80, #22c55e 55%, #16a34a 80%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #022c22;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6),
+                  0 10px 30px rgba(34, 197, 94, 0.45);
+    }
+
+    .title-sub {
+      margin-top: 3px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: radial-gradient(circle at top left,#0f172a,#020617);
+      color: var(--sub);
+      white-space: nowrap;
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    .pill-dot-red {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
+    }
+
+    /* ===== MAIN LAYOUT: SIDEBAR + MAIN ===== */
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .section-card {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left, #0b1120, #020617);
+      padding: 12px 14px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      border: 1px solid var(--border-subtle);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      cursor: default;
+      max-width: 100%;
+      white-space: normal;
+    }
+
+    .chip.reset-btn {
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .chip.reset-btn:hover {
+      border-color: rgba(34,197,94,0.6);
+      background: rgba(34,197,94,0.12);
+      color: var(--accent);
+    }
+
+    .hidden { display: none; }
+
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: 6px;
+      border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      font-size: 0.68rem;
+      color: var(--sub);
+      cursor: help;
+      flex-shrink: 0;
+    }
+
+    .chip button {
+      border: none;
+      background: transparent;
+      color: var(--sub);
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .chip strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ===== DATA INPUT (SIDEBAR) ===== */
+
+    .data-input-body {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 8px;
+    }
+
+    .data-input-help {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .data-input-textarea {
+      width: 100%;
+      min-height: 90px;
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      font-size: 0.75rem;
+      padding: 8px 10px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .data-input-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #022c22;
+      background: linear-gradient(to right,#22c55e,#4ade80);
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(34,197,94,0.35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 16px rgba(34,197,94,0.4);
+    }
+
+    .data-input-status {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .data-input-collapsed .data-input-body {
+      display: none;
+    }
+
+    /* ===== STRIPS (SKUs + CUSTOMERS IN SIDEBAR) ===== */
+
+    .strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 2px 2px;
+      max-height: 240px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--sub);
+      font-size: 0.78rem;
+      padding: 5px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .pill.active {
+      background: var(--accent-soft);
+      border-color: rgba(34, 197, 94, 0.7);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+    }
+
+    /* ===== VIEW & UNIT TOGGLES (SIDEBAR) ===== */
+
+    .filters-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toggle-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .pill-toggle {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.95);
+      gap: 2px;
+    }
+
+    .pill-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .pill-toggle button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* ===== KPIs (MAIN) ===== */
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .kpi-card {
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left,#020617,#020617 60%,#020617);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .kpi-value {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--sub);
+    }
+
+    /* ===== CARDS (CHARTS & TABLE) ===== */
+
+    .chart-card {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left,#020617,#020617 60%,#020617);
+      padding: 12px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .chart-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .chart-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-title .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+    }
+
+    .chart-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .chart-footer-note {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    .performance-card {
+      min-height: 220px;
+    }
+
+    canvas {
+      width: 100%;
+      max-height: 200px;
+    }
+
+    /* ===== BOTTOM GRID: BREAKDOWN + TABLE ===== */
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      min-height: 0;
+    }
+
+    .table-card {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left,#020617,#020617 60%,#020617);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .table-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .table-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-title .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+    }
+
+    .table-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .table-wrapper {
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.8);
+      background: radial-gradient(circle at top left,#020617,#020617);
+      max-height: 260px;
+      overflow-y: auto;
+      overflow-x: auto;
+      scrollbar-gutter: stable both-edges;
+    }
+
+    .table-wrapper table {
+      width: 100%;
+      min-width: 1100px;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    thead {
+      background: linear-gradient(to right,#020617,#020617);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(31,41,55,0.9);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.72rem;
+      background: #020617;
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    tbody tr:hover {
+      background: rgba(30, 64, 175, 0.4);
+    }
+
+    .text-right { text-align: right !important; }
+    .text-center { text-align: center !important; }
+
+    /* Column widths */
+    th:nth-child(1), td:nth-child(1) { width: 110px; }
+    th:nth-child(2), td:nth-child(2) { width: 60px; }
+    th:nth-child(3), td:nth-child(3) { width: 110px; }
+    th:nth-child(4), td:nth-child(4) { width: 80px; }
+    th:nth-child(5), td:nth-child(5) { width: 80px; }
+    th:nth-child(6), td:nth-child(6) { width: 230px; }
+    th:nth-child(7), td:nth-child(7) { width: 140px; }
+    th:nth-child(8), td:nth-child(8) { width: 110px; }
+    th:nth-child(9), td:nth-child(9) { width: 90px; text-align:center; }
+
+    /* Weekly summary */
+    #weeklySummaryContainer {
+      font-size: 0.75rem;
+      color: var(--text);
+    }
+
+    .weekly-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    .weekly-summary-table th,
+    .weekly-summary-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .weekly-summary-table th {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.7rem;
+    }
+
+    /* Heatmap */
+    #skuWeekHeatmap {
+      overflow: auto;
+      max-height: 320px;
+    }
+
+    .heatmap-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      min-width: 480px;
+    }
+
+    .heatmap-table th,
+    .heatmap-table td {
+      padding: 6px;
+      text-align: center;
+      border: 1px solid rgba(55,65,81,0.6);
+      white-space: nowrap;
+    }
+
+    .heatmap-table th {
+      background: rgba(15,23,42,0.6);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.7rem;
+    }
+
+    /* Leaderboard */
+    #leaderboardContainer {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .leaderboard {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .leaderboard h4 {
+      margin: 0 0 6px;
+      font-size: 0.78rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(55,65,81,0.5);
+    }
+
+    .leaderboard-item:last-child {
+      border-bottom: none;
+    }
+
+    .leaderboard-rank {
+      color: var(--muted);
+      margin-right: 6px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 240px minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .dashboard {
+        padding: 16px;
+        border-radius: 24px;
+      }
+      .layout {
+        grid-template-columns: minmax(0,1fr);
+      }
+      .sidebar {
+        order: 2;
+      }
+      .main {
+        order: 1;
+      }
+      .kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .main-grid {
+        grid-template-columns: minmax(0,1fr);
+      }
+      .breakdown-card,
+      .table-card {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .kpi-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .badge-row {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="dashboard">
+      <!-- HEADER -->
+      <div class="header-row">
+        <div class="title-block">
+          <h1>
+            <span class="title-icon">$</span>
+            Sales Productivity Dashboard
+            <span style="font-size:0.8rem;font-weight:400;color:var(--muted);margin-left:4px;">
+              NOV–DEC 2025
+            </span>
+          </h1>
+          <div class="title-sub">
+            Daily / weekly sales by SKU, customer, and ship method. Toggle between cases and pounds sold.
+          </div>
+        </div>
+        <div class="badge-row">
+          <div class="pill-badge">
+            <span class="pill-dot"></span>
+            Target accounts active most weeks
+          </div>
+          <div class="pill-badge">
+            <span class="pill-dot pill-dot-red"></span>
+            Spot weeks with lower volume
+          </div>
+        </div>
+      </div>
+
+      <!-- LAYOUT: SIDEBAR (filters) + MAIN (charts) -->
+      <div class="layout">
+        <!-- SIDEBAR: Data input + filters -->
+        <aside class="sidebar">
+          <!-- DATA INPUT -->
+          <div class="section-card data-input-collapsed" id="dataInputCard">
+            <div class="section-header">
+              <div class="section-title">
+                <span class="dot"></span>
+                Data input
+              </div>
+              <div class="chip">
+                <span>Paste rows from Excel / Sheets</span>
+                <button id="toggleDataInputBtn">Show</button>
+              </div>
+            </div>
+            <div class="data-input-body" id="dataInputBody">
+              <div class="data-input-help">
+                Paste sales rows with these columns (tab-separated, header optional):
+                <strong>Invoice Date · Ship Via · Sales Week · Ship Date · Invoice # · SKU · # Cases · Customer · Sales Term</strong>.
+                Loading new data replaces the current dataset.
+              </div>
+              <textarea
+                id="dataInputArea"
+                class="data-input-textarea"
+                placeholder="Example row:
+Wednesday, November 5, 2025[TAB]Our Delivery[TAB]45[TAB]Thursday, November 6, 2025[TAB]663[TAB]COMBO-03LB[TAB]1[TAB]Pocito Dulce"
+              ></textarea>
+              <div class="data-input-actions">
+                <button class="btn-primary" id="loadDataBtn">Load pasted data</button>
+                <button class="btn-primary" id="clearDataBtn" style="background: linear-gradient(to right,#ef4444,#f87171);color:#0b0f19;">Clear data</button>
+                <span class="data-input-status" id="dataInputStatus">
+                  Using built-in sample data.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW & UNITS -->
+          <div class="section-card filters-row">
+          <div class="section-header">
+            <div class="section-title">
+              <span class="dot"></span>
+              View & units
+            </div>
+              <span class="chip">
+                <strong>Scope:</strong> All ship dates & weeks
+              </span>
+            </div>
+            <div class="toggle-row">
+              <div class="chip">
+                Units
+                <span class="info-icon" id="unitsInfo" title="COMBO-05OZ → 18 bags × 5 oz = 5.625 lbs/case&#10;COMBO-10OZ → 12 bags × 10 oz = 7.5 lbs/case&#10;COMBO-01LB → 10 bags × 1 lb = 10 lbs/case&#10;CRNCH-01LB → 10 bags × 1 lb = 10 lbs/case&#10;COMBO-03LB → 3 bags × 3 lb = 9 lbs/case&#10;CRNCH-03LB → 3 bags × 3 lb = 9 lbs/case">ⓘ</span>
+                <div class="pill-toggle" id="unitModeToggle">
+                  <button data-unit="cases" class="active">Cases</button>
+                  <button data-unit="pounds">Pounds</button>
+                </div>
+              </div>
+              <button class="chip reset-btn hidden" id="resetFiltersBtn">Reset filters</button>
+            </div>
+          </div>
+
+          <!-- SKU STRIP -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title">
+                <span class="dot"></span>
+                All SKUs
+              </div>
+              <span class="chip">
+                View by product · click to filter
+              </span>
+            </div>
+            <div class="strip" id="skuStrip"></div>
+          </div>
+
+          <!-- CUSTOMER STRIP -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title">
+                <span class="dot"></span>
+                All customers
+              </div>
+              <span class="chip">
+                View by account · click to filter
+              </span>
+            </div>
+            <div class="strip" id="customerStrip"></div>
+          </div>
+        </aside>
+
+        <!-- MAIN: KPIs + charts + table -->
+        <main class="main">
+          <!-- KPI ROW -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Total sold</div>
+          <div class="kpi-value" id="kpiTotalSold">–</div>
+          <div class="kpi-sub" id="kpiTotalSoldSub">Across all ship dates</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label" id="kpiAvgPerDayLabel">Average per day</div>
+              <div class="kpi-value" id="kpiAvgPerDay">–</div>
+              <div class="kpi-sub" id="kpiAvgPerDaySub">Based on filtered ship days</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Top customer</div>
+              <div class="kpi-value" id="kpiTopCustomer">–</div>
+              <div class="kpi-sub" id="kpiTopCustomerSub">By units sold</div>
+            </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top SKU</div>
+          <div class="kpi-value" id="kpiTopSku">–</div>
+          <div class="kpi-sub" id="kpiTopSkuSub">By units sold</div>
+        </div>
+      </div>
+
+      <!-- WEEKLY SUMMARY -->
+      <div class="section-card" id="weeklySummaryContainer"></div>
+
+          <!-- PERFORMANCE OVER TIME (FULL WIDTH) -->
+          <div class="chart-card performance-card">
+            <div class="chart-top-row">
+              <div>
+                <div class="chart-title">
+                  <span class="dot"></span>
+                  Performance over time
+                </div>
+                <div class="chart-sub" id="performanceSub">
+                  Bars: total units sold per day or per week.
+                </div>
+              </div>
+              <div class="pill-toggle" id="timeAxisToggle">
+                <button data-view="daily" class="active">By Sales Date</button>
+                <button data-view="weekly">By sales week</button>
+              </div>
+            </div>
+            <canvas id="salesPerformanceChart"></canvas>
+            <div class="chart-footer-note" id="chartFooterNote">
+              Showing units sold by Sales Date. Data reflects all active filters.
+            </div>
+          </div>
+
+          <!-- BOTTOM GRID: BREAKDOWN + TABLE -->
+          <div class="main-grid">
+            <!-- BREAKDOWN -->
+            <div class="chart-card breakdown-card">
+              <div class="chart-top-row">
+                <div>
+                  <div class="chart-title">
+                    <span class="dot"></span>
+                    Sales breakdown
+                  </div>
+                  <div class="chart-sub" id="breakdownSub">
+                    Units sold by SKU or by customer (current filters).
+                  </div>
+                </div>
+                <div class="pill-toggle" id="breakdownToggle">
+                  <button data-mode="sku" class="active">By SKU</button>
+                  <button data-mode="customer">By customer</button>
+                </div>
+              </div>
+              <canvas id="salesBreakdownChart"></canvas>
+              <div class="chart-footer-note" id="breakdownFooterNote">
+                Showing units sold by SKU. Data reflects all active filters.
+              </div>
+              <div id="leaderboardContainer"></div>
+            </div>
+
+            <!-- HEATMAP -->
+            <div class="chart-card heatmap-card">
+              <div class="chart-top-row">
+                <div class="chart-title">
+                  <span class="dot"></span>
+                  SKU × Week heatmap
+                </div>
+              </div>
+              <div id="skuWeekHeatmap"></div>
+            </div>
+
+            <!-- TABLE -->
+            <div class="table-card">
+              <div class="table-header-row">
+                <div>
+                  <div class="table-title">
+                    <span class="dot"></span>
+                    Sales log
+                  </div>
+                  <div class="table-sub">
+                    Source data driving the dashboard.
+                  </div>
+                </div>
+                <div class="chip" id="tableModeChip">
+                  Daily rows
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ship date</th>
+                      <th>Week</th>
+                      <th>SKU</th>
+                      <th class="text-right">Cases</th>
+                      <th class="text-right">Units</th>
+                      <th>Customer</th>
+                      <th>Ship via</th>
+                      <th>Sales term</th>
+                      <th class="text-center">Invoice #</th>
+                    </tr>
+                  </thead>
+                  <tbody id="salesTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- RAW SAMPLE DATA ----------
+    const defaultSalesData = [
+      ["Wednesday, November 5, 2025","Our Delivery",45,"Thursday, November 6, 2025","663","COMBO-03LB",1,"Pocito Dulce","COD"],
+      ["Thursday, October 30, 2025","Pick-up",45,"Thursday, November 6, 2025","655","COMBO-05OZ",228,"Agro Produce","NET-30"],
+      ["Thursday, October 30, 2025","Pick-up",45,"Thursday, November 6, 2025","655","COMBO-10OZ",43,"Agro Produce","NET-30"],
+      ["Friday, November 7, 2025","Pick-up",46,"Thursday, November 13, 2025","665","COMBO-05OZ",33,"Agro Produce","NET-30"],
+      ["Friday, November 7, 2025","Pick-up",46,"Thursday, November 13, 2025","665","COMBO-10OZ",33,"Agro Produce","NET-30"],
+      ["Friday, November 7, 2025","Pick-up",46,"Monday, November 10, 2025","664","COMBO-05OZ",17,"Agro Produce","NET-30"],
+      ["Friday, November 7, 2025","Pick-up",46,"Monday, November 10, 2025","664","COMBO-10OZ",17,"Agro Produce","NET-30"],
+      ["Monday, November 10, 2025","Our Delivery",46,"Wednesday, November 12, 2025","666","CRNCH-01LB",36,"Pasta to go","NET-30"],
+      ["Friday, November 7, 2025","Pick-up",46,"Thursday, November 13, 2025","665","COMBO-05OZ",33,"Agro Produce","NET-30"],
+      ["Thursday, November 13, 2025","Pick-up",47,"Monday, November 17, 2025","673","COMBO-05OZ",72,"Agro Produce","NET-30"],
+      ["Thursday, November 13, 2025","Our Delivery",46,"Friday, November 14, 2025","671","COMBO-01LB",1,"Hacienda Calichi","COD"],
+      ["Thursday, November 13, 2025","Pick-up",46,"Friday, November 14, 2025","672","COMBO-05OZ",12,"Fundación Fe y Esperanza","DONACION"],
+      ["Thursday, November 13, 2025","Pick-up",47,"Thursday, November 20, 2025","674","COMBO-05OZ",25,"Agro Produce","NET-30"],
+      ["Thursday, November 13, 2025","Pick-up",47,"Thursday, November 20, 2025","674","COMBO-10OZ",25,"Agro Produce","NET-30"],
+      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","670","COMBO-03LB",1,"Papá Che","COD"],
+      ["Wednesday, November 12, 2025","Pick-up",47,"Monday, November 17, 2025","669","CRNCH-03LB",6,"Vallejo frutas y vegetales","COD"],
+      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","667","COMBO-03LB",1,"El Penon Bar and Grill","COD"],
+      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","668","COMBO-03LB",1,"Asador San Miguel","NET-7"],
+      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","668","COMBO-01LB",1,"Asador San Miguel","NET-7"],
+      ["Monday, November 17, 2025","Pick-up",47,"Monday, November 17, 2025","675","CRNCH-03LB",2,"Pal Tostao Cafe","COD"],
+      ["Monday, November 17, 2025","Our Delivery",47,"Tuesday, November 18, 2025","676","COMBO-03LB",4,"Bottles - Guaynabo","NET-15"],
+      ["Monday, November 17, 2025","Our Delivery",47,"Tuesday, November 18, 2025","676","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15"],
+      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","678","COMBO-03LB",3,"El Penon Bar and Grill","COD"],
+      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","679","COMBO-03LB",3,"Hacienda Calichi","COD"],
+      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","680","COMBO-01LB",1,"Asador San Miguel","NET-7"],
+      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","680","COMBO-03LB",3,"Asador San Miguel","NET-7"],
+      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","681","COMBO-03LB",1,"Papá Che","COD"],
+      ["Wednesday, November 19, 2025","Pick-up",48,"Monday, November 24, 2025","682","COMBO-05OZ",63,"Agro Produce","NET-30"],
+      ["Thursday, November 20, 2025","Pick-up",48,"Wednesday, November 26, 2025","683","COMBO-05OZ",260,"Agro Produce","NET-30"],
+      ["Thursday, November 20, 2025","Pick-up",48,"Wednesday, November 26, 2025","683","COMBO-10OZ",42,"Agro Produce","NET-30"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Tuesday, November 25, 2025","684","COMBO-03LB",4,"Bottles - Guaynabo","NET-15"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Tuesday, November 25, 2025","684","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","685","COMBO-03LB",2,"El Penon Bar and Grill","COD"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","686","COMBO-03LB",1,"Hacienda Calichi","COD"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","687","COMBO-03LB",1,"Papá Che","COD"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","688","COMBO-03LB",3,"Asador San Miguel","NET-7"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","688","COMBO-01LB",1,"Asador San Miguel","NET-7"],
+      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","689","COMBO-03LB",2,"Pocito Dulce","NET-30"],
+      ["Tuesday, November 25, 2025","Our Delivery",48,"Wednesday, November 26, 2025","690","CRNCH-03LB",1,"Pal Tostao Cafe","COD"],
+      ["Tuesday, November 25, 2025","Our Delivery",48,"Wednesday, November 26, 2025","691","COMBO-01LB",30,"Pasta to Go","NET-30"],
+      ["Tuesday, November 25, 2025","Our Delivery",48,"Wednesday, November 26, 2025","692","COMBO-03LB",3,"Cosecha Restaurant","COD"],
+      ["Monday, December 1, 2025","Pick-up",49,"Thursday, December 4, 2025","693","COMBO-05OZ",58,"Agro Produce","NET-30"],
+      ["Monday, December 1, 2025","Pick-up",49,"Thursday, December 4, 2025","693","COMBO-10OZ",45,"Agro Produce","NET-30"],
+      ["Monday, December 1, 2025","Our Delivery",49,"Tuesday, December 2, 2025","694","COMBO-03LB",4,"Bottles - Guaynabo","NET-15"],
+      ["Monday, December 1, 2025","Our Delivery",49,"Tuesday, December 2, 2025","694","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15"]
+    ];
+
+const excludedCustomers = new Set([
+  "donación - banco de alimento pr",
+  "donacion - banco de alimento pr",
+  "donación - banco de alimentos pr",
+  "donacion - banco de alimentos pr",
+  "banco de alimentos pr",
+  "banco de alimentos",
+  "donación - fundación fe y esperanza",
+  "donacion - fundacion fe y esperanza",
+  "fundación fe y esperanza",
+  "fundacion fe y esperanza",
+  "donación - equipo",
+  "donacion - equipo",
+  "samples",
+  "warehouse"
+]);
+
+const skuUnitsPerCase = {
+  "COMBO-05OZ": 18,
+  "COMBO-10OZ": 12,
+  "COMBO-16OZ": 8,
+  "COMBO-01LB": 10,
+  "CRNCH-01LB": 10,
+  "COMBO-03LB": 3,
+  "CRNCH-03LB": 3
+};
+
+const skuWeightLbs = {
+  // 18 bags × 5 oz each = 90 oz = 5.625 lbs per case
+  "COMBO-05OZ": 18 * (5 / 16),
+
+  // 12 bags × 10 oz each = 120 oz = 7.5 lbs per case
+  "COMBO-10OZ": 12 * (10 / 16),
+
+  // If you ever add 16oz SKUs:
+  // 8 bags × 16 oz each = 128 oz = 8 lbs per case
+  "COMBO-16OZ": 8 * (16 / 16),
+
+  // 10 bags × 1 lb each = 10 lbs per case
+  "COMBO-01LB": 10 * 1,
+  "CRNCH-01LB": 10 * 1,
+
+  // 3 bags × 3 lb each = 9 lbs per case
+  "COMBO-03LB": 3 * 3,
+  "CRNCH-03LB": 3 * 3
+};
+
+    function isExcludedCustomer(name = "") {
+      return excludedCustomers.has(name.trim().toLowerCase());
+    }
+
+    function normalizeData(raw) {
+      return raw
+        .map(r => {
+          const [invoiceDate, shipVia, salesWeek, shipDate, invoiceNo, sku, cases, customer, term = ""] = r;
+          const shipDateObj = new Date(shipDate);
+          const shipDateISO = shipDateObj.toISOString().slice(0,10);
+          return {
+            invoiceDate,
+            shipVia,
+            salesWeek: Number(salesWeek),
+            shipDate,
+            shipDateObj,
+            shipDateISO,
+            invoiceNo: String(invoiceNo),
+            sku,
+            cases: Number(cases),
+            customer,
+            term
+          };
+        })
+        .filter(record => !isExcludedCustomer(record.customer));
+    }
+
+    let salesData = normalizeData(defaultSalesData);
+
+    const state = {
+      viewMode: "daily",   // "daily" or "weekly" (global)
+      timeAxis: "daily",   // chart axis (kept in sync with viewMode)
+      unitMode: "cases",
+      breakdownMode: "sku",
+      filters: {
+        sku: "all",
+        customer: "all",
+        week: "all",
+        date: "all"
+      }
+    };
+
+    const salesTableBody = document.getElementById("salesTableBody");
+    const skuStripEl = document.getElementById("skuStrip");
+    const customerStripEl = document.getElementById("customerStrip");
+
+    const kpiTotalSoldEl = document.getElementById("kpiTotalSold");
+    const kpiTotalSoldSubEl = document.getElementById("kpiTotalSoldSub");
+    const kpiAvgPerDayLabelEl = document.getElementById("kpiAvgPerDayLabel");
+    const kpiAvgPerDayEl = document.getElementById("kpiAvgPerDay");
+    const kpiAvgPerDaySubEl = document.getElementById("kpiAvgPerDaySub");
+    const kpiTopCustomerEl = document.getElementById("kpiTopCustomer");
+    const kpiTopCustomerSubEl = document.getElementById("kpiTopCustomerSub");
+    const kpiTopSkuEl = document.getElementById("kpiTopSku");
+    const kpiTopSkuSubEl = document.getElementById("kpiTopSkuSub");
+
+    const chartFooterNoteEl = document.getElementById("chartFooterNote");
+    const breakdownFooterNoteEl = document.getElementById("breakdownFooterNote");
+    const tableModeChipEl = document.getElementById("tableModeChip");
+    const performanceSubEl = document.getElementById("performanceSub");
+    const breakdownSubEl = document.getElementById("breakdownSub");
+    const weeklySummaryContainer = document.getElementById("weeklySummaryContainer");
+    const skuWeekHeatmapEl = document.getElementById("skuWeekHeatmap");
+    const leaderboardContainer = document.getElementById("leaderboardContainer");
+    const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+
+    const dataInputCard = document.getElementById("dataInputCard");
+    const dataInputArea = document.getElementById("dataInputArea");
+    const dataInputStatus = document.getElementById("dataInputStatus");
+    const loadDataBtn = document.getElementById("loadDataBtn");
+    const clearDataBtn = document.getElementById("clearDataBtn");
+    const toggleDataInputBtn = document.getElementById("toggleDataInputBtn");
+
+    let salesChart = null;
+    let salesBreakdownChart = null;
+
+    function formatNumber(value) {
+      return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    }
+
+    function formatDateShort(d) {
+      return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
+    }
+
+    function getUnits(record, unitMode) {
+      if (unitMode === "cases") return record.cases;
+      const w = skuWeightLbs[record.sku] ?? 1;
+      return record.cases * w;
+    }
+
+    function getUnitCount(record) {
+      const unitsPerCase = skuUnitsPerCase[record.sku] ?? 1;
+      return record.cases * unitsPerCase;
+    }
+
+    function applyFilters() {
+      return salesData.filter(row => {
+        if (state.filters.sku !== "all" && row.sku !== state.filters.sku) return false;
+        if (state.filters.customer !== "all" && row.customer !== state.filters.customer) return false;
+        if (state.filters.week !== "all" && row.salesWeek !== Number(state.filters.week)) return false;
+        if (state.filters.date !== "all" && row.shipDateISO !== state.filters.date) return false;
+        return true;
+      });
+    }
+
+    function buildStrip(container, allLabel, set, keyName) {
+      container.innerHTML = "";
+      const allBtn = document.createElement("button");
+      allBtn.className = "pill active";
+      allBtn.dataset[keyName] = "all";
+      allBtn.textContent = allLabel;
+      container.appendChild(allBtn);
+
+      [...set].sort().forEach(value => {
+        const btn = document.createElement("button");
+        btn.className = "pill";
+        btn.dataset[keyName] = value;
+        btn.textContent = value;
+        container.appendChild(btn);
+      });
+    }
+
+    function initFilters() {
+      const skuSet = new Set();
+      const customerSet = new Set();
+
+      salesData.forEach(row => {
+        skuSet.add(row.sku);
+        customerSet.add(row.customer);
+      });
+
+      buildStrip(skuStripEl, "All SKUs", skuSet, "sku");
+      buildStrip(customerStripEl, "All customers", customerSet, "customer");
+
+      state.filters = { sku: "all", customer: "all", week: "all", date: "all" };
+    }
+
+    function renderTable(filtered) {
+      salesTableBody.innerHTML = "";
+      const unitMode = state.unitMode;
+      const frag = document.createDocumentFragment();
+      const isWeekly = state.viewMode === "weekly";
+
+      if (!isWeekly) {
+        // DAILY: one row per invoice line (original behavior)
+        filtered
+          .slice()
+          .sort((a,b)=> a.shipDateObj - b.shipDateObj || a.invoiceNo.localeCompare(b.invoiceNo))
+          .forEach(row => {
+            const tr = document.createElement("tr");
+            const units = getUnits(row, unitMode);
+
+            const shipTd = document.createElement("td");
+            shipTd.textContent = formatDateShort(row.shipDateObj);
+            tr.appendChild(shipTd);
+
+            const weekTd = document.createElement("td");
+            weekTd.textContent = row.salesWeek;
+            tr.appendChild(weekTd);
+
+            const skuTd = document.createElement("td");
+            skuTd.textContent = row.sku;
+            tr.appendChild(skuTd);
+
+            const casesTd = document.createElement("td");
+            casesTd.className = "text-right";
+            casesTd.textContent = formatNumber(row.cases);
+            tr.appendChild(casesTd);
+
+            const unitsTd = document.createElement("td");
+            unitsTd.className = "text-right";
+            unitsTd.textContent = formatNumber(units);
+            tr.appendChild(unitsTd);
+
+            const custTd = document.createElement("td");
+            custTd.textContent = row.customer;
+            tr.appendChild(custTd);
+
+            const viaTd = document.createElement("td");
+            viaTd.textContent = row.shipVia;
+            tr.appendChild(viaTd);
+
+            const termTd = document.createElement("td");
+            termTd.textContent = row.term || "-";
+            tr.appendChild(termTd);
+
+            const invTd = document.createElement("td");
+            invTd.className = "text-center";
+            invTd.textContent = row.invoiceNo;
+            tr.appendChild(invTd);
+
+            frag.appendChild(tr);
+          });
+      } else {
+        // WEEKLY: aggregate by week + SKU + customer
+        const buckets = new Map(); // key: week|sku|customer
+        filtered.forEach(row => {
+          const units = getUnits(row, unitMode);
+          const key = `${row.salesWeek}||${row.sku}||${row.customer}`;
+          if (!buckets.has(key)) {
+            buckets.set(key, {
+              week: row.salesWeek,
+              sku: row.sku,
+              customer: row.customer,
+              cases: 0,
+              units: 0
+            });
+          }
+          const b = buckets.get(key);
+          b.cases += row.cases;
+          b.units += units;
+        });
+
+        const rows = [...buckets.values()].sort(
+          (a,b)=> a.week - b.week || a.sku.localeCompare(b.sku) || a.customer.localeCompare(b.customer)
+        );
+
+        rows.forEach(row => {
+          const tr = document.createElement("tr");
+
+          const shipTd = document.createElement("td");
+          shipTd.textContent = `Week ${row.week}`;
+          tr.appendChild(shipTd);
+
+          const weekTd = document.createElement("td");
+          weekTd.textContent = row.week;
+          tr.appendChild(weekTd);
+
+          const skuTd = document.createElement("td");
+          skuTd.textContent = row.sku;
+          tr.appendChild(skuTd);
+
+          const casesTd = document.createElement("td");
+          casesTd.className = "text-right";
+          casesTd.textContent = formatNumber(row.cases);
+          tr.appendChild(casesTd);
+
+          const unitsTd = document.createElement("td");
+          unitsTd.className = "text-right";
+          unitsTd.textContent = formatNumber(row.units);
+          tr.appendChild(unitsTd);
+
+          const custTd = document.createElement("td");
+          custTd.textContent = row.customer;
+          tr.appendChild(custTd);
+
+          const viaTd = document.createElement("td");
+          viaTd.textContent = "–";
+          tr.appendChild(viaTd);
+
+          const termTd = document.createElement("td");
+          termTd.textContent = "–";
+          tr.appendChild(termTd);
+
+          const invTd = document.createElement("td");
+          invTd.className = "text-center";
+          invTd.textContent = "Multiple";
+          tr.appendChild(invTd);
+
+          frag.appendChild(tr);
+        });
+      }
+
+      salesTableBody.appendChild(frag);
+    }
+
+    function renderKpis(filtered) {
+      const unitMode = state.unitMode;
+      const unitLabel = unitMode === "cases" ? "cases" : "lbs";
+      const isWeekly = state.viewMode === "weekly";
+
+      if (!filtered.length) {
+        kpiTotalSoldEl.textContent = "0";
+        kpiTotalSoldSubEl.textContent = `No ${unitLabel} in current filter`;
+        kpiAvgPerDayEl.textContent = "0";
+        kpiAvgPerDaySubEl.textContent = isWeekly
+          ? "No weeks in filter"
+          : "No ship days in filter";
+        kpiTopCustomerEl.textContent = "–";
+        kpiTopCustomerSubEl.textContent = "No customer data";
+        kpiTopSkuEl.textContent = "–";
+        kpiTopSkuSubEl.textContent = "No SKU data";
+        return;
+      }
+
+      let totalUnits = 0;
+      const byGroup = new Map(); // date or week depending on viewmode
+      const byCustomer = new Map();
+      const bySku = new Map();
+
+      filtered.forEach(row => {
+        const units = getUnits(row, unitMode);
+        totalUnits += units;
+
+        const gKey = isWeekly ? row.salesWeek : row.shipDateISO;
+        byGroup.set(gKey, (byGroup.get(gKey) || 0) + units);
+
+        byCustomer.set(row.customer, (byCustomer.get(row.customer) || 0) + units);
+        bySku.set(row.sku, (bySku.get(row.sku) || 0) + units);
+      });
+
+      kpiTotalSoldEl.textContent = formatNumber(totalUnits);
+      kpiTotalSoldSubEl.textContent = `Across ${filtered.length} invoice lines (${unitLabel})`;
+
+      const groupCount = byGroup.size;
+      if (isWeekly) {
+        const avgPerWeek = groupCount ? totalUnits / groupCount : 0;
+        const avgPerDay7 = avgPerWeek / 7;
+        kpiAvgPerDayEl.textContent = formatNumber(avgPerDay7);
+        kpiAvgPerDaySubEl.textContent =
+          `Avg ${unitLabel}/day assuming 7-day weeks (${groupCount} weeks)`;
+      } else {
+        const avgPerDay = groupCount ? totalUnits / groupCount : 0;
+        kpiAvgPerDayEl.textContent = formatNumber(avgPerDay);
+        kpiAvgPerDaySubEl.textContent =
+          `Avg ${unitLabel}/ship day (${groupCount} days)`;
+      }
+
+      let topCustomer = "-";
+      let topCustomerUnits = 0;
+      byCustomer.forEach((val, key) => {
+        if (val > topCustomerUnits) {
+          topCustomerUnits = val;
+          topCustomer = key;
+        }
+      });
+      kpiTopCustomerEl.textContent = topCustomer;
+      kpiTopCustomerSubEl.textContent = `${formatNumber(topCustomerUnits)} ${unitLabel}`;
+
+      let topSku = "-";
+      let topSkuUnits = 0;
+      bySku.forEach((val, key) => {
+        if (val > topSkuUnits) {
+          topSkuUnits = val;
+          topSku = key;
+        }
+      });
+      kpiTopSkuEl.textContent = topSku;
+      kpiTopSkuSubEl.textContent = `${formatNumber(topSkuUnits)} ${unitLabel}`;
+    }
+
+    function renderWeeklySummary(filtered) {
+      if (!weeklySummaryContainer) return;
+      if (!filtered.length) {
+        weeklySummaryContainer.textContent = "No weeks in current filter.";
+        return;
+      }
+
+      const unitMode = state.unitMode; // "cases" or "pounds"
+      const byWeek = new Map();
+
+      filtered.forEach(row => {
+        const wk = row.salesWeek;
+
+        // First metric: always raw cases
+        const cases = row.cases;
+
+        // Second metric depends on mode:
+        // - cases mode  -> units (bags)
+        // - pounds mode -> lbs
+        const secondMetric = unitMode === "cases"
+          ? getUnitCount(row)          // cases × units-per-case
+          : getUnits(row, "pounds");   // cases × lbs-per-case
+
+        if (!byWeek.has(wk)) {
+          byWeek.set(wk, {
+            cases: 0,
+            metric: 0,
+            customers: new Set(),
+            skus: new Set()
+          });
+        }
+
+        const bucket = byWeek.get(wk);
+        bucket.cases += cases;
+        bucket.metric += secondMetric;
+        bucket.customers.add(row.customer);
+        bucket.skus.add(row.sku);
+      });
+
+      const rows = [...byWeek.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([wk, info]) => {
+          return `
+            <tr>
+              <td>Week ${wk}</td>
+              <td class="text-right">${formatNumber(info.cases)}</td>
+              <td class="text-right">${formatNumber(info.metric)}</td>
+              <td class="text-center">${info.customers.size}</td>
+              <td class="text-center">${info.skus.size}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      const secondHeader = unitMode === "cases" ? "Units" : "Lbs";
+      const chipLabel = unitMode === "cases"
+        ? "Mode: Cases + units/case"
+        : "Mode: Lbs (cases × lbs/case)";
+
+      weeklySummaryContainer.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div class="section-title" style="margin:0;">
+            <span class="dot"></span>
+            Weekly summary
+          </div>
+          <span class="chip"><strong>${chipLabel}</strong></span>
+        </div>
+        <div style="overflow:auto;">
+          <table class="weekly-summary-table">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th class="text-right">Cases</th>
+                <th class="text-right">${secondHeader}</th>
+                <th class="text-center">Customers</th>
+                <th class="text-center">SKUs</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function buildTimeChartData(filtered) {
+      const unitMode = state.unitMode;
+      const by = state.timeAxis === "weekly" ? "week" : "date";
+      const buckets = new Map();
+
+      filtered.forEach(row => {
+        const units = getUnits(row, unitMode);
+        let key, labelMeta;
+
+        if (by === "date") {
+          key = row.shipDateISO;
+          labelMeta = row.shipDateObj;
+        } else {
+          key = String(row.salesWeek);
+          labelMeta = row.salesWeek;
+        }
+
+        if (!buckets.has(key)) {
+          buckets.set(key, { total: 0, meta: labelMeta });
+        }
+        buckets.get(key).total += units;
+      });
+
+      const entries = [...buckets.entries()];
+      entries.sort((a,b)=> a[1].meta - b[1].meta);
+
+      const labels = [];
+      const data = [];
+      const keys = [];
+
+      entries.forEach(([key, obj]) => {
+        if (by === "date") {
+          labels.push(formatDateShort(obj.meta));
+        } else {
+          labels.push(`Week ${obj.meta}`);
+        }
+        data.push(obj.total);
+        keys.push(key);
+      });
+
+      return { labels, data, keys };
+    }
+
+    function buildBreakdownData(filtered) {
+      const unitMode = state.unitMode;
+      const mode = state.breakdownMode;
+      const isDaily = state.viewMode === "daily";
+      const buckets = new Map();
+      const shipDates = new Set();
+
+      filtered.forEach(row => {
+        const units = getUnits(row, unitMode);
+        shipDates.add(row.shipDateISO);
+        const key = mode === "sku" ? row.sku : row.customer;
+        buckets.set(key, (buckets.get(key) || 0) + units);
+      });
+
+      const divisor = isDaily ? Math.max(shipDates.size, 1) : 1;
+
+      const entries = [...buckets.entries()]
+        .map(([k, v]) => [k, v / divisor])
+        .sort((a,b)=> b[1] - a[1]);
+
+      const labels = entries.map(([k]) => k);
+      const data = entries.map(([,v]) => v);
+      return { labels, data };
+    }
+
+    function renderChart(filtered) {
+      const ctx = document.getElementById("salesPerformanceChart").getContext("2d");
+      const { labels, data, keys } = buildTimeChartData(filtered);
+      const unitLabel = state.unitMode === "cases" ? "Cases sold" : "Pounds sold";
+      const axisText = state.timeAxis === "weekly" ? "sales week" : "ship date";
+      const windowSize = state.viewMode === "weekly" ? 4 : 7;
+
+      const movingAverageData = data.map((_, idx) => {
+        const start = Math.max(0, idx - (windowSize - 1));
+        const slice = data.slice(start, idx + 1);
+        const sum = slice.reduce((a,b)=>a+b, 0);
+        return slice.length ? sum / slice.length : 0;
+      });
+
+      const min = data.length ? Math.min(...data) : 0;
+      const max = data.length ? Math.max(...data) : 1;
+
+      if (salesChart) {
+        salesChart.destroy();
+      }
+
+      salesChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: unitLabel,
+              data,
+              borderWidth: 1.5,
+              borderRadius: 6,
+              backgroundColor: (ctx) => {
+                const v = ctx.parsed.y ?? 0;
+                const t = max === min ? 0.5 : (v - min) / (max - min);
+                const alpha = 0.4 + t * 0.4;
+                return `rgba(34, 197, 94, ${alpha})`;
+              }
+            },
+            {
+              type: "line",
+              label: `${windowSize}-period avg`,
+              data: movingAverageData,
+              borderColor: "rgba(59,130,246,0.8)",
+              backgroundColor: "transparent",
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.3,
+              fill: false,
+              yAxisID: "y"
+            }
+          ],
+          metaKeys: keys
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          onClick: (evt, elements, chart) => {
+            if (!elements.length) return;
+            const idx = elements[0].index;
+            const key = chart.data.metaKeys ? chart.data.metaKeys[idx] : null;
+            if (!key) return;
+            if (state.viewMode === "weekly") {
+              state.filters.week = Number(key);
+              state.filters.date = "all";
+            } else {
+              state.filters.date = key;
+              state.filters.week = "all";
+            }
+            refreshDashboard();
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: "#9ca3af", maxRotation: 0 }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: "rgba(55,65,81,0.5)" },
+              ticks: { color: "#9ca3af" }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: "#e5e7eb", font: { size: 11 } }
+            }
+          }
+        }
+      });
+
+      chartFooterNoteEl.textContent =
+        `Showing ${unitLabel.toLowerCase()} by ${axisText} (${state.viewMode === "weekly" ? "total per week" : "per ship day"}). Data reflects all active filters.`;
+
+      if (performanceSubEl) {
+        performanceSubEl.textContent = state.viewMode === "weekly"
+          ? "Bars: total units sold per week."
+          : "Bars: total units sold per ship date.";
+      }
+    }
+
+    function renderBreakdownChart(filtered) {
+      const ctx = document.getElementById("salesBreakdownChart").getContext("2d");
+      const { labels, data } = buildBreakdownData(filtered);
+      const unitLabel = state.unitMode === "cases" ? "Cases sold" : "Pounds sold";
+      const mode = state.breakdownMode;
+      const modeLabel = mode === "sku" ? "SKU" : "customer";
+      const isDaily = state.viewMode === "daily";
+      const metricLabel = isDaily ? " (avg per ship day)" : " (total per week)";
+
+      if (salesBreakdownChart) {
+        salesBreakdownChart.destroy();
+      }
+
+      salesBreakdownChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: `${unitLabel} by ${modeLabel}${metricLabel}`,
+              data,
+              borderWidth: 1.5,
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          indexAxis: labels.length > 6 ? "y" : "x",
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: "rgba(55,65,81,0.5)" },
+              ticks: { color: "#9ca3af" }
+            },
+            y: {
+              grid: { display: labels.length > 6 },
+              ticks: { color: "#9ca3af" }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: "#e5e7eb", font: { size: 11 } }
+            }
+          }
+        }
+      });
+
+      breakdownFooterNoteEl.textContent =
+        `Showing ${unitLabel.toLowerCase()} by ${modeLabel}${metricLabel}. Values shown in ${state.unitMode === "cases" ? "cases" : "pounds"}. Data reflects all active filters.`;
+
+      if (breakdownSubEl) {
+        breakdownSubEl.textContent = isDaily
+          ? "Units sold by SKU or customer (avg per ship day)."
+          : "Units sold by SKU or customer (total per week).";
+      }
+    }
+
+    function renderLeaderboard(filtered) {
+      if (!leaderboardContainer) return;
+      if (!filtered.length) {
+        leaderboardContainer.innerHTML = "<div class=\"leaderboard\">No data for leaderboard.</div>";
+        return;
+      }
+
+      const unitLabel = state.unitMode === "cases" ? "cases" : "lbs";
+      const byCustomer = new Map();
+      const bySku = new Map();
+
+      filtered.forEach(row => {
+        const units = getUnits(row, state.unitMode);
+        byCustomer.set(row.customer, (byCustomer.get(row.customer) || 0) + units);
+        bySku.set(row.sku, (bySku.get(row.sku) || 0) + units);
+      });
+
+      const topCustomers = [...byCustomer.entries()]
+        .sort((a,b)=> b[1]-a[1])
+        .slice(0,5);
+      const topSkus = [...bySku.entries()]
+        .sort((a,b)=> b[1]-a[1])
+        .slice(0,5);
+
+      const renderList = (title, items) => {
+        if (!items.length) return `<div class="leaderboard"><h4>${title}</h4><div>No data</div></div>`;
+        const rows = items.map(([,v], idx) => {
+          const name = items[idx][0];
+          return `
+            <div class="leaderboard-item">
+              <span><span class="leaderboard-rank">#${idx+1}</span>${name}</span>
+              <strong>${formatNumber(v)} ${unitLabel}</strong>
+            </div>
+          `;
+        }).join("");
+        return `<div class="leaderboard"><h4>${title}</h4>${rows}</div>`;
+      };
+
+      leaderboardContainer.innerHTML = `
+        ${renderList("Top 5 customers", topCustomers)}
+        ${renderList("Top 5 SKUs", topSkus)}
+      `;
+    }
+
+    function renderSkuWeekHeatmap(filtered) {
+      if (!skuWeekHeatmapEl) return;
+      if (!filtered.length) {
+        skuWeekHeatmapEl.innerHTML = "No data for heatmap.";
+        return;
+      }
+
+      const skuSet = new Set();
+      const weekSet = new Set();
+      const matrix = new Map(); // sku -> Map(week -> units)
+
+      filtered.forEach(row => {
+        const units = getUnits(row, state.unitMode);
+        skuSet.add(row.sku);
+        weekSet.add(row.salesWeek);
+        if (!matrix.has(row.sku)) matrix.set(row.sku, new Map());
+        const m = matrix.get(row.sku);
+        m.set(row.salesWeek, (m.get(row.salesWeek) || 0) + units);
+      });
+
+      const skus = [...skuSet].sort();
+      const weeks = [...weekSet].sort((a,b)=>a-b);
+
+      let min = Infinity;
+      let max = 0;
+      matrix.forEach(m => {
+        m.forEach(v => {
+          if (v > 0) {
+            min = Math.min(min, v);
+            max = Math.max(max, v);
+          }
+        });
+      });
+      if (min === Infinity) { min = 0; max = 1; }
+
+      const rows = skus.map(sku => {
+        const weekMap = matrix.get(sku) || new Map();
+        const cells = weeks.map(week => {
+          const val = weekMap.get(week) || 0;
+          if (!val) {
+            return `<td style="background: rgba(34,197,94,0.04)"></td>`;
+          }
+          const t = max === min ? 0.5 : (val - min) / (max - min);
+          const alpha = 0.2 + t * 0.6;
+          return `<td style="background: rgba(34,197,94,${alpha}); color: #e5e7eb;">${formatNumber(val)}</td>`;
+        }).join("");
+        return `<tr><th scope="row">${sku}</th>${cells}</tr>`;
+      }).join("");
+
+      const headerCells = weeks.map(w => `<th>W${w}</th>`).join("");
+      skuWeekHeatmapEl.innerHTML = `
+        <div style="overflow:auto;">
+          <table class="heatmap-table">
+            <thead>
+              <tr><th>SKU</th>${headerCells}</tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function updateModeLabels() {
+      const isWeekly = state.viewMode === "weekly";
+      if (isWeekly) {
+        kpiAvgPerDayLabelEl.textContent = "Average per day (7-day week)";
+        tableModeChipEl.textContent = "Weekly rows";
+      } else {
+        kpiAvgPerDayLabelEl.textContent = "Average per day";
+        tableModeChipEl.textContent = "Daily rows";
+      }
+    }
+
+    function updateResetButtonVisibility() {
+      if (!resetFiltersBtn) return;
+      const needsReset =
+        state.filters.sku !== "all" ||
+        state.filters.customer !== "all" ||
+        state.filters.week !== "all" ||
+        state.filters.date !== "all" ||
+        state.unitMode !== "cases" ||
+        state.viewMode !== "daily";
+      resetFiltersBtn.classList.toggle("hidden", !needsReset);
+    }
+
+    function refreshDashboard() {
+      const filtered = applyFilters();
+      updateModeLabels();
+      renderKpis(filtered);
+      renderWeeklySummary(filtered);
+      renderChart(filtered);
+      renderBreakdownChart(filtered);
+      renderLeaderboard(filtered);
+      renderSkuWeekHeatmap(filtered);
+      renderTable(filtered);
+      updateResetButtonVisibility();
+    }
+
+    function setActiveToggle(container, attr, value) {
+      if (!container) return;
+      container.querySelectorAll("button").forEach(btn => {
+        const matches = btn.dataset[attr] === value;
+        btn.classList.toggle("active", matches);
+      });
+    }
+
+    function resetStripActive(container, keyName) {
+      if (!container) return;
+      container.querySelectorAll(".pill").forEach(btn => btn.classList.remove("active"));
+      const allBtn = container.querySelector(`.pill[data-${keyName}="all"]`);
+      if (allBtn) allBtn.classList.add("active");
+    }
+
+    function initToggles() {
+      const unitToggle = document.getElementById("unitModeToggle");
+      const timeAxisToggle = document.getElementById("timeAxisToggle");
+      const breakdownToggle = document.getElementById("breakdownToggle");
+
+      unitToggle.addEventListener("click", (e) => {
+        if (e.target.tagName !== "BUTTON") return;
+        [...unitToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
+        e.target.classList.add("active");
+        state.unitMode = e.target.dataset.unit;
+        refreshDashboard();
+      });
+
+      timeAxisToggle.addEventListener("click", (e) => {
+        if (e.target.tagName !== "BUTTON") return;
+        [...timeAxisToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
+        e.target.classList.add("active");
+
+        const view = e.target.dataset.view === "weekly" ? "weekly" : "daily";
+        state.timeAxis = view;   // chart axis
+        state.viewMode = view;   // global mode (KPIs + table)
+        refreshDashboard();
+      });
+
+      breakdownToggle.addEventListener("click", (e) => {
+        if (e.target.tagName !== "BUTTON") return;
+        [...breakdownToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
+        e.target.classList.add("active");
+        state.breakdownMode = e.target.dataset.mode;
+        refreshDashboard();
+      });
+
+      if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener("click", () => {
+          state.filters = { sku: "all", customer: "all", week: "all", date: "all" };
+          state.unitMode = "cases";
+          state.viewMode = "daily";
+          state.timeAxis = "daily";
+
+          setActiveToggle(unitToggle, "unit", "cases");
+          setActiveToggle(timeAxisToggle, "view", "daily");
+          resetStripActive(skuStripEl, "sku");
+          resetStripActive(customerStripEl, "customer");
+
+          refreshDashboard();
+        });
+      }
+    }
+
+    function initFilterEvents() {
+      skuStripEl.addEventListener("click", (e) => {
+        const btn = e.target.closest(".pill");
+        if (!btn || !btn.dataset.sku) return;
+        [...skuStripEl.querySelectorAll(".pill")].forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filters.sku = btn.dataset.sku;
+        refreshDashboard();
+      });
+
+      customerStripEl.addEventListener("click", (e) => {
+        const btn = e.target.closest(".pill");
+        if (!btn || !btn.dataset.customer) return;
+        [...customerStripEl.querySelectorAll(".pill")].forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filters.customer = btn.dataset.customer;
+        refreshDashboard();
+      });
+    }
+
+    function initDataInput() {
+      toggleDataInputBtn.addEventListener("click", () => {
+        const collapsed = dataInputCard.classList.toggle("data-input-collapsed");
+        toggleDataInputBtn.textContent = collapsed ? "Show" : "Hide";
+      });
+
+      loadDataBtn.addEventListener("click", () => {
+        const text = dataInputArea.value.trim();
+        if (!text) {
+          dataInputStatus.textContent = "Paste tab-separated rows first.";
+          return;
+        }
+
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        const parsedRaw = [];
+
+        for (const line of lines) {
+          const cols = line.split(/\t/);
+          if (cols[0] && /invoice date/i.test(cols[0]) && parsedRaw.length === 0) {
+            continue;
+          }
+          if (cols.length < 8) continue;
+          parsedRaw.push([
+            cols[0],
+            cols[1],
+            cols[2],
+            cols[3],
+            cols[4],
+            cols[5],
+            cols[6],
+            cols[7]
+          ]);
+        }
+
+        if (!parsedRaw.length) {
+          dataInputStatus.textContent = "Could not find any valid rows (need 8 tab-separated columns).";
+          return;
+        }
+
+        salesData = normalizeData(parsedRaw);
+        initFilters();
+        refreshDashboard();
+        dataInputStatus.textContent = `Loaded ${salesData.length} rows from pasted data.`;
+      });
+
+      clearDataBtn.addEventListener("click", () => {
+        dataInputArea.value = "";
+        salesData = normalizeData(defaultSalesData);
+        initFilters();
+        refreshDashboard();
+        dataInputStatus.textContent = "Cleared pasted data; reverted to sample data.";
+      });
+    }
+
+    // INIT
+    initFilters();
+    initToggles();
+    initFilterEvents();
+    initDataInput();
+    refreshDashboard();
+  </script>
+</body>
+</html>
