@@ -931,9 +931,8 @@
                 </div>
 
                 <div class="cat-grid" id="homeTeam" style="display:none;">
-                  <button class="tile disabled" disabled><div class="ico">👥</div><div class="name" data-i18n="tile.schedule.name">Schedule</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">🧾</div><div class="name" data-i18n="tile.sops.name">SOPs</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">✅</div><div class="name" data-i18n="tile.issues.name">Issues</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile" data-home-go="p-board-inventory"><div class="ico">🧮</div><div class="name" data-i18n="tile.board-inventory.name">Board Inventory</div><div class="meta" data-i18n="tile.board-inventory.meta">Current board counts</div></button>
+                  <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeGrowing" style="display:none;">
@@ -1077,6 +1076,32 @@
         </div>
       </section>
 
+      <section class="panel" id="p-board-inventory">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Board Inventory</h2>
+            <p>Team view for board counts (embedded from <code data-file-text="board-inventory"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="board-inventory"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-board-inventory" data-file-key="board-inventory"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-pack-team-performance">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Pack Team Employee Performance</h2>
+            <p>Team performance dashboard (embedded from <code data-file-text="pack-team-performance"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="pack-team-performance"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-pack-team-performance" data-file-key="pack-team-performance"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-mulders">
         <div class="section-head">
           <div class="head-left">
@@ -1166,9 +1191,8 @@
       </div>
 
       <div class="launcher-grid" id="cat-team" style="display:none;">
-        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">👥</div><div class="app-name" data-i18n="tile.schedule.name">Schedule</div></button>
-        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.sops.name">SOPs</div></button>
-        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">✅</div><div class="app-name" data-i18n="tile.issues.name">Issues</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-board-inventory"><div class="app-ico">🧮</div><div class="app-name" data-i18n="tile.board-inventory.name">Board Inventory</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-pack-team-performance"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div></button>
       </div>
 
       <div class="launcher-grid" id="cat-growing" style="display:none;">
@@ -1235,6 +1259,10 @@
           "tile.harvest.meta":"Cut plans",
           "tile.expcal.name":"Experiment Calendar",
           "tile.expcal.meta":"TSV paste + filters",
+          "tile.board-inventory.name":"Board Inventory",
+          "tile.board-inventory.meta":"Current board counts",
+          "tile.pack-team-performance.name":"Pack Team Performance",
+          "tile.pack-team-performance.meta":"Employee performance",
           "tile.mulders.name":"Mulders Chart",
           "tile.mulders.meta":"Growing performance chart",
           "tile.packing.name":"Packing",
@@ -1321,6 +1349,10 @@
           "tile.harvest.meta":"Planes de corte",
           "tile.expcal.name":"Calendario de experimentos",
           "tile.expcal.meta":"Pega TSV + filtros",
+          "tile.board-inventory.name":"Inventario de tablas",
+          "tile.board-inventory.meta":"Conteos actuales de tablas",
+          "tile.pack-team-performance.name":"Rendimiento del equipo de empaque",
+          "tile.pack-team-performance.meta":"Rendimiento de empleados",
           "tile.mulders.name":"Grafico Mulders",
           "tile.mulders.meta":"Grafico de rendimiento de cultivo",
           "tile.packing.name":"Empaque",
@@ -1371,7 +1403,9 @@
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
-        mulders: "04.3 Team - Mulders Chart.html"
+        mulders: "04.3 Team - Mulders Chart.html",
+        "board-inventory": "04.2 Team - Board Inventory.html",
+        "pack-team-performance": "03.1 Leadership - Pack Team Employee Performance.html"
       };
 
       const FILE_QUERIES = {
@@ -1488,7 +1522,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal","ifr-mulders"
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance"
       ];
 
       function fileWithQuery(key){

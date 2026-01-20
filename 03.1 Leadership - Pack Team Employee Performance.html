@@ -394,34 +394,8 @@
       </div>
 
       <div class="filterRight">
-        <button class="btn warn" id="btnLoadSample">Load sample</button>
-        <button class="btn primary" id="btnCompute">Compute</button>
         <button class="btn" id="btnReset">Reset</button>
         <button class="btn" id="btnExport">Export CSV</button>
-      </div>
-    </div>
-
-    <!-- DATA INPUT -->
-    <div class="grid">
-      <div class="card span-12">
-        <div class="hdr">
-          <div class="h">
-            <div class="t">Data input</div>
-            <div class="s">Paste tab-separated or comma-separated data (header row allowed)</div>
-          </div>
-          <div class="pill">Tip: Keep the 5 columns in order</div>
-        </div>
-        <div class="body">
-          <textarea id="dataBox" spellcheck="false"></textarea>
-          <div class="foot">
-            Expected columns:
-            <span class="mono">Pack Nombre del Empleyado</span>,
-            <span class="mono">Pack Fecha Performance</span>,
-            <span class="mono">Pack Cant</span>,
-            <span class="mono">Pack Hr</span>,
-            <span class="mono">Pack Cant/Hr</span> (ignored; recomputed)
-          </div>
-        </div>
       </div>
     </div>
 
@@ -733,123 +707,6 @@
 
   <script>
     // ----------------------------
-    // Sample Data (your starting point)
-    // ----------------------------
-    const SAMPLE = `Pack Nombre del Empleyado\tPack Fecha Performance\tPack Cant\tPack Hr\tPack Cant/Hr
-Edgardo\tMonday, December 8, 2025\t6.5\t1.2\t5.4
-Evangelio\tMonday, December 8, 2025\t8\t1.2\t6.7
-Jessi\tMonday, December 8, 2025\t0\t\t#DIV/0!
-Ana\tMonday, December 8, 2025\t11\t4.5\t2.4
-Claribel\tMonday, December 8, 2025\t24\t4.5\t5.3
-Nicole\tMonday, December 8, 2025\t16\t4.5\t3.6
-Angelica\tMonday, December 8, 2025\t17\t4.5\t3.8
-Carlos\tMonday, December 8, 2025\t17\t4.5\t3.8
-William\tMonday, December 8, 2025\t0\t\t#DIV/0!
-Javier\tMonday, December 8, 2025\t8\t3\t2.7
-Yari\tMonday, December 8, 2025\t6\t3\t2.0
-Genesis\tMonday, December 8, 2025\t6.5\t3\t2.2
-Eddie\tMonday, December 8, 2025\t0\t\t#DIV/0!
-Luis\tMonday, December 8, 2025\t4\t1.2\t3.3
-Edgardo\tTuesday, December 9, 2025\t10\t2\t5.0
-Evangelio\tTuesday, December 9, 2025\t10\t2\t5.0
-Jessi\tTuesday, December 9, 2025\t13.5\t2\t6.8
-Ana\tTuesday, December 9, 2025\t9\t2\t4.5
-Claribel\tTuesday, December 9, 2025\t16\t2\t8.0
-Nicole\tTuesday, December 9, 2025\t15\t2\t7.5
-Angelica\tTuesday, December 9, 2025\t14\t2\t7.0
-Carlos\tTuesday, December 9, 2025\t\t\t#DIV/0!
-William\tTuesday, December 9, 2025\t10\t2\t5.0
-Javier\tTuesday, December 9, 2025\t6\t2\t3.0
-Yari\tTuesday, December 9, 2025\t15\t2\t7.5
-Genesis\tTuesday, December 9, 2025\t10.5\t\t#DIV/0!
-Eddie\tTuesday, December 9, 2025\t4\t1\t4.0
-Luis\tTuesday, December 9, 2025\t10\t2\t5.0
-Edgardo\tWednesday, December 10, 2025\t6\t2\t3.0
-Evangelio\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Jessi\tWednesday, December 10, 2025\t5\t2\t2.5
-Ana\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Claribel\tWednesday, December 10, 2025\t7\t2\t3.5
-Nicole\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Angelica\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Carlos\tWednesday, December 10, 2025\t\t\t#DIV/0!
-William\tWednesday, December 10, 2025\t6\t2\t3.0
-Javier\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Yari\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Genesis\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Eddie\tWednesday, December 10, 2025\t4\t2\t2.0
-Luis\tWednesday, December 10, 2025\t\t\t#DIV/0!
-Edgardo\tFriday, December 12, 2025\t6\t1\t6.0
-Evangelio\tFriday, December 12, 2025\t10\t1\t10.0
-Jessi\tFriday, December 12, 2025\t21\t4\t5.3
-Ana\tFriday, December 12, 2025\t16\t4\t4.0
-Claribel\tFriday, December 12, 2025\t0\t\t#DIV/0!
-Nicole\tFriday, December 12, 2025\t8\t1\t8.0
-Angelica\tFriday, December 12, 2025\t27\t4\t6.8
-Carlos\tFriday, December 12, 2025\t0\t\t#DIV/0!
-William\tFriday, December 12, 2025\t2\t0.25\t8.0
-Javier\tFriday, December 12, 2025\t10\t1\t10.0
-Yari\tFriday, December 12, 2025\t9\t1\t9.0
-Genesis\tFriday, December 12, 2025\t10\t1\t10.0
-Eddie\tFriday, December 12, 2025\t21\t4\t5.3
-Luis\tFriday, December 12, 2025\t17\t3.5\t4.9
-Edgardo\tMonday, December 15, 2025\t3\t0.75\t4.0
-Evangelio\tMonday, December 15, 2025\t7\t1\t7.0
-Jessi\tMonday, December 15, 2025\t5\t1\t5.0
-Ana\tMonday, December 15, 2025\t17\t2.25\t7.6
-Claribel\tMonday, December 15, 2025\t24\t2.25\t10.7
-Nicole\tMonday, December 15, 2025\t22\t2.15\t10.2
-Angelica\tMonday, December 15, 2025\t22\t2.25\t9.8
-Carlos\tMonday, December 15, 2025\t0\t0\t#DIV/0!
-William\tMonday, December 15, 2025\t7\t1\t7.0
-Javier\tMonday, December 15, 2025\t7\t1\t7.0
-Yari\tMonday, December 15, 2025\t\t\t#DIV/0!
-Genesis\tMonday, December 15, 2025\t6\t1\t6.0
-Eddie\tMonday, December 15, 2025\t18\t2.25\t8.0
-Luis\tMonday, December 15, 2025\t4\t1\t4.0
-Edgardo\tTuesday, December 16, 2025\t15\t1.46\t10.3
-Evangelio\tTuesday, December 16, 2025\t18\t1.21\t14.9
-Jessi\tTuesday, December 16, 2025\t17\t1.46\t11.6
-Ana\tTuesday, December 16, 2025\t0\t\t#DIV/0!
-Claribel\tTuesday, December 16, 2025\t0\t\t#DIV/0!
-Nicole\tTuesday, December 16, 2025\t16\t1.21\t13.2
-Angelica\tTuesday, December 16, 2025\t15\t1.21\t12.4
-Carlos\tTuesday, December 16, 2025\t7\t1\t7.0
-William\tTuesday, December 16, 2025\t14\t1.21\t11.6
-Javier\tTuesday, December 16, 2025\t13\t1.21\t10.7
-Yari\tTuesday, December 16, 2025\t0\t\t#DIV/0!
-Genesis\tTuesday, December 16, 2025\t0\t\t#DIV/0!
-Eddie\tTuesday, December 16, 2025\t0\t\t#DIV/0!
-Luis\tTuesday, December 16, 2025\t11\t1.21\t9.1
-Edgardo\tWednesday, December 17, 2025\t8\t1.5\t5.3
-Evangelio\tWednesday, December 17, 2025\t13\t1.5\t8.7
-Jessi\tWednesday, December 17, 2025\t19\t1.5\t12.7
-Ana\tWednesday, December 17, 2025\t10\t1.5\t6.7
-Claribel\tWednesday, December 17, 2025\t0\t0\t#DIV/0!
-Nicole\tWednesday, December 17, 2025\t19\t1.5\t12.7
-Angelica\tWednesday, December 17, 2025\t19\t1.5\t12.7
-Carlos\tWednesday, December 17, 2025\t0\t0\t#DIV/0!
-William\tWednesday, December 17, 2025\t23\t1.5\t15.3
-Javier\tWednesday, December 17, 2025\t15\t1.5\t10.0
-Yari\tWednesday, December 17, 2025\t0\t1.5\t0.0
-Genesis\tWednesday, December 17, 2025\t16\t1.5\t10.7
-Eddie\tWednesday, December 17, 2025\t0\t0\t#DIV/0!
-Luis\tWednesday, December 17, 2025\t10\t1.5\t6.7
-Edgardo\tMonday, December 22, 2025\t8\t1\t8.0
-Evangelio\tMonday, December 22, 2025\t7\t1\t7.0
-Jessi\tMonday, December 22, 2025\t0\t0\t#DIV/0!
-Ana\tMonday, December 22, 2025\t7\t1\t7.0
-Claribel\tMonday, December 22, 2025\t14\t1\t14.0
-Nicole\tMonday, December 22, 2025\t10\t1\t10.0
-Angelica\tMonday, December 22, 2025\t9\t1\t9.0
-Carlos\tMonday, December 22, 2025\t10\t1\t10.0
-William\tMonday, December 22, 2025\t11\t1\t11.0
-Javier\tMonday, December 22, 2025\t13\t1\t13.0
-Yari\tMonday, December 22, 2025\t11\t1\t11.0
-Genesis\tMonday, December 22, 2025\t0\t0\t#DIV/0!
-Eddie\tMonday, December 22, 2025\t6\t1\t6.0
-Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
-
-    // ----------------------------
     // Utilities
     // ----------------------------
     const $ = (id) => document.getElementById(id);
@@ -904,19 +761,61 @@ Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
     }
 
     // ----------------------------
-    // Parsing (TSV/CSV-ish)
+    // Master Pack (Supabase) loader
     // ----------------------------
-    function splitLine(line){
-      if (line.includes("\t")) return line.split("\t");
-      return line.split(",");
+    const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+    const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
+    const MASTER_PACK_SHEET_NAME = "Master Pack";
+
+    const PACK = Object.freeze({
+      EMPLOYEE: "Pack Nombre del Empleyado",
+      DATE: "Pack Fecha Performance",
+      CANT: "Pack Cant",
+      HR: "Pack Hr",
+      RATE: "Pack Cant/Hr"
+    });
+
+    function buildHeaderLookup(headers) {
+      const map = new Map();
+      (headers || []).forEach((h) => {
+        const raw = String(h ?? "");
+        const norm = raw.trim().toLowerCase();
+        if (!norm) return;
+        if (!map.has(norm)) map.set(norm, raw);
+      });
+      return map;
     }
 
-    function parseInput(text){
-      const lines = String(text || "")
-        .split(/\r?\n/)
-        .map(s => s.trim())
-        .filter(s => s.length);
+    function resolveHeader(headerLookup, expected) {
+      const norm = String(expected || "").trim().toLowerCase();
+      return headerLookup.get(norm) || null;
+    }
 
+    function sheetToRowObjects(sheetObj) {
+      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const out = [];
+      for (const r of rows) {
+        if (!Array.isArray(r)) continue;
+        const obj = {};
+        for (let i = 0; i < headers.length; i++) {
+          const h = headers[i];
+          const key = (h === null || h === undefined) ? "" : String(h);
+          if (!key.trim()) continue;
+          obj[key] = (i < r.length) ? r[i] : "";
+        }
+        out.push(obj);
+      }
+      return out;
+    }
+
+    async function fetchMasterPackPayload() {
+      const res = await fetch(WORKER_PACK_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to load Master Pack (${res.status})`);
+      return res.json();
+    }
+
+    function parseMasterPackPayload(payload) {
       const quality = {
         missingHr: 0,
         zeroHr: 0,
@@ -925,64 +824,98 @@ Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
         rateInvalid: 0
       };
 
-      if (!lines.length) return { rows: [], excluded: 0, errors: 0, quality };
+      const sheet = payload?.sheets?.[MASTER_PACK_SHEET_NAME];
+      if (!sheet) {
+        return {
+          rows: [],
+          excluded: 0,
+          errors: 0,
+          quality,
+          status: { cls: "low", msg: "Master Pack missing", noPct: true }
+        };
+      }
 
-      const headerish = lines[0].toLowerCase().includes("empleyado")
-        || lines[0].toLowerCase().includes("employee")
-        || lines[0].toLowerCase().includes("fecha");
-      const start = headerish ? 1 : 0;
+      const headers = Array.isArray(sheet.headers) ? sheet.headers : [];
+      const headerLookup = buildHeaderLookup(headers);
+
+      const H = {
+        EMPLOYEE: resolveHeader(headerLookup, PACK.EMPLOYEE),
+        DATE: resolveHeader(headerLookup, PACK.DATE),
+        CANT: resolveHeader(headerLookup, PACK.CANT),
+        HR: resolveHeader(headerLookup, PACK.HR),
+        RATE: resolveHeader(headerLookup, PACK.RATE)
+      };
+
+      const missing = [];
+      if (!H.EMPLOYEE) missing.push(PACK.EMPLOYEE);
+      if (!H.DATE) missing.push(PACK.DATE);
+      if (!H.CANT) missing.push(PACK.CANT);
+      if (!H.HR) missing.push(PACK.HR);
+
+      if (missing.length) {
+        return {
+          rows: [],
+          excluded: 0,
+          errors: 0,
+          quality,
+          status: { cls: "low", msg: `Missing columns: ${missing.join(", ")}`, noPct: true }
+        };
+      }
+
+      const rows = sheetToRowObjects(sheet);
+      if (!rows.length) {
+        return {
+          rows: [],
+          excluded: 0,
+          errors: 0,
+          quality,
+          status: { cls: "mid", msg: "Master Pack loaded (0 rows)", noPct: true }
+        };
+      }
 
       const out = [];
       let excluded = 0;
       let errors = 0;
 
-      for (let i = start; i < lines.length; i++){
-        const parts = splitLine(lines[i]).map(x => (x ?? "").trim());
-        if (parts.length < 2){ excluded++; continue; }
+      for (const r of rows) {
+        if (!r || typeof r !== "object") continue;
 
-        const name = (parts[0] || "").trim();
-        const d = parseDate(parts[1]);
+        const name = String(r[H.EMPLOYEE] ?? "").trim();
+        const dateObj = parseDate(r[H.DATE]);
 
-        const cantRaw = parts[2];
-        const hrRaw = parts[3];
+        const cant = parseNumber(r[H.CANT]);
+        const hr = parseNumber(r[H.HR]);
+        const rateRaw = H.RATE ? parseNumber(r[H.RATE]) : NaN;
 
-        const cant = parseNumber(cantRaw);
-        const hr = parseNumber(hrRaw);
+        const validUnits = isFinite(cant) && cant >= 0;
+        const validHrNum = isFinite(hr);
 
-        if (!name || !d){
+        if (!name || !dateObj) {
           excluded++; errors++;
           quality.invalidNameOrDate++;
           continue;
         }
-
-        const validUnits = isFinite(cant) && cant >= 0;
-        const validHrNum = isFinite(hr);
 
         if (!validUnits) quality.missingUnits++;
         if (!validHrNum) quality.missingHr++;
         if (validHrNum && hr === 0) quality.zeroHr++;
 
         const validHours = validHrNum && hr > 0;
-        const rate = (validHours && validUnits) ? (cant / hr) : NaN;
-        const validWorkRow = (validHours && validUnits);
-
+        const validWorkRow = validHours && validUnits;
         if (!validWorkRow) quality.rateInvalid++;
 
-        // If both missing, drop entirely
-        if (!validUnits && !validHrNum){
+        if (!validUnits && !validHrNum) {
           excluded++;
           continue;
         }
 
         out.push({
           name,
-          date: d,
-          dateISO: toISODate(d),
-          dow: dowName(d),
-          cant: validUnits ? cant : 0,
-          hr: validHours ? hr : 0,
-          rate,
-          validWorkRow
+          date: dateObj,
+          dateISO: toISODate(dateObj),
+          cant: validUnits ? cant : NaN,
+          hr: validHrNum ? hr : NaN,
+          rate: isFinite(rateRaw) ? rateRaw : NaN
         });
       }
 
@@ -1569,9 +1502,7 @@ Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
     // ----------------------------
     let lastParseMeta = { excluded: 0, errors: 0, quality: null };
 
-    function loadFromInput(){
-      const text = $("dataBox").value;
-      const parsed = parseInput(text);
+    function applyParsed(parsed){
       ALL_ROWS = parsed.rows;
       lastParseMeta = parsed;
 
@@ -1590,14 +1521,45 @@ Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
 
       let cls = "info";
       let msg = "Looks good";
-      if (pctInvalid >= 0.40){ cls = "low"; msg = "Needs attention"; }
-      else if (pctInvalid >= 0.20){ cls = "mid"; msg = "Some gaps"; }
+      let showPct = true;
+      if (parsed.status) {
+        cls = parsed.status.cls || cls;
+        msg = parsed.status.msg || msg;
+        showPct = !parsed.status.noPct;
+      } else if (pctInvalid >= 0.40) {
+        cls = "low"; msg = "Needs attention";
+      } else if (pctInvalid >= 0.20) {
+        cls = "mid"; msg = "Some gaps";
+      }
 
       $("qualityStatus").className = `badge ${cls}`;
-      $("qualityStatus").textContent = `${msg} · ${Math.round(pctInvalid*100)}% rate-invalid`;
+      $("qualityStatus").textContent = showPct ? `${msg} · ${Math.round(pctInvalid*100)}% rate-invalid` : msg;
 
       refreshEmployeeDropdown(ALL_ROWS);
       computeAndRender();
+    }
+
+    async function loadFromMasterPack(){
+      $("qualityStatus").className = "badge info";
+      $("qualityStatus").textContent = "Loading Master Pack…";
+      try {
+        const payload = await fetchMasterPackPayload();
+        const parsed = parseMasterPackPayload(payload);
+        applyParsed(parsed);
+      } catch (err) {
+        ALL_ROWS = [];
+        lastParseMeta = { excluded: 0, errors: 0, quality: { missingHr: 0, zeroHr: 0, missingUnits: 0, invalidNameOrDate: 0, rateInvalid: 0 } };
+        $("metaExcluded").textContent = "—";
+        $("qMissingHr").textContent = "—";
+        $("qZeroHr").textContent = "—";
+        $("qMissingUnits").textContent = "—";
+        $("qRateInvalid").textContent = "—";
+        $("qualityStatus").className = "badge low";
+        $("qualityStatus").textContent = "Failed to load Master Pack";
+        refreshEmployeeDropdown([]);
+        computeAndRender();
+        console.error(err);
+      }
     }
 
     // ----------------------------
@@ -1644,11 +1606,6 @@ Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
       computeAndRender();
     });
 
-    $("btnCompute").addEventListener("click", loadFromInput);
-    $("btnLoadSample").addEventListener("click", ()=>{
-      $("dataBox").value = SAMPLE;
-      loadFromInput();
-    });
     $("btnReset").addEventListener("click", ()=>{
       $("rangeSel").value = "all";
       $("empSel").value = "__all__";
@@ -1664,8 +1621,7 @@ Luis\tMonday, December 22, 2025\t5\t1\t5.0`;
     $("segHours").addEventListener("click", ()=>setEmphasis("hours"));
 
     // Initial load
-    $("dataBox").value = SAMPLE;
-    loadFromInput();
+    loadFromMasterPack();
   </script>
 </body>
 </html>
