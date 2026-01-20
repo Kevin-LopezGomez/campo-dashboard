@@ -1233,11 +1233,17 @@
         w.withWaste += d.withWaste;
       }
 
+      const weekOrderValue = (weekStr) => {
+        const n = parseFloat(weekStr);
+        if (isNaN(n)) return null;
+        return n <= 4 ? n + 100 : n;
+      };
+
       const weekly = Array.from(wkMap.values()).sort((a,b) => {
-        const aw = parseFloat(a.week);
-        const bw = parseFloat(b.week);
-        if (!isNaN(aw) && !isNaN(bw)) return aw - bw;
-        return String(a.week).localeCompare(String(b.week));
+        const aw = weekOrderValue(a.week);
+        const bw = weekOrderValue(b.week);
+        if (aw === null || bw === null) return String(a.week).localeCompare(String(b.week));
+        return aw - bw;
       }).map(w => {
         const bph = w.spanH > 0 ? (w.boards / w.spanH) : 0;
         const lbsPerBoard = w.boards > 0 ? (w.cut / w.boards) : 0;
@@ -1465,6 +1471,8 @@
       const withWasteByWeek = WEEKLY.map(w => w.withWaste);
 
       let labels, boardsValues, bphValues, weightValues, weightTargetValues;
+      const isWeekly = chartMode === "week";
+      const isDaily = chartMode === "date";
       if (chartMode === "cut") {
         labels = labelsCut; boardsValues = boardsByCut; bphValues = bphByCut;
         weightValues = cutByCut; weightTargetValues = withWasteByCut;
@@ -1503,8 +1511,16 @@
           plugins: { legend: { display: false } },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
-            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
+              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            },
+            y: {
+              grid: { color: "rgba(31, 41, 55, 0.8)" },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: isWeekly || isDaily, text: "Boards", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            }
           }
         }
       });
@@ -1524,8 +1540,16 @@
           plugins: { legend: { display: true, labels: { color: "rgba(209, 213, 219, 0.9)", font: { size: 10 } } } },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)" } },
-            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            },
+            y: {
+              grid: { color: "rgba(31, 41, 55, 0.8)" },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: isWeekly || isDaily, text: "Lbs", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            }
           }
         }
       });
@@ -1565,8 +1589,16 @@
           plugins: { legend: { display: false } },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)" } },
-            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } }
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            },
+            y: {
+              grid: { color: "rgba(31, 41, 55, 0.8)" },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: isWeekly || isDaily, text: "Boards / hour", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            }
           }
         }
       });

@@ -1276,8 +1276,16 @@
           },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
-            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } },
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
+              title: { display: true, text: usingWeekly ? "Seed Week" : "Date", color: "rgba(148, 163, 184, 0.9)" }
+            },
+            y: {
+              grid: { color: "rgba(31, 41, 55, 0.8)" },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: true, text: "Flats Seeded", color: "rgba(148, 163, 184, 0.9)" }
+            },
           },
         },
       });
@@ -1319,8 +1327,16 @@
           plugins: { legend: { display: false } },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
-            y: { grid: { color: "rgba(31, 41, 55, 0.8)" }, ticks: { color: "rgba(148, 163, 184, 0.9)" } },
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
+              title: { display: true, text: usingWeekly ? "Seed Week" : "Date", color: "rgba(148, 163, 184, 0.9)" }
+            },
+            y: {
+              grid: { color: "rgba(31, 41, 55, 0.8)" },
+              ticks: { color: "rgba(148, 163, 184, 0.9)" },
+              title: { display: true, text: "FPPH", color: "rgba(148, 163, 184, 0.9)" }
+            },
           },
         },
       });

@@ -1421,14 +1421,25 @@
         acc.cases += r.cases || 0;
       });
 
-      const keys = Array.from(map.keys()).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+      const weekOrderValue = (weekStr) => {
+        const n = parseFloat(weekStr);
+        if (isNaN(n)) return null;
+        return n <= 4 ? n + 100 : n;
+      };
+
+      const keys = Array.from(map.keys()).sort((a, b) => {
+        const aw = weekOrderValue(a);
+        const bw = weekOrderValue(b);
+        if (aw === null || bw === null) return String(a).localeCompare(String(b));
+        return aw - bw;
+      });
       const skuLabel = getTabLabel(tabKey);
 
       return keys.map((k) => {
         const acc = map.get(k);
         const lbsHour = acc.hours > 0 ? (acc.weight / acc.hours) : 0;
         return {
-          label: `Week ${k}`,
+          label: String(k),
           sku: skuLabel,
           hours: acc.hours,
           weight: acc.weight,
@@ -1661,6 +1672,9 @@
         currentViewMode === "weekly" ? "Packed weight (lbs) — weekly" :
         "Packed weight (lbs) — daily";
 
+      const isWeekly = currentViewMode === "weekly";
+      const isDaily = currentViewMode === "daily";
+
       weightChart = new Chart(ctxWeight, {
         type: "bar",
         data: {
@@ -1679,7 +1693,11 @@
           plugins: { legend: { display: false } },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
+              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            },
             y: {
               grid: { color: "rgba(31, 41, 55, 0.8)" },
               ticks: { color: "rgba(148, 163, 184, 0.9)" },
@@ -1731,7 +1749,11 @@
           plugins: { legend: { display: false } },
           interaction: { mode: "index", intersect: false },
           scales: {
-            x: { grid: { display: false }, ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 } },
+            x: {
+              grid: { display: false },
+              ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
+              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+            },
             y: {
               grid: { color: "rgba(31, 41, 55, 0.8)" },
               ticks: { color: "rgba(148, 163, 184, 0.9)" },

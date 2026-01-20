@@ -1012,10 +1012,16 @@
         agg.days += 1;
       });
 
+      const weekOrderValue = (weekStr) => {
+        const n = parseFloat(weekStr);
+        if (isNaN(n)) return null;
+        return n <= 4 ? n + 100 : n;
+      };
+
       return Array.from(weekMap.values()).sort((a, b) => {
-        const aw = parseFloat(a.week);
-        const bw = parseFloat(b.week);
-        if (isNaN(aw) || isNaN(bw)) return String(a.week).localeCompare(String(b.week));
+        const aw = weekOrderValue(a.week);
+        const bw = weekOrderValue(b.week);
+        if (aw === null || bw === null) return String(a.week).localeCompare(String(b.week));
         return aw - bw;
       });
     }
@@ -1104,7 +1110,7 @@
       const targetByDate = data.map(d => d.expected);
       const bphByDate = data.map(d => d.bph);
 
-      const labelsByWeek = weekAgg.map(w => "Wk " + w.week);
+      const labelsByWeek = weekAgg.map(w => String(w.week));
       const boardsByWeek = weekAgg.map(w => w.totalBoards);
       const targetByWeek = weekAgg.map(w => w.totalExpected);
       const bphByWeek = weekAgg.map(w => (w.totalWorkerHours ? w.totalBoards / w.totalWorkerHours : 0));
@@ -1140,7 +1146,8 @@
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 }
+            ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
+            title: { display: true, text: chartMode === "week" ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
           },
           y: {
             grid: { color: "rgba(31, 41, 55, 0.8)" },
