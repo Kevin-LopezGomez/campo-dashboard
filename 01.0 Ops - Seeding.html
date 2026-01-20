@@ -1040,10 +1040,16 @@
         w.totalWorkersSum += dayAvgWorkers;
       });
 
+      const weekOrderValue = (weekStr) => {
+        const n = parseFloat(weekStr);
+        if (isNaN(n)) return null;
+        return n <= 4 ? n + 100 : n;
+      };
+
       const weeklyRows = Array.from(weekMap.values()).sort((a, b) => {
-        const aw = parseFloat(a.week);
-        const bw = parseFloat(b.week);
-        if (isNaN(aw) || isNaN(bw)) return String(a.week).localeCompare(String(b.week));
+        const aw = weekOrderValue(a.week);
+        const bw = weekOrderValue(b.week);
+        if (aw === null || bw === null) return String(a.week).localeCompare(String(b.week));
         return aw - bw;
       });
 
