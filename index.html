@@ -938,6 +938,7 @@
 
                 <div class="cat-grid" id="homeGrowing" style="display:none;">
                   <button class="tile" data-home-go="p-expcal"><div class="ico">🌿</div><div class="name" data-i18n="tile.expcal.name">Experiment Calendar</div><div class="meta" data-i18n="tile.expcal.meta">TSV paste + filters</div></button>
+                  <button class="tile" data-home-go="p-mulders"><div class="ico">📊</div><div class="name" data-i18n="tile.mulders.name">Mulders Chart</div><div class="meta" data-i18n="tile.mulders.meta">Growing performance chart</div></button>
                 </div>
               </div>
 
@@ -1075,6 +1076,19 @@
           <iframe id="ifr-expcal" data-file-key="expcal"></iframe>
         </div>
       </section>
+
+      <section class="panel" id="p-mulders">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Mulders Chart</h2>
+            <p>Growing performance view (embedded from <code data-file-text="mulders"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="mulders"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-mulders" data-file-key="mulders"></iframe>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -1159,6 +1173,7 @@
 
       <div class="launcher-grid" id="cat-growing" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-expcal"><div class="app-ico">🌿</div><div class="app-name" data-i18n="tile.expcal.name">Experiment Calendar</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-mulders"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.mulders.name">Mulders Chart</div></button>
       </div>
     </div>
   </div>
@@ -1220,6 +1235,8 @@
           "tile.harvest.meta":"Cut plans",
           "tile.expcal.name":"Experiment Calendar",
           "tile.expcal.meta":"TSV paste + filters",
+          "tile.mulders.name":"Mulders Chart",
+          "tile.mulders.meta":"Growing performance chart",
           "tile.packing.name":"Packing",
           "tile.packing.meta":"Pack plan",
           "tile.inventory.name":"S&H Inventory",
@@ -1304,6 +1321,8 @@
           "tile.harvest.meta":"Planes de corte",
           "tile.expcal.name":"Calendario de experimentos",
           "tile.expcal.meta":"Pega TSV + filtros",
+          "tile.mulders.name":"Grafico Mulders",
+          "tile.mulders.meta":"Grafico de rendimiento de cultivo",
           "tile.packing.name":"Empaque",
           "tile.packing.meta":"Plan de empaque",
           "tile.inventory.name":"Inventario S&H",
@@ -1351,7 +1370,8 @@
         data: "07.0 Data - Input Tool.html",
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
-        expcal: "10.0 Growing - Experiment Calendar.html"
+        expcal: "10.0 Growing - Experiment Calendar.html",
+        mulders: "04.3 Team - Mulders Chart.html"
       };
 
       const FILE_QUERIES = {
@@ -1468,7 +1488,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal"
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal","ifr-mulders"
       ];
 
       function fileWithQuery(key){
