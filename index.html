@@ -830,7 +830,7 @@
     </div>
 
     <div class="tabs" id="tabs" aria-label="Operations Dashboards">
-      <button class="tab" data-target="p-weekly">📊 <span data-i18n="tab.weekly">Weekly Summary</span></button>
+      <button class="tab" data-target="p-weekly">📊 <span data-i18n="tab.weekly">Summary</span></button>
       <button class="tab" data-target="p-seeding">🌱 <span data-i18n="tab.seeding">Seeding</span></button>
       <button class="tab" data-target="p-transplant">🪴 <span data-i18n="tab.transplant">Transplant</span></button>
       <button class="tab" data-target="p-harvest">✂️ <span data-i18n="tab.harvest">Harvest</span></button>
@@ -914,7 +914,7 @@
                 </div>
 
                 <div class="cat-grid" id="homeOps" style="display:none;">
-                  <button class="tile" data-home-go="p-weekly"><div class="ico">📊</div><div class="name" data-i18n="tile.weekly.name">Weekly Summary</div><div class="meta" data-i18n="tile.weekly.meta">Targets + actuals</div></button>
+                  <button class="tile" data-home-go="p-weekly"><div class="ico">📊</div><div class="name" data-i18n="tile.weekly.name">Summary</div><div class="meta" data-i18n="tile.weekly.meta">Targets + actuals</div></button>
                   <button class="tile" data-home-go="p-seeding"><div class="ico">🌱</div><div class="name" data-i18n="tile.seeding.name">Seeding</div><div class="meta" data-i18n="tile.seeding.meta">Trays & schedule</div></button>
                   <button class="tile" data-home-go="p-transplant"><div class="ico">🪴</div><div class="name" data-i18n="tile.transplant.name">Transplant</div><div class="meta" data-i18n="tile.transplant.meta">Moves & counts</div></button>
                   <button class="tile" data-home-go="p-harvest"><div class="ico">✂️</div><div class="name" data-i18n="tile.harvest.name">Harvest</div><div class="meta" data-i18n="tile.harvest.meta">Cut plans</div></button>
@@ -962,7 +962,7 @@
       <section class="panel" id="p-weekly" data-ops="true">
         <div class="section-head">
           <div class="head-left">
-            <h2 data-i18n="panel.weekly.title">Weekly Summary Dashboard</h2>
+            <h2 data-i18n="panel.weekly.title">Summary Dashboard</h2>
             <p data-i18n-html="panel.weekly.desc">Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
           </div>
           <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="weekly"></code></div>
@@ -1135,7 +1135,7 @@
 
     <div class="screen" id="screen-category">
       <div class="launcher-grid" id="cat-ops" style="display:none;">
-        <button class="launch-app" data-action="go-panel" data-target="p-weekly"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.weekly.name">Weekly Summary</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-weekly"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.weekly.name">Summary</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-seeding"><div class="app-ico">🌱</div><div class="app-name" data-i18n="tile.seeding.name">Seeding</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-transplant"><div class="app-ico">🪴</div><div class="app-name" data-i18n="tile.transplant.name">Transplant</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-harvest"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.harvest.name">Harvest</div></button>
@@ -1202,7 +1202,7 @@
           "card.hr.meta":"Coming soon: Staffing, scheduling, payroll, and people operations",
           "card.procurement.title":"Procurement & Inventory",
           "card.procurement.meta":"Coming soon: Purchasing, supplies, inventory levels, and vendor coordination",
-          "tab.weekly":"Weekly Summary",
+          "tab.weekly":"Summary",
           "tab.seeding":"Seeding",
           "tab.transplant":"Transplant",
           "tab.harvest":"Harvest",
@@ -1210,7 +1210,7 @@
           "tab.shipments":"Shipments",
           "tab.sanitation":"Sanitation",
           "tab.inventory":"S&H Inventory",
-          "tile.weekly.name":"Weekly Summary",
+          "tile.weekly.name":"Summary",
           "tile.weekly.meta":"Targets + actuals",
           "tile.seeding.name":"Seeding",
           "tile.seeding.meta":"Trays & schedule",
@@ -1237,7 +1237,7 @@
           "tile.placeholder":"Placeholder",
           "panel.data.title":"Data Input Dashboard",
           "panel.data.desc":"Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).",
-          "panel.weekly.title":"Weekly Summary Dashboard",
+          "panel.weekly.title":"Summary Dashboard",
           "panel.weekly.desc":"Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).",
           "panel.seeding.title":"Seeding Dashboard",
           "panel.seeding.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
