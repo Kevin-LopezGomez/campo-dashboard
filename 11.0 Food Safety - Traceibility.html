@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Campo Caribe – Batch Trace (Pack ⇄ Grow)</title>
+
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --panel2:#0f172a;
+      --border: rgba(148,163,184,.18);
+      --border2: rgba(148,163,184,.10);
+      --text:#e5e7eb;
+      --sub:#cbd5e1;
+      --muted:#94a3b8;
+      --accent:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 15% 10%, rgba(34,197,94,.12), transparent 55%),
+                  radial-gradient(900px 500px at 80% 0%, rgba(59,130,246,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      font-family:var(--sans);
+    }
+    header{
+      padding:24px 18px 12px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    .title{
+      display:flex; gap:12px; align-items:baseline; flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    .pill{
+      font-size:12px;
+      color:var(--sub);
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background: rgba(2,6,23,.55);
+    }
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:0 18px 28px;
+    }
+    .panel{
+      background: rgba(2,6,23,.55);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel .inner{
+      padding:16px;
+      background: linear-gradient(180deg, rgba(15,23,42,.55), rgba(2,6,23,.55));
+    }
+    .row{
+      display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+    }
+    .search{
+      flex: 1 1 420px;
+      display:flex;
+      background: rgba(15,23,42,.55);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .search input{
+      flex:1;
+      padding:12px 12px;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:var(--text);
+      font-size:14px;
+      font-family: var(--mono);
+    }
+    .search button{
+      padding:12px 14px;
+      border:0;
+      cursor:pointer;
+      background: rgba(34,197,94,.16);
+      color: var(--text);
+      font-weight:700;
+    }
+    .search button:hover{ background: rgba(34,197,94,.24); }
+    .meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .meta code{
+      font-family: var(--mono);
+      color: var(--sub);
+      background: rgba(15,23,42,.65);
+      border:1px solid var(--border2);
+      padding:2px 6px;
+      border-radius:8px;
+    }
+    .status{
+      margin-left:auto;
+      font-size:12px;
+      color:var(--muted);
+      display:flex; gap:8px; align-items:center;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:50%;
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(245,158,11,.12);
+    }
+    .dot.ok{ background: var(--accent); box-shadow: 0 0 0 3px rgba(34,197,94,.12); }
+    .dot.bad{ background: var(--bad); box-shadow: 0 0 0 3px rgba(239,68,68,.12); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .section{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background: rgba(15,23,42,.35);
+      overflow:hidden;
+    }
+    .section h2{
+      margin:0;
+      padding:12px 14px;
+      font-size:13px;
+      letter-spacing:.2px;
+      color: var(--sub);
+      border-bottom:1px solid var(--border2);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .count{
+      font-size:12px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .cards{ padding:12px; display:flex; flex-direction:column; gap:10px; }
+    .card{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background: rgba(2,6,23,.55);
+      padding:12px;
+    }
+    .card .top{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .k{
+      font-family: var(--mono);
+      color: var(--text);
+      font-size:13px;
+      font-weight:800;
+    }
+    .tagrow{ display:flex; gap:8px; flex-wrap:wrap; }
+    .tag{
+      font-size:11px;
+      color: var(--sub);
+      background: rgba(148,163,184,.10);
+      border:1px solid var(--border2);
+      padding:4px 8px;
+      border-radius:999px;
+      font-family: var(--mono);
+    }
+    .tag.hit{
+      background: rgba(34,197,94,.16);
+      border-color: rgba(34,197,94,.28);
+      color: #d1fae5;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 160px 1fr;
+      gap:6px 10px;
+      font-size:12px;
+      color: var(--sub);
+      border-top:1px dashed var(--border2);
+      padding-top:10px;
+      margin-top:10px;
+    }
+    .kv div:nth-child(odd){ color: var(--muted); }
+    .mono{ font-family: var(--mono); }
+    .hint{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+      margin-top:10px;
+    }
+    .smallbtn{
+      border:1px solid var(--border2);
+      background: rgba(148,163,184,.10);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:700;
+    }
+    .smallbtn:hover{ background: rgba(148,163,184,.14); }
+    details summary{
+      cursor:pointer;
+      color: var(--sub);
+      font-size:12px;
+      user-select:none;
+    }
+    pre{
+      margin:10px 0 0;
+      padding:10px;
+      border-radius:12px;
+      background: rgba(15,23,42,.55);
+      border:1px solid var(--border2);
+      overflow:auto;
+      font-size:11px;
+      color: var(--sub);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="title">
+      <h1>Batch Trace – Pack ⇄ Grow</h1>
+      <span class="pill">Paste any code (Batch Run Code, W Batch Run Code, Seed Batch Code, SKU, Invoice No.)</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="panel">
+      <div class="inner">
+        <div class="row">
+          <div class="search">
+            <input id="q" placeholder="Search… e.g. COMBO-05OZ3582505" autocomplete="off" spellcheck="false" />
+            <button id="go">Search</button>
+          </div>
+          <button class="smallbtn" id="example">Use example</button>
+          <button class="smallbtn" id="clear">Clear</button>
+        </div>
+
+        <div class="meta">
+          <span>Files:</span>
+          <code id="packUrlLabel">pack-2.json</code>
+          <code id="growUrlLabel">grow-2.json</code>
+          <span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading…</span></span>
+        </div>
+
+        <div class="hint">
+          Tip: If you want this to work on Cloudflare Pages/Workers, just host this HTML and the two JSON files together.
+          If your JSON lives elsewhere, change <span class="mono">PACK_URL</span> / <span class="mono">GROW_URL</span> in the script.
+        </div>
+
+        <div class="grid">
+          <div class="section">
+            <h2>
+              Pack matches
+              <span class="count" id="packCount">0</span>
+            </h2>
+            <div class="cards" id="packCards"></div>
+          </div>
+
+          <div class="section">
+            <h2>
+              Grow matches (from Seed Batch Codes)
+              <span class="count" id="growCount">0</span>
+            </h2>
+            <div class="cards" id="growCards"></div>
+          </div>
+        </div>
+
+        <details style="margin-top:12px;">
+          <summary>Debug (loaded sheet metadata)</summary>
+          <pre id="debug"></pre>
+        </details>
+      </div>
+    </div>
+  </div>
+
+<script>
+/** =========================
+ *  CONFIG
+ *  Put the JSON next to this HTML, or change the URLs here.
+ *  ========================= */
+const PACK_URL = "pack-2.json";
+const GROW_URL = "grow-2.json";
+
+let PACK = null;
+let GROW = null;
+
+const $ = (id) => document.getElementById(id);
+
+function setStatus(kind, text){
+  const dot = $("dot");
+  dot.classList.remove("ok","bad");
+  if(kind === "ok") dot.classList.add("ok");
+  else if(kind === "bad") dot.classList.add("bad");
+  $("statusText").textContent = text;
+}
+
+function safeStr(v){
+  if(v === null || v === undefined) return "";
+  return String(v);
+}
+
+function norm(s){
+  return safeStr(s).trim().toUpperCase();
+}
+
+function getSheet(doc, sheetName){
+  if(!doc || !doc.sheets || !doc.sheets[sheetName]) return null;
+  return doc.sheets[sheetName];
+}
+
+function indexHeaders(headers){
+  const map = new Map();
+  headers.forEach((h, i) => map.set(h, i));
+  return map;
+}
+
+function rowToObj(headers, row){
+  const o = {};
+  for(let i=0;i<headers.length;i++){
+    o[headers[i]] = row[i];
+  }
+  return o;
+}
+
+function anyCellIncludes(headers, row, queryUpper){
+  const hits = [];
+  for(let i=0;i<headers.length;i++){
+    const v = safeStr(row[i]);
+    if(!v) continue;
+    if(v.toUpperCase().includes(queryUpper)){
+      hits.push(headers[i]);
+    }
+  }
+  return hits;
+}
+
+function uniq(arr){
+  return [...new Set(arr.filter(Boolean))];
+}
+
+function mkTag(text, hit=false){
+  const span = document.createElement("span");
+  span.className = "tag" + (hit ? " hit" : "");
+  span.textContent = text;
+  return span;
+}
+
+function mkKV(kvPairs){
+  const kv = document.createElement("div");
+  kv.className = "kv";
+  kvPairs.forEach(([k,v])=>{
+    const a = document.createElement("div");
+    a.textContent = k;
+    const b = document.createElement("div");
+    b.className = "mono";
+    b.textContent = safeStr(v) || "—";
+    kv.appendChild(a);
+    kv.appendChild(b);
+  });
+  return kv;
+}
+
+function mkCard(titleLeft, tags, kvPairs, rawObj){
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const top = document.createElement("div");
+  top.className = "top";
+
+  const k = document.createElement("div");
+  k.className = "k";
+  k.textContent = titleLeft;
+
+  const tagrow = document.createElement("div");
+  tagrow.className = "tagrow";
+  tags.forEach(t=>tagrow.appendChild(t));
+
+  top.appendChild(k);
+  top.appendChild(tagrow);
+
+  card.appendChild(top);
+  card.appendChild(mkKV(kvPairs));
+
+  if(rawObj){
+    const det = document.createElement("details");
+    det.style.marginTop = "10px";
+    const sum = document.createElement("summary");
+    sum.textContent = "Show full row JSON";
+    const pre = document.createElement("pre");
+    pre.textContent = JSON.stringify(rawObj, null, 2);
+    det.appendChild(sum);
+    det.appendChild(pre);
+    card.appendChild(det);
+  }
+
+  return card;
+}
+
+function clearResults(){
+  $("packCards").innerHTML = "";
+  $("growCards").innerHTML = "";
+  $("packCount").textContent = "0";
+  $("growCount").textContent = "0";
+}
+
+function renderEmpty(whereEl, msg){
+  const div = document.createElement("div");
+  div.className = "card";
+  div.style.borderStyle = "dashed";
+  div.style.opacity = ".9";
+  div.innerHTML = `<div class="k">${msg}</div>`;
+  whereEl.appendChild(div);
+}
+
+function trace(query){
+  clearResults();
+  const q = norm(query);
+  if(!q){
+    renderEmpty($("packCards"), "Type a code above to search.");
+    renderEmpty($("growCards"), "Grow matches will appear here.");
+    return;
+  }
+
+  const packSheet = getSheet(PACK, "Master Pack");
+  const growSheet = getSheet(GROW, "Master Grow");
+  if(!packSheet || !growSheet){
+    setStatus("bad", "Missing expected sheets (Master Pack / Master Grow).");
+    return;
+  }
+
+  const ph = packSheet.headers;
+  const pr = packSheet.rows || [];
+  const gh = growSheet.headers;
+  const gr = growSheet.rows || [];
+
+  const packMatches = [];
+  const seedCodesFromPack = [];
+
+  // Helpful columns (Pack)
+  const pIdx = indexHeaders(ph);
+  const col = (name) => pIdx.has(name) ? pIdx.get(name) : -1;
+  const get = (row, name) => {
+    const i = col(name);
+    return i >= 0 ? row[i] : "";
+  };
+
+  // Find pack matches (any column contains query)
+  for(const row of pr){
+    const hits = anyCellIncludes(ph, row, q);
+    if(hits.length){
+      const o = rowToObj(ph, row);
+      packMatches.push({row, obj:o, hits});
+
+      // seed codes used to lookup grow
+      ["Seed Batch Code 1","Seed Batch Code 2","Seed Batch Code 3"].forEach((c)=>{
+        const v = norm(get(row, c));
+        if(v) seedCodesFromPack.push(v);
+      });
+    }
+  }
+
+  // Also: if query itself is a seed code, include it
+  const seedUniverse = uniq([...seedCodesFromPack, q]);
+
+  // Grow lookup by exact match on "Batch Code"
+  const gIdx = indexHeaders(gh);
+  const gBatchCol = gIdx.has("Batch Code") ? gIdx.get("Batch Code") : -1;
+  const growMatches = [];
+  if(gBatchCol >= 0){
+    const wanted = new Set(seedUniverse);
+    for(const row of gr){
+      const bc = norm(row[gBatchCol]);
+      if(wanted.has(bc)){
+        growMatches.push({row, obj: rowToObj(gh,row), seedCode: bc});
+      }
+    }
+  }
+
+  // Render Pack cards
+  $("packCount").textContent = String(packMatches.length);
+  if(!packMatches.length){
+    renderEmpty($("packCards"), `No Pack matches for: ${q}`);
+  }else{
+    for(const m of packMatches){
+      const r = m.row;
+
+      const batchRunCode = safeStr(get(r, "Batch Run Code"));
+      const wBatchRunCode = safeStr(get(r, "W Batch Run Code"));
+      const skuPacked = safeStr(get(r, "SKU Packed"));
+      const packDate = safeStr(get(r, "Batch Run Date"));
+      const qtyCasesPacked = safeStr(get(r, "Quantity of Cases Packed"));
+      const lbsPacked = safeStr(get(r, "Total Packed Weight"));
+
+      const shipDate = safeStr(get(r, "Shipping Date"));
+      const shipSku = safeStr(get(r, "Shipping SKU"));
+      const shipLoc = safeStr(get(r, "Location Shipped"));
+      const shipCases = safeStr(get(r, "# of Cases Shipped"));
+      const shipLbs = safeStr(get(r, "# Lbs Shipped"));
+      const shipType = safeStr(get(r, "Shipped or Received"));
+
+      const whDate = safeStr(get(r, "Warehouse Date"));
+      const whLoc = safeStr(get(r, "Warehouse Location"));
+      const whSKU = safeStr(get(r, "Warehouse SKU"));
+      const whInv = safeStr(get(r, "Cases in Inventory"));
+      const whRes = safeStr(get(r, "Cases Reserved"));
+      const whAvail = safeStr(get(r, "Cases Available"));
+      const whAge = safeStr(get(r, "Warehouse Age"));
+
+      const salesDate = safeStr(get(r, "Sales Ship Date"));
+      const salesInvNo = safeStr(get(r, "Sales Invoice No."));
+      const salesCust = safeStr(get(r, "Sales Customer"));
+      const salesSku = safeStr(get(r, "Sales SKU"));
+      const salesCases = safeStr(get(r, "Sales # of Cases"));
+      const salesVia = safeStr(get(r, "Sales Ship Via"));
+
+      const seed1 = safeStr(get(r, "Seed Batch Code 1"));
+      const seed2 = safeStr(get(r, "Seed Batch Code 2"));
+      const seed3 = safeStr(get(r, "Seed Batch Code 3"));
+      const seeds = uniq([norm(seed1), norm(seed2), norm(seed3)]).filter(Boolean);
+
+      const tags = [];
+      tags.push(mkTag(`hits:${m.hits.length}`, true));
+      if(batchRunCode) tags.push(mkTag(`Batch:${batchRunCode}`, norm(batchRunCode).includes(q)));
+      if(wBatchRunCode) tags.push(mkTag(`WBatch:${wBatchRunCode}`, norm(wBatchRunCode).includes(q)));
+      if(skuPacked) tags.push(mkTag(`SKU:${skuPacked}`, norm(skuPacked).includes(q)));
+      seeds.slice(0,3).forEach(sc => tags.push(mkTag(`Seed:${sc}`, sc.includes(q))));
+
+      const kvPairs = [
+        ["Batch Run Date", packDate],
+        ["SKU Packed", skuPacked],
+        ["Cases Packed", qtyCasesPacked],
+        ["Packed Weight", lbsPacked],
+        ["Seed Batch Code 1", seed1],
+        ["Seed Batch Code 2", seed2],
+        ["Seed Batch Code 3", seed3],
+        ["Shipping Date", shipDate],
+        ["Shipping Type", shipType],
+        ["Shipping SKU", shipSku],
+        ["Location Shipped", shipLoc],
+        ["Cases Shipped", shipCases],
+        ["Lbs Shipped", shipLbs],
+        ["Warehouse Date", whDate],
+        ["Warehouse Location", whLoc],
+        ["Warehouse SKU", whSKU],
+        ["Inventory / Reserved / Available", `${whInv || "—"} / ${whRes || "—"} / ${whAvail || "—"}`],
+        ["Warehouse Age", whAge],
+        ["Sales Ship Date", salesDate],
+        ["Sales Invoice No.", salesInvNo],
+        ["Sales Customer", salesCust],
+        ["Sales SKU", salesSku],
+        ["Sales # of Cases", salesCases],
+        ["Sales Ship Via", salesVia],
+      ];
+
+      const title = batchRunCode ? `Pack row: ${batchRunCode}` : "Pack row";
+      $("packCards").appendChild(mkCard(title, tags, kvPairs, m.obj));
+    }
+  }
+
+  // Render Grow cards
+  $("growCount").textContent = String(growMatches.length);
+  if(!growMatches.length){
+    renderEmpty($("growCards"), `No Grow matches for Seed Batch Codes derived from: ${q}`);
+  }else{
+    const gcol = (name) => gIdx.has(name) ? gIdx.get(name) : -1;
+    const gget = (row, name) => {
+      const i = gcol(name);
+      return i >= 0 ? row[i] : "";
+    };
+
+    for(const m of growMatches){
+      const r = m.row;
+      const batchCode = safeStr(gget(r, "Batch Code"));
+      const variety = safeStr(gget(r, "Veriaty"));
+      const seedDate = safeStr(gget(r, "Seed Date"));
+      const seedWeek = safeStr(gget(r, "Seed Week"));
+
+      const transDate = safeStr(gget(r, "Transplant Date"));
+      const transWeek = safeStr(gget(r, "Transplant Week"));
+      const transPond = safeStr(gget(r, "Transplant Pond"));
+      const boardsTrans = safeStr(gget(r, "Boards Transplant"));
+
+      const harvDate = safeStr(gget(r, "Harvest Date"));
+      const harvWeek = safeStr(gget(r, "Harvest Week"));
+      const harvPond = safeStr(gget(r, "Harvest Pond"));
+      const boardsHarv = safeStr(gget(r, "# of Boards Harvested"));
+      const harvComments = safeStr(gget(r, "Harvest Comments"));
+
+      const tags = [];
+      tags.push(mkTag(`Seed:${norm(batchCode)}`, norm(batchCode) === q));
+      if(variety) tags.push(mkTag(`Var:${variety}`));
+
+      const kvPairs = [
+        ["Batch Code", batchCode],
+        ["Variety", variety],
+        ["Seed Date", seedDate],
+        ["Seed Week", seedWeek],
+        ["Transplant Date", transDate],
+        ["Transplant Week", transWeek],
+        ["Transplant Pond", transPond],
+        ["Boards Transplant", boardsTrans],
+        ["Harvest Date", harvDate],
+        ["Harvest Week", harvWeek],
+        ["Harvest Pond", harvPond],
+        ["Boards Harvested", boardsHarv],
+        ["Harvest Comments", harvComments],
+      ];
+
+      $("growCards").appendChild(mkCard(`Grow row: ${batchCode || m.seedCode}`, tags, kvPairs, m.obj));
+    }
+  }
+}
+
+async function load(){
+  try{
+    $("packUrlLabel").textContent = PACK_URL;
+    $("growUrlLabel").textContent = GROW_URL;
+    setStatus("", "Loading JSON…");
+
+    const [p,g] = await Promise.all([
+      fetch(PACK_URL, {cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("pack fetch failed"); return r.json(); }),
+      fetch(GROW_URL, {cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("grow fetch failed"); return r.json(); }),
+    ]);
+
+    PACK = p; GROW = g;
+
+    const packSheet = getSheet(PACK, "Master Pack");
+    const growSheet = getSheet(GROW, "Master Grow");
+
+    const dbg = {
+      pack: {
+        updatedAt: PACK.updatedAt,
+        kind: PACK.kind,
+        sourceLabel: PACK.sourceLabel,
+        sheet: "Master Pack",
+        headers: packSheet ? packSheet.headers.length : null,
+        rows: packSheet ? packSheet.rows.length : null,
+      },
+      grow: {
+        updatedAt: GROW.updatedAt,
+        kind: GROW.kind,
+        sourceLabel: GROW.sourceLabel,
+        sheet: "Master Grow",
+        headers: growSheet ? growSheet.headers.length : null,
+        rows: growSheet ? growSheet.rows.length : null,
+      }
+    };
+    $("debug").textContent = JSON.stringify(dbg, null, 2);
+
+    setStatus("ok", "Loaded");
+    trace($("q").value);
+  }catch(err){
+    console.error(err);
+    setStatus("bad", "Failed to load JSON. Check file paths/hosting.");
+    $("debug").textContent = String(err);
+    clearResults();
+    renderEmpty($("packCards"), "Could not load pack JSON.");
+    renderEmpty($("growCards"), "Could not load grow JSON.");
+  }
+}
+
+$("go").addEventListener("click", ()=>trace($("q").value));
+$("q").addEventListener("keydown", (e)=>{ if(e.key === "Enter") trace($("q").value); });
+$("example").addEventListener("click", ()=>{
+  $("q").value = "COMBO-05OZ3582505";
+  trace($("q").value);
+});
+$("clear").addEventListener("click", ()=>{
+  $("q").value = "";
+  trace("");
+});
+
+load();
+</script>
+</body>
+</html>
