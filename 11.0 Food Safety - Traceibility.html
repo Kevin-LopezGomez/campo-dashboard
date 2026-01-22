@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Campo Caribe – Batch Trace (Pack ⇄ Grow)</title>
+  <title>Campo Caribe – Batch Trace (Upload Pack/Grow JSON)</title>
 
   <style>
     :root{
@@ -40,11 +40,7 @@
     .title{
       display:flex; gap:12px; align-items:baseline; flex-wrap:wrap;
     }
-    h1{
-      margin:0;
-      font-size:22px;
-      letter-spacing:.2px;
-    }
+    h1{ margin:0; font-size:22px; letter-spacing:.2px; }
     .pill{
       font-size:12px;
       color:var(--sub);
@@ -69,9 +65,42 @@
       padding:16px;
       background: linear-gradient(180deg, rgba(15,23,42,.55), rgba(2,6,23,.55));
     }
-    .row{
-      display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+
+    .upload{
+      flex:1 1 340px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:12px;
+      background: rgba(15,23,42,.55);
+      border:1px solid var(--border);
+      border-radius:14px;
     }
+    .upload label{
+      font-size:12px;
+      color:var(--muted);
+      min-width:86px;
+    }
+    .upload input[type="file"]{
+      color:var(--sub);
+      font-size:12px;
+      max-width: 100%;
+    }
+    .filepill{
+      font-size:11px;
+      color:var(--sub);
+      background: rgba(148,163,184,.10);
+      border:1px solid var(--border2);
+      padding:4px 8px;
+      border-radius:999px;
+      font-family: var(--mono);
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
     .search{
       flex: 1 1 420px;
       display:flex;
@@ -99,6 +128,19 @@
       font-weight:700;
     }
     .search button:hover{ background: rgba(34,197,94,.24); }
+
+    .smallbtn{
+      border:1px solid var(--border2);
+      background: rgba(148,163,184,.10);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:700;
+    }
+    .smallbtn:hover{ background: rgba(148,163,184,.14); }
+
     .meta{
       color:var(--muted);
       font-size:12px;
@@ -136,9 +178,7 @@
       gap:12px;
       margin-top:12px;
     }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-    }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
 
     .section{
       border:1px solid var(--border);
@@ -211,23 +251,6 @@
     }
     .kv div:nth-child(odd){ color: var(--muted); }
     .mono{ font-family: var(--mono); }
-    .hint{
-      font-size:12px;
-      color: var(--muted);
-      line-height:1.35;
-      margin-top:10px;
-    }
-    .smallbtn{
-      border:1px solid var(--border2);
-      background: rgba(148,163,184,.10);
-      color: var(--text);
-      padding:8px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      font-size:12px;
-      font-weight:700;
-    }
-    .smallbtn:hover{ background: rgba(148,163,184,.14); }
     details summary{
       cursor:pointer;
       color: var(--sub);
@@ -248,71 +271,69 @@
 </head>
 
 <body>
-  <header>
-    <div class="title">
-      <h1>Batch Trace – Pack ⇄ Grow</h1>
-      <span class="pill">Paste any code (Batch Run Code, W Batch Run Code, Seed Batch Code, SKU, Invoice No.)</span>
-    </div>
-  </header>
+<header>
+  <div class="title">
+    <h1>Batch Trace – Pack ⇄ Grow</h1>
+    <span class="pill">Upload JSON → search any code (Batch Run Code, W Batch Run Code, SKU, Invoice, Seed Batch)</span>
+  </div>
+</header>
 
-  <div class="wrap">
-    <div class="panel">
-      <div class="inner">
-        <div class="row">
-          <div class="search">
-            <input id="q" placeholder="Search… e.g. COMBO-05OZ3582505" autocomplete="off" spellcheck="false" />
-            <button id="go">Search</button>
-          </div>
-          <button class="smallbtn" id="example">Use example</button>
-          <button class="smallbtn" id="clear">Clear</button>
+<div class="wrap">
+  <div class="panel">
+    <div class="inner">
+
+      <div class="row" style="margin-bottom:12px;">
+        <div class="upload">
+          <label>Pack JSON</label>
+          <input id="packFile" type="file" accept="application/json,.json" />
+          <span class="filepill" id="packName">none</span>
         </div>
 
-        <div class="meta">
-          <span>Files:</span>
-          <code id="packUrlLabel">pack-2.json</code>
-          <code id="growUrlLabel">grow-2.json</code>
-          <span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading…</span></span>
+        <div class="upload">
+          <label>Grow JSON</label>
+          <input id="growFile" type="file" accept="application/json,.json" />
+          <span class="filepill" id="growName">none</span>
         </div>
-
-        <div class="hint">
-          Tip: If you want this to work on Cloudflare Pages/Workers, just host this HTML and the two JSON files together.
-          If your JSON lives elsewhere, change <span class="mono">PACK_URL</span> / <span class="mono">GROW_URL</span> in the script.
-        </div>
-
-        <div class="grid">
-          <div class="section">
-            <h2>
-              Pack matches
-              <span class="count" id="packCount">0</span>
-            </h2>
-            <div class="cards" id="packCards"></div>
-          </div>
-
-          <div class="section">
-            <h2>
-              Grow matches (from Seed Batch Codes)
-              <span class="count" id="growCount">0</span>
-            </h2>
-            <div class="cards" id="growCards"></div>
-          </div>
-        </div>
-
-        <details style="margin-top:12px;">
-          <summary>Debug (loaded sheet metadata)</summary>
-          <pre id="debug"></pre>
-        </details>
       </div>
+
+      <div class="row">
+        <div class="search">
+          <input id="q" placeholder="Search… e.g. COMBO-05OZ3582505" autocomplete="off" spellcheck="false" />
+          <button id="go">Search</button>
+        </div>
+        <button class="smallbtn" id="example">Use example</button>
+        <button class="smallbtn" id="clear">Clear</button>
+      </div>
+
+      <div class="meta">
+        <span>Expected sheets:</span>
+        <code>Master Pack</code>
+        <code>Master Grow</code>
+        <span class="status"><span class="dot" id="dot"></span><span id="statusText">Upload Pack + Grow JSON</span></span>
+      </div>
+
+      <div class="grid">
+        <div class="section">
+          <h2>Pack matches <span class="count" id="packCount">0</span></h2>
+          <div class="cards" id="packCards"></div>
+        </div>
+
+        <div class="section">
+          <h2>Grow matches (from Seed Batch Codes) <span class="count" id="growCount">0</span></h2>
+          <div class="cards" id="growCards"></div>
+        </div>
+      </div>
+
+      <details style="margin-top:12px;">
+        <summary>Debug (loaded metadata)</summary>
+        <pre id="debug"></pre>
+      </details>
+
     </div>
   </div>
+</div>
 
 <script>
-/** =========================
- *  CONFIG
- *  Put the JSON next to this HTML, or change the URLs here.
- *  ========================= */
-const PACK_URL = "pack-2.json";
-const GROW_URL = "grow-2.json";
-
 let PACK = null;
 let GROW = null;
 
@@ -446,6 +467,13 @@ function renderEmpty(whereEl, msg){
 
 function trace(query){
   clearResults();
+
+  if(!PACK || !GROW){
+    renderEmpty($("packCards"), "Upload Pack + Grow JSON to search.");
+    renderEmpty($("growCards"), "Upload Pack + Grow JSON to search.");
+    return;
+  }
+
   const q = norm(query);
   if(!q){
     renderEmpty($("packCards"), "Type a code above to search.");
@@ -457,6 +485,9 @@ function trace(query){
   const growSheet = getSheet(GROW, "Master Grow");
   if(!packSheet || !growSheet){
     setStatus("bad", "Missing expected sheets (Master Pack / Master Grow).");
+    const msg = "Your JSON did not contain sheets.Master Pack and/or sheets.Master Grow.";
+    renderEmpty($("packCards"), msg);
+    renderEmpty($("growCards"), msg);
     return;
   }
 
@@ -468,7 +499,6 @@ function trace(query){
   const packMatches = [];
   const seedCodesFromPack = [];
 
-  // Helpful columns (Pack)
   const pIdx = indexHeaders(ph);
   const col = (name) => pIdx.has(name) ? pIdx.get(name) : -1;
   const get = (row, name) => {
@@ -476,14 +506,12 @@ function trace(query){
     return i >= 0 ? row[i] : "";
   };
 
-  // Find pack matches (any column contains query)
   for(const row of pr){
     const hits = anyCellIncludes(ph, row, q);
     if(hits.length){
       const o = rowToObj(ph, row);
       packMatches.push({row, obj:o, hits});
 
-      // seed codes used to lookup grow
       ["Seed Batch Code 1","Seed Batch Code 2","Seed Batch Code 3"].forEach((c)=>{
         const v = norm(get(row, c));
         if(v) seedCodesFromPack.push(v);
@@ -491,13 +519,12 @@ function trace(query){
     }
   }
 
-  // Also: if query itself is a seed code, include it
   const seedUniverse = uniq([...seedCodesFromPack, q]);
 
-  // Grow lookup by exact match on "Batch Code"
   const gIdx = indexHeaders(gh);
   const gBatchCol = gIdx.has("Batch Code") ? gIdx.get("Batch Code") : -1;
   const growMatches = [];
+
   if(gBatchCol >= 0){
     const wanted = new Set(seedUniverse);
     for(const row of gr){
@@ -508,7 +535,7 @@ function trace(query){
     }
   }
 
-  // Render Pack cards
+  // Render Pack
   $("packCount").textContent = String(packMatches.length);
   if(!packMatches.length){
     renderEmpty($("packCards"), `No Pack matches for: ${q}`);
@@ -522,28 +549,6 @@ function trace(query){
       const packDate = safeStr(get(r, "Batch Run Date"));
       const qtyCasesPacked = safeStr(get(r, "Quantity of Cases Packed"));
       const lbsPacked = safeStr(get(r, "Total Packed Weight"));
-
-      const shipDate = safeStr(get(r, "Shipping Date"));
-      const shipSku = safeStr(get(r, "Shipping SKU"));
-      const shipLoc = safeStr(get(r, "Location Shipped"));
-      const shipCases = safeStr(get(r, "# of Cases Shipped"));
-      const shipLbs = safeStr(get(r, "# Lbs Shipped"));
-      const shipType = safeStr(get(r, "Shipped or Received"));
-
-      const whDate = safeStr(get(r, "Warehouse Date"));
-      const whLoc = safeStr(get(r, "Warehouse Location"));
-      const whSKU = safeStr(get(r, "Warehouse SKU"));
-      const whInv = safeStr(get(r, "Cases in Inventory"));
-      const whRes = safeStr(get(r, "Cases Reserved"));
-      const whAvail = safeStr(get(r, "Cases Available"));
-      const whAge = safeStr(get(r, "Warehouse Age"));
-
-      const salesDate = safeStr(get(r, "Sales Ship Date"));
-      const salesInvNo = safeStr(get(r, "Sales Invoice No."));
-      const salesCust = safeStr(get(r, "Sales Customer"));
-      const salesSku = safeStr(get(r, "Sales SKU"));
-      const salesCases = safeStr(get(r, "Sales # of Cases"));
-      const salesVia = safeStr(get(r, "Sales Ship Via"));
 
       const seed1 = safeStr(get(r, "Seed Batch Code 1"));
       const seed2 = safeStr(get(r, "Seed Batch Code 2"));
@@ -565,23 +570,6 @@ function trace(query){
         ["Seed Batch Code 1", seed1],
         ["Seed Batch Code 2", seed2],
         ["Seed Batch Code 3", seed3],
-        ["Shipping Date", shipDate],
-        ["Shipping Type", shipType],
-        ["Shipping SKU", shipSku],
-        ["Location Shipped", shipLoc],
-        ["Cases Shipped", shipCases],
-        ["Lbs Shipped", shipLbs],
-        ["Warehouse Date", whDate],
-        ["Warehouse Location", whLoc],
-        ["Warehouse SKU", whSKU],
-        ["Inventory / Reserved / Available", `${whInv || "—"} / ${whRes || "—"} / ${whAvail || "—"}`],
-        ["Warehouse Age", whAge],
-        ["Sales Ship Date", salesDate],
-        ["Sales Invoice No.", salesInvNo],
-        ["Sales Customer", salesCust],
-        ["Sales SKU", salesSku],
-        ["Sales # of Cases", salesCases],
-        ["Sales Ship Via", salesVia],
       ];
 
       const title = batchRunCode ? `Pack row: ${batchRunCode}` : "Pack row";
@@ -589,7 +577,7 @@ function trace(query){
     }
   }
 
-  // Render Grow cards
+  // Render Grow
   $("growCount").textContent = String(growMatches.length);
   if(!growMatches.length){
     renderEmpty($("growCards"), `No Grow matches for Seed Batch Codes derived from: ${q}`);
@@ -606,17 +594,10 @@ function trace(query){
       const variety = safeStr(gget(r, "Veriaty"));
       const seedDate = safeStr(gget(r, "Seed Date"));
       const seedWeek = safeStr(gget(r, "Seed Week"));
-
       const transDate = safeStr(gget(r, "Transplant Date"));
-      const transWeek = safeStr(gget(r, "Transplant Week"));
       const transPond = safeStr(gget(r, "Transplant Pond"));
-      const boardsTrans = safeStr(gget(r, "Boards Transplant"));
-
       const harvDate = safeStr(gget(r, "Harvest Date"));
-      const harvWeek = safeStr(gget(r, "Harvest Week"));
       const harvPond = safeStr(gget(r, "Harvest Pond"));
-      const boardsHarv = safeStr(gget(r, "# of Boards Harvested"));
-      const harvComments = safeStr(gget(r, "Harvest Comments"));
 
       const tags = [];
       tags.push(mkTag(`Seed:${norm(batchCode)}`, norm(batchCode) === q));
@@ -628,14 +609,9 @@ function trace(query){
         ["Seed Date", seedDate],
         ["Seed Week", seedWeek],
         ["Transplant Date", transDate],
-        ["Transplant Week", transWeek],
         ["Transplant Pond", transPond],
-        ["Boards Transplant", boardsTrans],
         ["Harvest Date", harvDate],
-        ["Harvest Week", harvWeek],
         ["Harvest Pond", harvPond],
-        ["Boards Harvested", boardsHarv],
-        ["Harvest Comments", harvComments],
       ];
 
       $("growCards").appendChild(mkCard(`Grow row: ${batchCode || m.seedCode}`, tags, kvPairs, m.obj));
@@ -643,56 +619,91 @@ function trace(query){
   }
 }
 
-async function load(){
-  try{
-    $("packUrlLabel").textContent = PACK_URL;
-    $("growUrlLabel").textContent = GROW_URL;
-    setStatus("", "Loading JSON…");
+async function readJsonFile(file){
+  const text = await file.text();
+  return JSON.parse(text);
+}
 
-    const [p,g] = await Promise.all([
-      fetch(PACK_URL, {cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("pack fetch failed"); return r.json(); }),
-      fetch(GROW_URL, {cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("grow fetch failed"); return r.json(); }),
-    ]);
+function updateDebug(){
+  const packSheet = getSheet(PACK, "Master Pack");
+  const growSheet = getSheet(GROW, "Master Grow");
 
-    PACK = p; GROW = g;
+  const dbg = {
+    pack: PACK ? {
+      updatedAt: PACK.updatedAt,
+      kind: PACK.kind,
+      sourceLabel: PACK.sourceLabel,
+      sheet: "Master Pack",
+      headers: packSheet ? packSheet.headers.length : null,
+      rows: packSheet ? packSheet.rows.length : null,
+    } : null,
+    grow: GROW ? {
+      updatedAt: GROW.updatedAt,
+      kind: GROW.kind,
+      sourceLabel: GROW.sourceLabel,
+      sheet: "Master Grow",
+      headers: growSheet ? growSheet.headers.length : null,
+      rows: growSheet ? growSheet.rows.length : null,
+    } : null
+  };
+  $("debug").textContent = JSON.stringify(dbg, null, 2);
+}
 
-    const packSheet = getSheet(PACK, "Master Pack");
-    const growSheet = getSheet(GROW, "Master Grow");
-
-    const dbg = {
-      pack: {
-        updatedAt: PACK.updatedAt,
-        kind: PACK.kind,
-        sourceLabel: PACK.sourceLabel,
-        sheet: "Master Pack",
-        headers: packSheet ? packSheet.headers.length : null,
-        rows: packSheet ? packSheet.rows.length : null,
-      },
-      grow: {
-        updatedAt: GROW.updatedAt,
-        kind: GROW.kind,
-        sourceLabel: GROW.sourceLabel,
-        sheet: "Master Grow",
-        headers: growSheet ? growSheet.headers.length : null,
-        rows: growSheet ? growSheet.rows.length : null,
-      }
-    };
-    $("debug").textContent = JSON.stringify(dbg, null, 2);
-
-    setStatus("ok", "Loaded");
+async function tryReady(){
+  if(PACK && GROW){
+    const packOK = !!getSheet(PACK, "Master Pack");
+    const growOK = !!getSheet(GROW, "Master Grow");
+    if(packOK && growOK){
+      setStatus("ok", "Ready (Pack + Grow loaded)");
+    }else{
+      setStatus("bad", "Loaded, but expected sheets missing");
+    }
+    updateDebug();
     trace($("q").value);
-  }catch(err){
-    console.error(err);
-    setStatus("bad", "Failed to load JSON. Check file paths/hosting.");
-    $("debug").textContent = String(err);
-    clearResults();
-    renderEmpty($("packCards"), "Could not load pack JSON.");
-    renderEmpty($("growCards"), "Could not load grow JSON.");
+  }else{
+    setStatus("", "Upload Pack + Grow JSON");
+    updateDebug();
+    trace($("q").value);
   }
 }
 
+$("packFile").addEventListener("change", async (e)=>{
+  const f = e.target.files?.[0];
+  $("packName").textContent = f ? f.name : "none";
+  if(!f){ PACK = null; tryReady(); return; }
+
+  try{
+    PACK = await readJsonFile(f);
+    tryReady();
+  }catch(err){
+    console.error(err);
+    PACK = null;
+    setStatus("bad", "Pack JSON failed to parse");
+    updateDebug();
+    trace($("q").value);
+  }
+});
+
+$("growFile").addEventListener("change", async (e)=>{
+  const f = e.target.files?.[0];
+  $("growName").textContent = f ? f.name : "none";
+  if(!f){ GROW = null; tryReady(); return; }
+
+  try{
+    GROW = await readJsonFile(f);
+    tryReady();
+  }catch(err){
+    console.error(err);
+    GROW = null;
+    setStatus("bad", "Grow JSON failed to parse");
+    updateDebug();
+    trace($("q").value);
+  }
+});
+
 $("go").addEventListener("click", ()=>trace($("q").value));
 $("q").addEventListener("keydown", (e)=>{ if(e.key === "Enter") trace($("q").value); });
+
 $("example").addEventListener("click", ()=>{
   $("q").value = "COMBO-05OZ3582505";
   trace($("q").value);
@@ -702,7 +713,8 @@ $("clear").addEventListener("click", ()=>{
   trace("");
 });
 
-load();
+// initial
+trace("");
 </script>
 </body>
 </html>
