@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Campo Caribe Operations – Unified Testing Dashboard</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap');
+
+    :root{
+      /* ===== Dark theme + legibility ===== */
+      --bg:#020617;
+      --panel:#0b1222;
+      --panel-2:#0f172a;
+      --card: rgba(2,6,23,.72);
+      --card-2: rgba(15,23,42,.70);
+      --border: rgba(148,163,184,.18);
+      --border-strong: rgba(148,163,184,.28);
+
+      --text:#e5e7eb;
+      --sub:#cbd5e1;
+      --muted:#94a3b8;
+      --accent:#22c55e;
+      --accent-2:#38bdf8;
+      --danger:#ef4444;
+
+      --shadow: 0 24px 80px rgba(0,0,0,0.75);
+      --shadow-soft: 0 18px 44px rgba(0,0,0,0.45);
+
+      --text-glow: 0 1px 0 rgba(0,0,0,.55);
+
+      /* ===== header legibility / green language ===== */
+      --hdr: #f1f5f9;
+      --hdr-soft: rgba(241,245,249,.92);
+      --hdr-glow: rgba(34,197,94,.18);
+      --hdr-stroke: rgba(34,197,94,.45);
+    }
+
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 18% 12%, rgba(56,189,248,.12) 0, transparent 42%),
+        radial-gradient(circle at 75% 28%, rgba(34,197,94,.10) 0, transparent 50%),
+        radial-gradient(circle at 30% 85%, rgba(239,68,68,.08) 0, transparent 55%),
+        linear-gradient(180deg, #020617 0%, #030a18 55%, #020617 100%);
+      overflow:hidden;
+    }
+
+    .shell{height:100%;display:flex;flex-direction:column;}
+
+    .topbar{
+      padding:14px 16px 10px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    /* ✅ Updated brand block to include logo + clickable */
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:240px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-user-select:none;
+      padding:6px 8px;
+      border-radius:14px;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      border:1px solid transparent;
+    }
+    .brand:hover{
+      background: rgba(34,197,94,.08);
+      border-color: rgba(34,197,94,.22);
+    }
+    .brand:active{ transform: translateY(1px); }
+
+    .brand .logo{
+      height:42px;
+      width:auto;
+      display:block;
+      object-fit:contain;
+      image-rendering:auto;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+    }
+
+    .brand-text{display:flex;flex-direction:column;gap:4px;min-width:0;}
+    .brand .title{
+      font-family:'Poppins', 'Segoe UI', system-ui, -apple-system, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      font-weight:800;
+      letter-spacing:.02em;
+      font-size:1.4rem;
+      color: var(--hdr);
+      text-shadow:
+        0 1px 0 rgba(0,0,0,.70),
+        0 0 18px var(--hdr-glow);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand .subtitle{
+      color:rgba(226,232,240,.78);
+      font-size:.92rem;
+      line-height:1.25;
+      max-width: 980px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    @media (max-width: 720px){
+      .brand .logo{ height:36px; }
+      .brand .subtitle{ display:none; }
+    }
+
+    .topbar-right{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      min-width: 220px;
+    }
+
+    .lang-toggle{
+      font-weight:800;
+      font-size:.9rem;
+      padding:8px 10px;
+      letter-spacing:.02em;
+    }
+
+    .icon-btn{
+      border:1px solid var(--border);
+      background: linear-gradient(135deg, rgba(2,6,23,.7), rgba(15,23,42,.7));
+      color: var(--text);
+      border-radius:12px;
+      padding:10px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease, box-shadow .12s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.45);
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .icon-btn:hover{
+      background: linear-gradient(135deg, rgba(34,197,94,.14), rgba(56,189,248,.10));
+      border-color: rgba(56,189,248,.45);
+      box-shadow: 0 10px 22px rgba(56,189,248,.14);
+    }
+    .icon-btn:active{ transform: translateY(1px); }
+    .icon-btn[aria-expanded="true"]{
+      background: rgba(56,189,248,.12);
+      border-color: rgba(56,189,248,.55);
+      box-shadow: 0 0 0 1px rgba(56,189,248,.18) inset;
+    }
+
+    .grid9{
+      width:20px;height:20px;display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap:3px;
+    }
+    .grid9 span{
+      display:block;
+      width:100%;height:100%;
+      border-radius:3px;
+      background: rgba(226,232,240,.88);
+      opacity:.95;
+    }
+
+    .home-ico{
+      width:20px;height:20px;display:block;
+      position:relative;
+    }
+    .home-ico:before{
+      content:"";
+      position:absolute; inset:0;
+      clip-path: polygon(50% 5%, 95% 40%, 85% 40%, 85% 90%, 15% 90%, 15% 40%, 5% 40%);
+      background: rgba(226,232,240,.9);
+      border-radius:3px;
+    }
+
+    /* =========================================================
+       Pill strip (Operations only; hidden by default)
+       ========================================================= */
+    .tabs{
+      margin:0 16px;
+      padding:10px;
+      border-radius:18px;
+      background: rgba(15,23,42,.75);
+      border:1px solid var(--border);
+      box-shadow: 0 10px 34px rgba(0,0,0,.45);
+
+      display:none;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+
+      overflow:auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148,163,184,.55) rgba(2,6,23,0.25);
+      scrollbar-gutter: stable;
+
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action: pan-x;
+      position:relative;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .tabs.show{ display:flex; }
+
+    .tabs::-webkit-scrollbar{height:6px;}
+    .tabs::-webkit-scrollbar-thumb{background:rgba(148,163,184,.55);border-radius:999px;}
+    @media (max-width: 900px){
+      .tabs{ justify-content:flex-start; }
+    }
+
+    .tab{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.55);
+      color: rgba(241,245,249,.92);
+      padding:10px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:.92rem;
+      font-weight:800;
+      white-space:nowrap;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+      user-select:none;
+      -webkit-user-select:none;
+      flex:0 0 auto;
+      text-shadow: 0 1px 0 rgba(0,0,0,.65);
+    }
+    .tab:hover{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.40); }
+    .tab:active{ transform: translateY(1px); }
+    .tab.active{
+      color:#f8fafc;
+      background: rgba(34,197,94,.16);
+      border-color: rgba(34,197,94,.70);
+      box-shadow:
+        0 0 0 1px rgba(34,197,94,.18) inset,
+        0 10px 26px rgba(34,197,94,.10);
+    }
+
+    .main{flex:1 1 auto;padding:14px 16px 16px;overflow:hidden;}
+
+    .panel{
+      height:100%;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.18);
+      background:
+        radial-gradient(circle at top right, rgba(34,197,94,0.10), transparent 60%),
+        radial-gradient(circle at 20% 20%, rgba(56,189,248,0.10), transparent 52%),
+        linear-gradient(135deg, rgba(2,6,23,0.92), rgba(2,6,23,0.98));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:none;
+    }
+    .panel.active{ display:flex; flex-direction:column; overflow:hidden; }
+
+    .section-head{
+      padding:16px 18px 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      border-bottom:1px solid rgba(148,163,184,.14);
+      min-height:82px;
+    }
+    .section-head .head-left{flex:1 1 auto;min-width:320px;}
+    .section-head h2{
+      margin:0;
+      font-size:1.18rem;
+      letter-spacing:.012em;
+      font-weight:950;
+      color: var(--hdr);
+      text-shadow:
+        0 1px 0 rgba(0,0,0,.70),
+        0 0 18px var(--hdr-glow);
+      position:relative;
+    }
+    .section-head h2::after{
+      content:"";
+      display:block;
+      height:2px;
+      width:min(260px, 65%);
+      margin-top:8px;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(34,197,94,.55), rgba(34,197,94,.12));
+      opacity:.9;
+    }
+    .section-head p{
+      margin:6px 0 0;
+      color:rgba(226,232,240,.82);
+      font-size:.94rem;
+      line-height:1.3;
+      font-weight:600;
+    }
+
+    .iframe-wrap{flex:1 1 auto;overflow:hidden;}
+    iframe{width:100%;height:100%;border:0;background: transparent;}
+
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+
+    /* Data Input: hide header when active (tool mode) */
+    .panel.toolmode .section-head{ display:none; }
+    .panel.toolmode .iframe-wrap{ height:100%; }
+
+    /* =========================================================
+       HOME (default)
+       ========================================================= */
+    .home-wrap{ height:100%; display:flex; flex-direction:column; }
+    .home-top{
+      padding:18px 18px 12px;
+      border-bottom:1px solid rgba(148,163,184,.14);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .home-top h2{
+      margin:0;
+      font-size:1.22rem;
+      letter-spacing:.012em;
+      font-weight:950;
+      color: var(--hdr);
+      text-shadow:
+        0 1px 0 rgba(0,0,0,.70),
+        0 0 18px var(--hdr-glow);
+      position:relative;
+    }
+    .home-top h2::after{
+      content:"";
+      display:block;
+      height:2px;
+      width:min(220px, 55%);
+      margin-top:10px;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(34,197,94,.55), rgba(34,197,94,.12));
+      opacity:.9;
+    }
+    .home-top p{
+      margin:8px 0 0;
+      color:rgba(226,232,240,.82);
+      font-size:.98rem;
+      line-height:1.3;
+      max-width: 980px;
+      font-weight:600;
+    }
+    .home-top strong{
+      color: var(--hdr);
+      font-weight:950;
+      text-shadow: 0 1px 0 rgba(0,0,0,.65);
+    }
+    .home-top .mini-actions{ display:flex; gap:10px; align-items:center; }
+    .mini-btn{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.55);
+      color: var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:44px;
+      user-select:none;
+      -webkit-user-select:none;
+      box-shadow: 0 10px 18px rgba(0,0,0,.35);
+    }
+    .mini-btn:hover{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
+
+    .home-body{
+      flex:1 1 auto;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding:16px;
+      overflow:auto;
+    }
+
+    .home-stage{
+      width: 100%;
+      height: auto;
+      max-height: none;
+      aspect-ratio: auto;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding: 8px 0;
+    }
+
+    .home-grid{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap:16px;
+      align-content:start;
+      grid-auto-flow: row;
+    }
+    @media (max-width: 760px){
+      .home-grid{ grid-template-columns: 1fr; }
+    }
+
+    .big-card{
+      width:100%;
+      height:100%;
+      border:1px solid rgba(148,163,184,.18);
+      background:
+        radial-gradient(circle at 80% 20%, rgba(56,189,248,.08), transparent 45%),
+        linear-gradient(135deg, rgba(2,6,23,.72), rgba(15,23,42,.72));
+      border-radius:18px;
+      padding:14px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:flex-start;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease, box-shadow .12s ease;
+      user-select:none;
+      -webkit-user-select:none;
+      text-align:left;
+      min-height:170px;
+      overflow:hidden;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .big-card:hover{
+      border-color: rgba(56,189,248,.40);
+      box-shadow: 0 18px 46px rgba(0,0,0,.55);
+      background:
+        radial-gradient(circle at 80% 20%, rgba(56,189,248,.12), transparent 45%),
+        linear-gradient(135deg, rgba(2,6,23,.78), rgba(15,23,42,.78));
+    }
+    .big-card:active{ transform: translateY(1px); }
+
+    .big-card .row{ display:flex; align-items:center; gap:12px; width:100%; }
+    .big-card .ico{ font-size:1.65rem; line-height:1; filter: brightness(1.12) saturate(1.08); }
+    .big-card .name{
+      font-size:1.2rem;
+      font-weight:950;
+      letter-spacing:.012em;
+      color: var(--hdr);
+      text-shadow:
+        0 1px 0 rgba(0,0,0,.65),
+        0 0 18px var(--hdr-glow);
+      position:relative;
+    }
+    .big-card .name::after{
+      content:"";
+      display:block;
+      height:2px;
+      width:min(220px, 65%);
+      margin-top:10px;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(34,197,94,.55), rgba(34,197,94,.12));
+      opacity:.9;
+    }
+    .big-card .meta{
+      font-size: .96rem;
+      color: rgba(226,232,240,.88);
+      line-height: 1.35;
+      max-width: 62ch;
+      font-weight: 600;
+
+      display: -webkit-box;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+
+      overflow: hidden;
+    }
+
+
+    .big-card[aria-disabled="true"]{
+      opacity:.6;
+      cursor:not-allowed;
+      filter:saturate(.8);
+    }
+    .big-card[aria-disabled="true"]:hover{
+      border-color: rgba(148,163,184,.24);
+      box-shadow: var(--shadow-soft);
+      transform:none;
+    }
+
+    .danger{
+      border-color: rgba(239,68,68,.30);
+      background:
+        radial-gradient(circle at 80% 20%, rgba(239,68,68,.12), transparent 45%),
+        linear-gradient(135deg, rgba(2,6,23,.72), rgba(15,23,42,.72));
+    }
+    .danger:hover{
+      border-color: rgba(239,68,68,.55);
+      background:
+        radial-gradient(circle at 80% 20%, rgba(239,68,68,.18), transparent 45%),
+        linear-gradient(135deg, rgba(2,6,23,.78), rgba(15,23,42,.78));
+    }
+
+    .home-level2{ width:100%; height:100%; display:none; }
+    .home-level2.show{ display:flex; flex-direction:column; gap:12px; }
+
+    .home-crumb{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color: rgba(226,232,240,.86);
+      font-size:1.0rem;
+      padding: 0 2px;
+      font-weight:700;
+    }
+    .home-crumb strong{
+      color: var(--hdr);
+      font-weight:950;
+      text-shadow:
+        0 1px 0 rgba(0,0,0,.65),
+        0 0 18px var(--hdr-glow);
+    }
+
+    .home-back{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.55);
+      color: var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      user-select:none;
+      -webkit-user-select:none;
+      box-shadow: 0 10px 18px rgba(0,0,0,.35);
+    }
+    .home-back:hover{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.10);
+    }
+
+    .cat-grid{
+      flex:1 1 auto;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:12px;
+      overflow:auto;
+      padding-right: 6px;
+      position:relative;
+    }
+    @media (max-width: 980px){
+      .cat-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px){
+      .cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .tile{
+      border:1px solid rgba(148,163,184,.18);
+      background: linear-gradient(135deg, rgba(2,6,23,.55), rgba(15,23,42,.60));
+      border-radius:16px;
+      padding:12px 10px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:flex-start;
+      justify-content:flex-start;
+      min-height:82px;
+      transition: background .12s ease, border-color .12s ease, transform .08s ease, box-shadow .12s ease;
+      user-select:none;
+      -webkit-user-select:none;
+      text-align:left;
+      box-shadow: 0 10px 18px rgba(0,0,0,.30);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .tile:hover{
+      border-color: rgba(56,189,248,.40);
+      box-shadow: 0 14px 26px rgba(0,0,0,.42);
+      background: linear-gradient(135deg, rgba(56,189,248,.10), rgba(15,23,42,.65));
+    }
+    .tile:active{ transform: translateY(1px); }
+    .tile .ico{ font-size:1.15rem; line-height:1; }
+    .tile .name{
+      font-size:.98rem;
+      font-weight:950;
+      letter-spacing:.01em;
+      color: var(--hdr);
+      text-shadow:
+        0 1px 0 rgba(0,0,0,.65),
+        0 0 14px rgba(34,197,94,.12);
+    }
+    .tile .meta{
+      font-size:.86rem;
+      color: rgba(226,232,240,.82);
+      line-height:1.2;
+      font-weight:600;
+    }
+
+    .disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:saturate(.7);
+    }
+    .disabled:hover{
+      background: rgba(2,6,23,.45);
+      border-color: rgba(148,163,184,.14);
+      box-shadow: 0 10px 18px rgba(0,0,0,.30);
+    }
+
+    /* =========================================================
+       Google-style Launcher overlay + panel (NEW)
+       ========================================================= */
+    .launcher-overlay{
+      position:fixed;
+      inset:0;
+      background: rgba(2,6,23,.50);
+      z-index: 70000;
+      display:none;
+    }
+    .launcher-overlay.open{ display:block; }
+
+    .launcher{
+      position:fixed;
+      right:14px;
+      top:62px;
+      width: min(360px, calc(100vw - 28px));
+      max-height: min(520px, calc(100vh - 92px));
+      overflow:auto;
+
+      border-radius: 18px;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(11,18,34,.92);
+      box-shadow: 0 28px 90px rgba(0,0,0,.75);
+      z-index: 70001;
+
+      padding: 10px;
+      display:none;
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148,163,184,.55) rgba(2,6,23,0.25);
+      scrollbar-gutter: stable;
+    }
+    .launcher.open{ display:block; }
+
+    .launcher::-webkit-scrollbar{ width: 8px; }
+    .launcher::-webkit-scrollbar-thumb{
+      background: rgba(148,163,184,.45);
+      border-radius: 999px;
+    }
+    .launcher::-webkit-scrollbar-track{
+      background: rgba(2,6,23,.15);
+    }
+
+    .launcher-header{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:8px;
+      padding: 4px 4px 10px;
+      border-bottom:1px solid rgba(148,163,184,.12);
+      margin-bottom: 8px;
+    }
+
+    .launcher-iconbtn{
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.35);
+      color: var(--text);
+      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .launcher-iconbtn:hover{
+      border-color: rgba(56,189,248,.40);
+      background: rgba(56,189,248,.10);
+    }
+
+    .launcher-titleline{
+      font-weight: 850;
+      color: rgba(241,245,249,.92);
+      font-size: .95rem;
+      letter-spacing: .01em;
+      text-shadow: 0 1px 0 rgba(0,0,0,.65);
+    }
+
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    .launcher-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 2px 2px 8px;
+    }
+    @media (max-width: 420px){
+      .launcher-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .launch-app{
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(2,6,23,.26);
+      border-radius: 16px;
+      padding: 10px 8px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+
+      min-height: 104px;
+      text-align:center;
+
+      transition: background .12s ease, border-color .12s ease, transform .08s ease;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .launch-app:hover{
+      background: rgba(226,232,240,.08);
+      border-color: rgba(226,232,240,.22);
+    }
+    .launch-app:active{ transform: translateY(1px); }
+
+    .launch-app .app-ico{
+      font-size: 1.6rem;
+      line-height: 1;
+      filter: brightness(1.12) saturate(1.08);
+    }
+
+    .launch-app .app-name{
+      font-size: .92rem;
+      font-weight: 850;
+      color: rgba(241,245,249,.92);
+      line-height: 1.15;
+      text-shadow: 0 1px 0 rgba(0,0,0,.55);
+    }
+
+    .launch-app[aria-disabled="true"], .launch-app:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:saturate(.7);
+    }
+    .launch-app[aria-disabled="true"]:hover, .launch-app:disabled:hover{
+      background: rgba(2,6,23,.26);
+      border-color: rgba(148,163,184,.14);
+      transform:none;
+    }
+
+    .launch-app.danger{
+      border-color: rgba(239,68,68,.28);
+      background: rgba(239,68,68,.06);
+    }
+    .launch-app.danger:hover{
+      border-color: rgba(239,68,68,.48);
+      background: rgba(239,68,68,.10);
+    }
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      left:12px;
+      bottom:12px;
+      z-index:99999;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(15,23,42,.88);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size:12px;
+      max-width:min(560px, calc(100vw - 24px));
+      white-space:pre-wrap;
+      display:none;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .toast .t-sub{color:rgba(226,232,240,.82);margin-top:4px;font-size:11px;}
+    .toast.ok{border-color: rgba(34,197,94,.45);}
+    .toast.bad{border-color: rgba(239,68,68,.55);}
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand" id="brandHome" role="button" tabindex="0" aria-label="Go to main menu">
+        <img class="logo" src="logo_full.png" alt="Campo Caribe logo" />
+        <div class="brand-text">
+          <div class="title" data-i18n="brand.title">Company Dashboards</div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="icon-btn lang-toggle" id="btnLang" aria-label="Language" title="Language">EN / ES</button>
+        <button class="icon-btn" id="btnHome" aria-label="Home" title="Home">
+          <span class="home-ico" aria-hidden="true"></span>
+        </button>
+
+        <button class="icon-btn" id="btnLauncher" aria-label="Open dashboard menu" aria-haspopup="dialog" aria-expanded="false" title="Dashboards">
+          <div class="grid9" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs" aria-label="Operations Dashboards">
+      <button class="tab" data-target="p-weekly">📊 <span data-i18n="tab.weekly">Summary</span></button>
+      <button class="tab" data-target="p-seeding">🌱 <span data-i18n="tab.seeding">Seeding</span></button>
+      <button class="tab" data-target="p-transplant">🪴 <span data-i18n="tab.transplant">Transplant</span></button>
+      <button class="tab" data-target="p-harvest">✂️ <span data-i18n="tab.harvest">Harvest</span></button>
+      <button class="tab" data-target="p-packing">📦 <span data-i18n="tab.packing">Packing</span></button>
+      <button class="tab" data-target="p-shipments">🚚 <span data-i18n="tab.shipments">Shipments</span></button>
+      <button class="tab" data-target="p-sanitation">🧼 <span data-i18n="tab.sanitation">Sanitation</span></button>
+      <button class="tab" data-target="p-inventory">📦 <span data-i18n="tab.inventory">S&amp;H Inventory</span></button>
+    </div>
+
+    <div class="main">
+      <section class="panel active" id="p-home">
+        <div class="home-wrap">
+          <div class="home-top">
+            <div>
+              <h2 data-i18n="home.title">Dashboards</h2>
+              <p data-i18n="home.subtitle">Choose a category to access company dashboards</p>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" id="homeBackBtn" title="Back to categories" aria-label="Back to categories" style="display:none;">←</button>
+            </div>
+          </div>
+
+          <div class="home-body">
+            <div class="home-stage">
+              <div class="home-grid" id="homeLevel1">
+                <button class="big-card" data-home-open="ops">
+                  <div class="row"><div class="ico">⚙️</div><div class="name" data-i18n="card.ops.title">Operations</div></div>
+                  <div class="meta" data-i18n="card.ops.meta">End-to-end operational planning and execution across production, inventory, and fulfillment</div>
+                </button>
+
+                <button class="big-card" data-home-open="sales">
+                  <div class="row"><div class="ico">📈</div><div class="name" data-i18n="card.sales.title">Sales &amp; Marketing</div></div>
+                  <div class="meta" data-i18n="card.sales.meta">Coming soon: Sales performance, forecasting, and customer demand insights</div>
+                </button>
+
+                <button class="big-card" data-home-open="team">
+                  <div class="row"><div class="ico">👥</div><div class="name" data-i18n="card.team.title">Team Tools</div></div>
+                  <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
+                </button>
+
+                <button class="big-card" data-home-open="growing">
+                  <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
+                  <div class="meta" data-i18n="card.growing.meta">Experiment calendar, cultivation timelines, and crop scheduling</div>
+                </button>
+
+                <button class="big-card" data-home-open="foodsafety" aria-disabled="true">
+                  <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
+                  <div class="meta" data-i18n="card.foodsafety.meta">Coming soon: Compliance, audits, and food safety controls across production and packing</div>
+                </button>
+
+                <button class="big-card" data-home-open="maintenance" aria-disabled="true">
+                  <div class="row"><div class="ico">🛠️</div><div class="name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div></div>
+                  <div class="meta" data-i18n="card.maintenance.meta">Coming soon: Equipment maintenance, facility readiness, and infrastructure oversight</div>
+                </button>
+
+                <button class="big-card" data-home-open="finances" aria-disabled="true">
+                  <div class="row"><div class="ico">💰</div><div class="name" data-i18n="card.finances.title">Finances</div></div>
+                  <div class="meta" data-i18n="card.finances.meta">Coming soon: Financial performance, costs, budgeting, and operational profitability</div>
+                </button>
+
+                <button class="big-card" data-home-open="hr" aria-disabled="true">
+                  <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
+                  <div class="meta" data-i18n="card.hr.meta">Coming soon: Staffing, scheduling, payroll, and people operations</div>
+                </button>
+
+                <button class="big-card" data-home-open="procurement" aria-disabled="true">
+                  <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
+                  <div class="meta" data-i18n="card.procurement.meta">Coming soon: Purchasing, supplies, inventory levels, and vendor coordination</div>
+                </button>
+
+                <button class="big-card danger" data-home-go="p-data">
+                  <div class="row"><div class="ico">📥</div><div class="name" data-i18n="card.data.title">Data Input</div></div>
+                  <div class="meta" data-i18n="card.data.meta">Authoritative data uploads for company dashboards</div>
+                </button>
+              </div>
+
+              <div class="home-level2" id="homeLevel2">
+                <div class="home-crumb">
+                  <div id="homeCrumb" data-i18n-html="crumb.ops"><strong>Operations</strong> — choose a dashboard</div>
+                  <button class="home-back" id="homeBackInline" aria-label="Back" data-i18n="home.back">← Back</button>
+                </div>
+
+                <div class="cat-grid" id="homeOps" style="display:none;">
+                  <button class="tile" data-home-go="p-weekly"><div class="ico">📊</div><div class="name" data-i18n="tile.weekly.name">Summary</div><div class="meta" data-i18n="tile.weekly.meta">Targets + actuals</div></button>
+                  <button class="tile" data-home-go="p-seeding"><div class="ico">🌱</div><div class="name" data-i18n="tile.seeding.name">Seeding</div><div class="meta" data-i18n="tile.seeding.meta">Trays & schedule</div></button>
+                  <button class="tile" data-home-go="p-transplant"><div class="ico">🪴</div><div class="name" data-i18n="tile.transplant.name">Transplant</div><div class="meta" data-i18n="tile.transplant.meta">Moves & counts</div></button>
+                  <button class="tile" data-home-go="p-harvest"><div class="ico">✂️</div><div class="name" data-i18n="tile.harvest.name">Harvest</div><div class="meta" data-i18n="tile.harvest.meta">Cut plans</div></button>
+                  <button class="tile" data-home-go="p-packing"><div class="ico">📦</div><div class="name" data-i18n="tile.packing.name">Packing</div><div class="meta" data-i18n="tile.packing.meta">Pack plan</div></button>
+                  <button class="tile" data-home-go="p-inventory"><div class="ico">📦</div><div class="name" data-i18n="tile.inventory.name">S&amp;H Inventory</div><div class="meta" data-i18n="tile.inventory.meta">Stock view</div></button>
+                  <button class="tile" data-home-go="p-shipments"><div class="ico">🚚</div><div class="name" data-i18n="tile.shipments.name">Shipments</div><div class="meta" data-i18n="tile.shipments.meta">Forward sales</div></button>
+                  <button class="tile" data-home-go="p-sanitation"><div class="ico">🧼</div><div class="name" data-i18n="tile.sanitation.name">Sanitation</div><div class="meta" data-i18n="tile.sanitation.meta">Checklists</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeSales" style="display:none;">
+                  <button class="tile disabled" disabled><div class="ico">💵</div><div class="name" data-i18n="tile.sales-overview.name">Sales Overview</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">📈</div><div class="name" data-i18n="tile.forecast.name">Forecast</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile disabled" disabled><div class="ico">📣</div><div class="name" data-i18n="tile.campaigns.name">Campaigns</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeTeam" style="display:none;">
+                  <button class="tile" data-home-go="p-board-inventory"><div class="ico">🧮</div><div class="name" data-i18n="tile.board-inventory.name">Board Inventory</div><div class="meta" data-i18n="tile.board-inventory.meta">Current board counts</div></button>
+                  <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeGrowing" style="display:none;">
+                  <button class="tile" data-home-go="p-expcal"><div class="ico">🌿</div><div class="name" data-i18n="tile.expcal.name">Experiment Calendar</div><div class="meta" data-i18n="tile.expcal.meta">TSV paste + filters</div></button>
+                  <button class="tile" data-home-go="p-mulders"><div class="ico">📊</div><div class="name" data-i18n="tile.mulders.name">Mulders Chart</div><div class="meta" data-i18n="tile.mulders.meta">Growing performance chart</div></button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="p-data" data-hidehead="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.data.title">Data Input Dashboard</h2>
+            <p data-i18n="panel.data.desc">Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="data"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-data" data-file-key="data"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-weekly" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.weekly.title">Summary Dashboard</h2>
+            <p data-i18n-html="panel.weekly.desc">Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="weekly"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-weekly" data-file-key="weekly"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-seeding" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.seeding.title">Seeding Dashboard</h2>
+            <p data-i18n-html="panel.seeding.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets["Master Grow"]</code>.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="seeding"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-seeding" data-file-key="seeding"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-transplant" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.transplant.title">Transplant Dashboard</h2>
+            <p data-i18n-html="panel.transplant.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="transplant"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-transplant" data-file-key="transplant"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-harvest" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.harvest.title">Harvest Dashboard</h2>
+            <p data-i18n-html="panel.harvest.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="harvest"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-harvest" data-file-key="harvest"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-packing" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.packing.title">Packing Dashboard</h2>
+            <p data-i18n-html="panel.packing.desc">Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets["Master Pack"]</code>.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="packing"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-packing" data-file-key="packing"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-shipments" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.shipments.title">Shipments (Forward Sales) Dashboard</h2>
+            <p data-i18n-html="panel.shipments.desc">Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="shipments"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-shipments" data-file-key="shipments"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-sanitation" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.sanitation.title">Sanitation Dashboard</h2>
+            <p data-i18n-html="panel.sanitation.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="sanitation"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-sanitation" data-file-key="sanitation"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-inventory" data-ops="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.inventory.title">S&amp;H Inventory Dashboard</h2>
+            <p data-i18n-html="panel.inventory.desc">Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="inventory"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-inventory" data-file-key="inventory"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-expcal">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Experiment Calendar</h2>
+            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from <code data-file-text="expcal"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="expcal"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-expcal" data-file-key="expcal"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-board-inventory">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Board Inventory</h2>
+            <p>Team view for board counts (embedded from <code data-file-text="board-inventory"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="board-inventory"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-board-inventory" data-file-key="board-inventory"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-pack-team-performance">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Pack Team Employee Performance</h2>
+            <p>Team performance dashboard (embedded from <code data-file-text="pack-team-performance"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="pack-team-performance"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-pack-team-performance" data-file-key="pack-team-performance"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-mulders">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Mulders Chart</h2>
+            <p>Growing performance view (embedded from <code data-file-text="mulders"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="mulders"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-mulders" data-file-key="mulders"></iframe>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="launcher-overlay" id="launcherOverlay" aria-hidden="true"></div>
+
+  <!-- ✅ Google-style Launcher (no X button, click-outside + Esc) -->
+  <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="Dashboard menu">
+    <div class="launcher-header">
+      <button class="launcher-iconbtn" id="btnLauncherBack" aria-label="Back" title="Back" style="display:none;">←</button>
+      <div class="launcher-titleline" id="launcherTitle" data-i18n="launcher.title">Dashboards</div>
+    </div>
+
+    <div class="screen active" id="screen-home">
+      <div class="launcher-grid">
+        <button class="launch-app" data-action="open-category" data-category="ops">
+          <div class="app-ico">⚙️</div>
+          <div class="app-name" data-i18n="card.ops.title">Operations</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="sales">
+          <div class="app-ico">📈</div>
+          <div class="app-name" data-i18n="card.sales.title">Sales &amp; Marketing</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="team">
+          <div class="app-ico">👥</div>
+          <div class="app-name" data-i18n="card.team.title">Team Tools</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="growing">
+          <div class="app-ico">🌿</div>
+          <div class="app-name" data-i18n="card.growing.title">Growing</div>
+        </button>
+        <button class="launch-app danger" data-action="go-panel" data-target="p-data">
+          <div class="app-ico">📥</div>
+          <div class="app-name" data-i18n="card.data.title">Data Input</div>
+        </button>
+
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🛡️</div>
+          <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
+        </button>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🛠️</div>
+          <div class="app-name" data-i18n="card.maintenance.title">Maintenance &amp; Facilities</div>
+        </button>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">💰</div>
+          <div class="app-name" data-i18n="card.finances.title">Finances</div>
+        </button>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">🧑‍🤝‍🧑</div>
+          <div class="app-name" data-i18n="card.hr.title">HR</div>
+        </button>
+        <button class="launch-app" aria-disabled="true" disabled>
+          <div class="app-ico">📦</div>
+          <div class="app-name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-category">
+      <div class="launcher-grid" id="cat-ops" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-weekly"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.weekly.name">Summary</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-seeding"><div class="app-ico">🌱</div><div class="app-name" data-i18n="tile.seeding.name">Seeding</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-transplant"><div class="app-ico">🪴</div><div class="app-name" data-i18n="tile.transplant.name">Transplant</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-harvest"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.harvest.name">Harvest</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-packing"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.packing.name">Packing</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-inventory"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.inventory.name">S&amp;H Inventory</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-shipments"><div class="app-ico">🚚</div><div class="app-name" data-i18n="tile.shipments.name">Shipments</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-sanitation"><div class="app-ico">🧼</div><div class="app-name" data-i18n="tile.sanitation.name">Sanitation</div></button>
+      </div>
+
+      <div class="launcher-grid" id="cat-sales" style="display:none;">
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">💵</div><div class="app-name" data-i18n="tile.sales-overview.name">Sales Overview</div></button>
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">📈</div><div class="app-name" data-i18n="tile.forecast.name">Forecast</div></button>
+        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">📣</div><div class="app-name" data-i18n="tile.campaigns.name">Campaigns</div></button>
+      </div>
+
+      <div class="launcher-grid" id="cat-team" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-board-inventory"><div class="app-ico">🧮</div><div class="app-name" data-i18n="tile.board-inventory.name">Board Inventory</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-pack-team-performance"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div></button>
+      </div>
+
+      <div class="launcher-grid" id="cat-growing" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-expcal"><div class="app-ico">🌿</div><div class="app-name" data-i18n="tile.expcal.name">Experiment Calendar</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-mulders"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.mulders.name">Mulders Chart</div></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <div id="toastText">–</div>
+    <div class="t-sub" id="toastSub">–</div>
+  </div>
+
+  <script>
+    (function(){
+      const I18N = {
+        en: {
+          "brand.title":"Company Dashboards",
+          "launcher.title":"Dashboards",
+          "home.title":"Dashboards",
+          "home.subtitle":"Choose a category to access company dashboards",
+          "home.back":"← Back",
+          "launcher.category":"Category",
+          "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
+          "crumb.sales":"<strong>Sales &amp; Marketing</strong> — coming soon",
+          "crumb.team":"<strong>Team Tools</strong> — internal utilities",
+          "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
+          "card.ops.title":"Operations",
+          "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
+          "card.sales.title":"Sales & Marketing",
+          "card.sales.meta":"Coming soon: Sales performance, forecasting, and customer demand insights",
+          "card.team.title":"Team Tools",
+          "card.team.meta":"Internal tools for scheduling, coordination, and team workflows",
+          "card.data.title":"Data Input",
+          "card.data.meta":"Authoritative data uploads for company dashboards",
+          "card.growing.title":"Growing",
+          "card.growing.meta":"Experiment calendar, cultivation schedules, and crop planning",
+          "card.foodsafety.title":"Food Safety and Quality",
+          "card.foodsafety.meta":"Coming soon: Compliance, audits, and food safety controls across production and packing",
+          "card.maintenance.title":"Maintenance & Facilities",
+          "card.maintenance.meta":"Coming soon: Equipment maintenance, facility readiness, and infrastructure oversight",
+          "card.finances.title":"Finances",
+          "card.finances.meta":"Coming soon: Financial performance, costs, budgeting, and operational profitability",
+          "card.hr.title":"HR",
+          "card.hr.meta":"Coming soon: Staffing, scheduling, payroll, and people operations",
+          "card.procurement.title":"Procurement & Inventory",
+          "card.procurement.meta":"Coming soon: Purchasing, supplies, inventory levels, and vendor coordination",
+          "tab.weekly":"Summary",
+          "tab.seeding":"Seeding",
+          "tab.transplant":"Transplant",
+          "tab.harvest":"Harvest",
+          "tab.packing":"Packing",
+          "tab.shipments":"Shipments",
+          "tab.sanitation":"Sanitation",
+          "tab.inventory":"S&H Inventory",
+          "tile.weekly.name":"Summary",
+          "tile.weekly.meta":"Targets + actuals",
+          "tile.seeding.name":"Seeding",
+          "tile.seeding.meta":"Trays & schedule",
+          "tile.transplant.name":"Transplant",
+          "tile.transplant.meta":"Moves & counts",
+          "tile.harvest.name":"Harvest",
+          "tile.harvest.meta":"Cut plans",
+          "tile.expcal.name":"Experiment Calendar",
+          "tile.expcal.meta":"TSV paste + filters",
+          "tile.board-inventory.name":"Board Inventory",
+          "tile.board-inventory.meta":"Current board counts",
+          "tile.pack-team-performance.name":"Pack Team Performance",
+          "tile.pack-team-performance.meta":"Employee performance",
+          "tile.mulders.name":"Mulders Chart",
+          "tile.mulders.meta":"Growing performance chart",
+          "tile.packing.name":"Packing",
+          "tile.packing.meta":"Pack plan",
+          "tile.inventory.name":"S&H Inventory",
+          "tile.inventory.meta":"Stock view",
+          "tile.shipments.name":"Shipments",
+          "tile.shipments.meta":"Forward sales",
+          "tile.sanitation.name":"Sanitation",
+          "tile.sanitation.meta":"Checklists",
+          "tile.sales-overview.name":"Sales Overview",
+          "tile.forecast.name":"Forecast",
+          "tile.campaigns.name":"Campaigns",
+          "tile.schedule.name":"Schedule",
+          "tile.sops.name":"SOPs",
+          "tile.issues.name":"Issues",
+          "tile.placeholder":"Placeholder",
+          "panel.data.title":"Data Input Dashboard",
+          "panel.data.desc":"Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).",
+          "panel.weekly.title":"Summary Dashboard",
+          "panel.weekly.desc":"Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).",
+          "panel.seeding.title":"Seeding Dashboard",
+          "panel.seeding.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
+          "panel.transplant.title":"Transplant Dashboard",
+          "panel.transplant.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
+          "panel.harvest.title":"Harvest Dashboard",
+          "panel.harvest.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
+          "panel.packing.title":"Packing Dashboard",
+          "panel.packing.desc":"Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
+          "panel.shipments.title":"Shipments (Forward Sales) Dashboard",
+          "panel.shipments.desc":"Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).",
+          "panel.sanitation.title":"Sanitation Dashboard",
+          "panel.sanitation.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
+          "panel.inventory.title":"S&H Inventory Dashboard",
+          "panel.inventory.desc":"Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
+          "panel.file.prefix":"📄 file:"
+        },
+        es: {
+          "brand.title":"Paneles de la empresa",
+          "launcher.title":"Paneles",
+          "home.title":"Paneles",
+          "home.subtitle":"Elige una categoría para acceder a los paneles de la empresa",
+          "home.back":"← Volver",
+          "launcher.category":"Categoría",
+          "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
+          "crumb.sales":"<strong>Ventas y marketing</strong> — próximamente",
+          "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
+          "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
+          "card.ops.title":"Operaciones",
+          "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
+          "card.sales.title":"Ventas y mercadeo",
+          "card.sales.meta":"Próximamente: rendimiento de ventas, pronósticos y demanda de clientes",
+          "card.team.title":"Herramientas de equipo",
+          "card.team.meta":"Herramientas internas para programación, coordinación y flujos de trabajo del equipo",
+          "card.data.title":"Carga de datos",
+          "card.data.meta":"Cargas de datos autorizadas para los paneles de la empresa",
+          "card.growing.title":"Crecimiento",
+          "card.growing.meta":"Calendario de experimentos, cronogramas de cultivo y planificación de cultivos",
+          "card.foodsafety.title":"Inocuidad y calidad",
+          "card.foodsafety.meta":"Próximamente: cumplimiento, auditorías y controles de inocuidad en producción y empaque",
+          "card.maintenance.title":"Mantenimiento y facilidades",
+          "card.maintenance.meta":"Próximamente: mantenimiento de equipos, preparación de instalaciones y supervisión de infraestructura",
+          "card.finances.title":"Finanzas",
+          "card.finances.meta":"Próximamente: desempeño financiero, costos, presupuestos y rentabilidad operativa",
+          "card.hr.title":"Recursos Humanos",
+          "card.hr.meta":"Próximamente: personal, programación, nómina y operaciones de personas",
+          "card.procurement.title":"Compras e inventario",
+          "card.procurement.meta":"Próximamente: compras, suministros, niveles de inventario y coordinación con proveedores",
+          "tab.weekly":"Resumen semanal",
+          "tab.seeding":"Siembra",
+          "tab.transplant":"Trasplante",
+          "tab.harvest":"Cosecha",
+          "tab.packing":"Empaque",
+          "tab.shipments":"Despachos",
+          "tab.sanitation":"Sanidad",
+          "tab.inventory":"Inventario S&H",
+          "tile.weekly.name":"Resumen semanal",
+          "tile.weekly.meta":"Objetivos y resultados",
+          "tile.seeding.name":"Siembra",
+          "tile.seeding.meta":"Bandejas y calendario",
+          "tile.transplant.name":"Trasplante",
+          "tile.transplant.meta":"Movimientos y conteos",
+          "tile.harvest.name":"Cosecha",
+          "tile.harvest.meta":"Planes de corte",
+          "tile.expcal.name":"Calendario de experimentos",
+          "tile.expcal.meta":"Pega TSV + filtros",
+          "tile.board-inventory.name":"Inventario de tablas",
+          "tile.board-inventory.meta":"Conteos actuales de tablas",
+          "tile.pack-team-performance.name":"Rendimiento del equipo de empaque",
+          "tile.pack-team-performance.meta":"Rendimiento de empleados",
+          "tile.mulders.name":"Grafico Mulders",
+          "tile.mulders.meta":"Grafico de rendimiento de cultivo",
+          "tile.packing.name":"Empaque",
+          "tile.packing.meta":"Plan de empaque",
+          "tile.inventory.name":"Inventario S&H",
+          "tile.inventory.meta":"Vista de existencias",
+          "tile.shipments.name":"Despachos",
+          "tile.shipments.meta":"Ventas futuras",
+          "tile.sanitation.name":"Sanidad",
+          "tile.sanitation.meta":"Listas de verificación",
+          "tile.sales-overview.name":"Resumen de ventas",
+          "tile.forecast.name":"Pronóstico",
+          "tile.campaigns.name":"Campañas",
+          "tile.schedule.name":"Calendario",
+          "tile.sops.name":"POE",
+          "tile.issues.name":"Incidencias",
+          "tile.placeholder":"Próximamente",
+          "panel.data.title":"Panel de carga de datos",
+          "panel.data.desc":"Carga la herramienta de datos y escribe Master Grow / Master Pack en localStorage (y puede publicar en Supabase vía Worker).",
+          "panel.weekly.title":"Panel de resumen semanal",
+          "panel.weekly.desc":"Lee Master Grow + Master Pack de <code>localStorage</code> y construye un resumen semanal (objetivos, reales y %).",
+          "panel.seeding.title":"Panel de siembra",
+          "panel.seeding.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code> → <code>sheets[\"Master Grow\"]</code>.",
+          "panel.transplant.title":"Panel de trasplante",
+          "panel.transplant.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
+          "panel.harvest.title":"Panel de cosecha",
+          "panel.harvest.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
+          "panel.packing.title":"Panel de empaque",
+          "panel.packing.desc":"Lee Master Pack de <code>localStorage</code> clave <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
+          "panel.shipments.title":"Panel de despachos (ventas futuras)",
+          "panel.shipments.desc":"Lee líneas de ventas de la carga de Empaque (<code>campo_master_pack_v1</code>) y muestra lo que se despacha en o después de la fecha ancla (incluida).",
+          "panel.sanitation.title":"Panel de sanidad",
+          "panel.sanitation.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
+          "panel.inventory.title":"Panel de inventario S&H",
+          "panel.inventory.desc":"Lee Master Pack (preferido) + Master Grow (alterno) de <code>localStorage</code> claves <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
+          "panel.file.prefix":"📄 archivo:"
+        }
+      };
+
+      const FILES = {
+        seeding: "01.0 Ops - Seeding.html",
+        transplant: "02.0 Ops - Transplant.html",
+        harvest: "03.0 Ops - Harvest.html",
+        packing: "04.0 Ops - Packing.html",
+        sanitation: "05.0 Ops - Sanitation.html",
+        weekly: "06.0 Ops - Weekly Summary.html",
+        data: "07.0 Data - Input Tool.html",
+        inventory: "08.0 Ops - SH Inventory.html",
+        shipments: "09.0 Ops - Shipments.html",
+        expcal: "10.0 Growing - Experiment Calendar.html",
+        mulders: "04.3 Team - Mulders Chart.html",
+        "board-inventory": "04.2 Team - Board Inventory.html",
+        "pack-team-performance": "03.1 Leadership - Pack Team Employee Performance.html"
+      };
+
+      const FILE_QUERIES = {
+        data: "?v=refresh1"
+      };
+
+      const LANG_KEY = "campo_lang";
+
+      function t(key, lang){
+        const use = (lang && I18N[lang]) ? lang : "en";
+        return I18N[use]?.[key] ?? I18N.en?.[key] ?? key;
+      }
+
+      function applyI18n(lang){
+        document.querySelectorAll("[data-i18n]").forEach(el => {
+          const k = el.getAttribute("data-i18n");
+          el.textContent = t(k, lang);
+        });
+        document.querySelectorAll("[data-i18n-html]").forEach(el => {
+          const k = el.getAttribute("data-i18n-html");
+          el.innerHTML = t(k, lang);
+        });
+      }
+
+      const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+      const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
+      const WORKER_GROW_URL   = `${WORKER_BASE}/data/master/grow.json`;
+      const WORKER_PACK_URL   = `${WORKER_BASE}/data/master/pack.json`;
+
+      const WORKER_EXPERIMENTS_URL = `${WORKER_BASE}/data/master/experiments.json`;
+      const WORKER_PROCUREMENT_URL = `${WORKER_BASE}/data/master/procurement.json`;
+
+      // Fallback: direct Supabase public URLs (read-only)
+      const PUBLIC_EXPERIMENTS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/experiments.json";
+      const PUBLIC_PROCUREMENT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/procurement.json";
+
+      const MASTER_GROW_KEY  = "campo_master_grow_v1";
+      const MASTER_PACK_KEY  = "campo_master_pack_v1";
+      const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
+      const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
+
+      const EXPERIMENTS_KEY = "campo_experiments_v1";
+      const PROCUREMENT_KEY = "campo_procurement_v1";
+      const EXPERIMENTS_PING = "campo_experiments_push_ping_v1";
+      const PROCUREMENT_PING = "campo_procurement_push_ping_v1";
+
+
+      const CANON_GROW_SHEET = "Master Grow";
+      const CANON_PACK_SHEET = "Master Pack";
+
+      const MSG_GROW = "MASTER_GROW_UPDATED";
+      const MSG_PACK = "MASTER_PACK_UPDATED";
+
+      const MSG_EXPERIMENTS = "EXPERIMENTS_UPDATED";
+      const MSG_PROCUREMENT = "PROCUREMENT_UPDATED";
+
+
+      const BC_NAMES = ["campo_master_bus_v1", "campo_updates_v1"];
+      const bcs = [];
+      for (const name of BC_NAMES) {
+        try { if ("BroadcastChannel" in window) bcs.push(new BroadcastChannel(name)); } catch {}
+      }
+
+      const panels = Array.from(document.querySelectorAll(".panel"));
+      const tabsWrap = document.getElementById("tabs");
+      const tabButtons = Array.from(document.querySelectorAll("#tabs .tab"));
+
+      const toast = document.getElementById("toast");
+      const toastText = document.getElementById("toastText");
+      const toastSub = document.getElementById("toastSub");
+
+      const btnHome = document.getElementById("btnHome");
+      const btnLang = document.getElementById("btnLang");
+      const brandHome = document.getElementById("brandHome");
+
+      const btnLauncher = document.getElementById("btnLauncher");
+      const btnLauncherBack = document.getElementById("btnLauncherBack");
+      const launcher = document.getElementById("launcher");
+      const launcherOverlay = document.getElementById("launcherOverlay");
+      const launcherTitle = document.getElementById("launcherTitle");
+
+      const screenHome = document.getElementById("screen-home");
+      const screenCategory = document.getElementById("screen-category");
+      const catOps = document.getElementById("cat-ops");
+      const catSales = document.getElementById("cat-sales");
+      const catTeam = document.getElementById("cat-team");
+      const catGrowing = document.getElementById("cat-growing");
+
+      const homeLevel1 = document.getElementById("homeLevel1");
+      const homeLevel2 = document.getElementById("homeLevel2");
+      const homeOps = document.getElementById("homeOps");
+      const homeSales = document.getElementById("homeSales");
+      const homeTeam = document.getElementById("homeTeam");
+      const homeGrowing = document.getElementById("homeGrowing");
+      const homeCrumb = document.getElementById("homeCrumb");
+      const homeBackInline = document.getElementById("homeBackInline");
+      const homeBackBtn = document.getElementById("homeBackBtn");
+
+      let toastTimer = null;
+      let currentLang = (localStorage.getItem(LANG_KEY) || "en").toLowerCase();
+      if (!I18N[currentLang]) currentLang = "en";
+
+      function updateLangButton(){
+        if (!btnLang) return;
+        btnLang.textContent = (currentLang === "en") ? "EN / ES" : "ES / EN";
+        btnLang.setAttribute("aria-label", currentLang === "en" ? "Switch to Spanish" : "Cambiar a inglés");
+        btnLang.setAttribute("title", btnLang.getAttribute("aria-label"));
+      }
+
+      function setLanguage(lang){
+        currentLang = I18N[lang] ? lang : "en";
+        localStorage.setItem(LANG_KEY, currentLang);
+        applyI18n(currentLang);
+        updateLangButton();
+        // reset launcher header title when language flips
+        if (launcherTitle){
+          launcherTitle.textContent = t("launcher.title", currentLang);
+        }
+      }
+
+      function showToast(msg, sub, ok){
+        if (!toast || !toastText || !toastSub) return;
+        toast.classList.remove("ok","bad");
+        toast.classList.add(ok ? "ok" : "bad");
+        toastText.textContent = msg || "";
+        toastSub.textContent = sub || "";
+        toast.style.display = "block";
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.style.display = "none"; }, ok ? 2200 : 4200);
+      }
+
+      const IFRAME_IDS = [
+        "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance"
+      ];
+
+      function fileWithQuery(key){
+        const base = FILES[key];
+        if (!base) return "";
+        return base + (FILE_QUERIES[key] || "");
+      }
+
+      function applyFileBindings(){
+        document.querySelectorAll("code[data-file-code]").forEach((codeEl) => {
+          const key = codeEl.getAttribute("data-file-code");
+          if (FILES[key]) codeEl.textContent = FILES[key];
+        });
+        document.querySelectorAll("[data-file-text]").forEach((textEl) => {
+          const key = textEl.getAttribute("data-file-text");
+          if (FILES[key]) textEl.textContent = FILES[key];
+        });
+        document.querySelectorAll("iframe[data-file-key]").forEach((iframe) => {
+          const key = iframe.getAttribute("data-file-key");
+          const src = fileWithQuery(key);
+          if (src) iframe.setAttribute("data-src", src);
+        });
+      }
+
+      async function checkFiles(){
+        const entries = Object.entries(FILES);
+        for (const [, name] of entries){
+          try{
+            const res = await fetch(encodeURI(name), { method: "HEAD", cache: "no-store" });
+            if (res.status === 404) showToast(`Missing file: ${name}`, "", false);
+          } catch {}
+        }
+      }
+
+      function notifyIframes(type){
+        for (const id of IFRAME_IDS){
+          const ifr = document.getElementById(id);
+          if (ifr?.contentWindow){
+            try { ifr.contentWindow.postMessage({ type, ts: Date.now() }, "*"); } catch {}
+          }
+        }
+      }
+
+      function broadcast(type){
+        const payload = { type, ts: Date.now() };
+        for (const ch of bcs) { try { ch.postMessage(payload); } catch {} }
+      }
+
+      async function workerGetJson(url){
+        const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const r = await fetch(bust, { cache:"no-store" });
+        const t = await r.text();
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${t}`);
+        return JSON.parse(t);
+      }
+
+      function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
+
+      function normalizeMasterPayload(raw, kind){
+        if (!isObject(raw)) return raw;
+        const want = (kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET;
+
+        if (isObject(raw.sheets) && raw.sheets[want]) return raw;
+
+        if (isObject(raw.sheets)) {
+          const keys = Object.keys(raw.sheets);
+          const wantLower = want.toLowerCase();
+
+          let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
+          if (!match && kind === "grow") match = keys.find(k => String(k).toLowerCase().includes("grow"));
+          if (!match && kind === "pack") match = keys.find(k => String(k).toLowerCase().includes("pack"));
+
+          if (match) {
+            const clone = JSON.parse(JSON.stringify(raw));
+            clone.sheets = clone.sheets || {};
+            clone.sheets[want] = clone.sheets[match];
+            return clone;
+          }
+        }
+
+        if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
+          return {
+            version: raw.version || "v1",
+            updatedAt: raw.updatedAt || new Date().toISOString(),
+            kind: raw.kind || (kind === "grow" ? "grow" : "pack"),
+            sourceLabel: raw.sourceLabel || "worker",
+            sheets: { [want]: { headers: raw.headers, rows: raw.rows } }
+          };
+        }
+
+        return raw;
+      }
+
+      function storageContractOk(){
+        const growRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+        if (growRaw) { try { if (!JSON.parse(growRaw)?.sheets?.[CANON_GROW_SHEET]) return false; } catch { return false; } }
+        const packRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+        if (packRaw) { try { if (!JSON.parse(packRaw)?.sheets?.[CANON_PACK_SHEET]) return false; } catch { return false; } }
+        return true;
+      }
+
+      async function tryHydrateFromWorker(){
+        try{
+          const hr = await fetch(WORKER_HEALTH_URL, { cache:"no-store" });
+          if (!hr.ok) throw new Error(`Health HTTP ${hr.status}`);
+          showToast("Worker connected", "Hydrating localStorage…", true);
+        } catch(err){
+          console.error("❌ Worker not reachable:", err);
+          showToast("Worker not reachable", "Using whatever is already in localStorage.", false);
+          return;
+        }
+
+        let wroteAny = false;
+        const now = Date.now();
+
+        try{
+          const growJson = await workerGetJson(WORKER_GROW_URL);
+          const normalizedGrow = normalizeMasterPayload(growJson, "grow");
+          localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(normalizedGrow));
+          localStorage.setItem(MASTER_GROW_PING, String(now));
+          try { window.dispatchEvent(new CustomEvent(MSG_GROW, { detail:{ key: MASTER_GROW_KEY, ts: now } })); } catch {}
+          notifyIframes(MSG_GROW);
+          broadcast(MSG_GROW);
+          wroteAny = true;
+        } catch(e){ console.warn("Grow load failed:", e); }
+
+        try{
+          const packJson = await workerGetJson(WORKER_PACK_URL);
+          const normalizedPack = normalizeMasterPayload(packJson, "pack");
+          localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(normalizedPack));
+          localStorage.setItem(MASTER_PACK_PING, String(now));
+          try { window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } })); } catch {}
+          notifyIframes(MSG_PACK);
+          broadcast(MSG_PACK);
+          wroteAny = true;
+        } catch(e){ console.warn("Pack load failed:", e); }
+
+        // Experiments
+        try{
+          let expJson = null;
+          try { expJson = await workerGetJson(WORKER_EXPERIMENTS_URL); }
+          catch { expJson = await workerGetJson(PUBLIC_EXPERIMENTS_URL); } // fallback to public URL
+
+          localStorage.setItem(EXPERIMENTS_KEY, JSON.stringify(expJson));
+          localStorage.setItem(EXPERIMENTS_PING, String(now));
+          try { window.dispatchEvent(new CustomEvent(MSG_EXPERIMENTS, { detail:{ key: EXPERIMENTS_KEY, ts: now } })); } catch {}
+          notifyIframes(MSG_EXPERIMENTS);
+          broadcast(MSG_EXPERIMENTS);
+          wroteAny = true;
+        } catch(e){ console.warn("Experiments load failed:", e); }
+
+        // Procurement
+        try{
+          let procJson = null;
+          try { procJson = await workerGetJson(WORKER_PROCUREMENT_URL); }
+          catch { procJson = await workerGetJson(PUBLIC_PROCUREMENT_URL); } // fallback to public URL
+
+          localStorage.setItem(PROCUREMENT_KEY, JSON.stringify(procJson));
+          localStorage.setItem(PROCUREMENT_PING, String(now));
+          try { window.dispatchEvent(new CustomEvent(MSG_PROCUREMENT, { detail:{ key: PROCUREMENT_KEY, ts: now } })); } catch {}
+          notifyIframes(MSG_PROCUREMENT);
+          broadcast(MSG_PROCUREMENT);
+          wroteAny = true;
+        } catch(e){ console.warn("Procurement load failed:", e); }
+
+        if (wroteAny) {
+          const ok = storageContractOk();
+          showToast(
+            "Hydrated from Worker",
+            ok ? "Contract OK (canonical Master Grow/Pack sheets present)" : "⚠️ Contract warning: missing canonical sheet keys",
+            ok
+          );
+        } else {
+          showToast("Worker connected", "No grow/pack loaded (files missing or errors).", false);
+        }
+      }
+
+      function setTabsVisible(visible){
+        if (!tabsWrap) return;
+        tabsWrap.classList.toggle("show", !!visible);
+      }
+
+      function setActiveTabByPanel(panelId){
+        tabButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function activate(panelId){
+        panels.forEach(p => p.classList.toggle("active", p.id === panelId));
+        const panel = document.getElementById(panelId);
+        if (!panel) return;
+
+        const hideHead = panel.getAttribute("data-hidehead") === "true";
+        panels.forEach(p => p.classList.remove("toolmode"));
+        if (hideHead) panel.classList.add("toolmode");
+
+        const isOps = panel.getAttribute("data-ops") === "true";
+        setTabsVisible(isOps);
+        if (isOps) setActiveTabByPanel(panelId);
+
+        const iframe = panel.querySelector("iframe[data-src]");
+        if (iframe && !iframe.src) {
+          const src = iframe.getAttribute("data-src");
+          if (src) iframe.src = encodeURI(src);
+        }
+      }
+
+      if (tabsWrap){
+        tabsWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
+        });
+      }
+
+      function homeShowLevel1(){
+        homeLevel1.style.display = "grid";
+        homeLevel2.classList.remove("show");
+        homeBackBtn.style.display = "none";
+      }
+
+      function homeShowCategory(cat){
+        homeOps.style.display = "none";
+        homeSales.style.display = "none";
+        homeTeam.style.display = "none";
+        if(homeGrowing) homeGrowing.style.display = "none";
+
+        if (cat === "ops"){
+          homeCrumb.innerHTML = t("crumb.ops", currentLang);
+          homeOps.style.display = "grid";
+        } else if (cat === "sales"){
+          homeCrumb.innerHTML = t("crumb.sales", currentLang);
+          homeSales.style.display = "grid";
+        } else if (cat === "team"){
+          homeCrumb.innerHTML = t("crumb.team", currentLang);
+          homeTeam.style.display = "grid";
+        } else if (cat === "growing" && homeGrowing){
+          homeCrumb.innerHTML = t("crumb.growing", currentLang);
+          homeGrowing.style.display = "grid";
+        }
+
+        homeLevel1.style.display = "none";
+        homeLevel2.classList.add("show");
+        homeBackBtn.style.display = "inline-flex";
+      }
+
+      function handleHomeClick(e){
+        const btn = e.target.closest("button");
+        if (!btn || !e.currentTarget.contains(btn)) return;
+        if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
+
+        const openCat = btn.getAttribute("data-home-open");
+        const goPanel = btn.getAttribute("data-home-go");
+
+        if (openCat){ homeShowCategory(openCat); return; }
+        if (goPanel){ activate(goPanel); return; }
+      }
+
+      homeLevel1.addEventListener("click", handleHomeClick);
+      homeLevel2.addEventListener("click", handleHomeClick);
+
+      homeBackInline.addEventListener("click", homeShowLevel1);
+      homeBackBtn.addEventListener("click", homeShowLevel1);
+
+      // ========= Launcher (Google style) =========
+      let launcherScreen = "home";
+
+      function showScreen(name){
+        launcherScreen = name;
+        screenHome.classList.toggle("active", name === "home");
+        screenCategory.classList.toggle("active", name === "category");
+        btnLauncherBack.style.display = (name === "category") ? "inline-flex" : "none";
+
+        if (launcherTitle){
+          launcherTitle.textContent = (name === "home")
+            ? t("launcher.title", currentLang)
+            : (currentLang === "en" ? "Category" : "Categoría");
+        }
+      }
+
+      function showLauncherCategory(cat){
+        catOps.style.display = "none";
+        catSales.style.display = "none";
+        catTeam.style.display = "none";
+        if(catGrowing) catGrowing.style.display = "none";
+
+        if (cat === "ops"){
+          catOps.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.ops.title", currentLang);
+        } else if (cat === "sales"){
+          catSales.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.sales.title", currentLang);
+        } else if (cat === "team"){
+          catTeam.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.team.title", currentLang);
+        } else if (cat === "growing" && catGrowing){
+          catGrowing.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.growing.title", currentLang);
+        }
+
+        showScreen("category");
+      }
+
+      function openLauncher(){
+        launcher.classList.add("open");
+        launcherOverlay.classList.add("open");
+        launcherOverlay.setAttribute("aria-hidden", "false");
+        btnLauncher.setAttribute("aria-expanded", "true");
+        showScreen("home");
+      }
+
+      function closeLauncher(){
+        launcher.classList.remove("open");
+        launcherOverlay.classList.remove("open");
+        launcherOverlay.setAttribute("aria-hidden", "true");
+        btnLauncher.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleLauncher(){
+        const isOpen = launcher.classList.contains("open");
+        isOpen ? closeLauncher() : openLauncher();
+      }
+
+      btnLauncher.addEventListener("click", toggleLauncher);
+      launcherOverlay.addEventListener("click", closeLauncher);
+      window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLauncher(); });
+
+      btnLauncherBack.addEventListener("click", () => {
+        showScreen("home");
+        if (launcherTitle) launcherTitle.textContent = t("launcher.title", currentLang);
+      });
+
+      if (btnLang){
+        btnLang.addEventListener("click", () => {
+          const next = currentLang === "en" ? "es" : "en";
+          setLanguage(next);
+        });
+      }
+
+      launcher.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
+
+        const action = btn.getAttribute("data-action");
+        if (!action) return;
+
+        if (action === "open-category"){
+          const cat = btn.getAttribute("data-category");
+          if (cat) showLauncherCategory(cat);
+          return;
+        }
+        if (action === "go-panel"){
+          const target = btn.getAttribute("data-target");
+          if (target){
+            activate(target);
+            closeLauncher();
+          }
+          return;
+        }
+      });
+
+      /* ✅ Single “go home” function used by Home button + logo click */
+      function goHome(){
+        closeLauncher();
+        homeShowLevel1();
+        activate("p-home");
+      }
+
+      btnHome.addEventListener("click", goHome);
+
+      if (brandHome){
+        brandHome.addEventListener("click", goHome);
+        brandHome.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
+        });
+      }
+
+      function touchPing(type){
+        const now = String(Date.now());
+        if (type === MSG_GROW || type === "MASTER_GROW_UPDATED") {
+          try { localStorage.setItem(MASTER_GROW_PING, now); } catch {}
+        }
+        if (type === MSG_PACK || type === "MASTER_PACK_UPDATED") {
+          try { localStorage.setItem(MASTER_PACK_PING, now); } catch {}
+        }
+        if (type === MSG_EXPERIMENTS || type === "EXPERIMENTS_UPDATED") {
+          try { localStorage.setItem(EXPERIMENTS_PING, now); } catch {}
+        }
+        if (type === MSG_PROCUREMENT || type === "PROCUREMENT_UPDATED") {
+          try { localStorage.setItem(PROCUREMENT_PING, now); } catch {}
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        const msg = event?.data || {};
+        if (!msg.type) return;
+        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED") {
+          touchPing(msg.type);
+          notifyIframes(msg.type);
+          broadcast(msg.type);
+          showToast("Update received", msg.type, true);
+        }
+      });
+
+      for (const ch of bcs) {
+        ch.onmessage = (ev) => {
+          const msg = ev?.data || {};
+          if (!msg.type) return;
+          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED") {
+            touchPing(msg.type);
+            notifyIframes(msg.type);
+            broadcast(msg.type);
+          }
+        };
+      }
+
+      let lastGrowPing = localStorage.getItem(MASTER_GROW_PING) || "";
+      let lastPackPing = localStorage.getItem(MASTER_PACK_PING) || "";
+      let lastExperimentsPing = localStorage.getItem(EXPERIMENTS_PING) || "";
+      let lastProcurementPing = localStorage.getItem(PROCUREMENT_PING) || "";
+
+      setInterval(() => {
+        const g = localStorage.getItem(MASTER_GROW_PING) || "";
+        const p = localStorage.getItem(MASTER_PACK_PING) || "";
+        const e = localStorage.getItem(EXPERIMENTS_PING) || "";
+        const pr = localStorage.getItem(PROCUREMENT_PING) || "";
+
+        if (g !== lastGrowPing) { lastGrowPing = g; notifyIframes(MSG_GROW); broadcast(MSG_GROW); }
+        if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
+        if (e !== lastExperimentsPing) { lastExperimentsPing = e; notifyIframes(MSG_EXPERIMENTS); broadcast(MSG_EXPERIMENTS); }
+        if (pr !== lastProcurementPing) { lastProcurementPing = pr; notifyIframes(MSG_PROCUREMENT); broadcast(MSG_PROCUREMENT); }
+      }, 1500);
+
+
+      applyFileBindings();
+      setLanguage(currentLang);
+      homeShowLevel1();
+      activate("p-home");
+      checkFiles();
+      tryHydrateFromWorker();
+    })();
+  </script>
+</body>
+</html>
