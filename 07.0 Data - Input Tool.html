@@ -380,8 +380,7 @@ function refreshBadges(){
 
 // =========================================================
 // PREVIEW (safe)
- (safe)
-  // =========================================================
+// =========================================================
   function escapeHtml(s){
     return String(s)
       .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
@@ -521,8 +520,7 @@ function refreshBadges(){
 
 // =========================================================
 // EXCEL SHEET PICKING (tolerant)
- (tolerant)
-  // =========================================================
+// =========================================================
   function pickSheetByName(wb, candidates){
     const names = wb?.SheetNames || [];
     const want = (candidates||[]).map(norm);
@@ -576,32 +574,37 @@ function refreshBadges(){
       lastCsvName = file.name;
 
       previewRows(rows, `Preview CSV: ${file.name}`);
+      // Allow manual assignment after any CSV load
+      assignGrowBtn.disabled = false;
+      assignPackBtn.disabled = false;
+      assignExpBtn.disabled = false;
+      assignProcBtn.disabled = false;
 
       // Auto-assign
 if(lower.includes("grow")){
   const hr = rowsToHeaderRows(rows);
   const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `CSV: ${file.name}` });
   saveSource("grow", payload, `CSV: ${file.name}`);
+  setStatus("CSV loaded and auto-assigned to Master Grow. You can reassign with the buttons.");
 }
 else if(lower.includes("pack")){
   const hr = rowsToHeaderRows(rows);
   const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `CSV: ${file.name}` });
   saveSource("pack", payload, `CSV: ${file.name}`);
+  setStatus("CSV loaded and auto-assigned to Master Pack. You can reassign with the buttons.");
 }
 else if(lower.includes("experiment") || lower.includes("experiments") || lower.includes("exp")){
   const hr = rowsToHeaderRows(rows);
   const payload = buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel: `CSV: ${file.name}` });
   saveSource("exp", payload, `CSV: ${file.name}`);
+  setStatus("CSV loaded and auto-assigned to Current Experiments. You can reassign with the buttons.");
 } else if(lower.includes("procure") || lower.includes("procurement") || lower.includes("purch")){
   const hr = rowsToHeaderRows(rows);
   const payload = buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel: `CSV: ${file.name}` });
   saveSource("proc", payload, `CSV: ${file.name}`);
+  setStatus("CSV loaded and auto-assigned to Procurement. You can reassign with the buttons.");
 } else {
-  assignGrowBtn.disabled = false;
-  assignPackBtn.disabled = false;
-  assignExpBtn.disabled = false;
-  assignProcBtn.disabled = false;
-        setStatus("CSV loaded. Assign it to Master Grow or Master Pack.");
+        setStatus("CSV loaded. Assign it to Master Grow, Master Pack, Experiments, or Procurement.");
       }
       return;
     }

@@ -160,6 +160,12 @@
       font-size: 11px;
       color: #fecaca;
     }
+    .errorBanner{
+      display:none;
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.12);
+      color: #fecaca;
+    }
     .tip{
       margin-top: 10px;
       padding: 10px 12px;
@@ -593,6 +599,8 @@
             Active-only rule: if <b>Harvest Date</b> is before “Today”, it’s hidden (unless history is on).
           </div>
 
+          <div class="summary errorBanner" id="errorBanner"></div>
+
           <div id="tsvBox" style="display:none; margin-top:12px;">
             <div class="summary" id="buildSummary">Rows parsed: 0<br/>Rows skipped: 0<br/>Events created: 0</div>
             <textarea id="tsv" placeholder="Paste TSV here..."></textarea>
@@ -767,7 +775,7 @@
       return Number.isFinite(n) ? n : null;
     }
 
-    function parseDateLoosePR(v){
+    function parseDate(v){
       const s = String(v ?? "").trim();
       if(!s) return null;
       if(s.includes("January 0, 1900")) return null;
@@ -1198,10 +1206,10 @@
         const growPond = get(H.growPond) || "";
         const pos = get(H.pos) || "";
 
-        const seedD = parseDateLoosePR(get(H.seedDate));
-        const propD = parseDateLoosePR(get(H.propDate));
-        const transD = parseDateLoosePR(get(H.transDate));
-        const harvD = parseDateLoosePR(get(H.harvestDate));
+        const seedD = parseDate(get(H.seedDate));
+        const propD = parseDate(get(H.propDate));
+        const transD = parseDate(get(H.transDate));
+        const harvD = parseDate(get(H.harvestDate));
 
         const hasAny = experiment || batch || variety || media || propPond || growPond || pos || seedD || propD || transD || harvD;
         if(!hasAny){ skipped++; continue; }
@@ -1281,13 +1289,211 @@
     function expandEvents(rows){
       const events = [];
       for(const r of rows){
-        if(r.seedDate)    events.push(makeEvent("seed",  r.seedDate,  r));
-        if(r.propDate)    events.push(makeEvent("prop",  r.propDate,  r));
-        if(r.transDate)   events.push(makeEvent("trans", r.transDate, r));
-        if(r.harvestDate) events.push(makeEvent("harv",  r.harvestDate, r));
+        const germ = r?.dates?.germination || r.seedDate;
+        const prop = r?.dates?.propagation || r.propDate;
+        const trans = r?.dates?.transplant || r.transDate;
+        const harv = r?.dates?.harvest || r.harvestDate;
+
+        if(germ)  events.push(makeEvent("seed",  germ,  r));
+        if(prop)  events.push(makeEvent("prop",  prop,  r));
+        if(trans) events.push(makeEvent("trans", trans, r));
+        if(harv)  events.push(makeEvent("harv",  harv,  r));
       }
       events.sort((a,b)=> a.date - b.date || a.kind.localeCompare(b.kind) || (a.batch||"").localeCompare(b.batch||""));
       return events;
+    }
+
+    // =========================================================
+    // Supabase loader + normalization (object-based format)
+    // =========================================================
+    const SUPABASE_EXPERIMENTS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/experiments.json";
+
+    function showError(msg){
+      const el = $("errorBanner");
+      if(!el) return;
+      if(!msg){
+        el.textContent = "";
+        el.style.display = "none";
+        return;
+      }
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+
+    function headerIndex(headers){
+      const idx = {};
+      (headers || []).forEach((h,i)=>{
+        const key = String(h ?? "").trim().toLowerCase();
+        if(key && !(key in idx)) idx[key] = i;
+      });
+      return idx;
+    }
+
+    function getByHeader(row, idx, key){
+      const i = idx[String(key || "").trim().toLowerCase()];
+      return (i === undefined) ? "" : (row?.[i] ?? "");
+    }
+
+    function firstByHeaders(row, idx, keys){
+      for(const k of keys){
+        const v = getByHeader(row, idx, k);
+        if(String(v ?? "").trim()) return v;
+      }
+      return "";
+    }
+
+    function parseFlag(v){
+      if(v === true) return true;
+      const s = String(v ?? "").trim().toLowerCase();
+      if(!s) return false;
+      if(["1","true","yes","y","x","done","complete"].includes(s)) return true;
+      const n = Number(s);
+      return Number.isFinite(n) ? n > 0 : false;
+    }
+
+    function normalizeFromRow(row, idx){
+      const experiment_name = firstByHeaders(row, idx, ["Experiment Name/Purpose","Experiment","Experiment Name"]);
+      const batch = firstByHeaders(row, idx, ["Batch"]);
+      const variety = firstByHeaders(row, idx, ["Variety"]);
+      const media = firstByHeaders(row, idx, ["Media"]);
+
+      const germination = parseDate(firstByHeaders(row, idx, ["seed/germ","Seed","Germination Date","Seed Date","Seed/Germ"]));
+      const propagation = parseDate(firstByHeaders(row, idx, ["propagation start date","Propagation Start","Prop Start","Propagation Start Date"]));
+      const transplant = parseDate(firstByHeaders(row, idx, ["transplant date","Transplant Date"]));
+      const harvest = parseDate(firstByHeaders(row, idx, ["Harvest Date","Harvested Date","Harvest"]));
+
+      const seededPlugs = safeNum(firstByHeaders(row, idx, ["Seeded Plugs"]));
+      const transplantedPlugs = safeNum(firstByHeaders(row, idx, ["Trans-planted plugs","Transplanted plugs","Trans-planted Plugs"]));
+      const boards = safeNum(firstByHeaders(row, idx, ["Actual Boards Transplanted"]));
+
+      const flags = {
+        germination: parseFlag(firstByHeaders(row, idx, ["Germination"])),
+        propagation: parseFlag(firstByHeaders(row, idx, ["Propagation"])),
+        production: parseFlag(firstByHeaders(row, idx, ["Production"])),
+        harvested: parseFlag(firstByHeaders(row, idx, ["Harvested"])),
+      };
+
+      return {
+        experiment_name: String(experiment_name || "").trim(),
+        batch: String(batch || "").trim(),
+        variety: String(variety || "").trim(),
+        media: String(media || "").trim(),
+        dates: { germination, propagation, transplant, harvest },
+        meta: { seededPlugs, transplantedPlugs, boards },
+        flags,
+      };
+    }
+
+    function normalizeFromObject(obj){
+      const experiment_name = obj?.experiment_name || obj?.experiment || obj?.name || "";
+      const batch = obj?.batch || "";
+      const variety = obj?.variety || "";
+      const media = obj?.media || "";
+
+      const datesIn = obj?.dates || {};
+      const germination = parseDate(datesIn.germination ?? obj?.germination ?? obj?.germination_date ?? obj?.seedDate);
+      const propagation = parseDate(datesIn.propagation ?? obj?.propagation ?? obj?.propagation_date ?? obj?.propDate);
+      const transplant = parseDate(datesIn.transplant ?? obj?.transplant ?? obj?.transplant_date ?? obj?.transDate);
+      const harvest = parseDate(datesIn.harvest ?? obj?.harvest ?? obj?.harvest_date ?? obj?.harvestDate);
+
+      const metaIn = obj?.meta || {};
+      const seededPlugs = safeNum(metaIn.seededPlugs ?? metaIn.seeded_plugs ?? obj?.seededPlugs ?? obj?.seeded_plugs);
+      const transplantedPlugs = safeNum(metaIn.transplantedPlugs ?? metaIn.transplanted_plugs ?? obj?.transplantedPlugs ?? obj?.transplanted_plugs);
+      const boards = safeNum(metaIn.boards ?? metaIn.actualBoards ?? obj?.boards ?? obj?.actualBoards);
+
+      const flagsIn = obj?.flags || {};
+      const flags = {
+        germination: parseFlag(flagsIn.germination ?? obj?.germination),
+        propagation: parseFlag(flagsIn.propagation ?? obj?.propagation),
+        production: parseFlag(flagsIn.production ?? obj?.production),
+        harvested: parseFlag(flagsIn.harvested ?? obj?.harvested),
+      };
+
+      return {
+        experiment_name: String(experiment_name || "").trim(),
+        batch: String(batch || "").trim(),
+        variety: String(variety || "").trim(),
+        media: String(media || "").trim(),
+        dates: { germination, propagation, transplant, harvest },
+        meta: { seededPlugs, transplantedPlugs, boards },
+        flags,
+      };
+    }
+
+    function normalizeExperiments(raw){
+      if(Array.isArray(raw)){
+        return raw.map(normalizeFromObject);
+      }
+
+      const sheet = raw?.sheets?.["Current Experiments"];
+      if(sheet && Array.isArray(sheet.headers) && Array.isArray(sheet.rows)){
+        const idx = headerIndex(sheet.headers);
+        return sheet.rows.map(r => normalizeFromRow(r, idx));
+      }
+
+      if(Array.isArray(raw?.rows) && Array.isArray(raw?.headers)){
+        const idx = headerIndex(raw.headers);
+        return raw.rows.map(r => normalizeFromRow(r, idx));
+      }
+
+      return [];
+    }
+
+    async function loadData(){
+      showError("");
+      try{
+        const bust = SUPABASE_EXPERIMENTS_URL + (SUPABASE_EXPERIMENTS_URL.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(bust, { cache: "no-store" });
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const raw = await res.json();
+        const normalized = normalizeExperiments(raw);
+
+        if(!normalized.length){
+          showError("Experiments loaded but no rows were found in the payload.");
+        }
+
+        // Compatibility fields for existing UI
+        const rows = normalized.map(r => ({
+          ...r,
+          experiment: r.experiment_name || "",
+          seedDate: r.dates?.germination || null,
+          propDate: r.dates?.propagation || null,
+          transDate: r.dates?.transplant || null,
+          harvestDate: r.dates?.harvest || null,
+          propPond: "",
+          growPond: "",
+          pos: "",
+          seededPlugs: r.meta?.seededPlugs ?? null,
+          transplantedPlugs: r.meta?.transplantedPlugs ?? null,
+          actualBoards: r.meta?.boards ?? null,
+        }));
+
+        state.rows = rows;
+        state.events = expandEvents(state.rows);
+        rebuildFilterOptions();
+
+        const byKind = { seed:0, prop:0, trans:0, harv:0 };
+        for(const e of state.events) byKind[e.kind]++;
+
+        $("buildSummary").innerHTML =
+          `Loaded from Supabase<br/>` +
+          `Rows: ${state.rows.length}<br/>` +
+          `Events: ${state.events.length} (Seed ${byKind.seed}, Prop ${byKind.prop}, Trans ${byKind.trans}, Harvest ${byKind.harv})`;
+
+        if(!state.selectedSetKey){
+          const sets = buildSetsFromRows(state.rows);
+          if(sets[0]) state.selectedSetKey = sets[0].key;
+        }
+
+        render();
+      }catch(err){
+        console.error(err);
+        showError(`Failed to load experiments.json from Supabase. ${err.message || err}`);
+        state.rows = [];
+        state.events = [];
+        rebuildFilterOptions();
+        render();
+      }
     }
 
     // =========================================================
@@ -2349,10 +2555,9 @@
     }
 
     function init(){
-      const saved = DEFAULT_TSV.trim();
+      const saved = (localStorage.getItem("expCal_tsv") || "").trim();
       $("tsv").value = saved;
       state.rawTSV = saved;
-      localStorage.setItem("expCal_tsv", saved);
 
       const today = getTodayPR();
       state.startDate = today;
@@ -2367,7 +2572,7 @@
 
       syncHistoryUI();
 
-      if(saved.trim()) buildFromTSV(); else render();
+      loadData();
       setView("gantt");
 
       $("milestoneChips").addEventListener("click", (ev)=>{
