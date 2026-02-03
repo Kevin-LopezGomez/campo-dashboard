@@ -472,6 +472,23 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Store Visit JSON (auto-loaded)</div>
+          <div class="card-subtitle" id="storeJsonStatus">Loading from localStorage / Supabase…</div>
+        </div>
+        <button class="btn btn-secondary" id="reloadStoreJsonBtn"><span>Reload</span></button>
+      </div>
+
+      <div class="table-wrapper" style="max-height:320px;">
+        <table>
+          <thead><tr id="storeJsonHead"></tr></thead>
+          <tbody id="storeJsonBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- DATA INPUT CARD (separate from selector) -->
     <div class="card" style="margin-top:16px;">
       <div class="card-header">
@@ -674,6 +691,59 @@
   </div>
 
 <script>
+  const MASTER_STORE_KEY = "campo_master_store_visit_v1";
+  const CANON_STORE_SHEET = "Store Visit";
+  const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visit.json";
+
+  function isObj(x){ return x && typeof x === "object" && !Array.isArray(x); }
+
+  function normalizeStorePayload(raw){
+    if(!isObj(raw)) return null;
+    if(isObj(raw.sheets) && raw.sheets[CANON_STORE_SHEET]) return raw;
+
+    if(isObj(raw.sheets)){
+      const keys = Object.keys(raw.sheets);
+      const match = keys.find(k => String(k).trim().toLowerCase() === CANON_STORE_SHEET.toLowerCase())
+        || keys.find(k => String(k).toLowerCase().includes("store"))
+        || keys.find(k => String(k).toLowerCase().includes("visit"));
+      if(match){
+        const clone = JSON.parse(JSON.stringify(raw));
+        clone.sheets = clone.sheets || {};
+        clone.sheets[CANON_STORE_SHEET] = clone.sheets[match];
+        return clone;
+      }
+    }
+
+    if(Array.isArray(raw.headers) && Array.isArray(raw.rows)){
+      return { version:"v1", updatedAt:new Date().toISOString(), sheets:{ [CANON_STORE_SHEET]: { headers: raw.headers, rows: raw.rows } } };
+    }
+    return raw;
+  }
+
+  async function fetchJson(url){
+    const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
+    const res = await fetch(bust, { cache:"no-store" });
+    const text = await res.text();
+    if(!res.ok) throw new Error(text || `HTTP ${res.status}`);
+    return JSON.parse(text);
+  }
+
+  async function loadStoreVisitPayload(){
+    const local = (localStorage.getItem(MASTER_STORE_KEY) || "").trim();
+    if(local){
+      try{
+        const parsed = JSON.parse(local);
+        const norm = normalizeStorePayload(parsed);
+        if(norm?.sheets?.[CANON_STORE_SHEET]) return norm;
+      }catch(e){}
+    }
+
+    const raw = await fetchJson(PUBLIC_STORE_VISIT_URL);
+    const norm = normalizeStorePayload(raw);
+    if(norm?.sheets?.[CANON_STORE_SHEET]) return norm;
+
+    throw new Error("Store Visit JSON loaded but did not contain sheets['Store Visit'].");
+  }
   // --------- RAW DATA (preloaded) ----------
   const initialData = `Date\tPueblo. Trujillo Plaza\tEcono Expreso\tAmigo Paseos\tPueblo Señorial\tPueblo Cupey\tWalmart Escorial
 Nov. 17 5oz\t10\t8\t2\t2\t12\t59
@@ -1773,7 +1843,58 @@ Dec. 12 10oz\t0\t0\t0\t0\t0\t0`;
     setChartMode('single');
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  async function bootStoreVisit(){
+    const status = document.getElementById("storeJsonStatus");
+    try{
+      const payload = await loadStoreVisitPayload();
+      const sheet = payload.sheets[CANON_STORE_SHEET];
+      renderStoreSheetToTable(sheet);
+    }catch(err){
+      console.error(err);
+      if (status) status.textContent = `❌ Could not load Store Visit.json: ${err.message}`;
+    }
+  }
+
+  function renderStoreSheetToTable(sheet){
+    const headRow = document.getElementById("storeJsonHead");
+    const body = document.getElementById("storeJsonBody");
+    const status = document.getElementById("storeJsonStatus");
+
+    const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
+    const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
+
+    headRow.innerHTML = "";
+    headers.forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = String(h ?? "");
+      headRow.appendChild(th);
+    });
+
+    body.innerHTML = "";
+    const limit = Math.min(rows.length, 200);
+    for(let i=0;i<limit;i++){
+      const tr = document.createElement("tr");
+      const r = rows[i] || [];
+      for(let c=0;c<headers.length;c++){
+        const td = document.createElement("td");
+        td.textContent = String(r[c] ?? "");
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
+
+    if (status) status.textContent = `Loaded ${rows.length.toLocaleString()} rows (showing first ${limit}).`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    const reloadBtn = document.getElementById("reloadStoreJsonBtn");
+    if (reloadBtn) reloadBtn.addEventListener("click", bootStoreVisit);
+    window.addEventListener("storage", (e) => {
+      if(e.key === MASTER_STORE_KEY) bootStoreVisit();
+    });
+    bootStoreVisit();
+  });
 </script>
 </body>
 </html>
