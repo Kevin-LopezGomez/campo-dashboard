@@ -1835,7 +1835,7 @@
 
         const tick = document.createElement("div");
         tick.className = "tick";
-        tick.style.left = `${Math.floor(padL + d*pxPerDay)}px`;
+        tick.style.left = `${padL + d*pxPerDay}px`;
         tick.style.width = `${pxPerDay}px`;
 
         const p = partsInPR(dt.getTime());
@@ -1882,13 +1882,13 @@
 
         const hl = document.createElement("div");
         hl.className = "holidayLine";
-        hl.style.left = `${Math.round(xCenter)}px`;
+        hl.style.left = `${xCenter}px`;
         timeline.appendChild(hl);
 
         const tag = document.createElement("div");
         tag.className = "lineTag holiday";
         tag.textContent = `${name} • ${fmtDowISO_PR(dt)}`;
-        tag.style.left = `${Math.round(xCenter)}px`;
+        tag.style.left = `${xCenter}px`;
         tagLayer.appendChild(tag);
 
         const tick = tickByISO.get(iso);
@@ -1899,7 +1899,7 @@
       const xToday = xOf(today);
       const tl = document.createElement("div");
       tl.className = "todayLine";
-      tl.style.left = `${Math.round(xToday)}px`;
+      tl.style.left = `${xToday}px`;
       timeline.appendChild(tl);
 
       const ttag = document.createElement("div");
@@ -1931,7 +1931,7 @@
         const x = xOf(h.date); // SAME center-of-day math used by diamonds
         const line = document.createElement("div");
         line.className = "harvLine";
-        line.style.left = `${Math.round(x)}px`;
+        line.style.left = `${x}px`;
         timeline.appendChild(line);
 
         const tick = tickByISO.get(h.iso);
@@ -2070,7 +2070,7 @@
 
         function addLabel(dateObj, label){
           if(!dateObj) return;
-          const x = Math.round(xOf(dateObj));
+          const x = xOf(dateObj);
           const t = document.createElement("div");
           t.className = "segLabel";
           t.style.left = `${x}px`;
@@ -2086,7 +2086,7 @@
 
         // Harvest diamond: SAME xOf math as harvest line (center-of-day)
         if(S.harv){
-          const x = Math.round(xOf(S.harv));
+          const x = xOf(S.harv);
           const m = document.createElement("div");
           m.className = "harvMarker";
           m.style.left = `${x}px`;
