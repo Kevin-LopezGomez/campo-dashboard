@@ -876,9 +876,9 @@
                   <div class="meta" data-i18n="card.growing.meta">Experiment calendar, cultivation timelines, and crop scheduling</div>
                 </button>
 
-                <button class="big-card" data-home-open="foodsafety" aria-disabled="true">
+                <button class="big-card" data-home-open="foodsafety">
                   <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
-                  <div class="meta" data-i18n="card.foodsafety.meta">Coming soon: Compliance, audits, and food safety controls across production and packing</div>
+                  <div class="meta" data-i18n="card.foodsafety.meta">Batch traceability across Grow and Pack data</div>
                 </button>
 
                 <button class="big-card" data-home-open="maintenance" aria-disabled="true">
@@ -938,6 +938,10 @@
                 <div class="cat-grid" id="homeGrowing" style="display:none;">
                   <button class="tile" data-home-go="p-expcal"><div class="ico">🌿</div><div class="name" data-i18n="tile.expcal.name">Experiment Calendar</div><div class="meta" data-i18n="tile.expcal.meta">TSV paste + filters</div></button>
                   <button class="tile" data-home-go="p-mulders"><div class="ico">📊</div><div class="name" data-i18n="tile.mulders.name">Mulders Chart</div><div class="meta" data-i18n="tile.mulders.meta">Growing performance chart</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeFoodSafety" style="display:none;">
+                  <button class="tile" data-home-go="p-foodsafety"><div class="ico">🛡️</div><div class="name" data-i18n="tile.foodsafety.name">Food Safety</div><div class="meta" data-i18n="tile.foodsafety.meta">Batch traceability</div></button>
                 </div>
               </div>
 
@@ -1063,6 +1067,22 @@
         </div>
       </section>
 
+      <section class="panel" id="p-foodsafety">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Food Safety – Traceibility</h2>
+            <p>Reads Master Grow + Master Pack from <code>localStorage</code> and traces batches end-to-end.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">
+            <span data-i18n="panel.file.prefix">📄 file:</span>
+            <code data-file-code="foodsafety"></code>
+          </div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-foodsafety" data-file-key="foodsafety"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-expcal">
         <div class="section-head">
           <div class="head-left">
@@ -1149,7 +1169,7 @@
           <div class="app-name" data-i18n="card.data.title">Data Input</div>
         </button>
 
-        <button class="launch-app" aria-disabled="true" disabled>
+        <button class="launch-app" data-action="go-panel" data-target="p-foodsafety">
           <div class="app-ico">🛡️</div>
           <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
         </button>
@@ -1221,6 +1241,7 @@
           "crumb.sales":"<strong>Sales &amp; Marketing</strong> — coming soon",
           "crumb.team":"<strong>Team Tools</strong> — internal utilities",
           "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
+          "crumb.foodsafety":"<strong>Food Safety</strong> — batch traceability",
           "card.ops.title":"Operations",
           "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
           "card.sales.title":"Sales & Marketing",
@@ -1232,7 +1253,7 @@
           "card.growing.title":"Growing",
           "card.growing.meta":"Experiment calendar, cultivation schedules, and crop planning",
           "card.foodsafety.title":"Food Safety and Quality",
-          "card.foodsafety.meta":"Coming soon: Compliance, audits, and food safety controls across production and packing",
+          "card.foodsafety.meta":"Batch traceability across Grow and Pack data",
           "card.maintenance.title":"Maintenance & Facilities",
           "card.maintenance.meta":"Coming soon: Equipment maintenance, facility readiness, and infrastructure oversight",
           "card.finances.title":"Finances",
@@ -1265,6 +1286,8 @@
           "tile.pack-team-performance.meta":"Employee performance",
           "tile.mulders.name":"Mulders Chart",
           "tile.mulders.meta":"Growing performance chart",
+          "tile.foodsafety.name":"Food Safety",
+          "tile.foodsafety.meta":"Batch traceability",
           "tile.packing.name":"Packing",
           "tile.packing.meta":"Pack plan",
           "tile.inventory.name":"S&H Inventory",
@@ -1311,6 +1334,7 @@
           "crumb.sales":"<strong>Ventas y marketing</strong> — próximamente",
           "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
           "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
+          "crumb.foodsafety":"<strong>Inocuidad</strong> — trazabilidad de lotes",
           "card.ops.title":"Operaciones",
           "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
           "card.sales.title":"Ventas y mercadeo",
@@ -1322,7 +1346,7 @@
           "card.growing.title":"Crecimiento",
           "card.growing.meta":"Calendario de experimentos, cronogramas de cultivo y planificación de cultivos",
           "card.foodsafety.title":"Inocuidad y calidad",
-          "card.foodsafety.meta":"Próximamente: cumplimiento, auditorías y controles de inocuidad en producción y empaque",
+          "card.foodsafety.meta":"Trazabilidad de lotes entre Grow y Pack",
           "card.maintenance.title":"Mantenimiento y facilidades",
           "card.maintenance.meta":"Próximamente: mantenimiento de equipos, preparación de instalaciones y supervisión de infraestructura",
           "card.finances.title":"Finanzas",
@@ -1355,6 +1379,8 @@
           "tile.pack-team-performance.meta":"Rendimiento de empleados",
           "tile.mulders.name":"Grafico Mulders",
           "tile.mulders.meta":"Grafico de rendimiento de cultivo",
+          "tile.foodsafety.name":"Inocuidad",
+          "tile.foodsafety.meta":"Trazabilidad de lotes",
           "tile.packing.name":"Empaque",
           "tile.packing.meta":"Plan de empaque",
           "tile.inventory.name":"Inventario S&H",
@@ -1403,6 +1429,7 @@
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
+        foodsafety: "11.0 Food Safety - Traceibility.html",
         mulders: "04.3 Team - Mulders Chart.html",
         "board-inventory": "04.2 Team - Board Inventory.html",
         "pack-team-performance": "03.1 Leadership - Pack Team Employee Performance.html"
@@ -1500,6 +1527,7 @@
       const homeSales = document.getElementById("homeSales");
       const homeTeam = document.getElementById("homeTeam");
       const homeGrowing = document.getElementById("homeGrowing");
+      const homeFoodSafety = document.getElementById("homeFoodSafety");
       const homeCrumb = document.getElementById("homeCrumb");
       const homeBackInline = document.getElementById("homeBackInline");
       const homeBackBtn = document.getElementById("homeBackBtn");
@@ -1539,7 +1567,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance"
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance"
       ];
 
       function fileWithQuery(key){
@@ -1766,6 +1794,7 @@
         homeSales.style.display = "none";
         homeTeam.style.display = "none";
         if(homeGrowing) homeGrowing.style.display = "none";
+        if(homeFoodSafety) homeFoodSafety.style.display = "none";
 
         if (cat === "ops"){
           homeCrumb.innerHTML = t("crumb.ops", currentLang);
@@ -1779,6 +1808,9 @@
         } else if (cat === "growing" && homeGrowing){
           homeCrumb.innerHTML = t("crumb.growing", currentLang);
           homeGrowing.style.display = "grid";
+        } else if (cat === "foodsafety" && homeFoodSafety){
+          homeCrumb.innerHTML = t("crumb.foodsafety", currentLang);
+          homeFoodSafety.style.display = "grid";
         }
 
         homeLevel1.style.display = "none";

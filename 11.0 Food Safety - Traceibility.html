@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Campo Caribe – Batch Trace (Upload Pack/Grow JSON)</title>
+  <title>Campo Caribe – Batch Trace (Auto-hydrated)</title>
 
   <style>
     :root{
@@ -164,6 +164,28 @@
       color:var(--muted);
       display:flex; gap:8px; align-items:center;
     }
+    .kpis{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:10px;
+    }
+    .kpi{
+      border:1px solid var(--border2);
+      background: rgba(34,197,94,.10);
+      border-color: rgba(34,197,94,.25);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:950;
+      color: var(--text);
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      font-family: var(--mono);
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+    }
     .dot{
       width:10px; height:10px; border-radius:50%;
       background: var(--warn);
@@ -174,11 +196,10 @@
 
     .grid{
       display:grid;
-      grid-template-columns: 1.2fr .8fr;
+      grid-template-columns: 1fr;
       gap:12px;
       margin-top:12px;
     }
-    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
 
     .section{
       border:1px solid var(--border);
@@ -267,6 +288,58 @@
       font-size:11px;
       color: var(--sub);
     }
+    .tableWrap{ padding:12px; }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      color: var(--text);
+    }
+    thead th{
+      text-align:left;
+      font-weight:900;
+      font-size:11px;
+      letter-spacing:.2px;
+      color: var(--sub);
+      padding:10px 8px;
+      border-bottom:1px solid var(--border2);
+      position:sticky;
+      top:0;
+      background: rgba(2,6,23,.85);
+      z-index:2;
+    }
+    tbody td{
+      padding:8px 8px;
+      border-bottom:1px solid var(--border2);
+      vertical-align:top;
+      color: var(--text);
+    }
+    tbody tr:nth-child(even){
+      background: rgba(15,23,42,.25);
+    }
+    .tableEmpty{
+      color: var(--sub);
+      font-style:italic;
+      padding:10px 8px;
+    }
+    .jsonToggle{
+      cursor:pointer;
+      color: var(--sub);
+      font-size:11px;
+      user-select:none;
+    }
+    .jsonBlock{
+      display:none;
+      white-space:pre-wrap;
+      margin-top:6px;
+      padding:8px;
+      border-radius:10px;
+      border:1px solid var(--border2);
+      background: rgba(15,23,42,.55);
+      color: var(--sub);
+      font-size:11px;
+    }
+    tr.showJson .jsonBlock{ display:block; }
   </style>
 </head>
 
@@ -274,7 +347,7 @@
 <header>
   <div class="title">
     <h1>Batch Trace – Pack ⇄ Grow</h1>
-    <span class="pill">Upload JSON → search any code (Batch Run Code, W Batch Run Code, SKU, Invoice, Seed Batch)</span>
+    <span class="pill">Auto-hydrated from localStorage → search any code (Batch Run Code, W Batch Run Code, SKU, Invoice, Seed Batch)</span>
   </div>
 </header>
 
@@ -282,19 +355,6 @@
   <div class="panel">
     <div class="inner">
 
-      <div class="row" style="margin-bottom:12px;">
-        <div class="upload">
-          <label>Pack JSON</label>
-          <input id="packFile" type="file" accept="application/json,.json" />
-          <span class="filepill" id="packName">none</span>
-        </div>
-
-        <div class="upload">
-          <label>Grow JSON</label>
-          <input id="growFile" type="file" accept="application/json,.json" />
-          <span class="filepill" id="growName">none</span>
-        </div>
-      </div>
 
       <div class="row">
         <div class="search">
@@ -309,19 +369,73 @@
         <span>Expected sheets:</span>
         <code>Master Pack</code>
         <code>Master Grow</code>
-        <span class="status"><span class="dot" id="dot"></span><span id="statusText">Upload Pack + Grow JSON</span></span>
+        <span class="status"><span class="dot" id="dot"></span><span id="statusText">Waiting for Master Pack + Master Grow</span></span>
+      </div>
+      <div class="kpis">
+        <span class="kpi">Total cases packed <span id="packTotalCases">0</span></span>
+        <span class="kpi">Total cases shipped <span id="packTotalShipped">0</span></span>
       </div>
 
       <div class="grid">
         <div class="section">
           <h2>Pack matches <span class="count" id="packCount">0</span></h2>
-          <div class="cards" id="packCards"></div>
+          <div class="tableWrap">
+            <table id="packTable">
+              <thead>
+                <tr>
+                  <th>Batch Run Code</th>
+                  <th>Matched Seed Batch Code</th>
+                  <th>SKU Packed</th>
+                  <th>Batch Run Date</th>
+                  <th>Cases Packed</th>
+                </tr>
+              </thead>
+              <tbody id="packTbody"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="section">
-          <h2>Grow matches (from Seed Batch Codes) <span class="count" id="growCount">0</span></h2>
-          <div class="cards" id="growCards"></div>
+          <h2>Shipping matches <span class="count" id="shipCount">0</span></h2>
+          <div class="tableWrap">
+            <table id="shipTable">
+              <thead>
+                <tr>
+                  <th>Batch Run Code</th>
+                  <th>Run Batch Shipped/Received</th>
+                  <th>Shipping Date</th>
+                  <th>Location Shipped</th>
+                  <th># Cases Shipped</th>
+                </tr>
+              </thead>
+              <tbody id="shipTbody"></tbody>
+            </table>
+          </div>
         </div>
+
+        <div class="section">
+          <h2>Grow matches <span class="count" id="growCount">0</span></h2>
+          <div class="tableWrap">
+            <table id="growTable">
+              <thead>
+                <tr>
+                  <th>Matched Seed Batch Code</th>
+                  <th>Seed Date</th>
+                  <th>Transplant Date</th>
+                  <th>Harvest Date</th>
+                  <th>Transplant Pond</th>
+                  <th>Harvest Pond</th>
+                  <th>Boards Harvested</th>
+                  <th>Peso Lechuga Cortada</th>
+                  <th>Actual Boards Transplanted</th>
+                  <th>Flats Seeded</th>
+                </tr>
+              </thead>
+              <tbody id="growTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <details style="margin-top:12px;">
@@ -334,8 +448,28 @@
 </div>
 
 <script>
-let PACK = null;
-let GROW = null;
+// STORAGE CONTRACT (same as index.html)
+const MASTER_GROW_KEY = "campo_master_grow_v1";
+const MASTER_PACK_KEY = "campo_master_pack_v1";
+
+const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
+const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
+
+const GROW_SHEET_NAME = "Master Grow";
+const PACK_SHEET_NAME = "Master Pack";
+
+// Parent/index message types
+const MSG_GROW = "MASTER_GROW_UPDATED";
+const MSG_PACK = "MASTER_PACK_UPDATED";
+
+// BroadcastChannel (same name as index/seeding)
+const BC_NAME = "campo_master_bus_v1";
+const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
+
+let PACK_PAYLOAD = null;
+let GROW_PAYLOAD = null;
+let PACK_ROWS = [];
+let GROW_ROWS = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -356,33 +490,58 @@ function norm(s){
   return safeStr(s).trim().toUpperCase();
 }
 
-function getSheet(doc, sheetName){
-  if(!doc || !doc.sheets || !doc.sheets[sheetName]) return null;
-  return doc.sheets[sheetName];
+function loadJsonFromStorage(key){
+  const raw = (localStorage.getItem(key) || "").trim();
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
-function indexHeaders(headers){
-  const map = new Map();
-  headers.forEach((h, i) => map.set(h, i));
-  return map;
+function getSheet(payload, sheetName){
+  return payload?.sheets?.[sheetName] || null;
 }
 
-function rowToObj(headers, row){
-  const o = {};
-  for(let i=0;i<headers.length;i++){
-    o[headers[i]] = row[i];
-  }
-  return o;
-}
-
-function anyCellIncludes(headers, row, queryUpper){
-  const hits = [];
-  for(let i=0;i<headers.length;i++){
-    const v = safeStr(row[i]);
-    if(!v) continue;
-    if(v.toUpperCase().includes(queryUpper)){
-      hits.push(headers[i]);
+function sheetToRowObjects(sheetObj){
+  const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+  const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+  const out = [];
+  for(const r of rows){
+    if(!Array.isArray(r)) continue;
+    const obj = {};
+    for(let i=0;i<headers.length;i++){
+      const key = String(headers[i] ?? "").trim();
+      if(!key) continue;
+      obj[key] = (i < r.length) ? r[i] : "";
     }
+    out.push(obj);
+  }
+  return out;
+}
+
+function loadMasterData(){
+  const growPayload = loadJsonFromStorage(MASTER_GROW_KEY);
+  const packPayload = loadJsonFromStorage(MASTER_PACK_KEY);
+
+  const growSheet = getSheet(growPayload, GROW_SHEET_NAME);
+  const packSheet = getSheet(packPayload, PACK_SHEET_NAME);
+
+  return { growPayload, packPayload, growSheet, packSheet };
+}
+
+function getVal(obj, names){
+  for(const n of names){
+    const v = obj?.[n];
+    if(v !== undefined && v !== null && String(v).trim() !== "") return v;
+  }
+  return "";
+}
+
+function anyCellIncludesObj(obj, queryUpper){
+  const hits = [];
+  if(!obj) return hits;
+  for(const [k,v] of Object.entries(obj)){
+    const s = safeStr(v);
+    if(!s) continue;
+    if(s.toUpperCase().includes(queryUpper)) hits.push(k);
   }
   return hits;
 }
@@ -450,198 +609,270 @@ function mkCard(titleLeft, tags, kvPairs, rawObj){
 }
 
 function clearResults(){
-  $("packCards").innerHTML = "";
-  $("growCards").innerHTML = "";
+  $("packTbody").innerHTML = "";
+  $("growTbody").innerHTML = "";
+  $("shipTbody").innerHTML = "";
   $("packCount").textContent = "0";
   $("growCount").textContent = "0";
+  $("shipCount").textContent = "0";
+  $("packTotalCases").textContent = "0";
+  $("packTotalShipped").textContent = "0";
 }
 
-function renderEmpty(whereEl, msg){
-  const div = document.createElement("div");
-  div.className = "card";
-  div.style.borderStyle = "dashed";
-  div.style.opacity = ".9";
-  div.innerHTML = `<div class="k">${msg}</div>`;
-  whereEl.appendChild(div);
+function renderEmpty(tbodyEl, msg, colspan){
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.className = "tableEmpty";
+  td.colSpan = colspan;
+  td.textContent = msg;
+  tr.appendChild(td);
+  tbodyEl.appendChild(tr);
+}
+
+function jsonCell(obj){
+  const td = document.createElement("td");
+  const toggle = document.createElement("div");
+  toggle.className = "jsonToggle";
+  toggle.textContent = "Show JSON";
+  const pre = document.createElement("pre");
+  pre.className = "jsonBlock";
+  pre.textContent = JSON.stringify(obj, null, 2);
+  toggle.addEventListener("click", () => {
+    const row = td.closest("tr");
+    row.classList.toggle("showJson");
+    toggle.textContent = row.classList.contains("showJson") ? "Hide JSON" : "Show JSON";
+  });
+  td.appendChild(toggle);
+  td.appendChild(pre);
+  return td;
 }
 
 function trace(query){
   clearResults();
 
-  if(!PACK || !GROW){
-    renderEmpty($("packCards"), "Upload Pack + Grow JSON to search.");
-    renderEmpty($("growCards"), "Upload Pack + Grow JSON to search.");
+  if(!PACK_ROWS.length || !GROW_ROWS.length){
+    renderEmpty($("packTbody"), "Waiting for Pack + Grow data from localStorage.", 5);
+    renderEmpty($("growTbody"), "Waiting for Pack + Grow data from localStorage.", 9);
+    renderEmpty($("shipTbody"), "Waiting for Pack + Grow data from localStorage.", 5);
     return;
   }
 
   const q = norm(query);
   if(!q){
-    renderEmpty($("packCards"), "Type a code above to search.");
-    renderEmpty($("growCards"), "Grow matches will appear here.");
+    renderEmpty($("packTbody"), "Type a code above to search.", 5);
+    renderEmpty($("growTbody"), "Grow matches will appear here.", 9);
+    renderEmpty($("shipTbody"), "Shipping matches will appear here.", 5);
     return;
   }
-
-  const packSheet = getSheet(PACK, "Master Pack");
-  const growSheet = getSheet(GROW, "Master Grow");
-  if(!packSheet || !growSheet){
-    setStatus("bad", "Missing expected sheets (Master Pack / Master Grow).");
-    const msg = "Your JSON did not contain sheets.Master Pack and/or sheets.Master Grow.";
-    renderEmpty($("packCards"), msg);
-    renderEmpty($("growCards"), msg);
-    return;
-  }
-
-  const ph = packSheet.headers;
-  const pr = packSheet.rows || [];
-  const gh = growSheet.headers;
-  const gr = growSheet.rows || [];
 
   const packMatches = [];
   const seedCodesFromPack = [];
+  const exactBatchMatches = [];
 
-  const pIdx = indexHeaders(ph);
-  const col = (name) => pIdx.has(name) ? pIdx.get(name) : -1;
-  const get = (row, name) => {
-    const i = col(name);
-    return i >= 0 ? row[i] : "";
-  };
+  for(const row of PACK_ROWS){
+    const batchRunCode = norm(row?.["Batch Run Code"]);
+    if(batchRunCode && batchRunCode === q){
+      exactBatchMatches.push(row);
+    }
+  }
 
-  for(const row of pr){
-    const hits = anyCellIncludes(ph, row, q);
-    if(hits.length){
-      const o = rowToObj(ph, row);
-      packMatches.push({row, obj:o, hits});
-
+  if(exactBatchMatches.length){
+    const seedUniverseFromExact = new Set();
+    for(const row of exactBatchMatches){
       ["Seed Batch Code 1","Seed Batch Code 2","Seed Batch Code 3"].forEach((c)=>{
-        const v = norm(get(row, c));
-        if(v) seedCodesFromPack.push(v);
+        const v = norm(row?.[c]);
+        if(v) seedUniverseFromExact.add(v);
       });
+    }
+
+    for(const row of PACK_ROWS){
+      const rowSeeds = [
+        norm(row?.["Seed Batch Code 1"]),
+        norm(row?.["Seed Batch Code 2"]),
+        norm(row?.["Seed Batch Code 3"])
+      ].filter(Boolean);
+      const matchedSeeds = rowSeeds.filter(v => seedUniverseFromExact.has(v));
+      if(matchedSeeds.length){
+        packMatches.push({obj: row, hits: ["Seed Batch Code"], matchedSeed: matchedSeeds.join(", ")});
+        matchedSeeds.forEach(v => seedCodesFromPack.push(v));
+      }
+    }
+  } else {
+    for(const row of PACK_ROWS){
+      const hits = anyCellIncludesObj(row, q);
+      if(hits.length){
+        const seedCandidates = [
+          norm(row?.["Seed Batch Code 1"]),
+          norm(row?.["Seed Batch Code 2"]),
+          norm(row?.["Seed Batch Code 3"])
+        ].filter(Boolean);
+        const matchedSeed = seedCandidates.filter(v => v === q || v.includes(q)).join(", ");
+        packMatches.push({obj: row, hits, matchedSeed});
+        ["Seed Batch Code 1","Seed Batch Code 2","Seed Batch Code 3"].forEach((c)=>{
+          const v = norm(row?.[c]);
+          if(v) seedCodesFromPack.push(v);
+        });
+      }
     }
   }
 
   const seedUniverse = uniq([...seedCodesFromPack, q]);
 
-  const gIdx = indexHeaders(gh);
-  const gBatchCol = gIdx.has("Batch Code") ? gIdx.get("Batch Code") : -1;
   const growMatches = [];
-
-  if(gBatchCol >= 0){
-    const wanted = new Set(seedUniverse);
-    for(const row of gr){
-      const bc = norm(row[gBatchCol]);
-      if(wanted.has(bc)){
-        growMatches.push({row, obj: rowToObj(gh,row), seedCode: bc});
-      }
+  const wanted = new Set(seedUniverse);
+  for(const row of GROW_ROWS){
+    const bc = norm(getVal(row, ["Batch Code"]));
+    if(bc && wanted.has(bc)){
+      growMatches.push({obj: row, seedCode: bc});
     }
+  }
+
+  function shippingInfoForBatch(batchCode){
+    if(!batchCode) return { casesShipped: "" };
+    const rows = PACK_ROWS.filter(r => norm(r?.["Run Batch Shipped/Received"]) === norm(batchCode));
+    if(!rows.length) return { casesShipped: "" };
+    let sumCases = 0;
+    for(const r of rows){
+      const v = Number(String(r?.["# of Cases Shipped"] ?? "").replace(/,/g,"").trim());
+      if(Number.isFinite(v)) sumCases += v;
+    }
+    return { casesShipped: sumCases ? String(sumCases) : "" };
   }
 
   // Render Pack
   $("packCount").textContent = String(packMatches.length);
   if(!packMatches.length){
-    renderEmpty($("packCards"), `No Pack matches for: ${q}`);
+    renderEmpty($("packTbody"), `No Pack matches for: ${q}`, 5);
   }else{
+    let totalCasesPacked = 0;
     for(const m of packMatches){
-      const r = m.row;
+      const r = m.obj;
 
-      const batchRunCode = safeStr(get(r, "Batch Run Code"));
-      const wBatchRunCode = safeStr(get(r, "W Batch Run Code"));
-      const skuPacked = safeStr(get(r, "SKU Packed"));
-      const packDate = safeStr(get(r, "Batch Run Date"));
-      const qtyCasesPacked = safeStr(get(r, "Quantity of Cases Packed"));
-      const lbsPacked = safeStr(get(r, "Total Packed Weight"));
+      const batchRunCode = safeStr(r?.["Batch Run Code"]);
+      const skuPacked = safeStr(r?.["SKU Packed"]);
+      const packDate = safeStr(r?.["Batch Run Date"]);
+      const qtyCasesPacked = safeStr(r?.["Quantity of Cases Packed"]);
+      const lbsPacked = safeStr(r?.["Total Packed Weight"]);
 
-      const seed1 = safeStr(get(r, "Seed Batch Code 1"));
-      const seed2 = safeStr(get(r, "Seed Batch Code 2"));
-      const seed3 = safeStr(get(r, "Seed Batch Code 3"));
+      const seed1 = safeStr(r?.["Seed Batch Code 1"]);
+      const seed2 = safeStr(r?.["Seed Batch Code 2"]);
+      const seed3 = safeStr(r?.["Seed Batch Code 3"]);
       const seeds = uniq([norm(seed1), norm(seed2), norm(seed3)]).filter(Boolean);
 
-      const tags = [];
-      tags.push(mkTag(`hits:${m.hits.length}`, true));
-      if(batchRunCode) tags.push(mkTag(`Batch:${batchRunCode}`, norm(batchRunCode).includes(q)));
-      if(wBatchRunCode) tags.push(mkTag(`WBatch:${wBatchRunCode}`, norm(wBatchRunCode).includes(q)));
-      if(skuPacked) tags.push(mkTag(`SKU:${skuPacked}`, norm(skuPacked).includes(q)));
-      seeds.slice(0,3).forEach(sc => tags.push(mkTag(`Seed:${sc}`, sc.includes(q))));
+      const tr = document.createElement("tr");
+      const seedsCombined = uniq([seed1, seed2, seed3].filter(Boolean)).join(", ") || "—";
+      const casesPackedNum = Number(String(qtyCasesPacked || "").replace(/,/g,"").trim());
+      if(Number.isFinite(casesPackedNum)) totalCasesPacked += casesPackedNum;
 
-      const kvPairs = [
-        ["Batch Run Date", packDate],
-        ["SKU Packed", skuPacked],
-        ["Cases Packed", qtyCasesPacked],
-        ["Packed Weight", lbsPacked],
-        ["Seed Batch Code 1", seed1],
-        ["Seed Batch Code 2", seed2],
-        ["Seed Batch Code 3", seed3],
-      ];
-
-      const title = batchRunCode ? `Pack row: ${batchRunCode}` : "Pack row";
-      $("packCards").appendChild(mkCard(title, tags, kvPairs, m.obj));
+      tr.innerHTML = `
+        <td>${safeStr(batchRunCode) || "—"}</td>
+        <td>${safeStr(m.matchedSeed || "") || "—"}</td>
+        <td>${safeStr(skuPacked) || "—"}</td>
+        <td>${safeStr(packDate) || "—"}</td>
+        <td>${safeStr(qtyCasesPacked) || "—"}</td>
+      `;
+      // details column removed
+      $("packTbody").appendChild(tr);
     }
+    $("packTotalCases").textContent = String(totalCasesPacked);
+    $("packTotalShipped").textContent = "0";
   }
 
   // Render Grow
   $("growCount").textContent = String(growMatches.length);
   if(!growMatches.length){
-    renderEmpty($("growCards"), `No Grow matches for Seed Batch Codes derived from: ${q}`);
+    renderEmpty($("growTbody"), `No Grow matches for Seed Batch Codes derived from: ${q}`, 9);
   }else{
-    const gcol = (name) => gIdx.has(name) ? gIdx.get(name) : -1;
-    const gget = (row, name) => {
-      const i = gcol(name);
-      return i >= 0 ? row[i] : "";
-    };
-
     for(const m of growMatches){
-      const r = m.row;
-      const batchCode = safeStr(gget(r, "Batch Code"));
-      const variety = safeStr(gget(r, "Veriaty"));
-      const seedDate = safeStr(gget(r, "Seed Date"));
-      const seedWeek = safeStr(gget(r, "Seed Week"));
-      const transDate = safeStr(gget(r, "Transplant Date"));
-      const transPond = safeStr(gget(r, "Transplant Pond"));
-      const harvDate = safeStr(gget(r, "Harvest Date"));
-      const harvPond = safeStr(gget(r, "Harvest Pond"));
+      const r = m.obj;
+      const batchCode = safeStr(getVal(r, ["Batch Code"]));
+      const variety = safeStr(getVal(r, ["Variety","Veriaty"]));
+      const seedDate = safeStr(getVal(r, ["Seed Date"]));
+      const seedWeek = safeStr(getVal(r, ["Seed Week"]));
+      const transDate = safeStr(getVal(r, ["Transplant Date"]));
+      const transPond = safeStr(getVal(r, ["Transplant Pond"]));
+      const harvDate = safeStr(getVal(r, ["Harvest Date"]));
+      const harvPond = safeStr(getVal(r, ["Harvest Pond"]));
+      const boardsHarvested = safeStr(getVal(r, ["Actual BRD HVT","Actual BRD HVT ","Actual Boards Harvested","Boards Harvested"]));
+      const pesoLechuga = safeStr(getVal(r, ["Peso de la lechuga cortada","Peso Lechuga Cortada","Peso Lechuga"]));
+      const boardsTransplanted = safeStr(getVal(r, ["Actual Boards Transplanted","Actual BRD Transplanted"]));
+      const flatsSeeded = safeStr(getVal(r, ["Flats","Actual Flats","Bandejas"]));
 
-      const tags = [];
-      tags.push(mkTag(`Seed:${norm(batchCode)}`, norm(batchCode) === q));
-      if(variety) tags.push(mkTag(`Var:${variety}`));
-
-      const kvPairs = [
-        ["Batch Code", batchCode],
-        ["Variety", variety],
-        ["Seed Date", seedDate],
-        ["Seed Week", seedWeek],
-        ["Transplant Date", transDate],
-        ["Transplant Pond", transPond],
-        ["Harvest Date", harvDate],
-        ["Harvest Pond", harvPond],
-      ];
-
-      $("growCards").appendChild(mkCard(`Grow row: ${batchCode || m.seedCode}`, tags, kvPairs, m.obj));
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${safeStr(m.seedCode || "") || "—"}</td>
+        <td>${safeStr(seedDate) || "—"}</td>
+        <td>${safeStr(transDate) || "—"}</td>
+        <td>${safeStr(harvDate) || "—"}</td>
+        <td>${safeStr(transPond) || "—"}</td>
+        <td>${safeStr(harvPond) || "—"}</td>
+        <td>${safeStr(boardsHarvested) || "—"}</td>
+        <td>${safeStr(pesoLechuga) || "—"}</td>
+        <td>${safeStr(boardsTransplanted) || "—"}</td>
+        <td>${safeStr(flatsSeeded) || "—"}</td>
+      `;
+      // details column removed
+      $("growTbody").appendChild(tr);
     }
+  }
+
+  // Render Shipping
+  const matchedBatchCodes = new Set(packMatches.map(m => norm(m.obj?.["Batch Run Code"])).filter(Boolean));
+  const shippingRows = PACK_ROWS
+    .filter(r => {
+      if(!matchedBatchCodes.has(norm(r?.["Run Batch Shipped/Received"]))) return false;
+      const status = norm(r?.["Shipped or Received"]);
+      return status === "SHIPPED";
+    })
+    .sort((a,b)=> norm(a?.["Run Batch Shipped/Received"]).localeCompare(norm(b?.["Run Batch Shipped/Received"])));
+  $("shipCount").textContent = String(shippingRows.length);
+
+  if(!shippingRows.length){
+    renderEmpty($("shipTbody"), `No Shipping matches for: ${q}`, 5);
+    $("packTotalShipped").textContent = "0";
+  }else{
+    let totalCasesShipped = 0;
+    for(const r of shippingRows){
+      const runBatch = safeStr(r?.["Run Batch Shipped/Received"]);
+      const batchRunCode = runBatch;
+      const shipDate = safeStr(getVal(r, ["Shipping Date","Sales Ship Date"]));
+      const locationShipped = safeStr(getVal(r, ["Location Shipped"]));
+      const casesShipped = safeStr(getVal(r, ["# of Cases Shipped","Sales # of Cases"]));
+      const casesShippedNum = Number(String(casesShipped || "").replace(/,/g,"").trim());
+      if(Number.isFinite(casesShippedNum)) totalCasesShipped += casesShippedNum;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${safeStr(batchRunCode) || "—"}</td>
+        <td>${safeStr(runBatch) || "—"}</td>
+        <td>${safeStr(shipDate) || "—"}</td>
+        <td>${safeStr(locationShipped) || "—"}</td>
+        <td>${safeStr(casesShipped) || "—"}</td>
+      `;
+      $("shipTbody").appendChild(tr);
+    }
+    $("packTotalShipped").textContent = String(totalCasesShipped);
   }
 }
 
-async function readJsonFile(file){
-  const text = await file.text();
-  return JSON.parse(text);
-}
-
 function updateDebug(){
-  const packSheet = getSheet(PACK, "Master Pack");
-  const growSheet = getSheet(GROW, "Master Grow");
+  const packSheet = getSheet(PACK_PAYLOAD, PACK_SHEET_NAME);
+  const growSheet = getSheet(GROW_PAYLOAD, GROW_SHEET_NAME);
 
   const dbg = {
-    pack: PACK ? {
-      updatedAt: PACK.updatedAt,
-      kind: PACK.kind,
-      sourceLabel: PACK.sourceLabel,
-      sheet: "Master Pack",
+    pack: PACK_PAYLOAD ? {
+      updatedAt: PACK_PAYLOAD.updatedAt,
+      kind: PACK_PAYLOAD.kind,
+      sourceLabel: PACK_PAYLOAD.sourceLabel,
+      sheet: PACK_SHEET_NAME,
       headers: packSheet ? packSheet.headers.length : null,
       rows: packSheet ? packSheet.rows.length : null,
     } : null,
-    grow: GROW ? {
-      updatedAt: GROW.updatedAt,
-      kind: GROW.kind,
-      sourceLabel: GROW.sourceLabel,
-      sheet: "Master Grow",
+    grow: GROW_PAYLOAD ? {
+      updatedAt: GROW_PAYLOAD.updatedAt,
+      kind: GROW_PAYLOAD.kind,
+      sourceLabel: GROW_PAYLOAD.sourceLabel,
+      sheet: GROW_SHEET_NAME,
       headers: growSheet ? growSheet.headers.length : null,
       rows: growSheet ? growSheet.rows.length : null,
     } : null
@@ -649,57 +880,72 @@ function updateDebug(){
   $("debug").textContent = JSON.stringify(dbg, null, 2);
 }
 
-async function tryReady(){
-  if(PACK && GROW){
-    const packOK = !!getSheet(PACK, "Master Pack");
-    const growOK = !!getSheet(GROW, "Master Grow");
-    if(packOK && growOK){
-      setStatus("ok", "Ready (Pack + Grow loaded)");
-    }else{
-      setStatus("bad", "Loaded, but expected sheets missing");
-    }
+function rebuildUI(reason){
+  const { growPayload, packPayload, growSheet, packSheet } = loadMasterData();
+  GROW_PAYLOAD = growPayload;
+  PACK_PAYLOAD = packPayload;
+
+  if(!growSheet || !packSheet){
+    PACK_ROWS = [];
+    GROW_ROWS = [];
+    setStatus("bad", "Waiting for Master Grow + Master Pack from localStorage");
     updateDebug();
     trace($("q").value);
-  }else{
-    setStatus("", "Upload Pack + Grow JSON");
-    updateDebug();
-    trace($("q").value);
+    return;
   }
+
+  PACK_ROWS = sheetToRowObjects(packSheet);
+  GROW_ROWS = sheetToRowObjects(growSheet);
+  setStatus("ok", "Ready (Pack + Grow loaded)");
+  updateDebug();
+  trace($("q").value);
 }
 
-$("packFile").addEventListener("change", async (e)=>{
-  const f = e.target.files?.[0];
-  $("packName").textContent = f ? f.name : "none";
-  if(!f){ PACK = null; tryReady(); return; }
+let reloadTimer = null;
+function reloadAll(reason){
+  if(reloadTimer) clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(() => {
+    reloadTimer = null;
+    rebuildUI(reason);
+  }, 60);
+}
 
-  try{
-    PACK = await readJsonFile(f);
-    tryReady();
-  }catch(err){
-    console.error(err);
-    PACK = null;
-    setStatus("bad", "Pack JSON failed to parse");
-    updateDebug();
-    trace($("q").value);
+function setupLiveListeners(){
+  window.addEventListener("storage", (e) => {
+    if (!e) return;
+    if (
+      e.key === MASTER_GROW_KEY || e.key === MASTER_PACK_KEY ||
+      e.key === MASTER_GROW_PING_KEY || e.key === MASTER_PACK_PING_KEY
+    ) reloadAll("storage");
+  });
+
+  window.addEventListener("message", (event) => {
+    const msg = event?.data;
+    if (!msg || typeof msg !== "object") return;
+    if (msg.type === MSG_GROW || msg.type === MSG_PACK) reloadAll("message");
+  });
+
+  window.addEventListener(MSG_GROW, () => reloadAll("customevent"));
+  window.addEventListener(MSG_PACK, () => reloadAll("customevent"));
+
+  if (bc){
+    bc.onmessage = (ev) => {
+      const msg = ev?.data;
+      if (msg?.type === MSG_GROW || msg?.type === MSG_PACK) reloadAll("broadcast");
+    };
   }
-});
 
-$("growFile").addEventListener("change", async (e)=>{
-  const f = e.target.files?.[0];
-  $("growName").textContent = f ? f.name : "none";
-  if(!f){ GROW = null; tryReady(); return; }
-
-  try{
-    GROW = await readJsonFile(f);
-    tryReady();
-  }catch(err){
-    console.error(err);
-    GROW = null;
-    setStatus("bad", "Grow JSON failed to parse");
-    updateDebug();
-    trace($("q").value);
-  }
-});
+  let lastGrowLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+  let lastPackLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+  setInterval(() => {
+    const gLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+    const pLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+    if (gLen !== lastGrowLen || pLen !== lastPackLen){
+      lastGrowLen = gLen; lastPackLen = pLen;
+      reloadAll("poll");
+    }
+  }, 1500);
+}
 
 $("go").addEventListener("click", ()=>trace($("q").value));
 $("q").addEventListener("keydown", (e)=>{ if(e.key === "Enter") trace($("q").value); });
@@ -713,8 +959,10 @@ $("clear").addEventListener("click", ()=>{
   trace("");
 });
 
-// initial
-trace("");
+document.addEventListener("DOMContentLoaded", () => {
+  setupLiveListeners();
+  reloadAll("init");
+});
 </script>
 </body>
 </html>
