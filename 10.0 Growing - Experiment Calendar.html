@@ -1088,7 +1088,13 @@
     }
 
     function normalizeFromRow(row, idx){
-      const experiment_name = firstByHeaders(row, idx, ["Production Stage","Experiment Name/Purpose","Experiment","Experiment Name"]);
+      const experiment_name = firstByHeaders(row, idx, [
+        "Production Stage",
+        "Experiment Name/Purpose",
+        "Experiment",
+        "Experiment Name",
+        "Reason for Reduction in Germination/ Emergence"
+      ]);
       const batch = firstByHeaders(row, idx, ["Batch"]);
       const variety = firstByHeaders(row, idx, ["Variety"]);
       const media = firstByHeaders(row, idx, ["Media"]);
