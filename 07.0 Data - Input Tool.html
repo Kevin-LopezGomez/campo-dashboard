@@ -214,6 +214,7 @@ const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 const WORKER_EXP_URL  = `${WORKER_BASE}/data/master/experiments.json`;
 const WORKER_PROC_URL = `${WORKER_BASE}/data/master/procurement.json`;
 const WORKER_STORE_URL = `${WORKER_BASE}/data/master/Store%20Visit.json`;
+const WORKER_STORE_GET_URL = `${WORKER_BASE}/data/master/Store%20Visit.json`;
 const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visit.json";
 
 
@@ -867,7 +868,7 @@ function normalizeMasterPayload(raw, kind){
     }catch(e){ console.warn("Procurement pull failed:", e); }
 
     try{
-      const store = normalizeMasterPayload(await workerGetJson(PUBLIC_STORE_VISIT_URL), "store");
+      const store = normalizeMasterPayload(await workerGetJson(WORKER_STORE_GET_URL), "store");
       localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(store));
       localStorage.setItem(MASTER_STORE_PING, now);
       emit(MSG_STORE, MASTER_STORE_KEY);
