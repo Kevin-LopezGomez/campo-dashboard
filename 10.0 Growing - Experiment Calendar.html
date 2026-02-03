@@ -292,7 +292,7 @@
       background: linear-gradient(180deg, rgba(15,23,42,.55), rgba(2,6,23,.0));
       flex-wrap: wrap; position: relative;
       min-height: 54px;
-      padding-top: 34px; /* base; stackHeaderTags will increase dynamically */
+      padding-top: 10px;
     }
     .gHdr .h{ font-weight:950; font-size:12px; color: var(--text); }
     .gHdr .s{ font-weight:900; font-size:11px; color: var(--sub); font-family: var(--mono); }
@@ -305,8 +305,9 @@
 
     /* header tag layer (height is set dynamically in JS) */
     .gHdrLineLayer{
-      position:absolute; left:0; top:6px;
-      height:80px;
+      position:absolute; left:0; top:50%;
+      transform: translateY(-50%);
+      height:0;
       width:100%;
       pointer-events:none;
       z-index:30;
@@ -355,6 +356,7 @@
       z-index:6; pointer-events:none;
       box-shadow: 0 0 0 1px rgba(34,197,94,.18), 0 0 14px rgba(34,197,94,.16);
       border-radius: 999px;
+      transform: translateX(-50%);
     }
     .holidayLine{
       position:absolute; top:0; bottom:0;
@@ -363,6 +365,7 @@
       z-index:5; pointer-events:none;
       box-shadow: 0 0 0 1px rgba(239,68,68,.16), 0 0 14px rgba(239,68,68,.12);
       border-radius: 999px;
+      transform: translateX(-50%);
     }
 
     /* Harvest full-height line (one per unique harvest date) */
@@ -1054,6 +1057,7 @@
       }
       el.textContent = msg;
       el.style.display = "block";
+      if(typeof setFiltersCollapsed === "function") setFiltersCollapsed(false);
     }
 
     function headerIndex(headers){
@@ -1087,6 +1091,16 @@
       return Number.isFinite(n) ? n > 0 : false;
     }
 
+    function fallbackExperimentName(row){
+      const v = (row && row.length) ? row[0] : "";
+      const s = String(v ?? "").trim();
+      if(!s) return "";
+      if(/^\d+(\.\d+)?$/.test(s)) return "";
+      if(/^true|false$/i.test(s)) return "";
+      if(parseDate(s)) return "";
+      return s;
+    }
+
     function normalizeFromRow(row, idx){
       const experiment_name = firstByHeaders(row, idx, [
         "Production Stage",
@@ -1094,7 +1108,7 @@
         "Experiment",
         "Experiment Name",
         "Reason for Reduction in Germination/ Emergence"
-      ]);
+      ]) || fallbackExperimentName(row);
       const batch = firstByHeaders(row, idx, ["Batch"]);
       const variety = firstByHeaders(row, idx, ["Variety"]);
       const media = firstByHeaders(row, idx, ["Media"]);
@@ -1183,6 +1197,14 @@
       return !!(batch || variety || media || hasDate);
     }
 
+    function findHeaderRowIndex(rows){
+      return rows.findIndex(r =>
+        Array.isArray(r) &&
+        r.some(c => String(c ?? "").trim() === "Batch") &&
+        (r.some(c => String(c ?? "").trim() === "Variety") || r.some(c => String(c ?? "").trim() === "Harvest Date"))
+      );
+    }
+
     function normalizeExperiments(raw){
       if(Array.isArray(raw)){
         return raw.map(normalizeFromObject).filter(isValidNormalizedRow);
@@ -1191,11 +1213,7 @@
       const sheet = raw?.sheets?.["Current Experiments"];
       if(sheet && Array.isArray(sheet.rows)){
         const rows = sheet.rows;
-        const headerRowIndex = rows.findIndex(r =>
-          Array.isArray(r) &&
-          r.some(c => String(c ?? "").trim() === "Batch") &&
-          (r.some(c => String(c ?? "").trim() === "Variety") || r.some(c => String(c ?? "").trim() === "Harvest Date"))
-        );
+        const headerRowIndex = findHeaderRowIndex(rows);
 
         if(headerRowIndex >= 0){
           const headers = rows[headerRowIndex];
@@ -1206,6 +1224,20 @@
         if(Array.isArray(sheet.headers) && sheet.headers.some(h => String(h ?? "").trim())){
           const idx = headerIndex(sheet.headers);
           return rows.map(r => normalizeFromRow(r, idx)).filter(isValidNormalizedRow);
+        }
+      }
+
+      if(raw?.sheets && typeof raw.sheets === "object"){
+        for(const key of Object.keys(raw.sheets)){
+          const sh = raw.sheets[key];
+          if(!sh || !Array.isArray(sh.rows)) continue;
+          const rows = sh.rows;
+          const headerRowIndex = findHeaderRowIndex(rows);
+          if(headerRowIndex >= 0){
+            const headers = rows[headerRowIndex];
+            const idx = headerIndex(headers);
+            return rows.slice(headerRowIndex + 1).map(r => normalizeFromRow(r, idx)).filter(isValidNormalizedRow);
+          }
         }
       }
 
@@ -1703,7 +1735,7 @@
       const tags = Array.from(tagLayer.querySelectorAll(".lineTag"));
       if(!tags.length){
         const hdr = tagLayer.closest(".gHdr");
-        if(hdr) hdr.style.paddingTop = "34px";
+        if(hdr) hdr.style.paddingTop = "10px";
         tagLayer.style.height = "0px";
         return;
       }
@@ -1739,13 +1771,10 @@
 
       const maxRow = placed.reduce((m,p)=> Math.max(m, p.row), 0);
 
-      // increase header padding AND tag layer height so stacked rows don't clip
       const hdr = tagLayer.closest(".gHdr");
       const needed = (maxRow + 1) * rowH;
-      if(hdr){
-        hdr.style.paddingTop = `${34 + needed}px`;
-      }
-      tagLayer.style.height = `${needed + 10}px`;
+      if(hdr) hdr.style.paddingTop = "10px";
+      tagLayer.style.height = `${needed}px`;
     }
 
     // =========================================================
@@ -1778,7 +1807,7 @@
         }
         layer.innerHTML = "";
         layer.style.height = "0px";
-        hdr.style.paddingTop = "34px";
+        hdr.style.paddingTop = "10px";
         return layer;
       })();
 
@@ -1811,20 +1840,28 @@
 
       $("ganttSpan").textContent = `${toISO_PR(start)} → ${toISO_PR(addDaysPR(endExclusive, -1))}`;
 
-      const style = getComputedStyle(timeline);
-      const padL = parseFloat(style.paddingLeft) || 0;
-      const padR = parseFloat(style.paddingRight) || 0;
-      const hostW = rightScroll.clientWidth || timeline.clientWidth || 900;
-      const pxPerDay = Math.max(6, (hostW - padL - padR) / totalDays);
+      // Alignment note: LEFT_PAD must stay 0 to keep lines centered on date labels.
+      const LEFT_PAD = 0;
+      const RIGHT_PAD = 10;
 
-      const timelineW = Math.max(1, Math.ceil(padL + padR + totalDays * pxPerDay));
+      timeline.style.paddingLeft = `${LEFT_PAD}px`;
+      timeline.style.paddingRight = `${RIGHT_PAD}px`;
+      axis.style.paddingLeft = `${LEFT_PAD}px`;
+      axis.style.paddingRight = `${RIGHT_PAD}px`;
+      rowsHost.style.paddingLeft = `${LEFT_PAD}px`;
+      rowsHost.style.paddingRight = `${RIGHT_PAD}px`;
+
+      const hostW = rightScroll.clientWidth || timeline.clientWidth || 900;
+      const pxPerDay = Math.max(6, (hostW - LEFT_PAD - RIGHT_PAD) / totalDays);
+
+      const timelineW = Math.max(1, Math.ceil(LEFT_PAD + RIGHT_PAD + totalDays * pxPerDay));
       timeline.style.width = `${timelineW}px`;
       axis.style.width = `${timelineW}px`;
       rowsHost.style.width = `${timelineW}px`;
 
       function xOf(date){
         const off = (startOfDayPRFromMs(date.getTime()).getTime() - start.getTime())/MS;
-        return padL + ((off + 0.5) * pxPerDay); // center-of-day
+        return Math.round(LEFT_PAD + (off + 0.5) * pxPerDay); // center-of-day
       }
 
       const tickByISO = new Map();
@@ -1835,16 +1872,17 @@
 
         const tick = document.createElement("div");
         tick.className = "tick";
-        tick.style.left = `${padL + d*pxPerDay}px`;
+        tick.style.left = `${Math.round(LEFT_PAD + d*pxPerDay)}px`;
         tick.style.width = `${pxPerDay}px`;
 
         const p = partsInPR(dt.getTime());
         const u = new Date(Date.UTC(p.y, p.m-1, p.d));
         const dow = u.getUTCDay();
+        const isWeekend = (dow === 0 || dow === 6);
         const isMonday = dow === 1;
         const isFirst = p.d === 1;
 
-        tick.innerHTML = (isMonday || isFirst)
+        tick.innerHTML = (!isWeekend && (isMonday || isFirst))
           ? `<span class="dow">${u.toLocaleDateString(undefined,{weekday:"short", timeZone:"UTC"})}</span>
              <span class="d">${p.d}</span>
              <span class="m">${u.toLocaleDateString(undefined,{month:"short", timeZone:"UTC"})}</span>`
@@ -1871,7 +1909,7 @@
         const name = getHolidayName(iso);
         if(!name) continue;
 
-        const xLeft   = padL + d*pxPerDay;
+        const xLeft   = LEFT_PAD + d*pxPerDay;
         const xCenter = xLeft + 0.5*pxPerDay;
 
         const band = document.createElement("div");
@@ -1887,7 +1925,7 @@
 
         const tag = document.createElement("div");
         tag.className = "lineTag holiday";
-        tag.textContent = `${name} • ${fmtDowISO_PR(dt)}`;
+        tag.textContent = `${name}`;
         tag.style.left = `${xCenter}px`;
         tagLayer.appendChild(tag);
 
@@ -1904,7 +1942,7 @@
 
       const ttag = document.createElement("div");
       ttag.className = "lineTag today";
-      ttag.textContent = `Today • ${fmtDowISO_PR(today)}`;
+      ttag.textContent = `Today`;
       ttag.style.left = `${Math.round(xToday)}px`;
       tagLayer.appendChild(ttag);
 
@@ -1928,7 +1966,7 @@
         .sort((a,b)=> a.date - b.date);
 
       for(const h of harvList){
-        const x = xOf(h.date); // SAME center-of-day math used by diamonds
+        const x = Math.round(xOf(h.date)); // round to match diamond pixel alignment
         const line = document.createElement("div");
         line.className = "harvLine";
         line.style.left = `${x}px`;
@@ -2086,7 +2124,7 @@
 
         // Harvest diamond: SAME xOf math as harvest line (center-of-day)
         if(S.harv){
-          const x = xOf(S.harv);
+          const x = Math.round(xOf(S.harv));
           const m = document.createElement("div");
           m.className = "harvMarker";
           m.style.left = `${x}px`;
