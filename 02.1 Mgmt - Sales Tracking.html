@@ -739,9 +739,6 @@
           <h1>
             <span class="title-icon">$</span>
             Sales Productivity Dashboard
-            <span style="font-size:0.8rem;font-weight:400;color:var(--muted);margin-left:4px;">
-              NOV–DEC 2025
-            </span>
           </h1>
           <div class="title-sub">
             Daily / weekly sales by SKU, customer, and ship method. Toggle between cases and pounds sold.
@@ -761,42 +758,8 @@
 
       <!-- LAYOUT: SIDEBAR (filters) + MAIN (charts) -->
       <div class="layout">
-        <!-- SIDEBAR: Data input + filters -->
+        <!-- SIDEBAR: Filters -->
         <aside class="sidebar">
-          <!-- DATA INPUT -->
-          <div class="section-card data-input-collapsed" id="dataInputCard">
-            <div class="section-header">
-              <div class="section-title">
-                <span class="dot"></span>
-                Data input
-              </div>
-              <div class="chip">
-                <span>Paste rows from Excel / Sheets</span>
-                <button id="toggleDataInputBtn">Show</button>
-              </div>
-            </div>
-            <div class="data-input-body" id="dataInputBody">
-              <div class="data-input-help">
-                Paste sales rows with these columns (tab-separated, header optional):
-                <strong>Invoice Date · Ship Via · Sales Week · Ship Date · Invoice # · SKU · # Cases · Customer · Sales Term</strong>.
-                Loading new data replaces the current dataset.
-              </div>
-              <textarea
-                id="dataInputArea"
-                class="data-input-textarea"
-                placeholder="Example row:
-Wednesday, November 5, 2025[TAB]Our Delivery[TAB]45[TAB]Thursday, November 6, 2025[TAB]663[TAB]COMBO-03LB[TAB]1[TAB]Pocito Dulce"
-              ></textarea>
-              <div class="data-input-actions">
-                <button class="btn-primary" id="loadDataBtn">Load pasted data</button>
-                <button class="btn-primary" id="clearDataBtn" style="background: linear-gradient(to right,#ef4444,#f87171);color:#0b0f19;">Clear data</button>
-                <span class="data-input-status" id="dataInputStatus">
-                  Using built-in sample data.
-                </span>
-              </div>
-            </div>
-          </div>
-
           <!-- VIEW & UNITS -->
           <div class="section-card filters-row">
           <div class="section-header">
@@ -1121,12 +1084,7 @@ const skuWeightLbs = {
     const leaderboardContainer = document.getElementById("leaderboardContainer");
     const resetFiltersBtn = document.getElementById("resetFiltersBtn");
 
-    const dataInputCard = document.getElementById("dataInputCard");
-    const dataInputArea = document.getElementById("dataInputArea");
     const dataInputStatus = document.getElementById("dataInputStatus");
-    const loadDataBtn = document.getElementById("loadDataBtn");
-    const clearDataBtn = document.getElementById("clearDataBtn");
-    const toggleDataInputBtn = document.getElementById("toggleDataInputBtn");
 
     let salesChart = null;
     let salesBreakdownChart = null;
@@ -1190,7 +1148,9 @@ const skuWeightLbs = {
         salesData = [];
         initFilters();
         refreshDashboard();
-        dataInputStatus.textContent = "Waiting for Master Pack in localStorage.";
+        if (dataInputStatus) {
+          dataInputStatus.textContent = "Waiting for Master Pack in localStorage.";
+        }
         return;
       }
 
@@ -1199,14 +1159,18 @@ const skuWeightLbs = {
         salesData = [];
         initFilters();
         refreshDashboard();
-        dataInputStatus.textContent = `Master Pack missing Sales columns: ${parsed.missing.join(", ")}`;
+        if (dataInputStatus) {
+          dataInputStatus.textContent = `Master Pack missing Sales columns: ${parsed.missing.join(", ")}`;
+        }
         return;
       }
 
       salesData = normalizeData(parsed.rows);
       initFilters();
       refreshDashboard();
-      dataInputStatus.textContent = `Loaded ${salesData.length} sales rows from Master Pack.`;
+      if (dataInputStatus) {
+        dataInputStatus.textContent = `Loaded ${salesData.length} sales rows from Master Pack.`;
+      }
     }
 
     function formatNumber(value) {
@@ -2038,57 +2002,6 @@ const skuWeightLbs = {
       });
     }
 
-    function initDataInput() {
-      toggleDataInputBtn.addEventListener("click", () => {
-        const collapsed = dataInputCard.classList.toggle("data-input-collapsed");
-        toggleDataInputBtn.textContent = collapsed ? "Show" : "Hide";
-      });
-
-      loadDataBtn.addEventListener("click", () => {
-        const text = dataInputArea.value.trim();
-        if (!text) {
-          dataInputStatus.textContent = "Paste tab-separated rows first.";
-          return;
-        }
-
-        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-        const parsedRaw = [];
-
-        for (const line of lines) {
-          const cols = line.split(/\t/);
-          if (cols[0] && /invoice date/i.test(cols[0]) && parsedRaw.length === 0) {
-            continue;
-          }
-          if (cols.length < 8) continue;
-          parsedRaw.push([
-            cols[0],
-            cols[1],
-            cols[2],
-            cols[3],
-            cols[4],
-            cols[5],
-            cols[6],
-            cols[7]
-          ]);
-        }
-
-        if (!parsedRaw.length) {
-          dataInputStatus.textContent = "Could not find any valid rows (need 8 tab-separated columns).";
-          return;
-        }
-
-        salesData = normalizeData(parsedRaw);
-        initFilters();
-        refreshDashboard();
-        dataInputStatus.textContent = `Loaded ${salesData.length} rows from pasted data.`;
-      });
-
-      clearDataBtn.addEventListener("click", () => {
-        dataInputArea.value = "";
-        hydrateFromMasterPack("clear");
-      });
-    }
-
     function setupLiveListeners() {
       window.addEventListener("storage", (e) => {
         if (!e) return;
@@ -2126,7 +2039,6 @@ const skuWeightLbs = {
     hydrateFromMasterPack("init");
     initToggles();
     initFilterEvents();
-    initDataInput();
     refreshDashboard();
   </script>
 </body>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Data Input – Grow / Pack / Experiments / Procurement</title>
+  <title>Data Input – Grow / Pack / Experiments / Procurement / Store Visit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- SheetJS (Excel reader) -->
@@ -128,9 +128,9 @@
 
 <body>
 <div class="wrap">
-  <h1>Data Input – Grow / Pack / Experiments / Procurement</h1>
+  <h1>Data Input – Grow / Pack / Experiments / Procurement / Store Visit</h1>
   <p>
-    Supported: <b>1 XLSX</b> (multiple sheets) or <b>separate CSVs</b> for <b>Grow</b>, <b>Pack</b>, <b>Current Experiments</b>, and <b>Procurement</b>. Uploading a new file will <b>overwrite</b> only that dataset’s stored JSON.
+    Supported: <b>1 XLSX</b> (multiple sheets) or <b>separate CSVs</b> for <b>Grow</b>, <b>Pack</b>, <b>Current Experiments</b>, <b>Procurement</b>, and <b>Store Visit</b>. Uploading a new file will <b>overwrite</b> only that dataset’s stored JSON.
   </p>
 
   <div class="panel">
@@ -147,6 +147,7 @@
           <button id="assignPackBtn" type="button" disabled>📦 Assign last CSV → Master Pack</button>
           <button id="assignExpBtn" type="button" disabled>🧪 Assign last CSV → Current Experiments</button>
           <button id="assignProcBtn" type="button" disabled>🧾 Assign last CSV → Procurement</button>
+          <button id="assignStoreBtn" type="button" disabled>🗺️ Assign last CSV → Store Visit</button>
           <button class="danger" id="clearBtn" type="button">✕ Clear Stored Sources</button>
         </div>
 
@@ -155,6 +156,7 @@
           <button class="ghost" id="downloadPackBtn" type="button">⬇️ Download pack.json</button>
           <button class="ghost" id="downloadExpBtn" type="button">⬇️ Download experiments.json</button>
           <button class="ghost" id="downloadProcBtn" type="button">⬇️ Download procurement.json</button>
+          <button class="ghost" id="downloadStoreBtn" type="button">⬇️ Download store-visit.json</button>
           <button class="ghost" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
           <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
         </div>
@@ -171,6 +173,9 @@
           <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>,
           <br>
           <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>.
+          <br><br>
+          Store Visit (public):
+          <code>GET https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visit.json</code>
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
@@ -182,10 +187,12 @@
         <div class="kv"><span>Master Pack</span><span class="tag" id="packTag"><span class="dot bad"></span>Missing</span></div>
         <div class="kv"><span>Current Experiments</span><span class="tag" id="expTag"><span class="dot bad"></span>Missing</span></div>
         <div class="kv"><span>Procurement</span><span class="tag" id="procTag"><span class="dot bad"></span>Missing</span></div>
+        <div class="kv"><span>Store Visit</span><span class="tag" id="storeTag"><span class="dot bad"></span>Missing</span></div>
         <div class="kv"><span>Grow updated</span><b id="growUpdated">–</b></div>
         <div class="kv"><span>Pack updated</span><b id="packUpdated">–</b></div>
         <div class="kv"><span>Experiments updated</span><b id="expUpdated">–</b></div>
         <div class="kv"><span>Procurement updated</span><b id="procUpdated">–</b></div>
+        <div class="kv"><span>Store Visit updated</span><b id="storeUpdated">–</b></div>
         <div class="small" id="fileMeta">Last file: –</div>
       </div>
     </div>
@@ -206,6 +213,8 @@ const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
 const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 const WORKER_EXP_URL  = `${WORKER_BASE}/data/master/experiments.json`;
 const WORKER_PROC_URL = `${WORKER_BASE}/data/master/procurement.json`;
+const WORKER_STORE_URL = `${WORKER_BASE}/data/master/Store%20Visit.json`;
+const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visit.json";
 
 
   // Storage keys (must match dashboards)
@@ -213,11 +222,13 @@ const MASTER_GROW_KEY = "campo_master_grow_v1";
 const MASTER_PACK_KEY = "campo_master_pack_v1";
 const MASTER_EXP_KEY  = "campo_master_experiments_v1";
 const MASTER_PROC_KEY = "campo_master_procurement_v1";
+const MASTER_STORE_KEY = "campo_master_store_visit_v1";
 
 const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
 const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
 const MASTER_EXP_PING  = "campo_master_experiments_push_ping_v1";
 const MASTER_PROC_PING = "campo_master_procurement_push_ping_v1";
+const MASTER_STORE_PING = "campo_master_store_visit_push_ping_v1";
 
 
   // Canonical sheet keys (contract)
@@ -225,6 +236,7 @@ const CANON_GROW_SHEET = "Master Grow";
 const CANON_PACK_SHEET = "Master Pack";
 const CANON_EXP_SHEET  = "Current Experiments";
 const CANON_PROC_SHEET = "Procurement";
+const CANON_STORE_SHEET = "Store Visit";
 
 
   // Message types
@@ -232,6 +244,7 @@ const MSG_GROW = "MASTER_GROW_UPDATED";
 const MSG_PACK = "MASTER_PACK_UPDATED";
 const MSG_EXP  = "EXPERIMENTS_UPDATED";
 const MSG_PROC = "PROCUREMENT_UPDATED";
+const MSG_STORE = "STORE_VISIT_UPDATED";
 
 
   // BroadcastChannel for same-origin pages (index + dashboards)
@@ -251,11 +264,13 @@ const MSG_PROC = "PROCUREMENT_UPDATED";
   const assignPackBtn = document.getElementById("assignPackBtn");
 const assignExpBtn  = document.getElementById("assignExpBtn");
 const assignProcBtn = document.getElementById("assignProcBtn");
+const assignStoreBtn = document.getElementById("assignStoreBtn");
 const clearBtn = document.getElementById("clearBtn");
 const downloadGrowBtn = document.getElementById("downloadGrowBtn");
 const downloadPackBtn = document.getElementById("downloadPackBtn");
 const downloadExpBtn  = document.getElementById("downloadExpBtn");
 const downloadProcBtn = document.getElementById("downloadProcBtn");
+const downloadStoreBtn = document.getElementById("downloadStoreBtn");
 
   const publishBtn = document.getElementById("publishBtn");
   const pullBtn = document.getElementById("pullBtn");
@@ -265,10 +280,12 @@ const downloadProcBtn = document.getElementById("downloadProcBtn");
   const packTag = document.getElementById("packTag");
 const expTag  = document.getElementById("expTag");
 const procTag = document.getElementById("procTag");
+const storeTag = document.getElementById("storeTag");
 const growUpdated = document.getElementById("growUpdated");
 const packUpdated = document.getElementById("packUpdated");
 const expUpdated  = document.getElementById("expUpdated");
 const procUpdated = document.getElementById("procUpdated");
+const storeUpdated = document.getElementById("storeUpdated");
 const fileMeta = document.getElementById("fileMeta");
 
   const contractWarn = document.getElementById("contractWarn");
@@ -352,6 +369,7 @@ const fileMeta = document.getElementById("fileMeta");
     checkOne(MASTER_PACK_KEY, CANON_PACK_SHEET, "Pack"),
     checkOne(MASTER_EXP_KEY,  CANON_EXP_SHEET,  "Experiments"),
     checkOne(MASTER_PROC_KEY, CANON_PROC_SHEET, "Procurement"),
+    checkOne(MASTER_STORE_KEY, CANON_STORE_SHEET, "Store Visit"),
   ];
 
   const bad = checks.find(x => !x.ok);
@@ -363,16 +381,19 @@ function refreshBadges(){
   const hasPack = safeHasJson(MASTER_PACK_KEY);
   const hasExp  = safeHasJson(MASTER_EXP_KEY);
   const hasProc = safeHasJson(MASTER_PROC_KEY);
+  const hasStore = safeHasJson(MASTER_STORE_KEY);
 
   setTag(growTag, hasGrow);
   setTag(packTag, hasPack);
   setTag(expTag,  hasExp);
   setTag(procTag, hasProc);
+  setTag(storeTag, hasStore);
 
   growUpdated.textContent = fmtTs(localStorage.getItem(MASTER_GROW_PING));
   packUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PACK_PING));
   expUpdated.textContent  = fmtTs(localStorage.getItem(MASTER_EXP_PING));
   procUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PROC_PING));
+  storeUpdated.textContent = fmtTs(localStorage.getItem(MASTER_STORE_PING));
 
   const v = validateStorageContract();
   showContractWarning(v.ok ? "" : v.msg);
@@ -510,6 +531,12 @@ function refreshBadges(){
       localStorage.setItem(MASTER_PROC_PING, now);
       emit(MSG_PROC, MASTER_PROC_KEY);
       setStatus(`Saved Procurement (JSON overwritten): ${sourceLabel}`);
+    } else if(which === "store"){
+      if (!payload?.sheets?.[CANON_STORE_SHEET]) throw new Error(`Store Visit payload missing sheets["${CANON_STORE_SHEET}"]`);
+      localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(payload));
+      localStorage.setItem(MASTER_STORE_PING, now);
+      emit(MSG_STORE, MASTER_STORE_KEY);
+      setStatus(`Saved Store Visit (JSON overwritten): ${sourceLabel}`);
     }
   }catch(e){
     console.warn("Save failed:", e);
@@ -554,6 +581,7 @@ function refreshBadges(){
     assignPackBtn.disabled = true;
     assignExpBtn.disabled = true;
     assignProcBtn.disabled = true;
+    assignStoreBtn.disabled = true;
     lastCsvMatrix = null;
     lastCsvName = "";
 
@@ -579,6 +607,7 @@ function refreshBadges(){
       assignPackBtn.disabled = false;
       assignExpBtn.disabled = false;
       assignProcBtn.disabled = false;
+      assignStoreBtn.disabled = false;
 
       // Auto-assign
 if(lower.includes("grow")){
@@ -603,8 +632,13 @@ else if(lower.includes("experiment") || lower.includes("experiments") || lower.i
   const payload = buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel: `CSV: ${file.name}` });
   saveSource("proc", payload, `CSV: ${file.name}`);
   setStatus("CSV loaded and auto-assigned to Procurement. You can reassign with the buttons.");
+} else if(lower.includes("store") && lower.includes("visit")){
+  const hr = rowsToHeaderRows(rows);
+  const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV: ${file.name}` });
+  saveSource("store", payload, `CSV: ${file.name}`);
+  setStatus("CSV loaded and auto-assigned to Store Visit. You can reassign with the buttons.");
 } else {
-        setStatus("CSV loaded. Assign it to Master Grow, Master Pack, Experiments, or Procurement.");
+        setStatus("CSV loaded. Assign it to Master Grow, Master Pack, Experiments, Procurement, or Store Visit.");
       }
       return;
     }
@@ -622,6 +656,7 @@ else if(lower.includes("experiment") || lower.includes("experiments") || lower.i
     const packSheet = pickSheetByName(wb, ["master pack","master_pack","pack","mp","04","4"]);
 const expSheet  = pickSheetByName(wb, ["current experiments","experiments","experiment","exp"]);
 const procSheet = pickSheetByName(wb, ["procurement","procure","purchasing","purchase","vendor","supplies"]);
+const storeSheet = pickSheetByName(wb, ["store visit","store_visit","store","visit"]);
 
 let wroteAny = false;
 
@@ -675,8 +710,20 @@ if(procSheet){
   }
 }
 
+// Store Visit
+if(storeSheet){
+  const hr = sheetToHeaderRows(wb.Sheets[storeSheet]);
+  if(isNonEmptySheet(hr)){
+    const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `XLSX sheet: ${storeSheet}` });
+    saveSource("store", payload, `XLSX sheet: ${storeSheet}`);
+    wroteAny = true;
+  } else {
+    setStatus(`Found sheet "${storeSheet}" but it was empty (did not overwrite Store Visit).`);
+  }
+}
+
 // Preview: whichever is present, otherwise first sheet
-    const previewName = growSheet || packSheet || expSheet || procSheet || pickFallbackSheet(wb);
+    const previewName = growSheet || packSheet || expSheet || procSheet || storeSheet || pickFallbackSheet(wb);
     if(previewName){
       const ws = wb.Sheets[previewName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows:false, raw:false });
@@ -722,9 +769,11 @@ function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
 function normalizeMasterPayload(raw, kind){
   // Ensures canonical sheet keys exist so dashboards never break.
   const want =
-    (kind === "grow") ? CANON_GROW_SHEET :
-    (kind === "pack") ? CANON_PACK_SHEET :
-    (kind === "exp")  ? CANON_EXP_SHEET  :
+    (kind === "grow")  ? CANON_GROW_SHEET :
+    (kind === "pack")  ? CANON_PACK_SHEET :
+    (kind === "exp")   ? CANON_EXP_SHEET  :
+    (kind === "proc")  ? CANON_PROC_SHEET :
+    (kind === "store") ? CANON_STORE_SHEET :
     CANON_PROC_SHEET;
 
   if (!isObject(raw)) return raw;
@@ -740,6 +789,7 @@ function normalizeMasterPayload(raw, kind){
     if (!match && kind === "pack") match = keys.find(k => String(k).toLowerCase().includes("pack"));
     if (!match && kind === "exp")  match = keys.find(k => String(k).toLowerCase().includes("experiment"));
     if (!match && kind === "proc") match = keys.find(k => String(k).toLowerCase().includes("procure"));
+    if (!match && kind === "store") match = keys.find(k => String(k).toLowerCase().includes("store") || String(k).toLowerCase().includes("visit"));
 
     if (match) {
       const clone = JSON.parse(JSON.stringify(raw));
@@ -816,6 +866,14 @@ function normalizeMasterPayload(raw, kind){
       gotAny = true;
     }catch(e){ console.warn("Procurement pull failed:", e); }
 
+    try{
+      const store = normalizeMasterPayload(await workerGetJson(PUBLIC_STORE_VISIT_URL), "store");
+      localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(store));
+      localStorage.setItem(MASTER_STORE_PING, now);
+      emit(MSG_STORE, MASTER_STORE_KEY);
+      gotAny = true;
+    }catch(e){ console.warn("Store Visit pull failed:", e); }
+
     refreshBadges();
 
     if(gotAny) setStatus("✅ Pulled latest JSON into localStorage.");
@@ -836,9 +894,10 @@ async function publishToSupabase(){
     const packStr = localStorage.getItem(MASTER_PACK_KEY);
     const expStr  = localStorage.getItem(MASTER_EXP_KEY);
     const procStr = localStorage.getItem(MASTER_PROC_KEY);
+    const storeStr = localStorage.getItem(MASTER_STORE_KEY);
 
-    if(!growStr && !packStr && !expStr && !procStr){
-      setStatus("Nothing to publish yet. Upload files first.");
+    if(!growStr && !packStr && !expStr && !procStr && !storeStr){
+      setStatus("Nothing to publish (Grow / Pack / Exp / Procurement / Store Visit).");
       return;
     }
 
@@ -847,6 +906,7 @@ async function publishToSupabase(){
     try { if(packStr) JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
     try { if(expStr)  JSON.parse(expStr);  } catch { return setStatus("Experiments JSON is invalid (cannot publish)."); }
     try { if(procStr) JSON.parse(procStr); } catch { return setStatus("Procurement JSON is invalid (cannot publish)."); }
+    try { if(storeStr) JSON.parse(storeStr); } catch { return setStatus("Store Visit JSON is invalid (cannot publish)."); }
 
     // Contract check (warn but allow publish if you want)
     const v = validateStorageContract();
@@ -902,6 +962,17 @@ async function publishToSupabase(){
         results.push("procurement.json");
       }
 
+      if(storeStr){
+        const res = await fetch(WORKER_STORE_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: storeStr
+        });
+        const text = await res.text().catch(() => "");
+        if(!res.ok) throw new Error(`Store Visit publish failed (${res.status}): ${text}`);
+        results.push("Store Visit.json");
+      }
+
       setStatus(`✅ Published: ${results.join(" + ")}`);
     }catch(err){
       console.error(err);
@@ -925,6 +996,9 @@ async function publishToSupabase(){
     saveSource("grow", payload, `CSV (manual): ${lastCsvName}`);
     assignGrowBtn.disabled = true;
     assignPackBtn.disabled = true;
+    assignExpBtn.disabled = true;
+    assignProcBtn.disabled = true;
+    assignStoreBtn.disabled = true;
   });
 
   assignPackBtn.addEventListener("click", () => {
@@ -934,6 +1008,9 @@ async function publishToSupabase(){
     saveSource("pack", payload, `CSV (manual): ${lastCsvName}`);
     assignGrowBtn.disabled = true;
     assignPackBtn.disabled = true;
+    assignExpBtn.disabled = true;
+    assignProcBtn.disabled = true;
+    assignStoreBtn.disabled = true;
   });
 
 assignExpBtn.addEventListener("click", () => {
@@ -945,6 +1022,7 @@ assignExpBtn.addEventListener("click", () => {
   assignPackBtn.disabled = true;
   assignExpBtn.disabled = true;
   assignProcBtn.disabled = true;
+  assignStoreBtn.disabled = true;
 });
 
 assignProcBtn.addEventListener("click", () => {
@@ -956,6 +1034,19 @@ assignProcBtn.addEventListener("click", () => {
   assignPackBtn.disabled = true;
   assignExpBtn.disabled = true;
   assignProcBtn.disabled = true;
+  assignStoreBtn.disabled = true;
+});
+
+assignStoreBtn.addEventListener("click", () => {
+  if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
+  const hr = rowsToHeaderRows(lastCsvMatrix);
+  const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV (manual): ${lastCsvName}` });
+  saveSource("store", payload, `CSV (manual): ${lastCsvName}`);
+  assignGrowBtn.disabled = true;
+  assignPackBtn.disabled = true;
+  assignExpBtn.disabled = true;
+  assignProcBtn.disabled = true;
+  assignStoreBtn.disabled = true;
 });
 
   clearBtn.addEventListener("click", () => {
@@ -964,19 +1055,22 @@ assignProcBtn.addEventListener("click", () => {
   localStorage.removeItem(MASTER_PACK_KEY);
   localStorage.removeItem(MASTER_EXP_KEY);
   localStorage.removeItem(MASTER_PROC_KEY);
+  localStorage.removeItem(MASTER_STORE_KEY);
   localStorage.removeItem(MASTER_GROW_PING);
   localStorage.removeItem(MASTER_PACK_PING);
   localStorage.removeItem(MASTER_EXP_PING);
   localStorage.removeItem(MASTER_PROC_PING);
+  localStorage.removeItem(MASTER_STORE_PING);
     }catch(e){}
 
     emit(MSG_GROW, MASTER_GROW_KEY);
     emit(MSG_PACK, MASTER_PACK_KEY);
     emit(MSG_EXP, MASTER_EXP_KEY);
     emit(MSG_PROC, MASTER_PROC_KEY);
+    emit(MSG_STORE, MASTER_STORE_KEY);
 
     previewEl.innerHTML = `<div class="small" style="padding:10px;">Upload a file to preview data.</div>`;
-    setStatus("Cleared stored Master Grow + Master Pack.");
+    setStatus("Cleared stored sources.");
     showContractWarning("");
     refreshBadges();
   });
@@ -985,6 +1079,7 @@ assignProcBtn.addEventListener("click", () => {
 downloadPackBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PACK_KEY, "pack.json"));
 downloadExpBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_EXP_KEY, "experiments.json"));
 downloadProcBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PROC_KEY, "procurement.json"));
+downloadStoreBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_STORE_KEY, "store-visit.json"));
 
   publishBtn.addEventListener("click", publishToSupabase);
   pullBtn.addEventListener("click", pullFromSupabase);
@@ -1010,7 +1105,7 @@ downloadProcBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MAS
   // Keep badges fresh if something else updates localStorage
   window.addEventListener("storage", (e) => {
     if (!e) return;
-    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING].includes(e.key)) {
+    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_STORE_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_STORE_PING].includes(e.key)) {
       refreshBadges();
     }
   });
