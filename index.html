@@ -925,9 +925,8 @@
                 </div>
 
                 <div class="cat-grid" id="homeSales" style="display:none;">
-                  <button class="tile disabled" disabled><div class="ico">💵</div><div class="name" data-i18n="tile.sales-overview.name">Sales Overview</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">📈</div><div class="name" data-i18n="tile.forecast.name">Forecast</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
-                  <button class="tile disabled" disabled><div class="ico">📣</div><div class="name" data-i18n="tile.campaigns.name">Campaigns</div><div class="meta" data-i18n="tile.placeholder">Placeholder</div></button>
+                  <button class="tile" data-home-go="p-sales-tracking"><div class="ico">📈</div><div class="name" data-i18n="tile.sales-tracking.name">Sales Productivity</div><div class="meta" data-i18n="tile.sales-tracking.meta">Orders, customers, and sales mix</div></button>
+                  <button class="tile" data-home-go="p-store-visits"><div class="ico">🧭</div><div class="name" data-i18n="tile.store-visits.name">Store Visits</div><div class="meta" data-i18n="tile.store-visits.meta">Visit logs and follow-ups</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeTeam" style="display:none;">
@@ -1134,6 +1133,32 @@
           <iframe id="ifr-mulders" data-file-key="mulders"></iframe>
         </div>
       </section>
+
+      <section class="panel" id="p-sales-tracking">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Sales Productivity Dashboard</h2>
+            <p>Reads Sales lines from Master Pack (localStorage) and renders KPI + charts.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="sales-tracking"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-sales-tracking" data-file-key="sales-tracking"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-store-visits">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Store Visits</h2>
+            <p>Management visit logs and follow-ups (embedded from <code data-file-text="store-visits"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="store-visits"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-store-visits" data-file-key="store-visits"></iframe>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -1205,9 +1230,8 @@
       </div>
 
       <div class="launcher-grid" id="cat-sales" style="display:none;">
-        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">💵</div><div class="app-name" data-i18n="tile.sales-overview.name">Sales Overview</div></button>
-        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">📈</div><div class="app-name" data-i18n="tile.forecast.name">Forecast</div></button>
-        <button class="launch-app" aria-disabled="true" disabled><div class="app-ico">📣</div><div class="app-name" data-i18n="tile.campaigns.name">Campaigns</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-sales-tracking"><div class="app-ico">📈</div><div class="app-name" data-i18n="tile.sales-tracking.name">Sales Productivity</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-store-visits"><div class="app-ico">🧭</div><div class="app-name" data-i18n="tile.store-visits.name">Store Visits</div></button>
       </div>
 
       <div class="launcher-grid" id="cat-team" style="display:none;">
@@ -1238,14 +1262,14 @@
           "home.back":"← Back",
           "launcher.category":"Category",
           "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
-          "crumb.sales":"<strong>Sales &amp; Marketing</strong> — coming soon",
+          "crumb.sales":"<strong>Sales &amp; Marketing</strong> — sales dashboards",
           "crumb.team":"<strong>Team Tools</strong> — internal utilities",
           "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
           "crumb.foodsafety":"<strong>Food Safety</strong> — batch traceability",
           "card.ops.title":"Operations",
           "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
           "card.sales.title":"Sales & Marketing",
-          "card.sales.meta":"Coming soon: Sales performance, forecasting, and customer demand insights",
+          "card.sales.meta":"Sales performance, customers, and demand insights",
           "card.team.title":"Team Tools",
           "card.team.meta":"Internal tools for scheduling, coordination, and team workflows",
           "card.data.title":"Data Input",
@@ -1299,6 +1323,10 @@
           "tile.sales-overview.name":"Sales Overview",
           "tile.forecast.name":"Forecast",
           "tile.campaigns.name":"Campaigns",
+          "tile.sales-tracking.name":"Sales Productivity",
+          "tile.sales-tracking.meta":"Orders, customers, and sales mix",
+          "tile.store-visits.name":"Store Visits",
+          "tile.store-visits.meta":"Visit logs and follow-ups",
           "tile.schedule.name":"Schedule",
           "tile.sops.name":"SOPs",
           "tile.issues.name":"Issues",
@@ -1331,14 +1359,14 @@
           "home.back":"← Volver",
           "launcher.category":"Categoría",
           "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
-          "crumb.sales":"<strong>Ventas y marketing</strong> — próximamente",
+          "crumb.sales":"<strong>Ventas y marketing</strong> — paneles de ventas",
           "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
           "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
           "crumb.foodsafety":"<strong>Inocuidad</strong> — trazabilidad de lotes",
           "card.ops.title":"Operaciones",
           "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
           "card.sales.title":"Ventas y mercadeo",
-          "card.sales.meta":"Próximamente: rendimiento de ventas, pronósticos y demanda de clientes",
+          "card.sales.meta":"Rendimiento de ventas, clientes y demanda",
           "card.team.title":"Herramientas de equipo",
           "card.team.meta":"Herramientas internas para programación, coordinación y flujos de trabajo del equipo",
           "card.data.title":"Carga de datos",
@@ -1392,6 +1420,10 @@
           "tile.sales-overview.name":"Resumen de ventas",
           "tile.forecast.name":"Pronóstico",
           "tile.campaigns.name":"Campañas",
+          "tile.sales-tracking.name":"Productividad de ventas",
+          "tile.sales-tracking.meta":"Pedidos, clientes y mezcla de ventas",
+          "tile.store-visits.name":"Visitas a tiendas",
+          "tile.store-visits.meta":"Registros de visitas y seguimiento",
           "tile.schedule.name":"Calendario",
           "tile.sops.name":"POE",
           "tile.issues.name":"Incidencias",
@@ -1429,6 +1461,8 @@
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
+        "sales-tracking": "02.1 Mgmt - Sales Tracking.html",
+        "store-visits": "02.2 Mgmt - Store Visits.html",
         foodsafety: "11.0 Food Safety - Traceibility.html",
         mulders: "04.3 Team - Mulders Chart.html",
         "board-inventory": "04.2 Team - Board Inventory.html",
@@ -1567,7 +1601,8 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance"
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance",
+        "ifr-sales-tracking","ifr-store-visits"
       ];
 
       function fileWithQuery(key){

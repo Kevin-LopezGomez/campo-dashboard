@@ -981,53 +981,24 @@ Wednesday, November 5, 2025[TAB]Our Delivery[TAB]45[TAB]Thursday, November 6, 20
   </div>
 
   <script>
-    // ---------- RAW SAMPLE DATA ----------
-    const defaultSalesData = [
-      ["Wednesday, November 5, 2025","Our Delivery",45,"Thursday, November 6, 2025","663","COMBO-03LB",1,"Pocito Dulce","COD"],
-      ["Thursday, October 30, 2025","Pick-up",45,"Thursday, November 6, 2025","655","COMBO-05OZ",228,"Agro Produce","NET-30"],
-      ["Thursday, October 30, 2025","Pick-up",45,"Thursday, November 6, 2025","655","COMBO-10OZ",43,"Agro Produce","NET-30"],
-      ["Friday, November 7, 2025","Pick-up",46,"Thursday, November 13, 2025","665","COMBO-05OZ",33,"Agro Produce","NET-30"],
-      ["Friday, November 7, 2025","Pick-up",46,"Thursday, November 13, 2025","665","COMBO-10OZ",33,"Agro Produce","NET-30"],
-      ["Friday, November 7, 2025","Pick-up",46,"Monday, November 10, 2025","664","COMBO-05OZ",17,"Agro Produce","NET-30"],
-      ["Friday, November 7, 2025","Pick-up",46,"Monday, November 10, 2025","664","COMBO-10OZ",17,"Agro Produce","NET-30"],
-      ["Monday, November 10, 2025","Our Delivery",46,"Wednesday, November 12, 2025","666","CRNCH-01LB",36,"Pasta to go","NET-30"],
-      ["Friday, November 7, 2025","Pick-up",46,"Thursday, November 13, 2025","665","COMBO-05OZ",33,"Agro Produce","NET-30"],
-      ["Thursday, November 13, 2025","Pick-up",47,"Monday, November 17, 2025","673","COMBO-05OZ",72,"Agro Produce","NET-30"],
-      ["Thursday, November 13, 2025","Our Delivery",46,"Friday, November 14, 2025","671","COMBO-01LB",1,"Hacienda Calichi","COD"],
-      ["Thursday, November 13, 2025","Pick-up",46,"Friday, November 14, 2025","672","COMBO-05OZ",12,"Fundación Fe y Esperanza","DONACION"],
-      ["Thursday, November 13, 2025","Pick-up",47,"Thursday, November 20, 2025","674","COMBO-05OZ",25,"Agro Produce","NET-30"],
-      ["Thursday, November 13, 2025","Pick-up",47,"Thursday, November 20, 2025","674","COMBO-10OZ",25,"Agro Produce","NET-30"],
-      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","670","COMBO-03LB",1,"Papá Che","COD"],
-      ["Wednesday, November 12, 2025","Pick-up",47,"Monday, November 17, 2025","669","CRNCH-03LB",6,"Vallejo frutas y vegetales","COD"],
-      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","667","COMBO-03LB",1,"El Penon Bar and Grill","COD"],
-      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","668","COMBO-03LB",1,"Asador San Miguel","NET-7"],
-      ["Wednesday, November 12, 2025","Our Delivery",46,"Thursday, November 13, 2025","668","COMBO-01LB",1,"Asador San Miguel","NET-7"],
-      ["Monday, November 17, 2025","Pick-up",47,"Monday, November 17, 2025","675","CRNCH-03LB",2,"Pal Tostao Cafe","COD"],
-      ["Monday, November 17, 2025","Our Delivery",47,"Tuesday, November 18, 2025","676","COMBO-03LB",4,"Bottles - Guaynabo","NET-15"],
-      ["Monday, November 17, 2025","Our Delivery",47,"Tuesday, November 18, 2025","676","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15"],
-      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","678","COMBO-03LB",3,"El Penon Bar and Grill","COD"],
-      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","679","COMBO-03LB",3,"Hacienda Calichi","COD"],
-      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","680","COMBO-01LB",1,"Asador San Miguel","NET-7"],
-      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","680","COMBO-03LB",3,"Asador San Miguel","NET-7"],
-      ["Wednesday, November 19, 2025","Our Delivery",47,"Thursday, November 20, 2025","681","COMBO-03LB",1,"Papá Che","COD"],
-      ["Wednesday, November 19, 2025","Pick-up",48,"Monday, November 24, 2025","682","COMBO-05OZ",63,"Agro Produce","NET-30"],
-      ["Thursday, November 20, 2025","Pick-up",48,"Wednesday, November 26, 2025","683","COMBO-05OZ",260,"Agro Produce","NET-30"],
-      ["Thursday, November 20, 2025","Pick-up",48,"Wednesday, November 26, 2025","683","COMBO-10OZ",42,"Agro Produce","NET-30"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Tuesday, November 25, 2025","684","COMBO-03LB",4,"Bottles - Guaynabo","NET-15"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Tuesday, November 25, 2025","684","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","685","COMBO-03LB",2,"El Penon Bar and Grill","COD"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","686","COMBO-03LB",1,"Hacienda Calichi","COD"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","687","COMBO-03LB",1,"Papá Che","COD"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","688","COMBO-03LB",3,"Asador San Miguel","NET-7"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","688","COMBO-01LB",1,"Asador San Miguel","NET-7"],
-      ["Monday, November 24, 2025","Our Delivery",48,"Wednesday, November 26, 2025","689","COMBO-03LB",2,"Pocito Dulce","NET-30"],
-      ["Tuesday, November 25, 2025","Our Delivery",48,"Wednesday, November 26, 2025","690","CRNCH-03LB",1,"Pal Tostao Cafe","COD"],
-      ["Tuesday, November 25, 2025","Our Delivery",48,"Wednesday, November 26, 2025","691","COMBO-01LB",30,"Pasta to Go","NET-30"],
-      ["Tuesday, November 25, 2025","Our Delivery",48,"Wednesday, November 26, 2025","692","COMBO-03LB",3,"Cosecha Restaurant","COD"],
-      ["Monday, December 1, 2025","Pick-up",49,"Thursday, December 4, 2025","693","COMBO-05OZ",58,"Agro Produce","NET-30"],
-      ["Monday, December 1, 2025","Pick-up",49,"Thursday, December 4, 2025","693","COMBO-10OZ",45,"Agro Produce","NET-30"],
-      ["Monday, December 1, 2025","Our Delivery",49,"Tuesday, December 2, 2025","694","COMBO-03LB",4,"Bottles - Guaynabo","NET-15"],
-      ["Monday, December 1, 2025","Our Delivery",49,"Tuesday, December 2, 2025","694","CRNCH-03LB",1,"Bottles - Guaynabo","NET-15"]
+    // ---------- MASTER PACK HYDRATION ----------
+    const MASTER_PACK_KEY = "campo_master_pack_v1";
+    const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
+    const MASTER_PACK_SHEET_NAME = "Master Pack";
+    const MSG_PACK = "MASTER_PACK_UPDATED";
+    const BC_NAME = "campo_master_bus_v1";
+    const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
+
+    const REQUIRED_SALES_HEADERS = [
+      "Sales Invoice Date",
+      "Sales Ship Via",
+      "Sales Week",
+      "Sales Ship Date",
+      "Sales Invoice No.",
+      "Sales SKU",
+      "Sales # of Cases",
+      "Sales Customer",
+      "Sales Term"
     ];
 
 const excludedCustomers = new Set([
@@ -1086,13 +1057,20 @@ const skuWeightLbs = {
         .map(r => {
           const [invoiceDate, shipVia, salesWeek, shipDate, invoiceNo, sku, cases, customer, term = ""] = r;
           const shipDateObj = new Date(shipDate);
-          const shipDateISO = shipDateObj.toISOString().slice(0,10);
+          const shipDateISO = isNaN(shipDateObj.getTime()) ? "" : shipDateObj.toISOString().slice(0,10);
+          const shipDateSafe = isNaN(shipDateObj.getTime()) ? null : shipDateObj;
+          const shipYear = shipDateObj.getTime && !isNaN(shipDateObj.getTime()) ? shipDateObj.getFullYear() : 0;
+          const weekKey = shipYear ? `${shipYear}-W${Number(salesWeek)}` : `0000-W${Number(salesWeek)}`;
+          const weekOrder = shipYear ? (shipYear * 100 + Number(salesWeek)) : Number(salesWeek);
           return {
             invoiceDate,
             shipVia,
             salesWeek: Number(salesWeek),
+            shipYear,
+            weekKey,
+            weekOrder,
             shipDate,
-            shipDateObj,
+            shipDateObj: shipDateSafe,
             shipDateISO,
             invoiceNo: String(invoiceNo),
             sku,
@@ -1104,7 +1082,7 @@ const skuWeightLbs = {
         .filter(record => !isExcludedCustomer(record.customer));
     }
 
-    let salesData = normalizeData(defaultSalesData);
+    let salesData = [];
 
     const state = {
       viewMode: "daily",   // "daily" or "weekly" (global)
@@ -1153,11 +1131,90 @@ const skuWeightLbs = {
     let salesChart = null;
     let salesBreakdownChart = null;
 
+    function loadMasterPackPayload() {
+      const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const out = [];
+      for (const r of rows) {
+        if (!Array.isArray(r)) continue;
+        const obj = {};
+        for (let i = 0; i < headers.length; i++) {
+          const h = headers[i];
+          const key = (h === null || h === undefined) ? "" : String(h);
+          if (!key.trim()) continue;
+          obj[key] = (i < r.length) ? r[i] : "";
+        }
+        out.push(obj);
+      }
+      return out;
+    }
+
+    function parseSalesFromMasterPack(payload) {
+      const sheet = payload?.sheets?.[MASTER_PACK_SHEET_NAME];
+      if (!sheet) return { rows: [], missing: REQUIRED_SALES_HEADERS.slice() };
+      const headers = Array.isArray(sheet.headers) ? sheet.headers.map(h => String(h ?? "")) : [];
+      const headerSet = new Set(headers);
+      const missing = REQUIRED_SALES_HEADERS.filter(h => !headerSet.has(h));
+      if (missing.length) return { rows: [], missing };
+
+      const rowObjs = sheetToRowObjects(sheet);
+      const out = [];
+
+      for (const r of rowObjs) {
+        const invoiceDate = String(r["Sales Invoice Date"] ?? "").trim();
+        const shipVia = String(r["Sales Ship Via"] ?? "").trim();
+        const salesWeek = String(r["Sales Week"] ?? "").trim();
+        const shipDate = String(r["Sales Ship Date"] ?? "").trim();
+        const invoiceNo = String(r["Sales Invoice No."] ?? "").trim();
+        const sku = String(r["Sales SKU"] ?? "").trim();
+        const cases = String(r["Sales # of Cases"] ?? "").trim();
+        const customer = String(r["Sales Customer"] ?? "").trim();
+        const term = String(r["Sales Term"] ?? "").trim();
+
+        if (!invoiceDate && !shipDate && !sku && !cases && !customer) continue;
+        out.push([invoiceDate, shipVia, salesWeek, shipDate, invoiceNo, sku, cases, customer, term]);
+      }
+
+      return { rows: out, missing: [] };
+    }
+
+    function hydrateFromMasterPack(reason) {
+      const payload = loadMasterPackPayload();
+      if (!payload) {
+        salesData = [];
+        initFilters();
+        refreshDashboard();
+        dataInputStatus.textContent = "Waiting for Master Pack in localStorage.";
+        return;
+      }
+
+      const parsed = parseSalesFromMasterPack(payload);
+      if (parsed.missing.length) {
+        salesData = [];
+        initFilters();
+        refreshDashboard();
+        dataInputStatus.textContent = `Master Pack missing Sales columns: ${parsed.missing.join(", ")}`;
+        return;
+      }
+
+      salesData = normalizeData(parsed.rows);
+      initFilters();
+      refreshDashboard();
+      dataInputStatus.textContent = `Loaded ${salesData.length} sales rows from Master Pack.`;
+    }
+
     function formatNumber(value) {
       return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
     }
 
     function formatDateShort(d) {
+      if (!d || isNaN(d.getTime())) return "—";
       return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
     }
 
@@ -1176,10 +1233,26 @@ const skuWeightLbs = {
       return salesData.filter(row => {
         if (state.filters.sku !== "all" && row.sku !== state.filters.sku) return false;
         if (state.filters.customer !== "all" && row.customer !== state.filters.customer) return false;
-        if (state.filters.week !== "all" && row.salesWeek !== Number(state.filters.week)) return false;
+        if (state.filters.week !== "all" && row.weekKey !== state.filters.week) return false;
         if (state.filters.date !== "all" && row.shipDateISO !== state.filters.date) return false;
         return true;
       });
+    }
+
+    function hasMultipleWeekYears(rows) {
+      const years = new Set(rows.map(r => r.shipYear).filter(Boolean));
+      return years.size > 1;
+    }
+
+    function weekLabelFromRow(row, showYear) {
+      if (!row) return "Week —";
+      return showYear ? `W${row.salesWeek} ${row.shipYear}` : `W${row.salesWeek}`;
+    }
+
+    function weekLabelFromKey(key, showYear) {
+      const m = String(key || "").match(/^(\d{4})-W(\d+)$/);
+      if (!m) return String(key || "");
+      return showYear ? `W${m[2]} ${m[1]}` : `W${m[2]}`;
     }
 
     function buildStrip(container, allLabel, set, keyName) {
@@ -1224,7 +1297,7 @@ const skuWeightLbs = {
         // DAILY: one row per invoice line (original behavior)
         filtered
           .slice()
-          .sort((a,b)=> a.shipDateObj - b.shipDateObj || a.invoiceNo.localeCompare(b.invoiceNo))
+          .sort((a,b)=> (a.shipDateObj?.getTime() || 0) - (b.shipDateObj?.getTime() || 0) || a.invoiceNo.localeCompare(b.invoiceNo))
           .forEach(row => {
             const tr = document.createElement("tr");
             const units = getUnits(row, unitMode);
@@ -1272,13 +1345,16 @@ const skuWeightLbs = {
           });
       } else {
         // WEEKLY: aggregate by week + SKU + customer
-        const buckets = new Map(); // key: week|sku|customer
+        const buckets = new Map(); // key: weekKey|sku|customer
+        const showYear = hasMultipleWeekYears(filtered);
         filtered.forEach(row => {
           const units = getUnits(row, unitMode);
-          const key = `${row.salesWeek}||${row.sku}||${row.customer}`;
+          const key = `${row.weekKey}||${row.sku}||${row.customer}`;
           if (!buckets.has(key)) {
             buckets.set(key, {
-              week: row.salesWeek,
+              weekKey: row.weekKey,
+              weekOrder: row.weekOrder,
+              weekLabel: weekLabelFromRow(row, showYear),
               sku: row.sku,
               customer: row.customer,
               cases: 0,
@@ -1291,18 +1367,18 @@ const skuWeightLbs = {
         });
 
         const rows = [...buckets.values()].sort(
-          (a,b)=> a.week - b.week || a.sku.localeCompare(b.sku) || a.customer.localeCompare(b.customer)
+          (a,b)=> a.weekOrder - b.weekOrder || a.sku.localeCompare(b.sku) || a.customer.localeCompare(b.customer)
         );
 
         rows.forEach(row => {
           const tr = document.createElement("tr");
 
           const shipTd = document.createElement("td");
-          shipTd.textContent = `Week ${row.week}`;
+          shipTd.textContent = row.weekLabel;
           tr.appendChild(shipTd);
 
           const weekTd = document.createElement("td");
-          weekTd.textContent = row.week;
+          weekTd.textContent = row.weekLabel.replace(/^W/, "");
           tr.appendChild(weekTd);
 
           const skuTd = document.createElement("td");
@@ -1371,7 +1447,7 @@ const skuWeightLbs = {
         const units = getUnits(row, unitMode);
         totalUnits += units;
 
-        const gKey = isWeekly ? row.salesWeek : row.shipDateISO;
+        const gKey = isWeekly ? row.weekKey : row.shipDateISO;
         byGroup.set(gKey, (byGroup.get(gKey) || 0) + units);
 
         byCustomer.set(row.customer, (byCustomer.get(row.customer) || 0) + units);
@@ -1427,9 +1503,10 @@ const skuWeightLbs = {
 
       const unitMode = state.unitMode; // "cases" or "pounds"
       const byWeek = new Map();
+      const showYear = hasMultipleWeekYears(filtered);
 
       filtered.forEach(row => {
-        const wk = row.salesWeek;
+        const wk = row.weekKey;
 
         // First metric: always raw cases
         const cases = row.cases;
@@ -1443,6 +1520,8 @@ const skuWeightLbs = {
 
         if (!byWeek.has(wk)) {
           byWeek.set(wk, {
+            weekLabel: weekLabelFromRow(row, showYear),
+            weekOrder: row.weekOrder,
             cases: 0,
             metric: 0,
             customers: new Set(),
@@ -1458,11 +1537,11 @@ const skuWeightLbs = {
       });
 
       const rows = [...byWeek.entries()]
-        .sort((a, b) => a[0] - b[0])
+        .sort((a, b) => (a[1].weekOrder || 0) - (b[1].weekOrder || 0))
         .map(([wk, info]) => {
           return `
             <tr>
-              <td>Week ${wk}</td>
+              <td>${info.weekLabel}</td>
               <td class="text-right">${formatNumber(info.cases)}</td>
               <td class="text-right">${formatNumber(info.metric)}</td>
               <td class="text-center">${info.customers.size}</td>
@@ -1506,6 +1585,7 @@ const skuWeightLbs = {
       const unitMode = state.unitMode;
       const by = state.timeAxis === "weekly" ? "week" : "date";
       const buckets = new Map();
+      const showYear = hasMultipleWeekYears(filtered);
 
       filtered.forEach(row => {
         const units = getUnits(row, unitMode);
@@ -1515,8 +1595,8 @@ const skuWeightLbs = {
           key = row.shipDateISO;
           labelMeta = row.shipDateObj;
         } else {
-          key = String(row.salesWeek);
-          labelMeta = row.salesWeek;
+          key = row.weekKey;
+          labelMeta = row.weekOrder;
         }
 
         if (!buckets.has(key)) {
@@ -1536,7 +1616,7 @@ const skuWeightLbs = {
         if (by === "date") {
           labels.push(formatDateShort(obj.meta));
         } else {
-          labels.push(`Week ${obj.meta}`);
+          labels.push(weekLabelFromKey(key, showYear));
         }
         data.push(obj.total);
         keys.push(key);
@@ -1632,7 +1712,7 @@ const skuWeightLbs = {
             const key = chart.data.metaKeys ? chart.data.metaKeys[idx] : null;
             if (!key) return;
             if (state.viewMode === "weekly") {
-              state.filters.week = Number(key);
+              state.filters.week = key;
               state.filters.date = "all";
             } else {
               state.filters.date = key;
@@ -1780,19 +1860,24 @@ const skuWeightLbs = {
 
       const skuSet = new Set();
       const weekSet = new Set();
+      const showYear = hasMultipleWeekYears(filtered);
       const matrix = new Map(); // sku -> Map(week -> units)
 
       filtered.forEach(row => {
         const units = getUnits(row, state.unitMode);
         skuSet.add(row.sku);
-        weekSet.add(row.salesWeek);
+        weekSet.add(row.weekKey);
         if (!matrix.has(row.sku)) matrix.set(row.sku, new Map());
         const m = matrix.get(row.sku);
-        m.set(row.salesWeek, (m.get(row.salesWeek) || 0) + units);
+        m.set(row.weekKey, (m.get(row.weekKey) || 0) + units);
       });
 
       const skus = [...skuSet].sort();
-      const weeks = [...weekSet].sort((a,b)=>a-b);
+      const weeks = [...weekSet].sort((a,b)=>{
+        const aOrder = Number(String(a).split("-W")[0]) * 100 + Number(String(a).split("-W")[1] || 0);
+        const bOrder = Number(String(b).split("-W")[0]) * 100 + Number(String(b).split("-W")[1] || 0);
+        return aOrder - bOrder;
+      });
 
       let min = Infinity;
       let max = 0;
@@ -1820,7 +1905,7 @@ const skuWeightLbs = {
         return `<tr><th scope="row">${sku}</th>${cells}</tr>`;
       }).join("");
 
-      const headerCells = weeks.map(w => `<th>W${w}</th>`).join("");
+      const headerCells = weeks.map(w => `<th>${weekLabelFromKey(w, showYear)}</th>`).join("");
       skuWeekHeatmapEl.innerHTML = `
         <div style="overflow:auto;">
           <table class="heatmap-table">
@@ -2000,15 +2085,45 @@ const skuWeightLbs = {
 
       clearDataBtn.addEventListener("click", () => {
         dataInputArea.value = "";
-        salesData = normalizeData(defaultSalesData);
-        initFilters();
-        refreshDashboard();
-        dataInputStatus.textContent = "Cleared pasted data; reverted to sample data.";
+        hydrateFromMasterPack("clear");
       });
     }
 
+    function setupLiveListeners() {
+      window.addEventListener("storage", (e) => {
+        if (!e) return;
+        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) {
+          hydrateFromMasterPack("storage");
+        }
+      });
+
+      window.addEventListener("message", (event) => {
+        const msg = event?.data;
+        if (msg?.type === MSG_PACK) hydrateFromMasterPack("message");
+      });
+
+      window.addEventListener(MSG_PACK, () => hydrateFromMasterPack("customevent"));
+
+      if (bc) {
+        bc.onmessage = (ev) => {
+          const msg = ev?.data;
+          if (msg?.type === MSG_PACK) hydrateFromMasterPack("broadcast");
+        };
+      }
+
+      let lastLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+      setInterval(() => {
+        const curLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+        if (curLen !== lastLen) {
+          lastLen = curLen;
+          hydrateFromMasterPack("poll");
+        }
+      }, 1500);
+    }
+
     // INIT
-    initFilters();
+    setupLiveListeners();
+    hydrateFromMasterPack("init");
     initToggles();
     initFilterEvents();
     initDataInput();
