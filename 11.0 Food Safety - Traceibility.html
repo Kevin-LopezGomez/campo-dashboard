@@ -374,6 +374,8 @@
       <div class="kpis">
         <span class="kpi">Total cases packed <span id="packTotalCases">0</span></span>
         <span class="kpi">Total cases shipped <span id="packTotalShipped">0</span></span>
+        <span class="kpi">Sum packed weight <span id="packTotalWeight">0</span></span>
+        <span class="kpi">Sum lbs shipped <span id="shipTotalLbs">0</span></span>
       </div>
 
       <div class="grid">
@@ -388,6 +390,7 @@
                   <th>SKU Packed</th>
                   <th>Batch Run Date</th>
                   <th>Cases Packed</th>
+                  <th>Total Packed Weight</th>
                 </tr>
               </thead>
               <tbody id="packTbody"></tbody>
@@ -406,6 +409,7 @@
                   <th>Shipping Date</th>
                   <th>Location Shipped</th>
                   <th># Cases Shipped</th>
+                  <th># Lbs Shipped</th>
                 </tr>
               </thead>
               <tbody id="shipTbody"></tbody>
@@ -421,14 +425,14 @@
                 <tr>
                   <th>Matched Seed Batch Code</th>
                   <th>Seed Date</th>
+                  <th>Flats Seeded</th>
                   <th>Transplant Date</th>
-                  <th>Harvest Date</th>
                   <th>Transplant Pond</th>
+                  <th>Actual Boards Transplanted</th>
+                  <th>Harvest Date</th>
                   <th>Harvest Pond</th>
                   <th>Boards Harvested</th>
                   <th>Peso Lechuga Cortada</th>
-                  <th>Actual Boards Transplanted</th>
-                  <th>Flats Seeded</th>
                 </tr>
               </thead>
               <tbody id="growTbody"></tbody>
@@ -484,6 +488,19 @@ function setStatus(kind, text){
 function safeStr(v){
   if(v === null || v === undefined) return "";
   return String(v);
+}
+
+function shortDate(v){
+  const s = safeStr(v).trim();
+  if(!s) return "";
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    const y = d.getFullYear();
+    const m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()];
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${m} ${day}, ${y}`;
+  }
+  return s;
 }
 
 function norm(s){
@@ -617,6 +634,8 @@ function clearResults(){
   $("shipCount").textContent = "0";
   $("packTotalCases").textContent = "0";
   $("packTotalShipped").textContent = "0";
+  $("packTotalWeight").textContent = "0";
+  $("shipTotalLbs").textContent = "0";
 }
 
 function renderEmpty(tbodyEl, msg, colspan){
@@ -651,17 +670,17 @@ function trace(query){
   clearResults();
 
   if(!PACK_ROWS.length || !GROW_ROWS.length){
-    renderEmpty($("packTbody"), "Waiting for Pack + Grow data from localStorage.", 5);
+    renderEmpty($("packTbody"), "Waiting for Pack + Grow data from localStorage.", 6);
     renderEmpty($("growTbody"), "Waiting for Pack + Grow data from localStorage.", 9);
-    renderEmpty($("shipTbody"), "Waiting for Pack + Grow data from localStorage.", 5);
+    renderEmpty($("shipTbody"), "Waiting for Pack + Grow data from localStorage.", 6);
     return;
   }
 
   const q = norm(query);
   if(!q){
-    renderEmpty($("packTbody"), "Type a code above to search.", 5);
+    renderEmpty($("packTbody"), "Type a code above to search.", 6);
     renderEmpty($("growTbody"), "Grow matches will appear here.", 9);
-    renderEmpty($("shipTbody"), "Shipping matches will appear here.", 5);
+    renderEmpty($("shipTbody"), "Shipping matches will appear here.", 6);
     return;
   }
 
@@ -742,16 +761,18 @@ function trace(query){
   // Render Pack
   $("packCount").textContent = String(packMatches.length);
   if(!packMatches.length){
-    renderEmpty($("packTbody"), `No Pack matches for: ${q}`, 5);
+    renderEmpty($("packTbody"), `No Pack matches for: ${q}`, 6);
   }else{
     let totalCasesPacked = 0;
+    let totalPackedWeightSum = 0;
     for(const m of packMatches){
       const r = m.obj;
 
       const batchRunCode = safeStr(r?.["Batch Run Code"]);
       const skuPacked = safeStr(r?.["SKU Packed"]);
-      const packDate = safeStr(r?.["Batch Run Date"]);
+      const packDate = shortDate(r?.["Batch Run Date"]);
       const qtyCasesPacked = safeStr(r?.["Quantity of Cases Packed"]);
+      const totalPackedWeightVal = safeStr(r?.["Total Packed Weight"]);
       const lbsPacked = safeStr(r?.["Total Packed Weight"]);
 
       const seed1 = safeStr(r?.["Seed Batch Code 1"]);
@@ -764,18 +785,23 @@ function trace(query){
       const casesPackedNum = Number(String(qtyCasesPacked || "").replace(/,/g,"").trim());
       if(Number.isFinite(casesPackedNum)) totalCasesPacked += casesPackedNum;
 
+      const packedWeightNum = Number(String(totalPackedWeightVal || "").replace(/,/g,"").trim());
+      if(Number.isFinite(packedWeightNum)) totalPackedWeightSum += packedWeightNum;
+
       tr.innerHTML = `
         <td>${safeStr(batchRunCode) || "—"}</td>
         <td>${safeStr(m.matchedSeed || "") || "—"}</td>
         <td>${safeStr(skuPacked) || "—"}</td>
         <td>${safeStr(packDate) || "—"}</td>
         <td>${safeStr(qtyCasesPacked) || "—"}</td>
+        <td>${safeStr(totalPackedWeightVal) || "—"}</td>
       `;
       // details column removed
       $("packTbody").appendChild(tr);
     }
     $("packTotalCases").textContent = String(totalCasesPacked);
     $("packTotalShipped").textContent = "0";
+    $("packTotalWeight").textContent = String(totalPackedWeightSum);
   }
 
   // Render Grow
@@ -787,29 +813,29 @@ function trace(query){
       const r = m.obj;
       const batchCode = safeStr(getVal(r, ["Batch Code"]));
       const variety = safeStr(getVal(r, ["Variety","Veriaty"]));
-      const seedDate = safeStr(getVal(r, ["Seed Date"]));
+      const seedDate = shortDate(getVal(r, ["Seed Date"]));
       const seedWeek = safeStr(getVal(r, ["Seed Week"]));
-      const transDate = safeStr(getVal(r, ["Transplant Date"]));
+      const transDate = shortDate(getVal(r, ["Transplant Date"]));
       const transPond = safeStr(getVal(r, ["Transplant Pond"]));
-      const harvDate = safeStr(getVal(r, ["Harvest Date"]));
+      const harvDate = shortDate(getVal(r, ["Harvest Date"]));
       const harvPond = safeStr(getVal(r, ["Harvest Pond"]));
-      const boardsHarvested = safeStr(getVal(r, ["Actual BRD HVT","Actual BRD HVT ","Actual Boards Harvested","Boards Harvested"]));
-      const pesoLechuga = safeStr(getVal(r, ["Peso de la lechuga cortada","Peso Lechuga Cortada","Peso Lechuga"]));
-      const boardsTransplanted = safeStr(getVal(r, ["Actual Boards Transplanted","Actual BRD Transplanted"]));
-      const flatsSeeded = safeStr(getVal(r, ["Flats","Actual Flats","Bandejas"]));
+      const boardsHarvested = safeStr(getVal(r, ["# of Boards Harvested","Actual BRD HVT","Actual BRD HVT ","Actual Boards Harvested","Boards Harvested"]));
+      const pesoLechuga = safeStr(getVal(r, ["Peso de La Lechuga con Waste","Peso de la lechuga cortada","Peso Lechuga Cortada","Peso Lechuga"]));
+      const boardsTransplanted = safeStr(getVal(r, ["Boards Transplant","Actual Boards Transplanted","Actual BRD Transplanted"]));
+      const flatsSeeded = safeStr(getVal(r, ["Flats Seeded","Flats","Actual Flats","Bandejas"]));
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${safeStr(m.seedCode || "") || "—"}</td>
         <td>${safeStr(seedDate) || "—"}</td>
+        <td>${safeStr(flatsSeeded) || "—"}</td>
         <td>${safeStr(transDate) || "—"}</td>
-        <td>${safeStr(harvDate) || "—"}</td>
         <td>${safeStr(transPond) || "—"}</td>
+        <td>${safeStr(boardsTransplanted) || "—"}</td>
+        <td>${safeStr(harvDate) || "—"}</td>
         <td>${safeStr(harvPond) || "—"}</td>
         <td>${safeStr(boardsHarvested) || "—"}</td>
         <td>${safeStr(pesoLechuga) || "—"}</td>
-        <td>${safeStr(boardsTransplanted) || "—"}</td>
-        <td>${safeStr(flatsSeeded) || "—"}</td>
       `;
       // details column removed
       $("growTbody").appendChild(tr);
@@ -828,18 +854,23 @@ function trace(query){
   $("shipCount").textContent = String(shippingRows.length);
 
   if(!shippingRows.length){
-    renderEmpty($("shipTbody"), `No Shipping matches for: ${q}`, 5);
+    renderEmpty($("shipTbody"), `No Shipping matches for: ${q}`, 6);
     $("packTotalShipped").textContent = "0";
+    $("shipTotalLbs").textContent = "0";
   }else{
     let totalCasesShipped = 0;
+    let totalLbsShipped = 0;
     for(const r of shippingRows){
       const runBatch = safeStr(r?.["Run Batch Shipped/Received"]);
       const batchRunCode = runBatch;
-      const shipDate = safeStr(getVal(r, ["Shipping Date","Sales Ship Date"]));
+      const shipDate = shortDate(getVal(r, ["Shipping Date","Sales Ship Date"]));
       const locationShipped = safeStr(getVal(r, ["Location Shipped"]));
       const casesShipped = safeStr(getVal(r, ["# of Cases Shipped","Sales # of Cases"]));
+      const lbsShipped = safeStr(getVal(r, ["# Lbs Shipped"]));
       const casesShippedNum = Number(String(casesShipped || "").replace(/,/g,"").trim());
       if(Number.isFinite(casesShippedNum)) totalCasesShipped += casesShippedNum;
+      const lbsShippedNum = Number(String(lbsShipped || "").replace(/,/g,"").trim());
+      if(Number.isFinite(lbsShippedNum)) totalLbsShipped += lbsShippedNum;
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -848,10 +879,12 @@ function trace(query){
         <td>${safeStr(shipDate) || "—"}</td>
         <td>${safeStr(locationShipped) || "—"}</td>
         <td>${safeStr(casesShipped) || "—"}</td>
+        <td>${safeStr(lbsShipped) || "—"}</td>
       `;
       $("shipTbody").appendChild(tr);
     }
     $("packTotalShipped").textContent = String(totalCasesShipped);
+    $("shipTotalLbs").textContent = String(totalLbsShipped);
   }
 }
 
