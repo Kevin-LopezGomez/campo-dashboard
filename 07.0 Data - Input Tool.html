@@ -140,9 +140,11 @@
         <span class="small">If CSV filename includes “grow” or “pack”, it auto-assigns. Otherwise use the assign buttons.</span>
 
         <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,text/csv" hidden />
+        <input id="storeCsvInput" type="file" accept=".csv,text/csv" hidden />
 
         <div class="btnrow">
           <button class="primary" id="chooseBtn" type="button">📄 Choose File</button>
+          <button class="primary" id="chooseStoreBtn" type="button">🗺️ Choose Store Visit CSV</button>
           <button id="assignGrowBtn" type="button" disabled>🧩 Assign last CSV → Master Grow</button>
           <button id="assignPackBtn" type="button" disabled>📦 Assign last CSV → Master Pack</button>
           <button id="assignExpBtn" type="button" disabled>🧪 Assign last CSV → Current Experiments</button>
@@ -159,6 +161,7 @@
           <button class="ghost" id="downloadStoreBtn" type="button">⬇️ Download store-visit.json</button>
           <button class="ghost" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
           <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
+          <button class="primary" id="publishStoreOnlyBtn" type="button">🗺️ Publish Store Visits Only</button>
         </div>
 
         <div class="hint small">
@@ -174,8 +177,8 @@
           <br>
           <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>.
           <br><br>
-          Store Visit (public):
-          <code>GET https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visit.json</code>
+          Store Visits (public):
+          <code>GET https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json</code>
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
@@ -213,9 +216,9 @@ const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
 const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 const WORKER_EXP_URL  = `${WORKER_BASE}/data/master/experiments.json`;
 const WORKER_PROC_URL = `${WORKER_BASE}/data/master/procurement.json`;
-const WORKER_STORE_URL = `${WORKER_BASE}/data/master/Store%20Visit.json`;
-const WORKER_STORE_GET_URL = `${WORKER_BASE}/data/master/Store%20Visit.json`;
-const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visit.json";
+const WORKER_STORE_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
+const WORKER_STORE_GET_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
+const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json";
 
 
   // Storage keys (must match dashboards)
@@ -261,6 +264,8 @@ const MSG_STORE = "STORE_VISIT_UPDATED";
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   const chooseBtn = document.getElementById("chooseBtn");
+  const chooseStoreBtn = document.getElementById("chooseStoreBtn");
+  const storeCsvInput = document.getElementById("storeCsvInput");
   const assignGrowBtn = document.getElementById("assignGrowBtn");
   const assignPackBtn = document.getElementById("assignPackBtn");
 const assignExpBtn  = document.getElementById("assignExpBtn");
@@ -274,6 +279,7 @@ const downloadProcBtn = document.getElementById("downloadProcBtn");
 const downloadStoreBtn = document.getElementById("downloadStoreBtn");
 
   const publishBtn = document.getElementById("publishBtn");
+  const publishStoreOnlyBtn = document.getElementById("publishStoreOnlyBtn");
   const pullBtn = document.getElementById("pullBtn");
   const statusEl = document.getElementById("status");
   const previewEl = document.getElementById("preview");
@@ -971,7 +977,7 @@ async function publishToSupabase(){
         });
         const text = await res.text().catch(() => "");
         if(!res.ok) throw new Error(`Store Visit publish failed (${res.status}): ${text}`);
-        results.push("Store Visit.json");
+        results.push("Store Visits.json");
       }
 
       setStatus(`✅ Published: ${results.join(" + ")}`);
@@ -984,10 +990,77 @@ async function publishToSupabase(){
     }
   }
 
+
+  // =========================================================
+  // STORE VISIT (DEDICATED CSV FLOW)
+  // =========================================================
+  async function handleStoreVisitCsvFile(file){
+    if(!file) return;
+    setStatus("Reading Store Visit CSV…");
+    fileMeta.textContent = `Last file: ${file.name}`;
+    showContractWarning("");
+
+    const text = await file.text();
+    const matrix = parseCsvToRows(text);
+    lastCsvMatrix = matrix;
+    lastCsvName = file.name;
+
+    previewRows(matrix, `Preview Store Visit CSV: ${file.name}`);
+
+    const hr = rowsToHeaderRows(matrix);
+    const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV: ${file.name}` });
+    saveSource("store", payload, `CSV: ${file.name}`);
+
+    // allow reassigning same CSV if desired
+    assignGrowBtn.disabled = false;
+    assignPackBtn.disabled = false;
+    assignExpBtn.disabled = false;
+    assignProcBtn.disabled = false;
+    assignStoreBtn.disabled = false;
+
+    setStatus("Store Visit CSV loaded → saved to localStorage. Click “Publish Store Visits Only” to push to Supabase.");
+  }
+
+  async function publishStoreVisitsOnly(){
+    const storeStr = localStorage.getItem(MASTER_STORE_KEY);
+    if(!storeStr){
+      setStatus("No Store Visit JSON stored yet. Upload/assign a Store Visit CSV first.");
+      return;
+    }
+    try{ JSON.parse(storeStr); } catch { setStatus("Store Visit JSON is invalid (cannot publish)."); return; }
+
+    const v = validateStorageContract();
+    if (!v.ok) showContractWarning(v.msg);
+
+    publishStoreOnlyBtn.disabled = true;
+    setStatus("Publishing Store Visits to Supabase (via Worker PUT)…");
+
+    try{
+      const res = await fetch(WORKER_STORE_URL, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: storeStr
+      });
+      const text = await res.text().catch(() => "");
+      if(!res.ok) throw new Error(`Store Visits publish failed (${res.status}): ${text}`);
+
+      setStatus("✅ Published Store Visits.json");
+    }catch(err){
+      console.error(err);
+      setStatus(`❌ Publish failed: ${err.message}`);
+    }finally{
+      publishStoreOnlyBtn.disabled = false;
+      refreshBadges();
+    }
+  }
+
+
   // =========================================================
   // WIRE EVENTS
   // =========================================================
   chooseBtn.addEventListener("click", () => fileInput.click());
+  chooseStoreBtn.addEventListener("click", () => storeCsvInput.click());
+  storeCsvInput.addEventListener("change", (e) => handleStoreVisitCsvFile(e.target.files?.[0] || null));
   fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
 
   assignGrowBtn.addEventListener("click", () => {
@@ -1063,6 +1136,7 @@ downloadProcBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MAS
 downloadStoreBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_STORE_KEY, "store-visit.json"));
 
   publishBtn.addEventListener("click", publishToSupabase);
+  publishStoreOnlyBtn.addEventListener("click", publishStoreVisitsOnly);
   pullBtn.addEventListener("click", pullFromSupabase);
 
   // Drag & drop
