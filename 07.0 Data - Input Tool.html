@@ -995,11 +995,7 @@ async function publishToSupabase(){
     const hr = rowsToHeaderRows(lastCsvMatrix);
     const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `CSV (manual): ${lastCsvName}` });
     saveSource("grow", payload, `CSV (manual): ${lastCsvName}`);
-    assignGrowBtn.disabled = true;
-    assignPackBtn.disabled = true;
-    assignExpBtn.disabled = true;
-    assignProcBtn.disabled = true;
-    assignStoreBtn.disabled = true;
+    // Keep assign buttons enabled so the same CSV can be reassigned if needed.
   });
 
   assignPackBtn.addEventListener("click", () => {
@@ -1007,11 +1003,7 @@ async function publishToSupabase(){
     const hr = rowsToHeaderRows(lastCsvMatrix);
     const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `CSV (manual): ${lastCsvName}` });
     saveSource("pack", payload, `CSV (manual): ${lastCsvName}`);
-    assignGrowBtn.disabled = true;
-    assignPackBtn.disabled = true;
-    assignExpBtn.disabled = true;
-    assignProcBtn.disabled = true;
-    assignStoreBtn.disabled = true;
+    // Keep assign buttons enabled so the same CSV can be reassigned if needed.
   });
 
 assignExpBtn.addEventListener("click", () => {
@@ -1019,11 +1011,7 @@ assignExpBtn.addEventListener("click", () => {
   const hr = rowsToHeaderRows(lastCsvMatrix);
   const payload = buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel: `CSV (manual): ${lastCsvName}` });
   saveSource("exp", payload, `CSV (manual): ${lastCsvName}`);
-  assignGrowBtn.disabled = true;
-  assignPackBtn.disabled = true;
-  assignExpBtn.disabled = true;
-  assignProcBtn.disabled = true;
-  assignStoreBtn.disabled = true;
+  // Keep assign buttons enabled so the same CSV can be reassigned if needed.
 });
 
 assignProcBtn.addEventListener("click", () => {
@@ -1031,11 +1019,7 @@ assignProcBtn.addEventListener("click", () => {
   const hr = rowsToHeaderRows(lastCsvMatrix);
   const payload = buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel: `CSV (manual): ${lastCsvName}` });
   saveSource("proc", payload, `CSV (manual): ${lastCsvName}`);
-  assignGrowBtn.disabled = true;
-  assignPackBtn.disabled = true;
-  assignExpBtn.disabled = true;
-  assignProcBtn.disabled = true;
-  assignStoreBtn.disabled = true;
+  // Keep assign buttons enabled so the same CSV can be reassigned if needed.
 });
 
 assignStoreBtn.addEventListener("click", () => {
@@ -1043,11 +1027,7 @@ assignStoreBtn.addEventListener("click", () => {
   const hr = rowsToHeaderRows(lastCsvMatrix);
   const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV (manual): ${lastCsvName}` });
   saveSource("store", payload, `CSV (manual): ${lastCsvName}`);
-  assignGrowBtn.disabled = true;
-  assignPackBtn.disabled = true;
-  assignExpBtn.disabled = true;
-  assignProcBtn.disabled = true;
-  assignStoreBtn.disabled = true;
+  // Keep assign buttons enabled so the same CSV can be reassigned if needed.
 });
 
   clearBtn.addEventListener("click", () => {
