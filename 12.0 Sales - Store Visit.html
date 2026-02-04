@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Store Visits (CSV)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- PapaParse (CSV) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --panel2:#0f172a;
+      --border: rgba(148,163,184,.16);
+      --text:#e5e7eb;
+      --sub:#a7b0be;
+      --muted:#7c8798;
+      --accent:#22c55e;
+      --danger:#ef4444;
+      --radius:18px;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(30, 64, 175, 0.35), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.28), transparent 60%),
+        linear-gradient(180deg, #020617, #020617);
+    }
+    .page{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px 18px 28px;
+    }
+    .header{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .title{
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .subtitle{
+      margin-top:4px;
+      color:var(--sub);
+      font-size: .85rem;
+      max-width: 860px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.38);
+      background: rgba(2,6,23,.55);
+      color: var(--sub);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      box-shadow: var(--shadow);
+      white-space:nowrap;
+    }
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(34,197,94,.9);
+      box-shadow: 0 0 14px rgba(34,197,94,.7);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+    }
+    .card{
+      background:
+        radial-gradient(circle at top left, rgba(30, 64, 175, 0.25), transparent 60%),
+        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.18), transparent 65%),
+        linear-gradient(145deg, rgba(2,6,23,.92), rgba(2,6,23,.82));
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .card h3{
+      margin:0 0 10px;
+      font-size: .85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--sub);
+    }
+    .row{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      align-items: center;
+    }
+    .row > * { flex: 1 1 auto; }
+    label{
+      display:block;
+      font-size: .73rem;
+      color: var(--sub);
+      margin-bottom: 6px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    input[type="text"], input[type="number"], input[type="date"], select{
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(15,23,42,.6);
+      color: var(--text);
+      padding: 8px 12px;
+      outline: none;
+      font-size: .88rem;
+    }
+    input[type="file"]{
+      width: 100%;
+      color: var(--sub);
+      font-size: .88rem;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,.25);
+      background: rgba(34,197,94,.12);
+      color: #bbf7d0;
+      cursor:pointer;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-size: .72rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,.35);
+      white-space: nowrap;
+    }
+    .btn.secondary{
+      border-color: rgba(148,163,184,.22);
+      background: rgba(148,163,184,.08);
+      color: var(--sub);
+    }
+    .btn:disabled{
+      opacity: .55;
+      cursor:not-allowed;
+    }
+
+    .chips{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 520px){
+      .chips{grid-template-columns: repeat(2, minmax(0,1fr));}
+    }
+    .chip{
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(15,23,42,.55);
+      padding: 10px 10px;
+      box-shadow: inset 0 0 0 1px rgba(2,6,23,.35);
+    }
+    .chip .k{
+      color: var(--sub);
+      font-size: .68rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .chip .v{
+      margin-top: 6px;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+    .muted{
+      color: var(--muted);
+      font-size: .82rem;
+      margin-top: 8px;
+      line-height: 1.25rem;
+    }
+
+    .charts{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 980px){
+      .charts{grid-template-columns: 1fr;}
+    }
+    .chartBox{
+      height: 300px;
+      position: relative;
+      background: rgba(15,23,42,.35);
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.14);
+      padding: 10px;
+    }
+    .chartBox.small{ height: 260px; }
+
+    .tableWrap{
+      margin-top: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.14);
+      overflow:auto;
+      max-height: 520px;
+      background: rgba(15,23,42,.35);
+    }
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .84rem;
+      min-width: 980px;
+    }
+    thead{
+      position: sticky;
+      top: 0;
+      background: rgba(2,6,23,.96);
+      z-index: 2;
+    }
+    th, td{
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.08);
+      white-space: nowrap;
+      text-align: left;
+    }
+    th{
+      color: var(--sub);
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select:none;
+    }
+    tr:nth-child(odd) td{ background: rgba(2,6,23,.35); }
+    tr:nth-child(even) td{ background: rgba(2,6,23,.20); }
+
+    .num{ text-align:right; font-variant-numeric: tabular-nums; }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.20);
+      background: rgba(148,163,184,.08);
+      color: var(--sub);
+      font-size: .72rem;
+    }
+    .tag.ok{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.12); color: #bbf7d0; }
+    .tag.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12); color: #fecaca; }
+
+    .notes{
+      max-width: 520px;
+      white-space: normal;
+      line-height: 1.15rem;
+    }
+    .notes button{
+      border:none;
+      background: transparent;
+      color: #93c5fd;
+      cursor:pointer;
+      padding:0;
+      font-size: .82rem;
+      margin-left: 6px;
+    }
+    .foot{
+      margin-top: 10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .mono{ font-family: var(--mono); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="title">Store Visits Dashboard (CSV-first)</div>
+        <div class="subtitle">
+          Upload a Store Visit CSV (one row = one visit). Filter, summarize, chart, and review visit records.
+          This version runs fully in the browser (no Supabase required).
+        </div>
+      </div>
+      <div class="pill"><span class="dot"></span><span id="statusPill">No CSV loaded</span></div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: Loader + Filters + KPIs -->
+      <div class="card">
+        <h3>Load CSV</h3>
+
+        <div class="row" style="align-items:flex-end;">
+          <div style="flex: 2 1 260px;">
+            <label>Choose CSV file</label>
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+          </div>
+          <div style="flex: 1 1 140px;">
+            <button class="btn" id="loadBtn" disabled>Load</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 12px;">
+          <div>
+            <label>Date from</label>
+            <input id="dateFrom" type="date" />
+          </div>
+          <div>
+            <label>Date to</label>
+            <input id="dateTo" type="date" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label>Routes (multi)</label>
+            <select id="routeSel" multiple size="5"></select>
+          </div>
+          <div>
+            <label>Chains (multi)</label>
+            <select id="chainSel" multiple size="5"></select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <div style="flex: 2 1 240px;">
+            <label>Store search</label>
+            <input id="storeSearch" type="text" placeholder="Type store name..." />
+          </div>
+          <div style="flex: 1 1 160px;">
+            <label>Municipio</label>
+            <input id="muniSearch" type="text" placeholder="Optional..." />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label>Low 5oz threshold</label>
+            <input id="t5" type="number" min="0" step="1" value="5" />
+          </div>
+          <div>
+            <label>Low 10oz threshold</label>
+            <input id="t10" type="number" min="0" step="1" value="5" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <div style="flex: 1 1 160px;">
+            <label><input id="onlyWobblers" type="checkbox" /> Wobblers only</label>
+          </div>
+          <div style="flex: 1 1 220px;">
+            <label><input id="onlyLow" type="checkbox" /> Low availability only (≤ threshold)</label>
+          </div>
+          <div style="flex: 1 1 160px;">
+            <label><input id="onlyTemp" type="checkbox" /> Temp present only</label>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <button class="btn secondary" id="resetFiltersBtn">Reset filters</button>
+          <button class="btn secondary" id="exportBtn" disabled>Export filtered CSV</button>
+        </div>
+
+        <div class="chips" id="kpis">
+          <div class="chip"><div class="k">Visits</div><div class="v" id="k_visits">–</div></div>
+          <div class="chip"><div class="k">Unique stores</div><div class="v" id="k_stores">–</div></div>
+          <div class="chip"><div class="k">% wobblers</div><div class="v" id="k_wob">–</div></div>
+          <div class="chip"><div class="k">Avg temp</div><div class="v" id="k_temp">–</div></div>
+          <div class="chip"><div class="k">% low 5oz</div><div class="v" id="k_low5">–</div></div>
+          <div class="chip"><div class="k">% low 10oz</div><div class="v" id="k_low10">–</div></div>
+        </div>
+
+        <div class="muted" id="hint">
+          Tip: Use multi-select (Ctrl/Cmd+click) for routes/chains. Export produces the currently filtered view.
+        </div>
+      </div>
+
+      <!-- RIGHT: Charts + Table -->
+      <div class="card">
+        <h3>Overview</h3>
+        <div class="charts">
+          <div class="chartBox">
+            <canvas id="routeChart"></canvas>
+          </div>
+          <div class="chartBox">
+            <canvas id="chainLowChart"></canvas>
+          </div>
+          <div class="chartBox small">
+            <canvas id="wobChart"></canvas>
+          </div>
+          <div class="chartBox small">
+            <canvas id="tempChart"></canvas>
+          </div>
+        </div>
+
+        <div class="foot">
+          <div class="muted">
+            Showing <span class="mono" id="countShown">0</span> of <span class="mono" id="countTotal">0</span> rows
+          </div>
+          <div class="muted">
+            Sort: click any column header
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr id="theadRow"></tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // -------------------------
+  // STATE
+  // -------------------------
+  let rawRows = [];      // as parsed by PapaParse (objects)
+  let rows = [];         // normalized rows
+  let filtered = [];     // filtered rows
+  let sortKey = "visit_date";
+  let sortDir = "desc";  // asc | desc
+  let charts = { route:null, chainLow:null, wob:null, temp:null };
+
+  // Expected headers (Spanish). We'll be tolerant if spacing differs.
+  const H = {
+    fecha: "Fecha",
+    ruta: "Ruta",
+    tienda: "Store ID/Tienda",
+    municipio: "Minicipio",
+    cadena: "Cadena",
+    contacto: "Contacto",
+    temp: "Temp.",
+    calidad: "Calidad",
+    precio: "Precio",
+    wobblers: "wobblers",
+    dispo5: "Dispo 5oz",
+    sku5: "SKU",
+    dispo10: "Disp10oz",
+    sku10: "SKU2",
+    recibo: "Dia de Recibo",
+    preorden: "Cantidad Pre-orden",
+    notas: "Notas"
+  };
+
+  function normKey(k){
+    return String(k||"")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g," ")
+      .replace(/\./g,".")
+      .replace(/\u00A0/g," ");
+  }
+
+  function getField(obj, want){
+    // Find best matching key in obj for desired header (tolerate minor differences)
+    const wantN = normKey(want);
+    const keys = Object.keys(obj||{});
+    let best = null;
+    for(const k of keys){
+      const kn = normKey(k);
+      if(kn === wantN) { best = k; break; }
+    }
+    if(best == null){
+      // fuzzy: remove punctuation and compare contains
+      const wantF = wantN.replace(/[^\p{L}\p{N} ]/gu,"").trim();
+      for(const k of keys){
+        const kn = normKey(k).replace(/[^\p{L}\p{N} ]/gu,"").trim();
+        if(kn === wantF) { best = k; break; }
+      }
+    }
+    return best ? obj[best] : "";
+  }
+
+  function parseDateMDY(v){
+    // Handles M/D/YY, M/D/YYYY
+    const s = String(v||"").trim();
+    if(!s) return null;
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if(!m) return null;
+    const mm = parseInt(m[1],10);
+    const dd = parseInt(m[2],10);
+    let yy = parseInt(m[3],10);
+    if(m[3].length === 2) yy = 2000 + yy; // 26 -> 2026
+    const d = new Date(yy, mm-1, dd);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function toNum(v){
+    const s = String(v??"").trim().replace(/,/g,"");
+    if(s === "") return null;
+    const m = s.match(/-?\d+(\.\d+)?/);
+    if(!m) return null;
+    const n = Number(m[0]);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function toBoolSiNo(v){
+    const s = String(v||"").trim().toLowerCase();
+    if(!s) return null;
+    if(["si","sí","s","yes","y","true","1"].includes(s)) return true;
+    if(["no","n","false","0"].includes(s)) return false;
+    return null;
+  }
+
+  function fmtDate(d){
+    if(!d) return "–";
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  function pct(n, d){
+    if(!d) return "–";
+    return `${Math.round((n/d)*100)}%`;
+  }
+
+  function uniq(arr){
+    return Array.from(new Set(arr.filter(Boolean)));
+  }
+
+  function selectedOptions(sel){
+    return Array.from(sel.selectedOptions).map(o=>o.value);
+  }
+
+  function setStatus(text){
+    document.getElementById("statusPill").textContent = text;
+  }
+
+  // -------------------------
+  // NORMALIZE
+  // -------------------------
+  function normalizeRows(objs){
+    return objs.map((o, idx) => {
+      const visit_date = parseDateMDY(getField(o, H.fecha));
+      const route = String(getField(o, H.ruta)||"").trim();
+      const store = String(getField(o, H.tienda)||"").trim();
+      const municipio = String(getField(o, H.municipio)||"").trim();
+      const chain = String(getField(o, H.cadena)||"").trim();
+      const contact = String(getField(o, H.contacto)||"").trim();
+
+      const temp_f = toNum(getField(o, H.temp));
+      const quality = String(getField(o, H.calidad)||"").trim();
+      const price = String(getField(o, H.precio)||"").trim();
+      const wobblers = toBoolSiNo(getField(o, H.wobblers));
+
+      const avail_5oz = toNum(getField(o, H.dispo5));
+      const sku_5oz = String(getField(o, H.sku5)||"").trim();
+      const avail_10oz = toNum(getField(o, H.dispo10));
+      const sku_10oz = String(getField(o, H.sku10)||"").trim();
+
+      const delivery_day = String(getField(o, H.recibo)||"").trim();
+      const preorder_qty = String(getField(o, H.preorden)||"").trim();
+      const notes = String(getField(o, H.notas)||"").trim();
+
+      return {
+        _idx: idx,
+        visit_date,
+        visit_date_str: fmtDate(visit_date),
+        route,
+        store,
+        municipio,
+        chain,
+        contact,
+        temp_f,
+        quality,
+        price,
+        wobblers,
+        avail_5oz,
+        sku_5oz,
+        avail_10oz,
+        sku_10oz,
+        delivery_day,
+        preorder_qty,
+        notes,
+        raw: o
+      };
+    });
+  }
+
+  // -------------------------
+  // FILTERS
+  // -------------------------
+  function applyFilters(){
+    if(!rows.length){
+      filtered = [];
+      renderAll();
+      return;
+    }
+
+    const dFrom = document.getElementById("dateFrom").value ? new Date(document.getElementById("dateFrom").value) : null;
+    const dTo = document.getElementById("dateTo").value ? new Date(document.getElementById("dateTo").value) : null;
+
+    const routeSel = document.getElementById("routeSel");
+    const chainSel = document.getElementById("chainSel");
+    const routes = selectedOptions(routeSel);
+    const chains = selectedOptions(chainSel);
+
+    const storeQ = document.getElementById("storeSearch").value.trim().toLowerCase();
+    const muniQ = document.getElementById("muniSearch").value.trim().toLowerCase();
+
+    const t5 = Number(document.getElementById("t5").value);
+    const t10 = Number(document.getElementById("t10").value);
+    const onlyW = document.getElementById("onlyWobblers").checked;
+    const onlyLow = document.getElementById("onlyLow").checked;
+    const onlyTemp = document.getElementById("onlyTemp").checked;
+
+    filtered = rows.filter(r => {
+      if(dFrom && r.visit_date && r.visit_date < dFrom) return false;
+      if(dTo && r.visit_date && r.visit_date > dTo) return false;
+
+      if(routes.length && !routes.includes(r.route)) return false;
+      if(chains.length && !chains.includes(r.chain)) return false;
+
+      if(storeQ && !String(r.store||"").toLowerCase().includes(storeQ)) return false;
+      if(muniQ && !String(r.municipio||"").toLowerCase().includes(muniQ)) return false;
+
+      if(onlyW && r.wobblers !== true) return false;
+      if(onlyTemp && (r.temp_f == null)) return false;
+
+      if(onlyLow){
+        const low5 = (r.avail_5oz != null) && (r.avail_5oz <= t5);
+        const low10 = (r.avail_10oz != null) && (r.avail_10oz <= t10);
+        if(!(low5 || low10)) return false;
+      }
+      return true;
+    });
+
+    sortFiltered();
+    renderAll();
+  }
+
+  function resetFilters(){
+    const routeSel = document.getElementById("routeSel");
+    const chainSel = document.getElementById("chainSel");
+    [...routeSel.options].forEach(o => o.selected = false);
+    [...chainSel.options].forEach(o => o.selected = false);
+
+    document.getElementById("storeSearch").value = "";
+    document.getElementById("muniSearch").value = "";
+    document.getElementById("onlyWobblers").checked = false;
+    document.getElementById("onlyLow").checked = false;
+    document.getElementById("onlyTemp").checked = false;
+
+    // keep thresholds
+    applyFilters();
+  }
+
+  // -------------------------
+  // SORT
+  // -------------------------
+  function sortFiltered(){
+    const dir = sortDir === "asc" ? 1 : -1;
+    filtered.sort((a,b) => {
+      const va = a[sortKey];
+      const vb = b[sortKey];
+
+      // dates
+      if(va instanceof Date || vb instanceof Date){
+        const ta = va ? va.getTime() : -Infinity;
+        const tb = vb ? vb.getTime() : -Infinity;
+        return (ta - tb) * dir;
+      }
+
+      // numbers
+      if(typeof va === "number" || typeof vb === "number"){
+        const na = (va == null) ? -Infinity : va;
+        const nb = (vb == null) ? -Infinity : vb;
+        return (na - nb) * dir;
+      }
+
+      // booleans
+      if(typeof va === "boolean" || typeof vb === "boolean"){
+        const ba = (va === true) ? 1 : (va === false ? 0 : -1);
+        const bb = (vb === true) ? 1 : (vb === false ? 0 : -1);
+        return (ba - bb) * dir;
+      }
+
+      // strings
+      const sa = String(va ?? "").toLowerCase();
+      const sb = String(vb ?? "").toLowerCase();
+      if(sa < sb) return -1 * dir;
+      if(sa > sb) return 1 * dir;
+      return 0;
+    });
+  }
+
+  // -------------------------
+  // RENDER: KPIs
+  // -------------------------
+  function renderKPIs(){
+    document.getElementById("countTotal").textContent = rows.length.toLocaleString();
+    document.getElementById("countShown").textContent = filtered.length.toLocaleString();
+
+    const t5 = Number(document.getElementById("t5").value);
+    const t10 = Number(document.getElementById("t10").value);
+
+    const visits = filtered.length;
+    const stores = uniq(filtered.map(r => r.store)).length;
+
+    const wobKnown = filtered.filter(r => r.wobblers !== null).length;
+    const wobYes = filtered.filter(r => r.wobblers === true).length;
+
+    const temps = filtered.map(r => r.temp_f).filter(v => v != null);
+    const avgTemp = temps.length ? (temps.reduce((s,v)=>s+v,0)/temps.length) : null;
+
+    const low5Den = filtered.filter(r => r.avail_5oz != null).length;
+    const low5Num = filtered.filter(r => r.avail_5oz != null && r.avail_5oz <= t5).length;
+
+    const low10Den = filtered.filter(r => r.avail_10oz != null).length;
+    const low10Num = filtered.filter(r => r.avail_10oz != null && r.avail_10oz <= t10).length;
+
+    document.getElementById("k_visits").textContent = visits.toLocaleString();
+    document.getElementById("k_stores").textContent = stores.toLocaleString();
+    document.getElementById("k_wob").textContent = wobKnown ? pct(wobYes, wobKnown) : "–";
+    document.getElementById("k_temp").textContent = avgTemp == null ? "–" : avgTemp.toFixed(1);
+    document.getElementById("k_low5").textContent = low5Den ? pct(low5Num, low5Den) : "–";
+    document.getElementById("k_low10").textContent = low10Den ? pct(low10Num, low10Den) : "–";
+  }
+
+  // -------------------------
+  // RENDER: CHARTS
+  // -------------------------
+  function destroyChart(ch){
+    if(ch){ try{ ch.destroy(); }catch(e){} }
+    return null;
+  }
+
+  function renderCharts(){
+    const t5 = Number(document.getElementById("t5").value);
+    const t10 = Number(document.getElementById("t10").value);
+
+    // Visits per route
+    const routeMap = new Map();
+    filtered.forEach(r => {
+      const k = r.route || "(blank)";
+      routeMap.set(k, (routeMap.get(k)||0) + 1);
+    });
+    const routeLabels = Array.from(routeMap.keys()).sort((a,b)=>a.localeCompare(b));
+    const routeData = routeLabels.map(k => routeMap.get(k));
+
+    charts.route = destroyChart(charts.route);
+    charts.route = new Chart(document.getElementById("routeChart"), {
+      type: "bar",
+      data: {
+        labels: routeLabels,
+        datasets: [{ label: "Visits", data: routeData, borderWidth: 1 }]
+      },
+      options: baseChartOptions("Visits per route")
+    });
+
+    // Low availability by chain (count of low occurrences)
+    const chainMap = new Map();
+    filtered.forEach(r => {
+      const k = r.chain || "(blank)";
+      const low = ((r.avail_5oz != null && r.avail_5oz <= t5) || (r.avail_10oz != null && r.avail_10oz <= t10));
+      if(!low) return;
+      chainMap.set(k, (chainMap.get(k)||0) + 1);
+    });
+    const chainLabels = Array.from(chainMap.keys()).sort((a,b)=>a.localeCompare(b));
+    const chainData = chainLabels.map(k => chainMap.get(k));
+
+    charts.chainLow = destroyChart(charts.chainLow);
+    charts.chainLow = new Chart(document.getElementById("chainLowChart"), {
+      type: "bar",
+      data: {
+        labels: chainLabels,
+        datasets: [{ label: "Low availability (rows)", data: chainData, borderWidth: 1 }]
+      },
+      options: baseChartOptions("Low availability by chain")
+    });
+
+    // Wobblers donut
+    let wobYes = 0, wobNo = 0, wobUnknown = 0;
+    filtered.forEach(r => {
+      if(r.wobblers === true) wobYes++;
+      else if(r.wobblers === false) wobNo++;
+      else wobUnknown++;
+    });
+    charts.wob = destroyChart(charts.wob);
+    charts.wob = new Chart(document.getElementById("wobChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Yes", "No", "Unknown"],
+        datasets: [{ label: "Wobblers", data: [wobYes, wobNo, wobUnknown], borderWidth: 1 }]
+      },
+      options: baseChartOptions("Wobblers distribution", true)
+    });
+
+    // Temp distribution (simple histogram-ish buckets)
+    const temps = filtered.map(r=>r.temp_f).filter(v=>v!=null);
+    const buckets = new Map();
+    if(temps.length){
+      // buckets of 5 degrees
+      temps.forEach(t=>{
+        const b = Math.floor(t/5)*5;
+        const label = `${b}-${b+4}`;
+        buckets.set(label, (buckets.get(label)||0)+1);
+      });
+    }
+    const tempLabels = Array.from(buckets.keys()).sort((a,b)=>{
+      const na = parseInt(a.split("-")[0],10);
+      const nb = parseInt(b.split("-")[0],10);
+      return na-nb;
+    });
+    const tempData = tempLabels.map(k=>buckets.get(k));
+
+    charts.temp = destroyChart(charts.temp);
+    charts.temp = new Chart(document.getElementById("tempChart"), {
+      type: "bar",
+      data: {
+        labels: tempLabels,
+        datasets: [{ label: "Rows", data: tempData, borderWidth: 1 }]
+      },
+      options: baseChartOptions("Temp (°F) distribution")
+    });
+  }
+
+  function baseChartOptions(title, isPie=false){
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#e5e7eb", font: { size: 11 } } },
+        title: { display: true, text: title, color: "#a7b0be", font: { size: 12, weight: "600" } },
+        tooltip: { callbacks: { label: (ctx) => {
+          const v = ctx.parsed;
+          const val = (typeof v === "number") ? v : (v && typeof v === "object" ? v.y : v);
+          return `${ctx.dataset.label}: ${val}`;
+        }}}
+      },
+      scales: isPie ? {} : {
+        x: { ticks: { color: "#9ca3af" }, grid: { display:false } },
+        y: { beginAtZero: true, ticks: { color: "#9ca3af", precision: 0 }, grid: { color: "rgba(55,65,81,0.45)" } }
+      }
+    };
+  }
+
+  // -------------------------
+  // RENDER: TABLE
+  // -------------------------
+  const columns = [
+    { key: "visit_date_str", label: "Date" },
+    { key: "route", label: "Route" },
+    { key: "chain", label: "Chain" },
+    { key: "store", label: "Store" },
+    { key: "municipio", label: "Municipio" },
+    { key: "avail_5oz", label: "5oz", num:true },
+    { key: "avail_10oz", label: "10oz", num:true },
+    { key: "wobblers", label: "Wobblers" },
+    { key: "quality", label: "Quality" },
+    { key: "price", label: "Price" },
+    { key: "delivery_day", label: "Delivery day" },
+    { key: "preorder_qty", label: "Pre-order" },
+    { key: "notes", label: "Notes" }
+  ];
+
+  function renderTable(){
+    const theadRow = document.getElementById("theadRow");
+    theadRow.innerHTML = "";
+    columns.forEach(col => {
+      const th = document.createElement("th");
+      th.textContent = col.label + (sortKey === colKeyToSortKey(col.key) ? (sortDir==="asc" ? " ▲" : " ▼") : "");
+      th.addEventListener("click", () => {
+        const k = colKeyToSortKey(col.key);
+        if(sortKey === k){
+          sortDir = (sortDir === "asc") ? "desc" : "asc";
+        }else{
+          sortKey = k;
+          sortDir = (k === "visit_date") ? "desc" : "asc";
+        }
+        sortFiltered();
+        renderTable();
+      });
+      theadRow.appendChild(th);
+    });
+
+    const t5 = Number(document.getElementById("t5").value);
+    const t10 = Number(document.getElementById("t10").value);
+
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    filtered.forEach((r, i) => {
+      const tr = document.createElement("tr");
+
+      columns.forEach(col => {
+        const td = document.createElement("td");
+        let val = r[col.key];
+
+        if(col.key === "wobblers"){
+          if(r.wobblers === true) td.innerHTML = '<span class="tag ok">Yes</span>';
+          else if(r.wobblers === false) td.innerHTML = '<span class="tag">No</span>';
+          else td.innerHTML = '<span class="tag">–</span>';
+          tr.appendChild(td);
+          return;
+        }
+
+        if(col.num){
+          td.classList.add("num");
+          const n = (val == null) ? null : Number(val);
+          td.textContent = (n == null || !Number.isFinite(n)) ? "–" : n.toLocaleString();
+          // low flags
+          if(col.key === "avail_5oz" && n != null && n <= t5) td.innerHTML = `<span class="tag bad">${n.toLocaleString()}</span>`;
+          if(col.key === "avail_10oz" && n != null && n <= t10) td.innerHTML = `<span class="tag bad">${n.toLocaleString()}</span>`;
+          tr.appendChild(td);
+          return;
+        }
+
+        if(col.key === "notes"){
+          td.classList.add("notes");
+          const full = String(val||"").trim();
+          if(!full){
+            td.textContent = "–";
+          }else{
+            const short = full.length > 120 ? full.slice(0,120) + "…" : full;
+            const span = document.createElement("span");
+            span.textContent = short;
+
+            if(full.length > 120){
+              const btn = document.createElement("button");
+              btn.textContent = "more";
+              btn.addEventListener("click", () => {
+                const expanded = btn.dataset.expanded === "1";
+                if(expanded){
+                  span.textContent = short;
+                  btn.textContent = "more";
+                  btn.dataset.expanded = "0";
+                }else{
+                  span.textContent = full;
+                  btn.textContent = "less";
+                  btn.dataset.expanded = "1";
+                }
+              });
+              td.appendChild(span);
+              td.appendChild(btn);
+            }else{
+              td.appendChild(span);
+            }
+          }
+          tr.appendChild(td);
+          return;
+        }
+
+        td.textContent = (val == null || String(val).trim() === "") ? "–" : String(val);
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function colKeyToSortKey(colKey){
+    // Map display keys to actual sort keys
+    if(colKey === "visit_date_str") return "visit_date";
+    return colKey;
+  }
+
+  // -------------------------
+  // EXPORT
+  // -------------------------
+  function exportFiltered(){
+    if(!filtered.length) return;
+    const out = filtered.map(r => ({
+      Fecha: r.visit_date_str,
+      Ruta: r.route,
+      Cadena: r.chain,
+      "Store ID/Tienda": r.store,
+      Minicipio: r.municipio,
+      Contacto: r.contact,
+      "Temp.": r.temp_f ?? "",
+      Calidad: r.quality,
+      Precio: r.price,
+      wobblers: r.wobblers === true ? "si" : (r.wobblers === false ? "no" : ""),
+      "Dispo 5oz": r.avail_5oz ?? "",
+      SKU: r.sku_5oz,
+      Disp10oz: r.avail_10oz ?? "",
+      SKU2: r.sku_10oz,
+      "Dia de Recibo": r.delivery_day,
+      "Cantidad Pre-orden": r.preorder_qty,
+      Notas: r.notes
+    }));
+    const csv = Papa.unparse(out, { quotes: true });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "store_visits_filtered.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  // -------------------------
+  // MAIN RENDER
+  // -------------------------
+  function renderAll(){
+    renderKPIs();
+    renderCharts();
+    renderTable();
+    document.getElementById("exportBtn").disabled = filtered.length === 0;
+    setStatus(rows.length ? `Loaded ${rows.length.toLocaleString()} rows` : "No CSV loaded");
+  }
+
+  // -------------------------
+  // INIT: selectors and events
+  // -------------------------
+  function populateMultiSelect(selectEl, values){
+    selectEl.innerHTML = "";
+    values.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  function setupDateBounds(){
+    const ds = rows.map(r=>r.visit_date).filter(Boolean).sort((a,b)=>a-b);
+    const minD = ds[0] || null;
+    const maxD = ds[ds.length-1] || null;
+    const dateFrom = document.getElementById("dateFrom");
+    const dateTo = document.getElementById("dateTo");
+
+    dateFrom.value = minD ? fmtDate(minD) : "";
+    dateTo.value = maxD ? fmtDate(maxD) : "";
+  }
+
+  function wireFilters(){
+    const ids = ["dateFrom","dateTo","routeSel","chainSel","storeSearch","muniSearch","t5","t10","onlyWobblers","onlyLow","onlyTemp"];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      const ev = (el.tagName === "SELECT" || el.type === "checkbox") ? "change" : "input";
+      el.addEventListener(ev, () => applyFilters());
+    });
+    document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
+    document.getElementById("exportBtn").addEventListener("click", exportFiltered);
+  }
+
+  // -------------------------
+  // CSV LOAD
+  // -------------------------
+  function loadCsvFile(file){
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+        complete: (results) => resolve(results),
+        error: (err) => reject(err)
+      });
+    });
+  }
+
+  async function onLoadClick(){
+    const file = document.getElementById("csvFile").files[0];
+    if(!file) return;
+    setStatus("Loading…");
+    try{
+      const parsed = await loadCsvFile(file);
+      rawRows = (parsed.data || []).filter(r => Object.keys(r||{}).length);
+      rows = normalizeRows(rawRows);
+
+      // Remove completely empty rows (no store and no date)
+      rows = rows.filter(r => r.store || r.visit_date);
+
+      // Populate selectors
+      const routes = uniq(rows.map(r=>r.route || "(blank)")).sort((a,b)=>a.localeCompare(b));
+      const chains = uniq(rows.map(r=>r.chain || "(blank)")).sort((a,b)=>a.localeCompare(b));
+      populateMultiSelect(document.getElementById("routeSel"), routes);
+      populateMultiSelect(document.getElementById("chainSel"), chains);
+
+      setupDateBounds();
+
+      // Default: no route/chain selections (means "all")
+      filtered = [...rows];
+      sortKey = "visit_date";
+      sortDir = "desc";
+      sortFiltered();
+      renderAll();
+      document.getElementById("exportBtn").disabled = filtered.length === 0;
+    }catch(e){
+      console.error(e);
+      setStatus("❌ Failed to parse CSV");
+      alert("Could not parse CSV. Please confirm it is a valid CSV file.\n\n" + (e?.message || e));
+    }
+  }
+
+  function init(){
+    wireFilters();
+    const fileEl = document.getElementById("csvFile");
+    const loadBtn = document.getElementById("loadBtn");
+
+    fileEl.addEventListener("change", () => {
+      loadBtn.disabled = !(fileEl.files && fileEl.files[0]);
+    });
+    loadBtn.addEventListener("click", onLoadClick);
+
+    // render empty state charts cleanly
+    rows = [];
+    filtered = [];
+    renderAll();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
