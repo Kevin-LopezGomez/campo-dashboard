@@ -1218,13 +1218,31 @@
           };
         });
 
-      // WEEKLY: aggregate from daily by numeric week where possible; otherwise lexicographic.
+      // WEEKLY: aggregate from daily by year + week.
       const wkMap = new Map();
+      const years = new Set();
       for (const d of daily) {
         const wkStr = String(d.week ?? "").trim();
         if (!wkStr) continue;
-        const key = wkStr;
-        if (!wkMap.has(key)) wkMap.set(key, { week: wkStr, spanH: 0, boards: 0, cut: 0, waste: 0, withWaste: 0 });
+        const year = d.dateObj instanceof Date && !isNaN(d.dateObj.getTime())
+          ? d.dateObj.getFullYear()
+          : null;
+        if (year) years.add(year);
+
+        const key = year ? `${year}-W${wkStr}` : wkStr;
+        if (!wkMap.has(key)) {
+          wkMap.set(key, {
+            week: wkStr,
+            year,
+            weekNum: parseFloat(wkStr),
+            label: "",
+            spanH: 0,
+            boards: 0,
+            cut: 0,
+            waste: 0,
+            withWaste: 0
+          });
+        }
         const w = wkMap.get(key);
         w.spanH += d.spanH;
         w.boards += d.boards;
@@ -1233,17 +1251,24 @@
         w.withWaste += d.withWaste;
       }
 
-      const weekOrderValue = (weekStr) => {
-        const n = parseFloat(weekStr);
-        if (isNaN(n)) return null;
-        return n <= 4 ? n + 100 : n;
-      };
+      const showYear = years.size > 1;
+      wkMap.forEach(w => {
+        const hasWeekNum = !isNaN(w.weekNum);
+        if (w.year && hasWeekNum) {
+          w.label = showYear ? `Week ${w.week} (${w.year})` : `Week ${w.week}`;
+          w.order = w.year * 100 + w.weekNum;
+        } else if (hasWeekNum) {
+          w.label = `Week ${w.week}`;
+          w.order = w.weekNum;
+        } else {
+          w.label = String(w.week || "N/A");
+          w.order = null;
+        }
+      });
 
       const weekly = Array.from(wkMap.values()).sort((a,b) => {
-        const aw = weekOrderValue(a.week);
-        const bw = weekOrderValue(b.week);
-        if (aw === null || bw === null) return String(a.week).localeCompare(String(b.week));
-        return aw - bw;
+        if (a.order === null || b.order === null) return String(a.label).localeCompare(String(b.label));
+        return a.order - b.order;
       }).map(w => {
         const bph = w.spanH > 0 ? (w.boards / w.spanH) : 0;
         const lbsPerBoard = w.boards > 0 ? (w.cut / w.boards) : 0;
@@ -1431,7 +1456,7 @@
         const p = w.potential || 0;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>Week ${w.week}</td>
+          <td>${w.label}</td>
           <td>${w.week}</td>
           <td>${fmtInt(w.boards)}</td>
           <td>${fmt1(w.spanH)}</td>
@@ -1464,7 +1489,7 @@
       const cutByDate = dailyChrono.map(d => d.cut);
       const withWasteByDate = dailyChrono.map(d => d.withWaste);
 
-      const labelsByWeek = WEEKLY.map(w => String(w.week));
+      const labelsByWeek = WEEKLY.map(w => w.label);
       const boardsByWeek = WEEKLY.map(w => w.boards);
       const bphByWeek = WEEKLY.map(w => w.bph);
       const cutByWeek = WEEKLY.map(w => w.cut);

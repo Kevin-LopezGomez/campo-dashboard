@@ -1411,35 +1411,50 @@
 
     function buildWeeklyRows(tabKey) {
       const rows = getRowsForTab(tabKey).filter(r => r.week != null); // ignores 0 / N/A / blank
-      const map = new Map(); // week -> agg
+      const map = new Map(); // year-week -> agg
+      const years = new Set();
       rows.forEach((r) => {
+        const year = (() => {
+          const d = new Date(r.date);
+          return isNaN(d.getTime()) ? null : d.getFullYear();
+        })();
+        if (year) years.add(year);
+
         const k = r.week;
-        if (!map.has(k)) map.set(k, { week: k, hours: 0, weight: 0, cases: 0 });
-        const acc = map.get(k);
+        const key = year ? `${year}-W${k}` : k;
+        if (!map.has(key)) {
+          map.set(key, { week: k, year, weekNum: parseFloat(k), label: "", hours: 0, weight: 0, cases: 0 });
+        }
+        const acc = map.get(key);
         acc.hours += r.hours || 0;
         acc.weight += r.weight || 0;
         acc.cases += r.cases || 0;
       });
 
-      const weekOrderValue = (weekStr) => {
-        const n = parseFloat(weekStr);
-        if (isNaN(n)) return null;
-        return n <= 4 ? n + 100 : n;
-      };
-
-      const keys = Array.from(map.keys()).sort((a, b) => {
-        const aw = weekOrderValue(a);
-        const bw = weekOrderValue(b);
-        if (aw === null || bw === null) return String(a).localeCompare(String(b));
-        return aw - bw;
+      const showYear = years.size > 1;
+      map.forEach(acc => {
+        const hasWeekNum = !isNaN(acc.weekNum);
+        if (acc.year && hasWeekNum) {
+          acc.label = showYear ? `Wk ${acc.week} (${acc.year})` : `Wk ${acc.week}`;
+          acc.order = acc.year * 100 + acc.weekNum;
+        } else if (hasWeekNum) {
+          acc.label = `Wk ${acc.week}`;
+          acc.order = acc.weekNum;
+        } else {
+          acc.label = String(acc.week || "N/A");
+          acc.order = null;
+        }
+      });
+      const values = Array.from(map.values()).sort((a, b) => {
+        if (a.order === null || b.order === null) return String(a.label).localeCompare(String(b.label));
+        return a.order - b.order;
       });
       const skuLabel = getTabLabel(tabKey);
 
-      return keys.map((k) => {
-        const acc = map.get(k);
+      return values.map((acc) => {
         const lbsHour = acc.hours > 0 ? (acc.weight / acc.hours) : 0;
         return {
-          label: String(k),
+          label: acc.label,
           sku: skuLabel,
           hours: acc.hours,
           weight: acc.weight,

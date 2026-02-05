@@ -308,7 +308,7 @@
         <div class="logo" aria-hidden="true"></div>
         <div>
           <h1>Open Orders Tracker</h1>
-          <p>Campo Caribe • Purchasing workflow (CSV → tracked board)</p>
+          <p>Campo Caribe • Purchasing workflow (CSV/JSON → tracked board)</p>
         </div>
       </div>
 
@@ -1065,11 +1065,22 @@ function exportCSV(){
 }
 
 /* ========= File load ========= */
-function handleText(text, name=""){
-  csvFilename = name || "uploaded.csv";
-  rawRows = parseCSV(text);
+const JSON_FIELDS = [
+  "PO #","Vendor","Order Date","Promised Date","Delivery Date","Lead Time","Ship via",
+  "Budget Allocation","CSV Department","Description","CSV Status","CSV Follow Ups","Amount",
+  "Open Balance","CSV Notes","Status","Criticality","Department","Owner","Next Follow-Up",
+  "Tracking Notes","Last Updated"
+];
 
-  orders = extractOrders(rawRows);
+function normalizeOrderFromJSON(r){
+  const obj = {};
+  for(const f of JSON_FIELDS){
+    obj[f] = safeStr(r && r[f]);
+  }
+  return obj;
+}
+
+function afterLoad(){
   applyOverrides(orders);
 
   // Fill filter dropdowns
@@ -1091,9 +1102,40 @@ function handleText(text, name=""){
   refresh();
 }
 
+function handleCSVText(text, name=""){
+  csvFilename = name || "uploaded.csv";
+  rawRows = parseCSV(text);
+  orders = extractOrders(rawRows);
+  afterLoad();
+}
+
+function handleJSONText(text, name=""){
+  csvFilename = name || "uploaded.json";
+  rawRows = [];
+  let data;
+  try{
+    data = JSON.parse(text);
+  }catch(e){
+    alert("That JSON file could not be parsed.");
+    return;
+  }
+  const arr = Array.isArray(data) ? data : (data && Array.isArray(data.orders) ? data.orders : null);
+  if(!arr){
+    alert("JSON must be an array of orders or an object with an \"orders\" array.");
+    return;
+  }
+  orders = arr.map(normalizeOrderFromJSON);
+  afterLoad();
+}
+
 function readFile(file){
   const reader = new FileReader();
-  reader.onload = () => handleText(String(reader.result || ""), file.name);
+  const isJson = !!file && (file.type === "application/json" || file.name.toLowerCase().endsWith(".json"));
+  reader.onload = () => {
+    const text = String(reader.result || "");
+    if(isJson) handleJSONText(text, file.name);
+    else handleCSVText(text, file.name);
+  };
   reader.readAsText(file);
 }
 

@@ -1014,13 +1014,23 @@
 
       // WEEKLY aggregation (from daily rows)
       const weekMap = new Map();
+      const years = new Set();
       dailyRows.forEach((d) => {
         const wk = (d.seedWeek || "").trim();
         if (!wk) return;
 
-        if (!weekMap.has(wk)) {
-          weekMap.set(wk, {
+        const year = d.dateObj instanceof Date && !isNaN(d.dateObj.getTime())
+          ? d.dateObj.getFullYear()
+          : null;
+        if (year) years.add(year);
+
+        const key = year ? `${year}-W${wk}` : wk;
+        if (!weekMap.has(key)) {
+          weekMap.set(key, {
             week: wk,
+            year,
+            weekNum: parseFloat(wk),
+            label: "",
             days: 0,
             totalFlats: 0,
             totalTarget: 0,
@@ -1029,7 +1039,7 @@
             totalWorkersSum: 0,
           });
         }
-        const w = weekMap.get(wk);
+        const w = weekMap.get(key);
         w.days += 1;
         w.totalFlats += d.totalFlats;
         w.totalTarget += d.totalTarget;
@@ -1040,17 +1050,24 @@
         w.totalWorkersSum += dayAvgWorkers;
       });
 
-      const weekOrderValue = (weekStr) => {
-        const n = parseFloat(weekStr);
-        if (isNaN(n)) return null;
-        return n <= 4 ? n + 100 : n;
-      };
+      const showYear = years.size > 1;
+      weekMap.forEach((w) => {
+        const hasWeekNum = !isNaN(w.weekNum);
+        if (w.year && hasWeekNum) {
+          w.label = showYear ? `Wk ${w.week} (${w.year})` : `Wk ${w.week}`;
+          w.order = w.year * 100 + w.weekNum;
+        } else if (hasWeekNum) {
+          w.label = `Wk ${w.week}`;
+          w.order = w.weekNum;
+        } else {
+          w.label = String(w.week || "N/A");
+          w.order = null;
+        }
+      });
 
       const weeklyRows = Array.from(weekMap.values()).sort((a, b) => {
-        const aw = weekOrderValue(a.week);
-        const bw = weekOrderValue(b.week);
-        if (aw === null || bw === null) return String(a.week).localeCompare(String(b.week));
-        return aw - bw;
+        if (a.order === null || b.order === null) return String(a.label).localeCompare(String(b.label));
+        return a.order - b.order;
       });
 
       if (weeklyBody) {
@@ -1061,7 +1078,7 @@
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${w.week}</td>
+            <td>${w.label}</td>
             <td>${w.days}</td>
             <td>${Math.round(w.totalFlats).toString()}</td>
             <td>${Math.round(w.totalTarget).toString()}</td>

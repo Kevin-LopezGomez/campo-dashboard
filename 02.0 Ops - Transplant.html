@@ -990,11 +990,21 @@
 
     function computeWeeklyAggregation(data) {
       const weekMap = new Map();
+      const years = new Set();
+
       data.forEach(d => {
-        const key = d.week || "N/A";
+        const weekStr = d.week || "N/A";
+        const dateObj = new Date(d.date);
+        const year = !isNaN(dateObj.getTime()) ? dateObj.getFullYear() : null;
+        if (year) years.add(year);
+
+        const key = year ? `${year}-W${weekStr}` : weekStr;
         if (!weekMap.has(key)) {
           weekMap.set(key, {
-            week: key,
+            week: weekStr,
+            year,
+            weekNum: parseFloat(weekStr),
+            label: "",
             totalBoards: 0,
             totalExpected: 0,
             totalWorkerHours: 0,
@@ -1012,17 +1022,26 @@
         agg.days += 1;
       });
 
-      const weekOrderValue = (weekStr) => {
-        const n = parseFloat(weekStr);
-        if (isNaN(n)) return null;
-        return n <= 4 ? n + 100 : n;
-      };
+      const showYear = years.size > 1;
+      weekMap.forEach(agg => {
+        const hasWeekNum = !isNaN(agg.weekNum);
+        if (agg.year && hasWeekNum) {
+          agg.label = showYear ? `Wk ${agg.week} (${agg.year})` : `Wk ${agg.week}`;
+          agg.order = agg.year * 100 + agg.weekNum;
+        } else if (hasWeekNum) {
+          agg.label = `Wk ${agg.week}`;
+          agg.order = agg.weekNum;
+        } else {
+          agg.label = String(agg.week || "N/A");
+          agg.order = null;
+        }
+      });
 
       return Array.from(weekMap.values()).sort((a, b) => {
-        const aw = weekOrderValue(a.week);
-        const bw = weekOrderValue(b.week);
-        if (aw === null || bw === null) return String(a.week).localeCompare(String(b.week));
-        return aw - bw;
+        if (a.order === null || b.order === null) {
+          return String(a.label).localeCompare(String(b.label));
+        }
+        return a.order - b.order;
       });
     }
 
@@ -1061,7 +1080,7 @@
         const avgCrew = w.days ? w.totalWorkers / w.days : 0;
         const weeklyBPH = w.totalWorkerHours ? w.totalBoards / w.totalWorkerHours : 0;
 
-        tr.appendChild(tdText("Wk " + w.week));
+        tr.appendChild(tdText(w.label));
         tr.appendChild(tdText(w.days));
         tr.appendChild(tdText(fmt0(w.totalBoards)));
         tr.appendChild(tdText(fmt0(w.totalExpected)));
@@ -1110,7 +1129,7 @@
       const targetByDate = data.map(d => d.expected);
       const bphByDate = data.map(d => d.bph);
 
-      const labelsByWeek = weekAgg.map(w => String(w.week));
+      const labelsByWeek = weekAgg.map(w => w.label);
       const boardsByWeek = weekAgg.map(w => w.totalBoards);
       const targetByWeek = weekAgg.map(w => w.totalExpected);
       const bphByWeek = weekAgg.map(w => (w.totalWorkerHours ? w.totalBoards / w.totalWorkerHours : 0));
