@@ -1,0 +1,48 @@
+Campo Caribe Dashboard — Brief (Layman’s Terms)
+
+What it is
+A single “home page” (index.html) that acts like a control center for multiple dashboards. Each dashboard is its own HTML file, and the home page loads them inside iframes so you can switch tools without leaving the main app.
+
+How it’s organized
+- Home screen shows big category cards (Operations, Sales & Marketing, Team Tools, Growing, Food Safety & Quality, plus Data Input).
+- Clicking a category shows tiles for that category’s dashboards.
+- When you open a dashboard, a pill-style header strip appears for that category so you can jump between related dashboards quickly (like the Operations tabs in the screenshot). Similar strips exist for Sales, Team, Growing, and Food Safety & Quality.
+
+Core categories and dashboards
+Operations
+- Weekly Summary: rolls up grow + pack data into a weekly view.
+- Seeding, Transplant, Harvest, Packing, Shipments, Sanitation, S&H Inventory: operational dashboards that read from the master data and show metrics, tables, and charts for each stage.
+
+Sales & Marketing
+- Sales Productivity Dashboard: pulls sales lines from pack data and visualizes performance.
+- Store Visits Dashboard: shows field visit logs with filters, charts, and a detailed table.
+
+Team Tools
+- Board Inventory: current board counts and inventory view.
+- Pack Team Performance: employee performance dashboard.
+
+Growing
+- Experiment Calendar: schedules and timeline for experiments, including holiday markers.
+- Mulders Chart: performance chart for growing.
+
+Food Safety & Quality
+- Food Safety Traceability: tracks batches end-to-end using grow + pack data.
+
+How data flows
+- “Data Input” is the central uploader. It stores the master datasets in the browser’s localStorage.
+- Most dashboards read from those localStorage keys (e.g., master grow, master pack, store visits, experiments, procurement).
+- The home page can also “hydrate” localStorage from a backend worker, but the dashboards themselves rely on localStorage once loaded.
+
+What happens when you click a dashboard
+- The home page activates the selected panel and loads the HTML file into an iframe.
+- The header strip for that category becomes visible and highlights the active dashboard.
+- The dashboard runs fully in the browser (no server logic inside the dashboard pages).
+
+Visual structure (what users see)
+- Top bar with logo, language toggle, home button, and a launcher grid.
+- Category cards on the home screen.
+- Category-specific tab strip once a dashboard is open.
+- The dashboard content itself loads below in a framed panel.
+
+In short
+It’s a multi-dashboard hub where “Data Input” feeds local data, and each category (Operations, Sales, Team, Growing, Food Safety) has its own tools. The index page controls navigation and shows the correct header tabs for the category you’re in.
