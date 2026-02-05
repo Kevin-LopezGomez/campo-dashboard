@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Campo Caribe • Open Orders Tracker</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --panel2:#0f172a;
+      --card: rgba(2,6,23,.72);
+      --card2: rgba(15,23,42,.70);
+
+      --border: rgba(148,163,184,.18);
+      --border2: rgba(148,163,184,.12);
+
+      --text:#e5e7eb;
+      --sub:#cbd5e1;
+      --muted:#94a3b8;
+
+      --accent:#22c55e;
+      --accent2:#38bdf8;
+      --warn:#f59e0b;
+      --danger:#fb7185;
+
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --radius: 18px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: radial-gradient(1100px 600px at 18% -8%, rgba(34,197,94,.16), transparent 55%),
+                  radial-gradient(900px 500px at 105% 10%, rgba(56,189,248,.14), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      letter-spacing: .1px;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width: 1240px; margin:0 auto; padding: 22px 16px 40px; }
+
+    /* Top bar (matches Campo Caribe dashboard vibe) */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; padding: 16px 16px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(11,18,34,.78), rgba(2,6,23,.45));
+      box-shadow: var(--shadow);
+      border-radius: calc(var(--radius) + 6px);
+      position: sticky; top: 10px; z-index: 20;
+      backdrop-filter: blur(12px);
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      min-width: 260px;
+    }
+    .logo{
+      width: 42px; height: 42px; border-radius: 14px;
+      background:
+        radial-gradient(16px 16px at 30% 28%, rgba(34,197,94,.95), rgba(34,197,94,0) 62%),
+        radial-gradient(18px 18px at 78% 62%, rgba(56,189,248,.95), rgba(56,189,248,0) 62%),
+        rgba(15,23,42,.95);
+      border: 1px solid rgba(148,163,184,.22);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    .brand h1{
+      margin:0;
+      font-family:Poppins, Inter, system-ui;
+      font-weight:800;
+      font-size: 16px;
+      line-height: 1.1;
+    }
+    .brand p{
+      margin:2px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.55);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor:pointer;
+      display:inline-flex; gap:8px; align-items:center;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+      user-select:none;
+    }
+    .btn:hover{ border-color: rgba(34,197,94,.45); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(34,197,94,.22), rgba(15,23,42,.55));
+      border-color: rgba(34,197,94,.42);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(251,113,133,.18), rgba(15,23,42,.55));
+      border-color: rgba(251,113,133,.35);
+    }
+    .btn .dot{
+      width:8px; height:8px; border-radius:999px; background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+    .btn .kbd{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(226,232,240,.9);
+      opacity:.85;
+      border: 1px solid rgba(148,163,184,.22);
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: rgba(2,6,23,.45);
+    }
+
+    /* Layout */
+    .grid{
+      display:grid;
+      grid-template-columns: 340px 1fr;
+      gap: 14px;
+      margin-top: 14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .brand{ min-width: 0; }
+    }
+
+    .panel{
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(11,18,34,.72), rgba(2,6,23,.55));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border2);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .panel .hd h2{
+      margin:0;
+      font-family:Poppins, Inter, system-ui;
+      font-weight:800;
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .panel .hd small{ color: var(--muted); font-weight:600; }
+
+    .panel .bd{ padding: 12px 14px 14px; }
+
+    /* KPI row */
+    .kpis{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 520px){ .kpis{ grid-template-columns: 1fr; } }
+    .kpi{
+      border:1px solid var(--border2);
+      background: rgba(2,6,23,.40);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .kpi .label{ font-size: 12px; color: var(--muted); font-weight: 600; }
+    .kpi .value{ font-family:Poppins, Inter; font-weight:800; font-size: 18px; }
+    .kpi .hint{ font-size: 11px; color: rgba(203,213,225,.78); }
+
+    /* Inputs */
+    label{ display:block; font-size: 12px; color: rgba(226,232,240,.9); font-weight:700; margin: 10px 0 6px; }
+    input[type="text"], input[type="date"], select{
+      width:100%;
+      padding: 10px 10px;
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(148,163,184,.24);
+      color: var(--text);
+      border-radius: 14px;
+      outline:none;
+    }
+    input[type="text"]::placeholder{ color: rgba(148,163,184,.75); }
+    select option{ background: #0b1222; color: var(--text); }
+
+    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 520px){ .row2{ grid-template-columns: 1fr; } }
+
+    .drop{
+      border: 1px dashed rgba(148,163,184,.35);
+      background: rgba(2,6,23,.35);
+      border-radius: 18px;
+      padding: 14px;
+      color: rgba(226,232,240,.9);
+    }
+    .drop strong{ font-family:Poppins; }
+    .drop p{ margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .drop .mini{ margin-top: 8px; display:flex; gap:8px; flex-wrap:wrap; }
+
+    .hintline{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height:1.35;
+    }
+    .hintline code{
+      font-family: var(--mono);
+      background: rgba(2,6,23,.45);
+      border: 1px solid rgba(148,163,184,.18);
+      padding: 2px 6px;
+      border-radius: 10px;
+      color: rgba(226,232,240,.95);
+    }
+
+    /* Table */
+    .tablewrap{ overflow:auto; border-top: 1px solid var(--border2); }
+    table{ width:100%; border-collapse: collapse; min-width: 980px; }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(148,163,184,.10);
+      vertical-align: top;
+      font-size: 12.5px;
+    }
+    th{
+      position: sticky; top: 0;
+      background: rgba(11,18,34,.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      z-index: 5;
+      font-size: 12px;
+      color: rgba(226,232,240,.92);
+      text-align:left;
+      cursor: pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    th .sort{ opacity:.65; font-size: 11px; margin-left:6px; }
+    td.mono{ font-family: var(--mono); font-size: 12px; }
+    td.small{ font-size: 12px; color: rgba(203,213,225,.92); }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      border: 1px solid rgba(148,163,184,.22);
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(2,6,23,.35);
+      font-weight: 700;
+      font-size: 11px;
+      white-space:nowrap;
+    }
+    .badge .b{ width:7px; height:7px; border-radius: 99px; background: var(--muted); }
+    .b-accent{ background: var(--accent) !important; }
+    .b-warn{ background: var(--warn) !important; }
+    .b-danger{ background: var(--danger) !important; }
+    .b-blue{ background: var(--accent2) !important; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(15,23,42,.35);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .pill.crit{ border-color: rgba(251,113,133,.35); }
+    .pill.ok{ border-color: rgba(34,197,94,.35); }
+    .pill.mid{ border-color: rgba(245,158,11,.35); }
+
+    .cell-edit{
+      width: 100%;
+      min-width: 140px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.45);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 6px 8px;
+      font-size: 12px;
+      outline:none;
+    }
+    .cell-edit.small{ min-width: 110px; }
+    .cell-edit.tiny{ min-width: 90px; }
+
+    .muted{ color: var(--muted); }
+    .empty{
+      padding: 18px 14px;
+      color: rgba(203,213,225,.85);
+      font-size: 13px;
+    }
+    .footer{
+      margin-top: 16px;
+      color: rgba(148,163,184,.86);
+      font-size: 12px;
+      text-align:center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Open Orders Tracker</h1>
+          <p>Campo Caribe • Purchasing workflow (CSV → tracked board)</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnUpload">
+          <span class="dot"></span> Upload File <span class="kbd">U</span>
+        </button>
+        <button class="btn" id="btnExportJSON">Export JSON</button>
+        <button class="btn" id="btnExportCSV">Export CSV</button>
+        <button class="btn danger" id="btnReset">Reset Local Changes</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: controls -->
+      <div class="panel">
+        <div class="hd">
+          <h2>Filters & Data</h2>
+          <small id="loadedHint">No file loaded</small>
+        </div>
+        <div class="bd">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">Open orders</div>
+              <div class="value" id="kpiOpen">—</div>
+              <div class="hint" id="kpiOpenHint">Upload CSV or JSON to begin</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Critical follow-ups</div>
+              <div class="value" id="kpiCritical">—</div>
+              <div class="hint">Marked as “Critical”</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Vendors</div>
+              <div class="value" id="kpiVendors">—</div>
+              <div class="hint">Unique vendor count</div>
+            </div>
+          </div>
+
+          <label for="q">Search</label>
+          <input id="q" type="text" placeholder="Search vendor, PO #, description, notes…" />
+
+          <div class="row2">
+            <div>
+              <label for="fStatus">Status</label>
+              <select id="fStatus">
+                <option value="">All</option>
+              </select>
+            </div>
+            <div>
+              <label for="fCriticality">Criticality</label>
+              <select id="fCriticality">
+                <option value="">All</option>
+                <option>Critical</option>
+                <option>Not Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div>
+              <label for="fDept">Department</label>
+              <select id="fDept">
+                <option value="">All</option>
+              </select>
+            </div>
+            <div>
+              <label for="fVendor">Vendor</label>
+              <select id="fVendor">
+                <option value="">All</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div>
+              <label for="fDue">Next follow-up on</label>
+              <input id="fDue" type="date" />
+            </div>
+            <div>
+              <label for="fOverdue">Show overdue only</label>
+              <select id="fOverdue">
+                <option value="">No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="drop" id="dropZone">
+            <strong>Drop a CSV or JSON here</strong>
+            <p>Or click “Upload File”. We’ll extract purchase orders and let you track statuses.</p>
+            <div class="mini">
+              <span class="badge"><span class="b b-accent"></span> Local tracking</span>
+              <span class="badge"><span class="b b-blue"></span> Filters + export</span>
+              <span class="badge"><span class="b b-warn"></span> Sort columns</span>
+            </div>
+          </div>
+
+          <div class="hintline">
+            Tracking fields (dropdowns) are limited to your approved lists for
+            <code>Status</code>, <code>Criticality</code>, and <code>Department</code>.
+          </div>
+
+          <input id="file" type="file" accept=".csv,.json,text/csv,application/json" hidden />
+        </div>
+      </div>
+
+      <!-- Right: table -->
+      <div class="panel">
+        <div class="hd">
+          <h2>Orders</h2>
+          <small class="muted" id="tableMeta">—</small>
+        </div>
+
+        <div class="tablewrap">
+          <div class="empty" id="emptyState">
+            Upload the vendor purchase order CSV or JSON to start tracking open orders.
+          </div>
+
+          <table id="tbl" style="display:none">
+            <thead>
+              <tr id="theadRow"></tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Campo Caribe • Open Orders Tracker • Saves tracking changes locally in your browser (localStorage)
+    </div>
+  </div>
+
+<script>
+/* ========= Approved dropdown values ========= */
+const STATUS_LIST = [
+  "Waiting to Put New Vendor in System",
+  "Waiting for Payment Approval",
+  "Pending Order",
+  "Ordered",
+  "In Production",
+  "In Transit",
+  "Delivered",
+  "Received by Warehouse"
+];
+const CRIT_LIST = ["Critical", "Not Critical"];
+const DEPT_LIST = ["Growing","Food Safety","Ops","HR","CEO","Maintenance","Procurement","Sales","Marketing"];
+
+/* ========= Storage keys ========= */
+const STORAGE_KEY = "campo_open_orders_v1_tracking"; // overrides keyed by orderNum
+const STORAGE_META_KEY = "campo_open_orders_v1_meta";
+
+/* ========= State ========= */
+let rawRows = [];
+let orders = [];            // extracted purchase order rows
+let viewRows = [];          // filtered + sorted
+let sortKey = "Order Date";
+let sortDir = "desc";       // asc/desc
+let csvFilename = "";
+
+/* ========= Helpers ========= */
+const $ = (sel) => document.querySelector(sel);
+const el = (tag, cls) => { const x=document.createElement(tag); if(cls) x.className=cls; return x; };
+
+function todayISO(){
+  const d = new Date();
+  const tzOff = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tzOff).toISOString().slice(0,10);
+}
+
+function safeStr(v){ return (v===null||v===undefined) ? "" : String(v); }
+
+function parseMoney(v){
+  const s = safeStr(v).replace(/[$,]/g,"").trim();
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatMoney(n){
+  if(!Number.isFinite(n)) return "";
+  return n.toLocaleString(undefined, { style:"currency", currency:"USD" });
+}
+
+function parseDateLoose(v){
+  // Accept mm/dd/yyyy, yyyy-mm-dd, etc.
+  const s = safeStr(v).trim();
+  if(!s) return null;
+  // If mm/dd/yyyy
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(m){
+    const mm = Number(m[1]), dd = Number(m[2]), yy = Number(m[3]);
+    const yyyy = yy < 100 ? 2000 + yy : yy;
+    const dt = new Date(yyyy, mm-1, dd);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+  // Try Date.parse
+  const t = Date.parse(s);
+  if(!Number.isNaN(t)) return new Date(t);
+  return null;
+}
+
+function toISODate(dt){
+  if(!dt) return "";
+  const tzOff = dt.getTimezoneOffset() * 60000;
+  return new Date(dt.getTime() - tzOff).toISOString().slice(0,10);
+}
+
+function normalizeHeader(h){
+  return safeStr(h).trim().replace(/\s+/g," ");
+}
+
+/* Robust-ish CSV parser for common cases (quoted commas/newlines). */
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let cur = "";
+  let i = 0;
+  let inQuotes = false;
+
+  while(i < text.length){
+    const ch = text[i];
+
+    if(inQuotes){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ // escaped quote
+          cur += '"'; i += 2; continue;
+        }else{
+          inQuotes = false; i++; continue;
+        }
+      }else{
+        cur += ch; i++; continue;
+      }
+    }else{
+      if(ch === '"'){ inQuotes = true; i++; continue; }
+      if(ch === ","){
+        row.push(cur); cur=""; i++; continue;
+      }
+      if(ch === "\r"){
+        i++; continue;
+      }
+      if(ch === "\n"){
+        row.push(cur); cur="";
+        rows.push(row);
+        row = [];
+        i++; continue;
+      }
+      cur += ch; i++; continue;
+    }
+  }
+  // flush
+  row.push(cur);
+  rows.push(row);
+
+  // trim trailing completely-empty rows
+  while(rows.length && rows[rows.length-1].every(c => !safeStr(c).trim())) rows.pop();
+  return rows;
+}
+
+function findHeaderRow(rows){
+  // Find row containing Vendor and Num (as seen in your export).
+  for(let r=0; r<rows.length; r++){
+    const norm = rows[r].map(normalizeHeader);
+    const hasVendor = norm.some(x => x.toLowerCase() === "vendor");
+    const hasNum = norm.some(x => x.toLowerCase() === "num");
+    const hasOrderDate = norm.some(x => x.toLowerCase() === "order date");
+    if(hasVendor && hasNum && hasOrderDate) return r;
+  }
+  // fallback: the first row with 5+ non-empty cells
+  let best = -1, bestCount = 0;
+  for(let r=0; r<Math.min(rows.length, 30); r++){
+    const cnt = rows[r].filter(c => safeStr(c).trim()).length;
+    if(cnt > bestCount){ bestCount=cnt; best=r; }
+  }
+  return Math.max(best, 0);
+}
+
+function extractOrders(rows){
+  const headerIdx = findHeaderRow(rows);
+  const headers = rows[headerIdx].map(normalizeHeader);
+
+  // Build map of known columns (we keep originals if present)
+  const col = {
+    vendor: headers.findIndex(h => h.toLowerCase() === "vendor"),
+    notes: headers.findIndex(h => h.toLowerCase() === "notes"),
+    orderDate: headers.findIndex(h => h.toLowerCase() === "order date"),
+    leadTime: headers.findIndex(h => h.toLowerCase() === "lead time"),
+    promisedDate: headers.findIndex(h => h.toLowerCase() === "promised date"),
+    deliveryDate: headers.findIndex(h => h.toLowerCase() === "delivery date"),
+    num: headers.findIndex(h => h.toLowerCase() === "num"),
+    budget: headers.findIndex(h => h.toLowerCase() === "budget allocation"),
+    dept: headers.findIndex(h => h.toLowerCase() === "department"),
+    desc: headers.findIndex(h => h.toLowerCase() === "description"),
+    shipVia: headers.findIndex(h => h.toLowerCase() === "ship via"),
+    status: headers.findIndex(h => h.toLowerCase() === "status"),
+    followUps: headers.findIndex(h => h.toLowerCase() === "follow ups"),
+    amount: headers.findIndex(h => h.toLowerCase() === "amount"),
+    openBalance: headers.findIndex(h => h.toLowerCase() === "open balance"),
+  };
+
+  const dataRows = rows.slice(headerIdx + 1);
+
+  let currentVendor = "";
+  const out = [];
+
+  for(const r of dataRows){
+    const vendorCell = safeStr(r[col.vendor]).trim();
+    const numCell = safeStr(r[col.num]).trim();
+
+    const isTotal = vendorCell.toLowerCase().startsWith("total for ");
+    const hasAnyData = r.some(c => safeStr(c).trim());
+
+    // Vendor header line (vendor present, but no num and mostly empty)
+    if(vendorCell && !isTotal && !numCell){
+      currentVendor = vendorCell;
+      continue;
+    }
+
+    // Total line or empty line: ignore
+    if(!hasAnyData || isTotal) continue;
+
+    // Order line: has num (preferred) OR has order date + amount, etc.
+    const orderDate = safeStr(r[col.orderDate]).trim();
+    const amountRaw = safeStr(r[col.amount]).trim();
+    const looksLikeOrder = !!numCell || (!!orderDate && !!amountRaw);
+
+    if(!looksLikeOrder) continue;
+
+    const obj = {
+      "PO #": numCell || "",
+      "Vendor": currentVendor || vendorCell || "",
+      "Order Date": orderDate,
+      "Promised Date": safeStr(r[col.promisedDate]).trim(),
+      "Delivery Date": safeStr(r[col.deliveryDate]).trim(),
+      "Lead Time": safeStr(r[col.leadTime]).trim(),
+      "Ship via": safeStr(r[col.shipVia]).trim(),
+      "Budget Allocation": safeStr(r[col.budget]).trim(),
+      "CSV Department": safeStr(r[col.dept]).trim(),
+      "Description": safeStr(r[col.desc]).trim(),
+      "CSV Status": safeStr(r[col.status]).trim(),
+      "CSV Follow Ups": safeStr(r[col.followUps]).trim(),
+      "Amount": amountRaw,
+      "Open Balance": safeStr(r[col.openBalance]).trim(),
+      "CSV Notes": safeStr(r[col.notes]).trim(),
+
+      // Tracking fields (editable, validated)
+      "Status": "",        // from STATUS_LIST
+      "Criticality": "",   // Critical / Not Critical
+      "Department": "",    // from DEPT_LIST
+      "Owner": "",
+      "Next Follow-Up": "",
+      "Tracking Notes": "",
+      "Last Updated": ""
+    };
+
+    // Seed tracking fields from CSV where possible
+    // If CSV status already matches one of the approved values, keep it.
+    if(STATUS_LIST.includes(obj["CSV Status"])) obj["Status"] = obj["CSV Status"];
+    if(DEPT_LIST.includes(obj["CSV Department"])) obj["Department"] = obj["CSV Department"];
+
+    // if CSV follow-ups hints critical
+    const fu = obj["CSV Follow Ups"].toLowerCase();
+    if(fu.includes("critical")) obj["Criticality"] = "Critical";
+
+    out.push(obj);
+  }
+
+  return out;
+}
+
+function loadOverrides(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {};
+  }catch(e){ return {}; }
+}
+function saveOverrides(map){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+}
+function saveMeta(){
+  localStorage.setItem(STORAGE_META_KEY, JSON.stringify({
+    csvFilename,
+    loadedAt: new Date().toISOString()
+  }));
+}
+function loadMeta(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_META_KEY) || "{}") || {}; }
+  catch(e){ return {}; }
+}
+
+function keyForRow(r){
+  // Prefer PO #, else fallback to vendor+orderdate+amount
+  const po = safeStr(r["PO #"]).trim();
+  if(po) return `po:${po}`;
+  return `row:${safeStr(r["Vendor"]).trim()}|${safeStr(r["Order Date"]).trim()}|${safeStr(r["Amount"]).trim()}`;
+}
+
+function applyOverrides(rows){
+  const ov = loadOverrides();
+  for(const r of rows){
+    const k = keyForRow(r);
+    if(ov[k]){
+      Object.assign(r, ov[k]);
+    }
+  }
+}
+
+function setOverride(row, patch){
+  const ov = loadOverrides();
+  const k = keyForRow(row);
+  const next = Object.assign({}, ov[k] || {}, patch, { "Last Updated": new Date().toISOString() });
+  ov[k] = next;
+  saveOverrides(ov);
+  Object.assign(row, next);
+}
+
+/* ========= UI wiring ========= */
+function setSelectOptions(sel, options, includeBlank=true){
+  const s = $(sel);
+  const cur = s.value;
+  s.innerHTML = "";
+  if(includeBlank){
+    const opt = document.createElement("option");
+    opt.value = ""; opt.textContent = "All";
+    s.appendChild(opt);
+  }
+  for(const o of options){
+    const opt = document.createElement("option");
+    opt.value = o; opt.textContent = o;
+    s.appendChild(opt);
+  }
+  // attempt restore
+  if([...s.options].some(o => o.value === cur)) s.value = cur;
+}
+
+function computeKpis(rows){
+  const open = rows.length;
+  const critical = rows.filter(r => r["Criticality"] === "Critical").length;
+  const vendors = new Set(rows.map(r => r["Vendor"]).filter(Boolean)).size;
+  $("#kpiOpen").textContent = open.toLocaleString();
+  $("#kpiCritical").textContent = critical.toLocaleString();
+  $("#kpiVendors").textContent = vendors.toLocaleString();
+  $("#kpiOpenHint").textContent = open ? "Tracking is active" : "Upload CSV or JSON to begin";
+}
+
+function badgeForStatus(status){
+  const s = safeStr(status);
+  if(!s) return `<span class="badge"><span class="b"></span>Unassigned</span>`;
+  let cls="b-blue";
+  if(s==="Delivered" || s==="Received by Warehouse") cls="b-accent";
+  if(s==="Waiting for Payment Approval" || s==="Waiting to Put New Vendor in System") cls="b-warn";
+  if(s==="In Transit" || s==="In Production") cls="b-blue";
+  if(s==="Pending Order") cls="b-warn";
+  if(s==="Ordered") cls="b-blue";
+  return `<span class="badge"><span class="b ${cls}"></span>${escapeHtml(s)}</span>`;
+}
+
+function pillForCriticality(c){
+  const v = safeStr(c);
+  if(!v) return `<span class="pill mid">—</span>`;
+  if(v==="Critical") return `<span class="pill crit">Critical</span>`;
+  return `<span class="pill ok">Not Critical</span>`;
+}
+
+function escapeHtml(s){
+  return safeStr(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function renderTable(rows){
+  const tbl = $("#tbl");
+  const thead = $("#theadRow");
+  const tbody = $("#tbody");
+  const empty = $("#emptyState");
+
+  if(!rows.length){
+    tbl.style.display="none";
+    empty.style.display="block";
+    empty.textContent = orders.length ? "No results. Try clearing filters." : "Upload the vendor purchase order CSV or JSON to start tracking open orders.";
+    $("#tableMeta").textContent = orders.length ? "0 results" : "—";
+    return;
+  }
+
+  empty.style.display="none";
+  tbl.style.display="table";
+
+  const columns = [
+    "PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount",
+    "Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes",
+    "Description","Ship via"
+  ];
+
+  // Header
+  thead.innerHTML = "";
+  for(const c of columns){
+    const th = document.createElement("th");
+    th.textContent = c;
+    const span = document.createElement("span");
+    span.className = "sort";
+    span.textContent = (sortKey===c) ? (sortDir==="asc" ? "▲" : "▼") : "";
+    th.appendChild(span);
+
+    th.addEventListener("click", () => {
+      if(sortKey === c){
+        sortDir = (sortDir==="asc") ? "desc" : "asc";
+      }else{
+        sortKey = c;
+        sortDir = (c==="Order Date" || c==="Next Follow-Up" || c==="Amount") ? "desc" : "asc";
+      }
+      refresh();
+    });
+
+    thead.appendChild(th);
+  }
+
+  // Body
+  tbody.innerHTML = "";
+  for(const r of rows){
+    const tr = document.createElement("tr");
+
+    const cells = {
+      "PO #": () => `<span class="mono">${escapeHtml(r["PO #"] || "")}</span>`,
+      "Vendor": () => `<span>${escapeHtml(r["Vendor"] || "")}</span>`,
+      "Order Date": () => `<span class="small">${escapeHtml(r["Order Date"] || "")}</span>`,
+      "Promised Date": () => `<span class="small">${escapeHtml(r["Promised Date"] || "")}</span>`,
+      "Delivery Date": () => `<span class="small">${escapeHtml(r["Delivery Date"] || "")}</span>`,
+      "Amount": () => {
+        const m = parseMoney(r["Amount"]);
+        return `<span class="mono">${m===null ? escapeHtml(r["Amount"]||"") : escapeHtml(formatMoney(m))}</span>`;
+      },
+      "Status": () => badgeForStatus(r["Status"]),
+      "Criticality": () => pillForCriticality(r["Criticality"]),
+      "Department": () => `<span class="badge"><span class="b b-blue"></span>${escapeHtml(r["Department"] || "—")}</span>`,
+      "Owner": () => `<span class="muted">${escapeHtml(r["Owner"] || "—")}</span>`,
+      "Next Follow-Up": () => {
+        const d = r["Next Follow-Up"];
+        if(!d) return `<span class="muted">—</span>`;
+        const dt = parseDateLoose(d);
+        const iso = dt ? toISODate(dt) : "";
+        const isOverdue = iso && iso < todayISO();
+        return `<span class="${isOverdue ? "" : "small"}" style="${isOverdue ? "color: var(--danger); font-weight:800;" : ""}">${escapeHtml(iso || d)}</span>`;
+      },
+      "Tracking Notes": () => `<span class="muted">${escapeHtml(r["Tracking Notes"] || "—")}</span>`,
+      "Description": () => `<span class="small">${escapeHtml(r["Description"] || "")}</span>`,
+      "Ship via": () => `<span class="small">${escapeHtml(r["Ship via"] || "")}</span>`
+    };
+
+    const columns = Object.keys(cells);
+
+    for(const c of columns){
+      const td = document.createElement("td");
+
+      // Editable fields
+      if(c === "Status"){
+        const sel = document.createElement("select");
+        sel.className = "cell-edit";
+        const opt0 = document.createElement("option");
+        opt0.value = ""; opt0.textContent = "Unassigned";
+        sel.appendChild(opt0);
+        for(const v of STATUS_LIST){
+          const o = document.createElement("option");
+          o.value = v; o.textContent = v;
+          sel.appendChild(o);
+        }
+        sel.value = r["Status"] || "";
+        sel.addEventListener("change", () => setOverride(r, { "Status": sel.value }));
+        td.appendChild(sel);
+      } else if(c === "Criticality"){
+        const sel = document.createElement("select");
+        sel.className = "cell-edit tiny";
+        const opt0 = document.createElement("option");
+        opt0.value=""; opt0.textContent="—";
+        sel.appendChild(opt0);
+        for(const v of CRIT_LIST){
+          const o = document.createElement("option");
+          o.value=v; o.textContent=v;
+          sel.appendChild(o);
+        }
+        sel.value = r["Criticality"] || "";
+        sel.addEventListener("change", () => setOverride(r, { "Criticality": sel.value }));
+        td.appendChild(sel);
+      } else if(c === "Department"){
+        const sel = document.createElement("select");
+        sel.className = "cell-edit";
+        const opt0 = document.createElement("option");
+        opt0.value=""; opt0.textContent="—";
+        sel.appendChild(opt0);
+        for(const v of DEPT_LIST){
+          const o = document.createElement("option");
+          o.value=v; o.textContent=v;
+          sel.appendChild(o);
+        }
+        sel.value = r["Department"] || "";
+        sel.addEventListener("change", () => setOverride(r, { "Department": sel.value }));
+        td.appendChild(sel);
+      } else if(c === "Owner"){
+        const inp = document.createElement("input");
+        inp.className = "cell-edit small";
+        inp.type = "text";
+        inp.placeholder = "Name";
+        inp.value = r["Owner"] || "";
+        inp.addEventListener("change", () => setOverride(r, { "Owner": inp.value.trim() }));
+        td.appendChild(inp);
+      } else if(c === "Next Follow-Up"){
+        const inp = document.createElement("input");
+        inp.className = "cell-edit small";
+        inp.type = "date";
+        const dt = parseDateLoose(r["Next Follow-Up"]);
+        inp.value = dt ? toISODate(dt) : "";
+        inp.addEventListener("change", () => setOverride(r, { "Next Follow-Up": inp.value }));
+        td.appendChild(inp);
+      } else if(c === "Tracking Notes"){
+        const inp = document.createElement("input");
+        inp.className = "cell-edit";
+        inp.type = "text";
+        inp.placeholder = "Add a note…";
+        inp.value = r["Tracking Notes"] || "";
+        inp.addEventListener("change", () => setOverride(r, { "Tracking Notes": inp.value }));
+        td.appendChild(inp);
+      } else {
+        td.innerHTML = cells[c]();
+      }
+
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  }
+
+  $("#tableMeta").textContent = `${rows.length.toLocaleString()} shown • ${orders.length.toLocaleString()} total`;
+}
+
+/* ========= Filtering + Sorting ========= */
+function getFilters(){
+  return {
+    q: $("#q").value.trim().toLowerCase(),
+    status: $("#fStatus").value,
+    crit: $("#fCriticality").value,
+    dept: $("#fDept").value,
+    vendor: $("#fVendor").value,
+    due: $("#fDue").value,
+    overdue: $("#fOverdue").value === "1"
+  };
+}
+
+function rowMatches(r, f){
+  if(f.status && (r["Status"] || "") !== f.status) return false;
+  if(f.crit && (r["Criticality"] || "") !== f.crit) return false;
+  if(f.dept && (r["Department"] || "") !== f.dept) return false;
+  if(f.vendor && (r["Vendor"] || "") !== f.vendor) return false;
+
+  if(f.due){
+    const iso = toISODate(parseDateLoose(r["Next Follow-Up"])) || "";
+    if(iso !== f.due) return false;
+  }
+  if(f.overdue){
+    const iso = toISODate(parseDateLoose(r["Next Follow-Up"])) || "";
+    if(!iso || iso >= todayISO()) return false;
+  }
+
+  if(f.q){
+    const hay = [
+      r["PO #"], r["Vendor"], r["Description"], r["Budget Allocation"],
+      r["CSV Follow Ups"], r["CSV Notes"], r["Tracking Notes"], r["Owner"]
+    ].map(safeStr).join(" ").toLowerCase();
+    if(!hay.includes(f.q)) return false;
+  }
+  return true;
+}
+
+function sortRows(rows){
+  const k = sortKey;
+  const dir = sortDir === "asc" ? 1 : -1;
+
+  const copy = rows.slice();
+  copy.sort((a,b) => {
+    const av = a[k], bv = b[k];
+
+    if(k === "Amount"){
+      const an = parseMoney(av), bn = parseMoney(bv);
+      if(an===null && bn===null) return 0;
+      if(an===null) return 1;
+      if(bn===null) return -1;
+      return (an - bn) * dir;
+    }
+
+    if(k === "Order Date" || k === "Promised Date" || k === "Delivery Date" || k === "Next Follow-Up"){
+      const ad = parseDateLoose(av), bd = parseDateLoose(bv);
+      const at = ad ? ad.getTime() : -Infinity;
+      const bt = bd ? bd.getTime() : -Infinity;
+      return (at - bt) * dir;
+    }
+
+    const as = safeStr(av).toLowerCase();
+    const bs = safeStr(bv).toLowerCase();
+    if(as < bs) return -1 * dir;
+    if(as > bs) return  1 * dir;
+    return 0;
+  });
+
+  return copy;
+}
+
+function refresh(){
+  const f = getFilters();
+  const filtered = orders.filter(r => rowMatches(r, f));
+  viewRows = sortRows(filtered);
+  computeKpis(orders);
+  renderTable(viewRows);
+}
+
+/* ========= Export ========= */
+function download(name, text, type="text/plain"){
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 800);
+}
+
+function exportJSON(){
+  const payload = {
+    meta: {
+      exportedAt: new Date().toISOString(),
+      csvFilename,
+      totalOrders: orders.length
+    },
+    orders
+  };
+  download(`Open_Orders_Tracker_${(new Date()).toISOString().slice(0,10)}.json`, JSON.stringify(payload, null, 2), "application/json");
+}
+
+function exportCSV(){
+  // export viewRows with tracking fields
+  const cols = ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Lead Time","Ship via","Budget Allocation",
+                "Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes","Description","Amount","Open Balance"];
+  const lines = [cols.join(",")];
+  for(const r of orders){
+    const row = cols.map(c => {
+      const v = safeStr(r[c]);
+      const needs = /[",\n]/.test(v);
+      const esc = v.replaceAll('"','""');
+      return needs ? `"${esc}"` : esc;
+    }).join(",");
+    lines.push(row);
+  }
+  download(`Open_Orders_Tracker_${(new Date()).toISOString().slice(0,10)}.csv`, lines.join("\n"), "text/csv");
+}
+
+/* ========= File load ========= */
+function handleText(text, name=""){
+  csvFilename = name || "uploaded.csv";
+  rawRows = parseCSV(text);
+
+  orders = extractOrders(rawRows);
+  applyOverrides(orders);
+
+  // Fill filter dropdowns
+  setSelectOptions("#fStatus", STATUS_LIST, true);
+  setSelectOptions("#fDept", DEPT_LIST, true);
+  // Vendor options from extracted orders
+  const vendors = [...new Set(orders.map(o => o["Vendor"]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const selVendor = $("#fVendor");
+  selVendor.innerHTML = "";
+  const optAll = document.createElement("option"); optAll.value=""; optAll.textContent="All"; selVendor.appendChild(optAll);
+  for(const v of vendors){
+    const o = document.createElement("option"); o.value=v; o.textContent=v; selVendor.appendChild(o);
+  }
+
+  $("#loadedHint").textContent = `Loaded: ${csvFilename}`;
+  $("#tableMeta").textContent = `${orders.length.toLocaleString()} total`;
+  saveMeta();
+
+  refresh();
+}
+
+function readFile(file){
+  const reader = new FileReader();
+  reader.onload = () => handleText(String(reader.result || ""), file.name);
+  reader.readAsText(file);
+}
+
+/* ========= Events ========= */
+$("#btnUpload").addEventListener("click", () => $("#file").click());
+$("#file").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if(f) readFile(f);
+});
+
+$("#btnExportJSON").addEventListener("click", exportJSON);
+$("#btnExportCSV").addEventListener("click", exportCSV);
+
+$("#btnReset").addEventListener("click", () => {
+  if(!confirm("Reset all local tracking changes? This clears your saved edits (localStorage).")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  refresh();
+});
+
+["#q","#fStatus","#fCriticality","#fDept","#fVendor","#fDue","#fOverdue"].forEach(sel => {
+  $(sel).addEventListener("input", refresh);
+  $(sel).addEventListener("change", refresh);
+});
+
+document.addEventListener("keydown", (e) => {
+  if(e.key.toLowerCase() === "u" && (e.ctrlKey || e.metaKey || !e.target.matches("input,textarea,select"))){
+    e.preventDefault();
+    $("#file").click();
+  }
+});
+
+/* Drag & drop */
+const dz = $("#dropZone");
+["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, (e) => {
+  e.preventDefault(); e.stopPropagation();
+  dz.style.borderColor = "rgba(34,197,94,.55)";
+  dz.style.background = "rgba(34,197,94,.06)";
+}));
+["dragleave","drop"].forEach(ev => dz.addEventListener(ev, (e) => {
+  e.preventDefault(); e.stopPropagation();
+  dz.style.borderColor = "rgba(148,163,184,.35)";
+  dz.style.background = "rgba(2,6,23,.35)";
+}));
+dz.addEventListener("drop", (e) => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) readFile(f);
+});
+
+/* Restore last used filename hint (optional) */
+(function init(){
+  const meta = loadMeta();
+  if(meta && meta.csvFilename){
+    $("#loadedHint").textContent = `Last: ${meta.csvFilename} (upload to refresh)`;
+  }
+})();
+</script>
+</body>
+</html>
