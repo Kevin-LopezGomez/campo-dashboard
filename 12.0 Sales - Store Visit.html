@@ -12,19 +12,25 @@
 
   <style>
     :root{
-      --bg:#020617;
-      --panel:#0b1222;
-      --panel2:#0f172a;
-      --border: rgba(148,163,184,.16);
-      --text:#e5e7eb;
-      --sub:#a7b0be;
-      --muted:#7c8798;
-      --accent:#22c55e;
-      --danger:#ef4444;
-      --radius:18px;
-      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --bg: #020617;
+      --bg-alt: #020617;
+      --panel: #020617;
+      --panel-soft: #020617;
+      --card: #020617;
+      --border: #1f2937;
+      --border-subtle: #374151;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.18);
+      --accent-strong: rgba(34, 197, 94, 0.45);
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --muted: #6b7280;
+      --radius: 18px;
+      --shadow: 0 24px 80px rgba(15, 23, 42, 0.9);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
     }
     *{box-sizing:border-box;}
     html,body{height:100%;}
@@ -32,80 +38,120 @@
       margin:0;
       font-family:var(--sans);
       color:var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(30, 64, 175, 0.35), transparent 55%),
-        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.28), transparent 60%),
-        linear-gradient(180deg, #020617, #020617);
+      background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
     }
-    .page{
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 18px 18px 28px;
+    .app-shell{
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
     }
-    .header{
-      display:flex;
-      flex-wrap:wrap;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-    .title{
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: .02em;
-    }
-    .subtitle{
-      margin-top:4px;
-      color:var(--sub);
-      font-size: .85rem;
-      max-width: 860px;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,.38);
-      background: rgba(2,6,23,.55);
-      color: var(--sub);
-      font-size: .72rem;
-      text-transform: uppercase;
-      letter-spacing: .1em;
+    .dashboard{
+      width: 100%;
+      max-width: 1440px;
+      background: rgba(15, 23, 42, 0.94);
+      border-radius: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.15);
       box-shadow: var(--shadow);
-      white-space:nowrap;
-    }
-    .dot{
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(34,197,94,.9);
-      box-shadow: 0 0 14px rgba(34,197,94,.7);
+      padding: 16px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
-      gap: 14px;
-      align-items: start;
+    /* ===== HEADER ===== */
+    .header-row{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .title-block h1{
+      margin: 0;
+      font-size: 1.3rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .title-icon{
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, #4ade80, #22c55e 55%, #16a34a 80%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #022c22;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6),
+                  0 10px 30px rgba(34, 197, 94, 0.45);
+    }
+    .title-sub{
+      margin-top: 3px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      max-width: 860px;
+    }
+    .badge-row{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pill-badge{
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: radial-gradient(circle at top left,#0f172a,#020617);
+      color: var(--sub);
+      white-space: nowrap;
+    }
+    .pill-dot{
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .layout{
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 16px;
+      align-items: flex-start;
     }
     @media (max-width: 980px){
-      .grid{grid-template-columns: 1fr;}
+      .layout{grid-template-columns: 1fr;}
     }
-    .card{
-      background:
-        radial-gradient(circle at top left, rgba(30, 64, 175, 0.25), transparent 60%),
-        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.18), transparent 65%),
-        linear-gradient(145deg, rgba(2,6,23,.92), rgba(2,6,23,.82));
-      border: 1px solid rgba(148,163,184,.14);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px;
+    .sidebar{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .card h3{
+    .main{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+    .section-card{
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left, #0b1120, #020617);
+      padding: 12px 14px;
+    }
+    .section-card h3{
       margin:0 0 10px;
-      font-size: .85rem;
+      font-size: .78rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
@@ -135,6 +181,50 @@
       padding: 8px 12px;
       outline: none;
       font-size: .88rem;
+    }
+    .multiBox{
+      width: 100%;
+      min-height: 140px;
+      max-height: 200px;
+      overflow: auto;
+      border-radius: 22px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(15,23,42,.6);
+      padding: 8px;
+      display: grid;
+      grid-auto-rows: minmax(28px, auto);
+      gap: 6px;
+      align-content: start;
+    }
+    .multiItem{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(2,6,23,.35);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      text-align: center;
+      font-size: .88rem;
+    }
+    .multiItem input{
+      display: none;
+    }
+    .multiItem.selected{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.12);
+      color: #bbf7d0;
+      box-shadow: 0 0 0 1px rgba(34,197,94,.2) inset;
+    }
+    .multiEmpty{
+      color: var(--muted);
+      font-size: .8rem;
+      text-align: center;
+      padding: 6px 8px;
     }
     input[type="file"]{
       width: 100%;
@@ -299,32 +389,26 @@
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="header">
-      <div>
-        <div class="title">Store Visits Dashboard (CSV-first)</div>
-        <div class="subtitle">
-          Upload a Store Visit CSV (one row = one visit). Filter, summarize, chart, and review visit records.
-          This version runs fully in the browser (no Supabase required).
+  <div class="app-shell">
+    <div class="dashboard">
+      <div class="header-row">
+        <div class="title-block">
+          <h1><span class="title-icon">S</span>Store Visits Dashboard</h1>
+          <div class="title-sub">
+            Filter, summarize, chart, and review visit records from local data.
+          </div>
+        </div>
+        <div class="badge-row">
+          <div class="pill-badge"><span class="pill-dot"></span><span id="statusPill">No local data loaded</span></div>
         </div>
       </div>
-      <div class="pill"><span class="dot"></span><span id="statusPill">No CSV loaded</span></div>
-    </div>
 
-    <div class="grid">
-      <!-- LEFT: Loader + Filters + KPIs -->
-      <div class="card">
-        <h3>Load CSV</h3>
+      <div class="layout">
+        <!-- LEFT: Filters + KPIs -->
+        <div class="sidebar">
+          <div class="section-card">
+            <h3>Filters</h3>
 
-        <div class="row" style="align-items:flex-end;">
-          <div style="flex: 2 1 260px;">
-            <label>Choose CSV file</label>
-            <input id="csvFile" type="file" accept=".csv,text/csv" />
-          </div>
-          <div style="flex: 1 1 140px;">
-            <button class="btn" id="loadBtn" disabled>Load</button>
-          </div>
-        </div>
 
         <div class="row" style="margin-top: 12px;">
           <div>
@@ -340,22 +424,22 @@
         <div class="row" style="margin-top: 10px;">
           <div>
             <label>Routes (multi)</label>
-            <select id="routeSel" multiple size="5"></select>
+            <div id="routeSel" class="multiBox" role="listbox" aria-multiselectable="true"></div>
           </div>
           <div>
             <label>Chains (multi)</label>
-            <select id="chainSel" multiple size="5"></select>
+            <div id="chainSel" class="multiBox" role="listbox" aria-multiselectable="true"></div>
           </div>
         </div>
 
         <div class="row" style="margin-top: 10px;">
           <div style="flex: 2 1 240px;">
-            <label>Store search</label>
-            <input id="storeSearch" type="text" placeholder="Type store name..." />
+            <label>Stores (multi)</label>
+            <div id="storeSel" class="multiBox" role="listbox" aria-multiselectable="true"></div>
           </div>
           <div style="flex: 1 1 160px;">
-            <label>Municipio</label>
-            <input id="muniSearch" type="text" placeholder="Optional..." />
+            <label>Municipio (multi)</label>
+            <div id="muniSel" class="multiBox" role="listbox" aria-multiselectable="true"></div>
           </div>
         </div>
 
@@ -367,6 +451,13 @@
           <div>
             <label>Low 10oz threshold</label>
             <input id="t10" type="number" min="0" step="1" value="5" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label>Temp bins</label>
+            <input id="tempBins" type="number" min="3" max="20" step="1" value="4" />
           </div>
         </div>
 
@@ -399,11 +490,13 @@
         <div class="muted" id="hint">
           Tip: Use multi-select (Ctrl/Cmd+click) for routes/chains. Export produces the currently filtered view.
         </div>
-      </div>
+          </div>
+        </div>
 
-      <!-- RIGHT: Charts + Table -->
-      <div class="card">
-        <h3>Overview</h3>
+        <!-- RIGHT: Charts + Table -->
+        <div class="main">
+          <div class="section-card">
+            <h3>Overview</h3>
         <div class="charts">
           <div class="chartBox">
             <canvas id="routeChart"></canvas>
@@ -436,6 +529,8 @@
             <tbody id="tbody"></tbody>
           </table>
         </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -450,6 +545,73 @@
   let sortKey = "visit_date";
   let sortDir = "desc";  // asc | desc
   let charts = { route:null, chainLow:null, wob:null, temp:null };
+
+  const STORE_VISITS_KEY = "campo_store_visits_v1";
+
+  function extractObjectsFromStoreVisitsPayload(payload){
+    if(!payload || typeof payload !== "object") return [];
+    let sheet = null;
+
+    // Preferred canonical sheet structure
+    if(payload.sheets && typeof payload.sheets === "object"){
+      sheet = payload.sheets["Store Visit"] || payload.sheets["Store Visits"];
+      if(!sheet){
+        const k = Object.keys(payload.sheets)[0];
+        if(k) sheet = payload.sheets[k];
+      }
+    } else if (Array.isArray(payload.headers) && Array.isArray(payload.rows)) {
+      sheet = payload;
+    }
+
+    if(!sheet || !Array.isArray(sheet.headers) || !Array.isArray(sheet.rows)) return [];
+    const headers = sheet.headers.map(h => String(h ?? "").trim());
+    return sheet.rows
+      .filter(r => Array.isArray(r) && r.some(v => String(v ?? "").trim() !== ""))
+      .map(r => {
+        const o = {};
+        for(let i=0;i<headers.length;i++) o[headers[i]] = (r[i] ?? "");
+        return o;
+      });
+  }
+
+  function loadFromLocalStorage(){
+    const raw = (localStorage.getItem(STORE_VISITS_KEY) || "").trim();
+    if(!raw) throw new Error(`No local data found in localStorage["${STORE_VISITS_KEY}"]`);
+    let payload = null;
+    try { payload = JSON.parse(raw); } catch { throw new Error("Local Store Visits payload is not valid JSON"); }
+
+    const objs = extractObjectsFromStoreVisitsPayload(payload);
+    if(!objs.length) throw new Error("No rows found in local Store Visits payload");
+    rawRows = objs;
+    rows = normalizeRows(rawRows);
+
+    // Remove completely empty rows (no store and no date)
+    rows = rows.filter(r => r.store || r.visit_date);
+
+    // Populate selectors (ignore blanks)
+    const routes = uniq(rows.map(r=>r.route).filter(v => String(v || "").trim() !== ""))
+      .sort((a,b)=>String(a).localeCompare(String(b)));
+    const chains = uniq(rows.map(r=>r.chain).filter(v => String(v || "").trim() !== ""))
+      .sort((a,b)=>String(a).localeCompare(String(b)));
+    const stores = uniq(rows.map(r=>r.store).filter(v => String(v || "").trim() !== ""))
+      .sort((a,b)=>String(a).localeCompare(String(b)));
+    const munis = uniq(rows.map(r=>r.municipio).filter(v => String(v || "").trim() !== ""))
+      .sort((a,b)=>String(a).localeCompare(String(b)));
+    populateMultiSelect(document.getElementById("routeSel"), routes);
+    populateMultiSelect(document.getElementById("chainSel"), chains);
+    populateMultiSelect(document.getElementById("storeSel"), stores);
+    populateMultiSelect(document.getElementById("muniSel"), munis);
+
+    setupDateBounds();
+
+    filtered = [...rows];
+    sortKey = "visit_date";
+    sortDir = "desc";
+    sortFiltered();
+    renderAll();
+    document.getElementById("exportBtn").disabled = filtered.length === 0;
+  }
+
 
   // Expected headers (Spanish). We'll be tolerant if spacing differs.
   const H = {
@@ -549,8 +711,9 @@
     return Array.from(new Set(arr.filter(Boolean)));
   }
 
-  function selectedOptions(sel){
-    return Array.from(sel.selectedOptions).map(o=>o.value);
+  function selectedOptions(container){
+    return Array.from(container.querySelectorAll(".multiItem.selected"))
+      .map(item => item.getAttribute("data-value") || "");
   }
 
   function setStatus(text){
@@ -626,8 +789,10 @@
     const routes = selectedOptions(routeSel);
     const chains = selectedOptions(chainSel);
 
-    const storeQ = document.getElementById("storeSearch").value.trim().toLowerCase();
-    const muniQ = document.getElementById("muniSearch").value.trim().toLowerCase();
+    const storeSel = document.getElementById("storeSel");
+    const muniSel = document.getElementById("muniSel");
+    const stores = selectedOptions(storeSel);
+    const munis = selectedOptions(muniSel);
 
     const t5 = Number(document.getElementById("t5").value);
     const t10 = Number(document.getElementById("t10").value);
@@ -642,8 +807,8 @@
       if(routes.length && !routes.includes(r.route)) return false;
       if(chains.length && !chains.includes(r.chain)) return false;
 
-      if(storeQ && !String(r.store||"").toLowerCase().includes(storeQ)) return false;
-      if(muniQ && !String(r.municipio||"").toLowerCase().includes(muniQ)) return false;
+      if(stores.length && !stores.includes(r.store)) return false;
+      if(munis.length && !munis.includes(r.municipio)) return false;
 
       if(onlyW && r.wobblers !== true) return false;
       if(onlyTemp && (r.temp_f == null)) return false;
@@ -663,11 +828,13 @@
   function resetFilters(){
     const routeSel = document.getElementById("routeSel");
     const chainSel = document.getElementById("chainSel");
-    [...routeSel.options].forEach(o => o.selected = false);
-    [...chainSel.options].forEach(o => o.selected = false);
+    routeSel.querySelectorAll(".multiItem.selected").forEach(el => el.classList.remove("selected"));
+    chainSel.querySelectorAll(".multiItem.selected").forEach(el => el.classList.remove("selected"));
 
-    document.getElementById("storeSearch").value = "";
-    document.getElementById("muniSearch").value = "";
+    const storeSel = document.getElementById("storeSel");
+    const muniSel = document.getElementById("muniSel");
+    storeSel.querySelectorAll(".multiItem.selected").forEach(el => el.classList.remove("selected"));
+    muniSel.querySelectorAll(".multiItem.selected").forEach(el => el.classList.remove("selected"));
     document.getElementById("onlyWobblers").checked = false;
     document.getElementById("onlyLow").checked = false;
     document.getElementById("onlyTemp").checked = false;
@@ -759,11 +926,13 @@
   function renderCharts(){
     const t5 = Number(document.getElementById("t5").value);
     const t10 = Number(document.getElementById("t10").value);
+    const binCount = Math.max(3, Math.min(20, Number(document.getElementById("tempBins").value) || 8));
 
     // Visits per route
     const routeMap = new Map();
     filtered.forEach(r => {
-      const k = r.route || "(blank)";
+      const k = String(r.route || "").trim();
+      if(!k) return;
       routeMap.set(k, (routeMap.get(k)||0) + 1);
     });
     const routeLabels = Array.from(routeMap.keys()).sort((a,b)=>a.localeCompare(b));
@@ -817,23 +986,29 @@
       options: baseChartOptions("Wobblers distribution", true)
     });
 
-    // Temp distribution (simple histogram-ish buckets)
+    // Temp distribution (bins)
     const temps = filtered.map(r=>r.temp_f).filter(v=>v!=null);
-    const buckets = new Map();
+    const tempLabels = [];
+    const tempData = [];
     if(temps.length){
-      // buckets of 5 degrees
-      temps.forEach(t=>{
-        const b = Math.floor(t/5)*5;
-        const label = `${b}-${b+4}`;
-        buckets.set(label, (buckets.get(label)||0)+1);
+      const minT = Math.min(...temps);
+      const maxT = Math.max(...temps);
+      const safeBins = Math.max(1, binCount);
+      const span = Math.max(1e-6, maxT - minT);
+      const step = span / safeBins;
+      const counts = new Array(safeBins).fill(0);
+      const fmtBin = (v) => Number.isInteger(v) ? String(v) : v.toFixed(1);
+      temps.forEach(t => {
+        const idx = Math.min(safeBins - 1, Math.floor((t - minT) / step));
+        counts[idx] += 1;
       });
+      for(let i=0;i<safeBins;i++){
+        const lo = minT + i*step;
+        const hi = (i === safeBins - 1) ? maxT : (minT + (i+1)*step);
+        tempLabels.push(`${fmtBin(lo)}-${fmtBin(hi)}`);
+        tempData.push(counts[i]);
+      }
     }
-    const tempLabels = Array.from(buckets.keys()).sort((a,b)=>{
-      const na = parseInt(a.split("-")[0],10);
-      const nb = parseInt(b.split("-")[0],10);
-      return na-nb;
-    });
-    const tempData = tempLabels.map(k=>buckets.get(k));
 
     charts.temp = destroyChart(charts.temp);
     charts.temp = new Chart(document.getElementById("tempChart"), {
@@ -1030,19 +1205,32 @@
     renderCharts();
     renderTable();
     document.getElementById("exportBtn").disabled = filtered.length === 0;
-    setStatus(rows.length ? `Loaded ${rows.length.toLocaleString()} rows` : "No CSV loaded");
+    setStatus(rows.length ? `Loaded ${rows.length.toLocaleString()} rows` : "No local data loaded");
   }
 
   // -------------------------
   // INIT: selectors and events
   // -------------------------
-  function populateMultiSelect(selectEl, values){
-    selectEl.innerHTML = "";
+  function populateMultiSelect(container, values){
+    container.innerHTML = "";
+    if(!values.length){
+      const empty = document.createElement("div");
+      empty.className = "multiEmpty";
+      empty.textContent = "No options";
+      container.appendChild(empty);
+      return;
+    }
     values.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      selectEl.appendChild(opt);
+      const item = document.createElement("div");
+      item.className = "multiItem";
+      item.setAttribute("data-value", v);
+      item.setAttribute("role", "option");
+      item.textContent = v;
+      item.addEventListener("click", () => {
+        item.classList.toggle("selected");
+        applyFilters();
+      });
+      container.appendChild(item);
     });
   }
 
@@ -1058,10 +1246,11 @@
   }
 
   function wireFilters(){
-    const ids = ["dateFrom","dateTo","routeSel","chainSel","storeSearch","muniSearch","t5","t10","onlyWobblers","onlyLow","onlyTemp"];
+    const ids = ["dateFrom","dateTo","routeSel","chainSel","storeSel","muniSel","t5","t10","tempBins","onlyWobblers","onlyLow","onlyTemp"];
     ids.forEach(id => {
       const el = document.getElementById(id);
-      const ev = (el.tagName === "SELECT" || el.type === "checkbox") ? "change" : "input";
+      if(!el) return;
+      const ev = (el.type === "checkbox") ? "change" : "input";
       el.addEventListener(ev, () => applyFilters());
     });
     document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
@@ -1071,66 +1260,21 @@
   // -------------------------
   // CSV LOAD
   // -------------------------
-  function loadCsvFile(file){
-    return new Promise((resolve, reject) => {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: false,
-        complete: (results) => resolve(results),
-        error: (err) => reject(err)
-      });
-    });
-  }
-
-  async function onLoadClick(){
-    const file = document.getElementById("csvFile").files[0];
-    if(!file) return;
-    setStatus("Loading…");
-    try{
-      const parsed = await loadCsvFile(file);
-      rawRows = (parsed.data || []).filter(r => Object.keys(r||{}).length);
-      rows = normalizeRows(rawRows);
-
-      // Remove completely empty rows (no store and no date)
-      rows = rows.filter(r => r.store || r.visit_date);
-
-      // Populate selectors
-      const routes = uniq(rows.map(r=>r.route || "(blank)")).sort((a,b)=>a.localeCompare(b));
-      const chains = uniq(rows.map(r=>r.chain || "(blank)")).sort((a,b)=>a.localeCompare(b));
-      populateMultiSelect(document.getElementById("routeSel"), routes);
-      populateMultiSelect(document.getElementById("chainSel"), chains);
-
-      setupDateBounds();
-
-      // Default: no route/chain selections (means "all")
-      filtered = [...rows];
-      sortKey = "visit_date";
-      sortDir = "desc";
-      sortFiltered();
-      renderAll();
-      document.getElementById("exportBtn").disabled = filtered.length === 0;
-    }catch(e){
-      console.error(e);
-      setStatus("❌ Failed to parse CSV");
-      alert("Could not parse CSV. Please confirm it is a valid CSV file.\n\n" + (e?.message || e));
-    }
-  }
-
   function init(){
     wireFilters();
-    const fileEl = document.getElementById("csvFile");
-    const loadBtn = document.getElementById("loadBtn");
 
-    fileEl.addEventListener("change", () => {
-      loadBtn.disabled = !(fileEl.files && fileEl.files[0]);
-    });
-    loadBtn.addEventListener("click", onLoadClick);
-
-    // render empty state charts cleanly
-    rows = [];
-    filtered = [];
-    renderAll();
+    // Auto-load from localStorage (preferred)
+    try{
+      setStatus("Loading local data…");
+      loadFromLocalStorage();
+      setStatus(`Loaded ${rows.length.toLocaleString()} rows from local storage`);
+    }catch(e){
+      console.warn("Local load failed:", e);
+      setStatus("No local data loaded (open Data Input and upload Store Visits).");
+      rows = [];
+      filtered = [];
+      renderAll();
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

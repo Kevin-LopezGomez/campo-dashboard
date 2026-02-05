@@ -839,6 +839,21 @@
       <button class="tab" data-target="p-sanitation">🧼 <span data-i18n="tab.sanitation">Sanitation</span></button>
       <button class="tab" data-target="p-inventory">📦 <span data-i18n="tab.inventory">S&amp;H Inventory</span></button>
     </div>
+    <div class="tabs" id="tabsSales" aria-label="Sales Dashboards">
+      <button class="tab" data-target="p-sales-tracking">📈 <span data-i18n="tab.sales-tracking">Sales Productivity</span></button>
+      <button class="tab" data-target="p-store-visits">🧭 <span data-i18n="tab.store-visits">Store Visits</span></button>
+    </div>
+    <div class="tabs" id="tabsTeam" aria-label="Team Tools">
+      <button class="tab" data-target="p-board-inventory">🧮 <span data-i18n="tab.board-inventory">Board Inventory</span></button>
+      <button class="tab" data-target="p-pack-team-performance">📦 <span data-i18n="tab.pack-team-performance">Pack Team Performance</span></button>
+    </div>
+    <div class="tabs" id="tabsGrowing" aria-label="Growing Dashboards">
+      <button class="tab" data-target="p-expcal">🌿 <span data-i18n="tab.expcal">Experiment Calendar</span></button>
+      <button class="tab" data-target="p-mulders">📊 <span data-i18n="tab.mulders">Mulders Chart</span></button>
+    </div>
+    <div class="tabs" id="tabsFoodSafety" aria-label="Food Safety and Quality">
+      <button class="tab" data-target="p-foodsafety">🛡️ <span data-i18n="tab.foodsafety">Food Safety</span></button>
+    </div>
 
     <div class="main">
       <section class="panel active" id="p-home">
@@ -1066,7 +1081,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-foodsafety">
+      <section class="panel" id="p-foodsafety" data-foodsafety="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Food Safety – Traceibility</h2>
@@ -1082,7 +1097,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-expcal">
+      <section class="panel" id="p-expcal" data-growing="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Experiment Calendar</h2>
@@ -1095,7 +1110,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-board-inventory">
+      <section class="panel" id="p-board-inventory" data-team="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Board Inventory</h2>
@@ -1108,7 +1123,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-pack-team-performance">
+      <section class="panel" id="p-pack-team-performance" data-team="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Pack Team Employee Performance</h2>
@@ -1121,7 +1136,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-mulders">
+      <section class="panel" id="p-mulders" data-growing="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Mulders Chart</h2>
@@ -1134,7 +1149,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-sales-tracking">
+      <section class="panel" id="p-sales-tracking" data-sales="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Sales Productivity Dashboard</h2>
@@ -1147,7 +1162,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-store-visits">
+      <section class="panel" id="p-store-visits" data-sales="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Store Visits</h2>
@@ -1292,8 +1307,15 @@
           "tab.harvest":"Harvest",
           "tab.packing":"Packing",
           "tab.shipments":"Shipments",
-          "tab.sanitation":"Sanitation",
-          "tab.inventory":"S&H Inventory",
+        "tab.sanitation":"Sanitation",
+        "tab.inventory":"S&H Inventory",
+        "tab.sales-tracking":"Sales Productivity",
+        "tab.store-visits":"Store Visits",
+        "tab.board-inventory":"Board Inventory",
+        "tab.pack-team-performance":"Pack Team Performance",
+        "tab.expcal":"Experiment Calendar",
+        "tab.mulders":"Mulders Chart",
+        "tab.foodsafety":"Food Safety",
           "tile.weekly.name":"Summary",
           "tile.weekly.meta":"Targets + actuals",
           "tile.seeding.name":"Seeding",
@@ -1389,8 +1411,15 @@
           "tab.harvest":"Cosecha",
           "tab.packing":"Empaque",
           "tab.shipments":"Despachos",
-          "tab.sanitation":"Sanidad",
-          "tab.inventory":"Inventario S&H",
+        "tab.sanitation":"Sanidad",
+        "tab.inventory":"Inventario S&H",
+        "tab.sales-tracking":"Productividad de ventas",
+        "tab.store-visits":"Visitas a tiendas",
+        "tab.board-inventory":"Inventario de tablas",
+        "tab.pack-team-performance":"Rendimiento del equipo de empaque",
+        "tab.expcal":"Calendario de experimentos",
+        "tab.mulders":"Gráfico Mulders",
+        "tab.foodsafety":"Inocuidad alimentaria",
           "tile.weekly.name":"Resumen semanal",
           "tile.weekly.meta":"Objetivos y resultados",
           "tile.seeding.name":"Siembra",
@@ -1498,10 +1527,12 @@
 
       const WORKER_EXPERIMENTS_URL = `${WORKER_BASE}/data/master/experiments.json`;
       const WORKER_PROCUREMENT_URL = `${WORKER_BASE}/data/master/procurement.json`;
+      const WORKER_STORE_VISITS_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
 
       // Fallback: direct Supabase public URLs (read-only)
       const PUBLIC_EXPERIMENTS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/experiments.json";
       const PUBLIC_PROCUREMENT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/procurement.json";
+      const PUBLIC_STORE_VISITS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json";
 
       const MASTER_GROW_KEY  = "campo_master_grow_v1";
       const MASTER_PACK_KEY  = "campo_master_pack_v1";
@@ -1510,8 +1541,10 @@
 
       const EXPERIMENTS_KEY = "campo_experiments_v1";
       const PROCUREMENT_KEY = "campo_procurement_v1";
+      const STORE_VISITS_KEY = "campo_store_visits_v1";
       const EXPERIMENTS_PING = "campo_experiments_push_ping_v1";
       const PROCUREMENT_PING = "campo_procurement_push_ping_v1";
+      const STORE_VISITS_PING = "campo_store_visits_push_ping_v1";
 
 
       const CANON_GROW_SHEET = "Master Grow";
@@ -1522,6 +1555,7 @@
 
       const MSG_EXPERIMENTS = "EXPERIMENTS_UPDATED";
       const MSG_PROCUREMENT = "PROCUREMENT_UPDATED";
+      const MSG_STORE_VISITS = "STORE_VISITS_UPDATED";
 
 
       const BC_NAMES = ["campo_master_bus_v1", "campo_updates_v1"];
@@ -1532,7 +1566,15 @@
 
       const panels = Array.from(document.querySelectorAll(".panel"));
       const tabsWrap = document.getElementById("tabs");
+      const tabsSalesWrap = document.getElementById("tabsSales");
+      const tabsTeamWrap = document.getElementById("tabsTeam");
+      const tabsGrowingWrap = document.getElementById("tabsGrowing");
+      const tabsFoodSafetyWrap = document.getElementById("tabsFoodSafety");
       const tabButtons = Array.from(document.querySelectorAll("#tabs .tab"));
+      const tabSalesButtons = Array.from(document.querySelectorAll("#tabsSales .tab"));
+      const tabTeamButtons = Array.from(document.querySelectorAll("#tabsTeam .tab"));
+      const tabGrowingButtons = Array.from(document.querySelectorAll("#tabsGrowing .tab"));
+      const tabFoodSafetyButtons = Array.from(document.querySelectorAll("#tabsFoodSafety .tab"));
 
       const toast = document.getElementById("toast");
       const toastText = document.getElementById("toastText");
@@ -1768,6 +1810,20 @@
           wroteAny = true;
         } catch(e){ console.warn("Procurement load failed:", e); }
 
+        // Store Visits
+        try{
+          let svJson = null;
+          try { svJson = await workerGetJson(WORKER_STORE_VISITS_URL); }
+          catch { svJson = await workerGetJson(PUBLIC_STORE_VISITS_URL); } // fallback to public URL
+
+          localStorage.setItem(STORE_VISITS_KEY, JSON.stringify(svJson));
+          localStorage.setItem(STORE_VISITS_PING, String(now));
+          try { window.dispatchEvent(new CustomEvent(MSG_STORE_VISITS, { detail:{ key: STORE_VISITS_KEY, ts: now } })); } catch {}
+          notifyIframes(MSG_STORE_VISITS);
+          broadcast(MSG_STORE_VISITS);
+          wroteAny = true;
+        } catch(e){ console.warn("Store Visits load failed:", e); }
+
         if (wroteAny) {
           const ok = storageContractOk();
           showToast(
@@ -1781,12 +1837,43 @@
       }
 
       function setTabsVisible(visible){
-        if (!tabsWrap) return;
-        tabsWrap.classList.toggle("show", !!visible);
+        if (tabsWrap) tabsWrap.classList.toggle("show", !!visible);
+      }
+
+      function setSalesTabsVisible(visible){
+        if (tabsSalesWrap) tabsSalesWrap.classList.toggle("show", !!visible);
+      }
+
+      function setTeamTabsVisible(visible){
+        if (tabsTeamWrap) tabsTeamWrap.classList.toggle("show", !!visible);
+      }
+
+      function setGrowingTabsVisible(visible){
+        if (tabsGrowingWrap) tabsGrowingWrap.classList.toggle("show", !!visible);
+      }
+
+      function setFoodSafetyTabsVisible(visible){
+        if (tabsFoodSafetyWrap) tabsFoodSafetyWrap.classList.toggle("show", !!visible);
       }
 
       function setActiveTabByPanel(panelId){
         tabButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function setActiveSalesTabByPanel(panelId){
+        tabSalesButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function setActiveTeamTabByPanel(panelId){
+        tabTeamButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function setActiveGrowingTabByPanel(panelId){
+        tabGrowingButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function setActiveFoodSafetyTabByPanel(panelId){
+        tabFoodSafetyButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
       }
 
       function activate(panelId){
@@ -1799,8 +1886,20 @@
         if (hideHead) panel.classList.add("toolmode");
 
         const isOps = panel.getAttribute("data-ops") === "true";
+        const isSales = panel.getAttribute("data-sales") === "true";
+        const isTeam = panel.getAttribute("data-team") === "true";
+        const isGrowing = panel.getAttribute("data-growing") === "true";
+        const isFoodSafety = panel.getAttribute("data-foodsafety") === "true";
         setTabsVisible(isOps);
+        setSalesTabsVisible(isSales);
+        setTeamTabsVisible(isTeam);
+        setGrowingTabsVisible(isGrowing);
+        setFoodSafetyTabsVisible(isFoodSafety);
         if (isOps) setActiveTabByPanel(panelId);
+        if (isSales) setActiveSalesTabByPanel(panelId);
+        if (isTeam) setActiveTeamTabByPanel(panelId);
+        if (isGrowing) setActiveGrowingTabByPanel(panelId);
+        if (isFoodSafety) setActiveFoodSafetyTabByPanel(panelId);
 
         const iframe = panel.querySelector("iframe[data-src]");
         if (iframe && !iframe.src) {
@@ -1811,6 +1910,38 @@
 
       if (tabsWrap){
         tabsWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
+        });
+      }
+      if (tabsSalesWrap){
+        tabsSalesWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
+        });
+      }
+      if (tabsTeamWrap){
+        tabsTeamWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
+        });
+      }
+      if (tabsGrowingWrap){
+        tabsGrowingWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
+        });
+      }
+      if (tabsFoodSafetyWrap){
+        tabsFoodSafetyWrap.addEventListener("click", (e) => {
           const btn = e.target.closest(".tab");
           if (!btn) return;
           const target = btn.getAttribute("data-target");
@@ -1999,12 +2130,16 @@
         if (type === MSG_PROCUREMENT || type === "PROCUREMENT_UPDATED") {
           try { localStorage.setItem(PROCUREMENT_PING, now); } catch {}
         }
+        if (type === MSG_STORE_VISITS || type === "STORE_VISITS_UPDATED") {
+          try { localStorage.setItem(STORE_VISITS_PING, now); } catch {}
+        }
+
       }
 
       window.addEventListener("message", (event) => {
         const msg = event?.data || {};
         if (!msg.type) return;
-        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED") {
+        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED") {
           touchPing(msg.type);
           notifyIframes(msg.type);
           broadcast(msg.type);
@@ -2016,7 +2151,7 @@
         ch.onmessage = (ev) => {
           const msg = ev?.data || {};
           if (!msg.type) return;
-          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED") {
+          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED") {
             touchPing(msg.type);
             notifyIframes(msg.type);
             broadcast(msg.type);
@@ -2028,17 +2163,20 @@
       let lastPackPing = localStorage.getItem(MASTER_PACK_PING) || "";
       let lastExperimentsPing = localStorage.getItem(EXPERIMENTS_PING) || "";
       let lastProcurementPing = localStorage.getItem(PROCUREMENT_PING) || "";
+      let lastStoreVisitsPing = localStorage.getItem(STORE_VISITS_PING) || "";
 
       setInterval(() => {
         const g = localStorage.getItem(MASTER_GROW_PING) || "";
         const p = localStorage.getItem(MASTER_PACK_PING) || "";
         const e = localStorage.getItem(EXPERIMENTS_PING) || "";
         const pr = localStorage.getItem(PROCUREMENT_PING) || "";
+        const sv = localStorage.getItem(STORE_VISITS_PING) || "";
 
         if (g !== lastGrowPing) { lastGrowPing = g; notifyIframes(MSG_GROW); broadcast(MSG_GROW); }
         if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
         if (e !== lastExperimentsPing) { lastExperimentsPing = e; notifyIframes(MSG_EXPERIMENTS); broadcast(MSG_EXPERIMENTS); }
         if (pr !== lastProcurementPing) { lastProcurementPing = pr; notifyIframes(MSG_PROCUREMENT); broadcast(MSG_PROCUREMENT); }
+        if (sv !== lastStoreVisitsPing) { lastStoreVisitsPing = sv; notifyIframes(MSG_STORE_VISITS); broadcast(MSG_STORE_VISITS); }
       }, 1500);
 
 
