@@ -852,7 +852,7 @@
       <button class="tab" data-target="p-mulders">📊 <span data-i18n="tab.mulders">Mulders Chart</span></button>
     </div>
     <div class="tabs" id="tabsFoodSafety" aria-label="Food Safety and Quality">
-      <button class="tab" data-target="p-foodsafety">🛡️ <span data-i18n="tab.foodsafety">Food Safety</span></button>
+      <button class="tab" data-target="p-foodsafety">🧬 <span data-i18n="tab.foodsafety">Food Safety</span></button>
     </div>
 
     <div class="main">
@@ -911,9 +911,9 @@
                   <div class="meta" data-i18n="card.hr.meta">Coming soon: Staffing, scheduling, payroll, and people operations</div>
                 </button>
 
-                <button class="big-card" data-home-open="procurement" aria-disabled="true">
+                <button class="big-card" data-home-open="procurement">
                   <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
-                  <div class="meta" data-i18n="card.procurement.meta">Coming soon: Purchasing, supplies, inventory levels, and vendor coordination</div>
+                  <div class="meta" data-i18n="card.procurement.meta">Open orders and inventory visibility for purchasing</div>
                 </button>
 
                 <button class="big-card danger" data-home-go="p-data">
@@ -955,7 +955,10 @@
                 </div>
 
                 <div class="cat-grid" id="homeFoodSafety" style="display:none;">
-                  <button class="tile" data-home-go="p-foodsafety"><div class="ico">🛡️</div><div class="name" data-i18n="tile.foodsafety.name">Food Safety</div><div class="meta" data-i18n="tile.foodsafety.meta">Batch traceability</div></button>
+                  <button class="tile" data-home-go="p-foodsafety"><div class="ico">🧬</div><div class="name" data-i18n="tile.foodsafety.name">Batch Traceability</div></button>
+                </div>
+                <div class="cat-grid" id="homeProcurement" style="display:none;">
+                  <button class="tile" data-home-go="p-proc-open-orders"><div class="ico">🧾</div><div class="name" data-i18n="tile.proc-open-orders.name">Open Orders</div><div class="meta" data-i18n="tile.proc-open-orders.meta">Purchasing workflow</div></button>
                 </div>
               </div>
 
@@ -1065,6 +1068,19 @@
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-sanitation" data-file-key="sanitation"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-proc-open-orders">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.proc-open-orders.title">Open Orders Tracker</h2>
+            <p data-i18n="panel.proc-open-orders.desc">Procurement view for open orders, vendor follow-ups, and department status.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="proc-open-orders"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-proc-open-orders" data-file-key="proc-open-orders"></iframe>
         </div>
       </section>
 
@@ -1204,13 +1220,17 @@
           <div class="app-ico">🌿</div>
           <div class="app-name" data-i18n="card.growing.title">Growing</div>
         </button>
+        <button class="launch-app" data-action="open-category" data-category="procurement">
+          <div class="app-ico">📦</div>
+          <div class="app-name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div>
+        </button>
         <button class="launch-app danger" data-action="go-panel" data-target="p-data">
           <div class="app-ico">📥</div>
           <div class="app-name" data-i18n="card.data.title">Data Input</div>
         </button>
 
         <button class="launch-app" data-action="go-panel" data-target="p-foodsafety">
-          <div class="app-ico">🛡️</div>
+          <div class="app-ico">🧬</div>
           <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
         </button>
         <button class="launch-app" aria-disabled="true" disabled>
@@ -1224,10 +1244,6 @@
         <button class="launch-app" aria-disabled="true" disabled>
           <div class="app-ico">🧑‍🤝‍🧑</div>
           <div class="app-name" data-i18n="card.hr.title">HR</div>
-        </button>
-        <button class="launch-app" aria-disabled="true" disabled>
-          <div class="app-ico">📦</div>
-          <div class="app-name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div>
         </button>
       </div>
     </div>
@@ -1258,6 +1274,9 @@
         <button class="launch-app" data-action="go-panel" data-target="p-expcal"><div class="app-ico">🌿</div><div class="app-name" data-i18n="tile.expcal.name">Experiment Calendar</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-mulders"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.mulders.name">Mulders Chart</div></button>
       </div>
+      <div class="launcher-grid" id="cat-procurement" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-proc-open-orders"><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.proc-open-orders.name">Open Orders</div></button>
+      </div>
     </div>
   </div>
 
@@ -1281,6 +1300,7 @@
           "crumb.team":"<strong>Team Tools</strong> — internal utilities",
           "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
           "crumb.foodsafety":"<strong>Food Safety</strong> — batch traceability",
+          "crumb.procurement":"<strong>Procurement &amp; Inventory</strong> — purchasing dashboards",
           "card.ops.title":"Operations",
           "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
           "card.sales.title":"Sales & Marketing",
@@ -1300,7 +1320,7 @@
           "card.hr.title":"HR",
           "card.hr.meta":"Coming soon: Staffing, scheduling, payroll, and people operations",
           "card.procurement.title":"Procurement & Inventory",
-          "card.procurement.meta":"Coming soon: Purchasing, supplies, inventory levels, and vendor coordination",
+          "card.procurement.meta":"Open orders and inventory visibility for purchasing",
           "tab.weekly":"Summary",
           "tab.seeding":"Seeding",
           "tab.transplant":"Transplant",
@@ -1312,6 +1332,7 @@
         "tab.sales-tracking":"Sales Productivity",
         "tab.store-visits":"Store Visits",
         "tab.board-inventory":"Board Inventory",
+        "tab.proc-open-orders":"Open Orders",
         "tab.pack-team-performance":"Pack Team Performance",
         "tab.expcal":"Experiment Calendar",
         "tab.mulders":"Mulders Chart",
@@ -1328,12 +1349,13 @@
           "tile.expcal.meta":"TSV paste + filters",
           "tile.board-inventory.name":"Board Inventory",
           "tile.board-inventory.meta":"Current board counts",
+          "tile.proc-open-orders.name":"Open Orders",
+          "tile.proc-open-orders.meta":"Purchasing workflow",
           "tile.pack-team-performance.name":"Pack Team Performance",
           "tile.pack-team-performance.meta":"Employee performance",
           "tile.mulders.name":"Mulders Chart",
           "tile.mulders.meta":"Growing performance chart",
-          "tile.foodsafety.name":"Food Safety",
-          "tile.foodsafety.meta":"Batch traceability",
+          "tile.foodsafety.name":"Batch Traceability",
           "tile.packing.name":"Packing",
           "tile.packing.meta":"Pack plan",
           "tile.inventory.name":"S&H Inventory",
@@ -1371,6 +1393,8 @@
           "panel.sanitation.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
           "panel.inventory.title":"S&H Inventory Dashboard",
           "panel.inventory.desc":"Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
+          "panel.proc-open-orders.title":"Open Orders Tracker",
+          "panel.proc-open-orders.desc":"Procurement view for open orders, vendor follow-ups, and department status.",
           "panel.file.prefix":"📄 file:"
         },
         es: {
@@ -1385,6 +1409,7 @@
           "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
           "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
           "crumb.foodsafety":"<strong>Inocuidad</strong> — trazabilidad de lotes",
+          "crumb.procurement":"<strong>Compras e inventario</strong> — paneles de compras",
           "card.ops.title":"Operaciones",
           "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
           "card.sales.title":"Ventas y mercadeo",
@@ -1404,7 +1429,7 @@
           "card.hr.title":"Recursos Humanos",
           "card.hr.meta":"Próximamente: personal, programación, nómina y operaciones de personas",
           "card.procurement.title":"Compras e inventario",
-          "card.procurement.meta":"Próximamente: compras, suministros, niveles de inventario y coordinación con proveedores",
+          "card.procurement.meta":"Órdenes abiertas y visibilidad de inventario para compras",
           "tab.weekly":"Resumen semanal",
           "tab.seeding":"Siembra",
           "tab.transplant":"Trasplante",
@@ -1416,6 +1441,7 @@
         "tab.sales-tracking":"Productividad de ventas",
         "tab.store-visits":"Visitas a tiendas",
         "tab.board-inventory":"Inventario de tablas",
+        "tab.proc-open-orders":"Órdenes abiertas",
         "tab.pack-team-performance":"Rendimiento del equipo de empaque",
         "tab.expcal":"Calendario de experimentos",
         "tab.mulders":"Gráfico Mulders",
@@ -1432,12 +1458,13 @@
           "tile.expcal.meta":"Pega TSV + filtros",
           "tile.board-inventory.name":"Inventario de tablas",
           "tile.board-inventory.meta":"Conteos actuales de tablas",
+          "tile.proc-open-orders.name":"Órdenes abiertas",
+          "tile.proc-open-orders.meta":"Flujo de compras",
           "tile.pack-team-performance.name":"Rendimiento del equipo de empaque",
           "tile.pack-team-performance.meta":"Rendimiento de empleados",
           "tile.mulders.name":"Grafico Mulders",
           "tile.mulders.meta":"Grafico de rendimiento de cultivo",
-          "tile.foodsafety.name":"Inocuidad",
-          "tile.foodsafety.meta":"Trazabilidad de lotes",
+          "tile.foodsafety.name":"Trazabilidad de lotes",
           "tile.packing.name":"Empaque",
           "tile.packing.meta":"Plan de empaque",
           "tile.inventory.name":"Inventario S&H",
@@ -1475,6 +1502,8 @@
           "panel.sanitation.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
           "panel.inventory.title":"Panel de inventario S&H",
           "panel.inventory.desc":"Lee Master Pack (preferido) + Master Grow (alterno) de <code>localStorage</code> claves <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
+          "panel.proc-open-orders.title":"Seguimiento de órdenes abiertas",
+          "panel.proc-open-orders.desc":"Vista de compras para órdenes abiertas, seguimientos de proveedores y estado por departamento.",
           "panel.file.prefix":"📄 archivo:"
         }
       };
@@ -1489,6 +1518,7 @@
         data: "07.0 Data - Input Tool.html",
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
+        "proc-open-orders": "14.0 Procurement - Open Orders.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
         "sales-tracking": "13.0 Sales - Productivity Dashboard.html",
         "store-visits": "12.0 Sales - Store Visit.html",
@@ -1596,6 +1626,7 @@
       const catSales = document.getElementById("cat-sales");
       const catTeam = document.getElementById("cat-team");
       const catGrowing = document.getElementById("cat-growing");
+      const catProcurement = document.getElementById("cat-procurement");
 
       const homeLevel1 = document.getElementById("homeLevel1");
       const homeLevel2 = document.getElementById("homeLevel2");
@@ -1604,6 +1635,7 @@
       const homeTeam = document.getElementById("homeTeam");
       const homeGrowing = document.getElementById("homeGrowing");
       const homeFoodSafety = document.getElementById("homeFoodSafety");
+      const homeProcurement = document.getElementById("homeProcurement");
       const homeCrumb = document.getElementById("homeCrumb");
       const homeBackInline = document.getElementById("homeBackInline");
       const homeBackBtn = document.getElementById("homeBackBtn");
@@ -1643,7 +1675,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-proc-open-orders",
         "ifr-sales-tracking","ifr-store-visits"
       ];
 
@@ -1961,6 +1993,7 @@
         homeTeam.style.display = "none";
         if(homeGrowing) homeGrowing.style.display = "none";
         if(homeFoodSafety) homeFoodSafety.style.display = "none";
+        if(homeProcurement) homeProcurement.style.display = "none";
 
         if (cat === "ops"){
           homeCrumb.innerHTML = t("crumb.ops", currentLang);
@@ -1977,6 +2010,9 @@
         } else if (cat === "foodsafety" && homeFoodSafety){
           homeCrumb.innerHTML = t("crumb.foodsafety", currentLang);
           homeFoodSafety.style.display = "grid";
+        } else if (cat === "procurement" && homeProcurement){
+          homeCrumb.innerHTML = t("crumb.procurement", currentLang);
+          homeProcurement.style.display = "grid";
         }
 
         homeLevel1.style.display = "none";
@@ -2023,6 +2059,7 @@
         catSales.style.display = "none";
         catTeam.style.display = "none";
         if(catGrowing) catGrowing.style.display = "none";
+        if(catProcurement) catProcurement.style.display = "none";
 
         if (cat === "ops"){
           catOps.style.display = "grid";
@@ -2036,6 +2073,9 @@
         } else if (cat === "growing" && catGrowing){
           catGrowing.style.display = "grid";
           if (launcherTitle) launcherTitle.textContent = t("card.growing.title", currentLang);
+        } else if (cat === "procurement" && catProcurement){
+          catProcurement.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.procurement.title", currentLang);
         }
 
         showScreen("category");

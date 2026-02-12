@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Campo Caribe • Open Orders Tracker</title>
+  <title>Campo Caribe • Open Orders Tracker (Role Views)</title>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
@@ -46,12 +46,15 @@
     }
 
     a{ color:inherit; text-decoration:none; }
-    .wrap{ max-width: 1240px; margin:0 auto; padding: 22px 16px 40px; }
+    .wrap{ max-width: 1240px; margin:0 auto; padding: 12px 16px 32px; }
+    body.embedded .wrap{ padding-top: 0; }
+    body.embedded .grid{ margin-top: 0; }
 
     /* Top bar (matches Campo Caribe dashboard vibe) */
     .topbar{
       display:flex; align-items:center; justify-content:space-between;
-      gap:12px; padding: 16px 16px;
+      gap:12px; padding: 12px 14px;
+      margin-bottom: 6px;
       border:1px solid var(--border);
       background: linear-gradient(180deg, rgba(11,18,34,.78), rgba(2,6,23,.45));
       box-shadow: var(--shadow);
@@ -59,12 +62,13 @@
       position: sticky; top: 10px; z-index: 20;
       backdrop-filter: blur(12px);
     }
+    body.embedded .topbar{ display:none; }
     .brand{
       display:flex; align-items:center; gap:12px;
       min-width: 260px;
     }
     .logo{
-      width: 42px; height: 42px; border-radius: 14px;
+      width: 36px; height: 36px; border-radius: 12px;
       background:
         radial-gradient(16px 16px at 30% 28%, rgba(34,197,94,.95), rgba(34,197,94,0) 62%),
         radial-gradient(18px 18px at 78% 62%, rgba(56,189,248,.95), rgba(56,189,248,0) 62%),
@@ -76,12 +80,12 @@
       margin:0;
       font-family:Poppins, Inter, system-ui;
       font-weight:800;
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.1;
     }
     .brand p{
       margin:2px 0 0;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
     }
 
@@ -125,13 +129,7 @@
     }
 
     /* Layout */
-    .grid{
-      display:grid;
-      grid-template-columns: 340px 1fr;
-      gap: 14px;
-      margin-top: 14px;
-      align-items:start;
-    }
+    .grid{ display:grid; grid-template-columns: 1fr; gap: 14px; margin-top: 8px; align-items:start; }
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
       .brand{ min-width: 0; }
@@ -156,7 +154,64 @@
       font-size: 14px;
       letter-spacing:.2px;
     }
+    .panel .hd h2 .ordersRole{
+      color: var(--accent);
+      text-shadow: 0 0 18px rgba(34,197,94,.25);
+    }
+    .insightsTabs{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-left:auto;
+    }
+    .insightsTabs .btn{
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    .insightsTabs .btn.active{
+      border-color: rgba(56,189,248,.45);
+      background: linear-gradient(180deg, rgba(56,189,248,.18), rgba(15,23,42,.55));
+    }
+    .deptHdrTools{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex: 1;
+      max-width: 640px;
+      justify-content: center;
+    }
+    .deptHdrTools .deptQuick{
+      width: 100%;
+      min-height: 38px;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.26);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 8px 12px;
+      font-weight:700;
+    }
+    #deptShownCountTop{
+      margin-left: 10px;
+      min-width: 110px;
+      text-align: right;
+    }
     .panel .hd small{ color: var(--muted); font-weight:600; }
+
+    /* Responsive header stacking to prevent overlap */
+    @media (max-width: 980px){
+      .panel .hd{ flex-wrap: wrap; }
+      #ordersPanel .hd h2{ order: 1; }
+      #ordersPanel .hd .deptHdrTools{ order: 3; width: 100%; max-width: none; justify-content: flex-start; }
+      #ordersPanel .hd #deptShownCountTop{ order: 4; margin-left: 0; min-width: 0; text-align: left; }
+      #ordersPanel .hd #btnToggleOrders{ order: 2; margin-left: auto; }
+    }
+    @media (max-width: 700px){
+      #ordersPanel .hd{ gap: 8px; }
+      #ordersPanel .hd #btnToggleOrders{ order: 4; width: 100%; }
+      #ordersPanel .hd #deptShownCountTop{ width: 100%; }
+      #ordersPanel .hd .deptHdrTools{ order: 3; }
+    }
 
     .panel .bd{ padding: 12px 14px 14px; }
 
@@ -298,20 +353,560 @@
       font-size: 12px;
       text-align:center;
     }
+  
+    /* Role + action panels */
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.35);
+      font-size: 12px;
+      font-weight: 700;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+    }
+    .chip:hover{ border-color: rgba(56,189,248,.45); transform: translateY(-1px); }
+    .chip:active{ transform: translateY(0px); }
+    .chip.on{
+      border-color: rgba(34,197,94,.45);
+      background: rgba(34,197,94,.10);
+    }
+
+/* Department column pills (non-procurement) */
+.colPills{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(148,163,184,.12);
+}
+
+/* Column filter chips (non-procurement) — use unique class to avoid clashing with existing .pill */
+.colpill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.18);
+  background: rgba(2,6,23,.35);
+  color: var(--text);
+  font-weight:800;
+  cursor:pointer;
+  user-select:none;
+  transition: transform .08s ease, border-color .12s ease, background .12s ease;
+}
+.colpill:hover{ transform: translateY(-1px); border-color: rgba(148,163,184,.30); }
+.colpill.active{
+  border-color: rgba(34,197,94,.55);
+  background: rgba(34,197,94,.10);
+}
+.colpill.sortAsc{
+  box-shadow: inset 0 0 0 1px rgba(229,231,235,.22), inset 0 -2px 0 rgba(229,231,235,.28);
+}
+.colpill.sortDesc{
+  box-shadow: inset 0 0 0 1px rgba(229,231,235,.22), inset 0 2px 0 rgba(229,231,235,.28);
+}
+
+
+.colPills .spacer{ flex:1 1 auto; }
+.pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,.22);
+  background: rgba(2,6,23,.35);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  cursor:pointer;
+  user-select:none;
+  transition: transform .08s ease, border-color .15s ease, background .15s ease;
+}
+.pill:hover{ border-color: rgba(56,189,248,.45); transform: translateY(-1px); }
+.pill:active{ transform: translateY(0px); }
+.pill.on{
+  border-color: rgba(34,197,94,.45);
+  background: rgba(34,197,94,.10);
+}
+.pillInput{
+  width: min(360px, 46vw);
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,.18);
+  background: rgba(2,6,23,.35);
+  color: var(--text);
+  font-weight: 700;
+  outline: none;
+}
+.pillInput:focus{ border-color: rgba(56,189,248,.55); }
+    .insightsTables{
+      display:block;
+      margin-top: 6px;
+    }
+    .insightsTables .tableWrap{
+      width: 100%;
+      max-width: 100%;
+      margin: 0 auto;
+      max-height: 220px;
+      overflow: auto;
+      border:1px solid rgba(148,163,184,.14);
+      border-radius: 16px;
+      background: rgba(2,6,23,.28);
+    }
+    .insightsTables .miniTable{
+      min-width: 720px;
+    }
+    .miniTable{
+      width:100%;
+      border-collapse: collapse;
+    }
+    .miniTable th, .miniTable td{
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(148,163,184,.10);
+      font-size: 11px;
+      vertical-align: top;
+    }
+    .miniTable th{
+      color: rgba(226,232,240,.92);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      background: rgba(2,6,23,.25);
+      position: sticky;
+      top: 0;
+    }
+    details.insights summary{
+      cursor:pointer;
+      list-style:none;
+      user-select:none;
+    }
+    details.insights summary::-webkit-details-marker{ display:none; }
+    .summaryRow{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border2);
+      background: rgba(2,6,23,.18);
+    }
+    .summaryRow h3{
+      margin:0;
+      font-family:Poppins, Inter;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .summaryRow small{ color: var(--muted); font-weight:700; }
+    .actionsPanel{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border2);
+      background: rgba(2,6,23,.20);
+    }
+    .actionsPanel .row{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    }
+    .actionsPanel .left{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    }
+    .actionsPanel .right{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .list{
+      margin-top: 10px;
+      display:grid;
+      gap: 8px;
+    }
+    .item{
+      border:1px solid rgba(148,163,184,.16);
+      background: rgba(2,6,23,.35);
+      border-radius: 16px;
+      padding: 10px 10px;
+      display:flex; gap:10px; align-items:flex-start; justify-content:space-between;
+    }
+    .item b{ font-family:Poppins, Inter; font-weight:800; font-size: 12px; }
+    .item .meta{ color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .item .right{
+      text-align:right;
+      min-width: 140px;
+      color: rgba(226,232,240,.88);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    /* Top ribbon role pills */
+    .ribbon{
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(11,18,34,.62), rgba(2,6,23,.40));
+      box-shadow: var(--shadow);
+      border-radius: calc(var(--radius) + 6px);
+      padding: 10px 12px;
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 86px; /* sits under topbar */
+      z-index: 15;
+    }
+    @media (max-width: 980px){
+      .ribbon{ top: 104px; }
+    }
+    .ribbonRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .ribbonTitle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 220px;
+    }
+    .ribbonTitle b{
+      font-family:Poppins, Inter, system-ui;
+      font-weight:800;
+      font-size: 13px;
+      letter-spacing:.2px;
+    }
+    .ribbonTitle span{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pills{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .pillBtn{
+      border: 1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.40);
+      color: rgba(226,232,240,.92);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor:pointer;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      white-space: nowrap;
+    }
+    .pillBtn:hover{
+      border-color: rgba(56,189,248,.45);
+      transform: translateY(-1px);
+    }
+    .pillBtn:active{ transform: translateY(0px); }
+    .pillBtn.active{
+      border-color: rgba(34,197,94,.55);
+      background: rgba(34,197,94,.10);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.10);
+    }
+    .pillBtn .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background: var(--accent2);
+      box-shadow:none;
+    }
+    .pillBtn.active .dot{ background: var(--accent); }
+    .ribbonRight{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .miniSelect{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(2,6,23,.40);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-weight: 800;
+      font-size: 12px;
+      outline:none;
+    }
+
+  
+    /* Hide upload/export/reset controls for hardcoded template mode */
+    .actions{ display:none !important; }
+    .ribbonRight{ display:none !important; }
+
+  
+    /* Merge role pills into topbar */
+    .topPills{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap: 12px;
+      flex: 1;
+      min-width: 320px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 980px){
+      .topPills{ justify-content:flex-start; }
+    }
+
+  
+    /* Header pill cleanup */
+    .pillBtn{
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 14px;
+    }
+    .pillBtn.active{
+      background: rgba(34,197,94,.12);
+      box-shadow: none;
+    }
+
+  
+    .brand h1{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+    .brand .subttl{
+      font-family: Inter, system-ui;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .1px;
+    }
+    .brand p{ display:none; }
+
+  
+    /* Stacked layout: make filters panel feel like a top section */
+    .panel.filtersTop .hd{ padding-top: 16px; }
+
+  
+    /* Pills row under header */
+    .pillsBar{
+      margin-top: 2px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(11,18,34,.50), rgba(2,6,23,.35));
+      box-shadow: var(--shadow);
+      border-radius: calc(var(--radius) + 6px);
+      padding: 8px 10px;
+      backdrop-filter: blur(12px);
+    }
+
+  
+    /* Collapsible filters */
+    #filtersPanel .bd{ display:none; }
+
+  
+    /* Layout tighten */
+    .pillsBar{ margin-top: 0; padding: 6px 10px; }
+    .pills{ gap: 6px; }
+    .pillBtn{ padding: 6px 9px; }
+
+  
+    /* Collapsible filters (class-based) */
+    #filtersPanel.collapsed .bd{ display:none; }
+
+    /* Hide procurement-only panels by default to prevent flash */
+    #actionsPanel, #procInsights{ display:none; }
+
+  
+    /* Department list items */
+
+/* Department list (non-procurement) — compact grid table */
+.deptTable{
+  border: 1px solid rgba(148,163,184,.14);
+  background: rgba(2,6,23,.28);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.deptTableHeader{
+  /* Was sticky; sticky headers were visually overlapping the first row text (e.g., “milestones”).
+     Keep it clean + predictable for department managers. */
+  position: relative;
+  top: auto;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(11,18,34,.86), rgba(2,6,23,.78));
+  border-bottom: 1px solid rgba(148,163,184,.14);
+  backdrop-filter: blur(10px);
+}
+.deptCols{
+  display:grid;
+  grid-template-columns:  1.15fr 1.9fr .9fr .9fr .8fr 1.05fr 1.4fr;
+  gap:10px;
+  align-items:center;
+  padding: 10px 12px;
+}
+.deptCols.labels{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: rgba(203,213,225,.82);
+}
+.deptCols.filters{
+  padding-top: 0;
+  padding-bottom: 12px;
+}
+.deptColFilter{
+  width:100%;
+  border: 1px solid rgba(148,163,184,.18);
+  background: rgba(2,6,23,.35);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+
+.deptCols.pills{ padding: 10px 12px; }
+
+.deptCols.pills .colpill{ width:100%; justify-content:flex-start; }
+.deptCols.quick{ padding: 0 12px 12px; }
+.deptQuick{ grid-column: 1 / 7; width:100%; min-height: 40px; border:1px solid rgba(148,163,184,.18); background: rgba(2,6,23,.26); color: var(--text); border-radius: 14px; padding: 10px 12px; font-weight:700; }
+.deptQuick:focus{ outline:none; border-color: rgba(96,165,250,.35); box-shadow: 0 0 0 3px rgba(96,165,250,.10); }
+.deptColFilter::placeholder{ color: rgba(148,163,184,.70); font-weight: 700; }
+.deptRows{ display:block; }
+.deptLine{
+  display:grid;
+  grid-template-columns:  1.15fr 1.9fr .9fr .9fr .8fr 1.05fr 1.4fr;
+  gap:10px;
+  align-items:center;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(148,163,184,.10);
+  background: rgba(2,6,23,.18);
+}
+.deptLine:hover{
+  background: rgba(15,23,42,.40);
+}
+.deptCell{
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(226,232,240,.92);
+}
+.deptCell.muted{ color: rgba(148,163,184,.92); font-weight: 700; }
+.deptCell.wrap{
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+}
+.descMain{ font-weight: 800; }
+.descNotes{ margin-top:4px; font-size:12px; line-height:1.25; color: rgba(148,163,184,.82); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+
+    .deptStatus{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      font-size: 11px;
+      font-weight: 900;
+      background: rgba(2,6,23,.35);
+      color: rgba(226,232,240,.90);
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deptStatus[data-status="Pending Order"],
+    .deptStatus[data-status="Waiting for Payment Approval"],
+    .deptStatus[data-status="Waiting to Put New Vendor in System"]{
+      border-color: rgba(245,158,11,.45);
+      color: #fbbf24;
+      background: rgba(245,158,11,.14);
+    }
+    .deptStatus[data-status="Ordered"],
+    .deptStatus[data-status="In Production"],
+    .deptStatus[data-status="In Transit"]{
+      border-color: rgba(56,189,248,.45);
+      color: #7dd3fc;
+      background: rgba(56,189,248,.14);
+    }
+    .deptStatus[data-status="Delivered"],
+    .deptStatus[data-status="Received by Warehouse"]{
+      border-color: rgba(34,197,94,.45);
+      color: #86efac;
+      background: rgba(34,197,94,.14);
+    }
+    .deptStatus[data-status="Unassigned"],
+    .deptStatus[data-status=""]{
+      border-color: rgba(148,163,184,.25);
+      color: rgba(203,213,225,.85);
+      background: rgba(148,163,184,.10);
+    }
+.deptFlag{
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing:.04em;
+  text-align:right;
+}
+@media (max-width: 980px){
+  .deptTableHeader{ top: 112px; }
+  .deptCols.labels, .deptCols.filters, .deptLine{
+    grid-template-columns:  1.15fr 1.6fr .9fr .9fr 1.05fr 1.4fr;
+  }
+  .deptHideSm{ display:none; }
+}
+@media (max-width: 680px){
+  .deptTableHeader{ top: 130px; }
+  .deptCols.labels, .deptCols.filters, .deptLine{
+    grid-template-columns:  1.2fr 1.6fr .9fr 1.05fr 1.4fr;
+  }
+  .deptHideMd{ display:none; }
+}
+
+    
+
+  
+    /* Hide department list view by default */
+    #deptListWrap, #deptListHeader{ display:none; }
+
+  
+    /* Column filters (procurement table) */
+    .filterRow th{ padding: 8px 8px 10px; background: rgba(2,6,23,.18); }
+    .colFilter{
+      width: 100%;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.35);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 7px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      outline: none;
+    }
+    .colFilter::placeholder{ color: rgba(148,163,184,.70); font-weight: 700; }
+
+  
+    /* Filters & Data is procurement-only */
+    #filtersPanel{ display:none; }
+
+  
+    /* Orders count (procurement only) */
+    #ordersCount{ display:none !important; }
+/* Center role pills */
+    .pillsBar{
+      display: flex;
+      justify-content: center;
+    }
+    .pillsBar .pills{
+      justify-content: center;
+    }
+
+  
+    /* tableMeta (procurement only) */
+    #tableMeta{ display:none !important; }
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div class="topbar">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <h1>Open Orders Tracker</h1>
-          <p>Campo Caribe • Purchasing workflow (CSV/JSON → tracked board)</p>
-        </div>
-      </div>
-
       <div class="actions">
         <button class="btn primary" id="btnUpload">
           <span class="dot"></span> Upload File <span class="kbd">U</span>
@@ -321,25 +916,56 @@
         <button class="btn danger" id="btnReset">Reset Local Changes</button>
       </div>
     </div>
+<div class="ribbonRight">
+          <select class="miniSelect" id="colPreset">
+            <option value="dept">Department View</option>
+            <option value="proc">Procurement View</option>
+            <option value="finance">Finance View</option>
+          </select>
+        </div>
+      </div>
+    </div>
+</div>
 
-    <div class="grid">
+
+</div>
+    </div>
+
+<div class="pillsBar">
+  <div class="pills" id="rolePills"></div>
+</div>
+
+<div class="grid">
       <!-- Left: controls -->
-      <div class="panel">
+      <div class="panel" id="filtersPanel">
         <div class="hd">
           <h2>Filters & Data</h2>
+          <button class="btn" id="btnToggleFilters" style="padding:8px 10px; border-radius: 12px;">Show filters</button>
           <small id="loadedHint">No file loaded</small>
         </div>
         <div class="bd">
-          <div class="kpis">
+          <div style="display:none"><label for="role">View as</label><select id="role"></select></div>
+          
+          <div class="kpis" style="grid-template-columns: repeat(5, 1fr);">
             <div class="kpi">
               <div class="label">Open orders</div>
               <div class="value" id="kpiOpen">—</div>
-              <div class="hint" id="kpiOpenHint">Upload CSV or JSON to begin</div>
+              <div class="hint" id="kpiOpenHint">Upload CSV to begin</div>
             </div>
             <div class="kpi">
-              <div class="label">Critical follow-ups</div>
+              <div class="label">Critical</div>
               <div class="value" id="kpiCritical">—</div>
               <div class="hint">Marked as “Critical”</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Overdue</div>
+              <div class="value" id="kpiOverdue">—</div>
+              <div class="hint">Next follow-up past due</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Stuck</div>
+              <div class="value" id="kpiStuck">—</div>
+              <div class="hint">Age ≥ 45 days (not received)</div>
             </div>
             <div class="kpi">
               <div class="label">Vendors</div>
@@ -347,6 +973,15 @@
               <div class="hint">Unique vendor count</div>
             </div>
           </div>
+
+          <label for="lane">Priority lane</label>
+          <select id="lane">
+            <option value="">All</option>
+            <option value="overdue">Overdue follow-ups</option>
+            <option value="critical">Critical</option>
+            <option value="dueSoon">Due soon (next 7 days)</option>
+            <option value="needsInfo">Missing info</option>
+          </select>
 
           <label for="q">Search</label>
           <input id="q" type="text" placeholder="Search vendor, PO #, description, notes…" />
@@ -416,14 +1051,123 @@
         </div>
       </div>
 
-      <!-- Right: table -->
-      <div class="panel">
+      <!-- Right: Orders (actions) -->
+      <div class="panel" id="ordersPanel">
         <div class="hd">
-          <h2>Orders</h2>
-          <small class="muted" id="tableMeta">—</small>
+          <h2 id="ordersTitle">Orders</h2>
+          <div class="deptHdrTools" id="deptHdrTools">
+            <input id="deptQuickFilter" class="deptQuick" placeholder="Filter…" />
+            <button class="btn" id="deptClearAll" type="button" style="padding:8px 10px;border-radius:12px;">Clear</button>
+          </div>
+          <small class="muted" id="deptShownCountTop"></small>
+          <button class="btn" id="btnToggleOrders" style="padding:8px 10px; border-radius: 12px;">Hide orders</button>
         </div>
 
-        <div class="tablewrap">
+        <div id="ordersExtras">
+          <!-- Actions panel (procurement triage) -->
+          <div class="actionsPanel" id="actionsPanel">
+            <div class="row">
+              <div class="left">
+                <span class="badge"><span class="b b-blue"></span><span id="scopeLabel">All departments</span></span>
+              </div>
+              <div class="right" style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;">
+                <span class="muted" id="actionsHint" style="font-weight:800;"></span>
+                <span class="muted" id="ordersCount" style="font-weight:700; display:none;"></span>
+              </div>
+            </div>
+            <div class="pills" id="pillsBar" style="margin-top:10px; display:none;">
+              <button class="pill" data-action="" type="button">All</button>
+              <button class="pill" data-action="overdue" type="button">Overdue</button>
+              <button class="pill" data-action="critical" type="button">Critical</button>
+              <button class="pill" data-action="dueSoon" type="button">Due soon</button>
+              <button class="pill" data-action="needsInfo" type="button">Missing info</button>
+              <button class="pill" data-action="clear" type="button">Clear</button>
+            </div>
+            <div class="actionList" id="actionList" style="margin-top:12px;"></div>
+          </div>
+        </div>
+
+      <!-- Right: Procurement Insights -->
+      <div class="panel" id="procInsightsCard" style="display:none">
+        <div class="hd">
+          <h2>Procurement Insights</h2>
+          <div class="insightsTabs" id="insightsTabs">
+            <button class="btn" data-insight="dept">By Department</button>
+            <button class="btn" data-insight="vendor">Vendor Hotspots</button>
+          </div>
+          <button class="btn" id="btnToggleInsights" style="padding:8px 10px; border-radius: 12px;">Hide insights</button>
+        </div>
+        <div class="bd" id="procInsightsBody" style="padding: 12px 14px;">
+          <div class="insightsTables">
+            <div class="kpi insightsPanel" data-insight-panel="dept" style="padding:0; background:transparent; border:none;">
+              <div class="tableWrap">
+                <table class="miniTable" id="deptSummary"></table>
+              </div>
+            </div>
+            <div class="kpi insightsPanel" data-insight-panel="vendor" style="padding:0; background:transparent; border:none;">
+              <div class="tableWrap">
+                <table class="miniTable" id="vendorSummary"></table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+<!-- Department list view (non-procurement) -->
+<div class="actionsPanel" id="deptListHeader" style="display:none">
+  <div class="row">
+    <div class="left">
+      <span class="badge"><span class="b b-blue"></span><span id="deptScopeLabel">Department scope</span></span>
+    </div>
+    <div class="right" style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;">
+      <span class="muted" id="deptShownCount" style="font-weight:800;"></span>
+      <span class="muted" id="deptListHint">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="deptTable" id="deptListWrap" style="display:none; margin: 0 14px 14px;">
+  
+  <div class="deptTableHeader">
+    <div class="deptCols pills" id="deptColPills2" role="tablist" aria-label="Department list column filter">
+      <button class="colpill" data-col="vendor" type="button">Vendor</button>
+      <button class="colpill" data-col="desc" type="button">Description</button>
+      <button class="colpill deptHideMd" data-col="promised" type="button">Promised</button>
+      <button class="colpill deptHideMd" data-col="delivery" type="button">Delivery</button>
+      <button class="colpill deptHideSm" data-col="owner" type="button">Owner</button>
+      <button class="colpill" data-col="status" type="button">Status</button>
+      <button class="colpill deptHideSm" data-col="notes" type="button">Notes</button>
+      
+    </div>
+    
+
+    <!-- legacy (hidden) per-column filters kept for logic/back-compat -->
+    <div class="deptCols filters" style="display:none">
+      <input class="deptColFilter" id="deptF_vendor" />
+      <input class="deptColFilter" id="deptF_desc" />
+      <input class="deptColFilter" id="deptF_promised" />
+      <input class="deptColFilter" id="deptF_delivery" />
+      <input class="deptColFilter" id="deptF_owner" />
+      <input class="deptColFilter" id="deptF_notes" />
+      <input class="deptColFilter" id="deptF_status" />
+      <div><button class="btn" id="deptClearFilters" type="button">Clear</button></div>
+    </div>
+  </div>
+  <div class="deptRows" id="deptRows"></div>
+</div>
+
+<!-- Procurement Order Table -->
+        <div class="panel procTableHeader" id="procTableHeader" style="display:none">
+          <div class="hd" style="display:flex;align-items:center;gap:12px;">
+            <h3 style="margin:0">Procurement Order Table</h3>
+            <div class="muted" id="procTableCount" style="margin-left:auto;font-weight:700;"></div>
+            <div class="muted" id="ordersCount" style="font-weight:700;"></div>
+            <small class="muted" id="tableMeta">—</small>
+          </div>
+        </div>
+
+        <div class="tablewrap" id="ordersTableWrap">
           <div class="empty" id="emptyState">
             Upload the vendor purchase order CSV or JSON to start tracking open orders.
           </div>
@@ -444,6 +1188,12 @@
   </div>
 
 <script>
+// Mark embedded mode when running inside an iframe
+if (window !== window.parent) {
+  document.body.classList.add("embedded");
+}
+// === Hard-coded Open Orders dataset removed ===
+
 /* ========= Approved dropdown values ========= */
 const STATUS_LIST = [
   "Waiting to Put New Vendor in System",
@@ -459,8 +1209,17 @@ const CRIT_LIST = ["Critical", "Not Critical"];
 const DEPT_LIST = ["Growing","Food Safety","Ops","HR","CEO","Maintenance","Procurement","Sales","Marketing"];
 
 /* ========= Storage keys ========= */
+const PROCUREMENT_STORAGE_KEY = "campo_procurement_v1";
+const PROCUREMENT_PING_KEY = "campo_procurement_push_ping_v1";
+const MSG_PROCUREMENT = "PROCUREMENT_UPDATED";
+const BC_NAMES = ["campo_master_bus_v1","campo_updates_v1"];
+const bcs = [];
+for (const name of BC_NAMES) {
+  try { if ("BroadcastChannel" in window) bcs.push(new BroadcastChannel(name)); } catch {}
+}
 const STORAGE_KEY = "campo_open_orders_v1_tracking"; // overrides keyed by orderNum
 const STORAGE_META_KEY = "campo_open_orders_v1_meta";
+const STORAGE_UI_KEY = "campo_open_orders_v1_ui";
 
 /* ========= State ========= */
 let rawRows = [];
@@ -469,6 +1228,102 @@ let viewRows = [];          // filtered + sorted
 let sortKey = "Order Date";
 let sortDir = "desc";       // asc/desc
 let csvFilename = "";
+
+
+/* ========= Roles & column presets ========= */
+const ROLES = [
+  { key: "Procurement", label: "Procurement (Admin)", dept: "", isAdmin: true },
+  { key: "Growing", label: "Growing", dept: "Growing" },
+  { key: "Food Safety", label: "Food Safety", dept: "Food Safety" },
+  { key: "Ops", label: "Ops", dept: "Ops" },
+  { key: "HR", label: "HR", dept: "HR" },
+  { key: "CEO", label: "CEO", dept: "CEO" },
+  { key: "Maintenance", label: "Maintenance", dept: "Maintenance" },
+  { key: "Sales", label: "Sales", dept: "Sales" },
+  { key: "Marketing", label: "Marketing", dept: "Marketing" }
+];
+
+function prettyRole(role){
+  if(!role) return 'Department';
+  return role.replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+}
+
+function setOrdersTitleForRole(role){
+  const h = document.getElementById('ordersTitle');
+  if(!h) return;
+  if(role && role.toLowerCase()==='procurement') h.textContent = 'Orders';
+  else h.innerHTML = `<span class="ordersRole">${prettyRole(role)}</span> Orders`;
+}
+
+
+const COLUMN_PRESETS = {
+  dept: ["PO #","Vendor","Status","Criticality","Promised Date","Delivery Date","Owner","Next Follow-Up","Tracking Notes","Description"],
+  proc: ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount","Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes","Description","Ship via"],
+  finance: ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount","Open Balance","Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes"]
+};
+
+let currentRole = "Procurement";
+let currentPreset = "proc";
+let actionFilterByRole = {};
+let colFilters = {}; // column filters for procurement table
+; // overdue/critical/dueSoon/needsInfo
+const STUCK_DAYS = 45;
+const DUE_SOON_DAYS = 7;
+let deptFiltersCleared = {};
+let deptListAnchor = null;
+let deptListNext = null;
+
+function getRole(){
+  return ROLES.find(r => r.key === currentRole) || ROLES[0];
+}
+
+function getActionFilter(){
+  return actionFilterByRole[currentRole] || "";
+}
+
+function setActionFilter(val){
+  actionFilterByRole[currentRole] = val || "";
+  saveUI({ actionFilters: actionFilterByRole });
+}
+
+function canEditField(field){
+  // Table is read-only (no inline editing). Use filters to narrow results.
+  return false;
+}
+
+function moveActionsPanel(target){
+  const ap = document.getElementById("actionsPanel");
+  if(!ap || !target) return;
+  if(ap.parentElement !== target){
+    target.insertBefore(ap, target.firstChild);
+  }
+}
+
+function moveDeptList(target){
+  const hdr = document.getElementById("deptListHeader");
+  const wrap = document.getElementById("deptListWrap");
+  if(!hdr || !wrap || !target) return;
+  if(!deptListAnchor){
+    deptListAnchor = hdr.parentElement;
+    deptListNext = hdr.nextSibling;
+  }
+  if(hdr.parentElement !== target) target.appendChild(hdr);
+  if(wrap.parentElement !== target) target.appendChild(wrap);
+}
+
+function restoreDeptList(){
+  const hdr = document.getElementById("deptListHeader");
+  const wrap = document.getElementById("deptListWrap");
+  if(!hdr || !wrap || !deptListAnchor) return;
+  if(hdr.parentElement === deptListAnchor) return;
+  if(deptListNext && deptListAnchor.contains(deptListNext)){
+    deptListAnchor.insertBefore(hdr, deptListNext);
+  }else{
+    deptListAnchor.appendChild(hdr);
+  }
+  deptListAnchor.appendChild(wrap);
+}
+
 
 /* ========= Helpers ========= */
 const $ = (sel) => document.querySelector(sel);
@@ -518,7 +1373,7 @@ function toISODate(dt){
 }
 
 function normalizeHeader(h){
-  return safeStr(h).trim().replace(/\s+/g," ");
+  return safeStr(h).replace(/^\uFEFF/, "").trim().replace(/\s+/g," ");
 }
 
 /* Robust-ish CSV parser for common cases (quoted commas/newlines). */
@@ -568,12 +1423,38 @@ function parseCSV(text){
   return rows;
 }
 
+function csvEscapeCell(value){
+  const s = safeStr(value);
+  if(s.includes('"') || s.includes(",") || s.includes("\n")){
+    return `"${s.replace(/"/g,'""')}"`;
+  }
+  return s;
+}
+
+function sheetToCsvText(headers, rows){
+  const lines = [];
+  const headerLine = headers.map(csvEscapeCell).join(",");
+  lines.push(headerLine);
+  for(const r of rows){
+    if(!Array.isArray(r)) continue;
+    if(r.length === 1 && safeStr(r[0]).includes(",")){
+      lines.push(safeStr(r[0]));
+      continue;
+    }
+    lines.push(r.map(csvEscapeCell).join(","));
+  }
+  return lines.join("\n");
+}
+
 function findHeaderRow(rows){
   // Find row containing Vendor and Num (as seen in your export).
   for(let r=0; r<rows.length; r++){
     const norm = rows[r].map(normalizeHeader);
     const hasVendor = norm.some(x => x.toLowerCase() === "vendor");
-    const hasNum = norm.some(x => x.toLowerCase() === "num");
+    const hasNum = norm.some(x => {
+      const v = x.toLowerCase();
+      return v === "num" || v === "po num" || v === "po #" || v === "po number";
+    });
     const hasOrderDate = norm.some(x => x.toLowerCase() === "order date");
     if(hasVendor && hasNum && hasOrderDate) return r;
   }
@@ -613,6 +1494,7 @@ function extractOrders(rows){
 
   let currentVendor = "";
   const out = [];
+  let lastOrder = null;
 
   for(const r of dataRows){
     const vendorCell = safeStr(r[col.vendor]).trim();
@@ -629,6 +1511,39 @@ function extractOrders(rows){
 
     // Total line or empty line: ignore
     if(!hasAnyData || isTotal) continue;
+
+    // Continuation line (no vendor/num) that carries dept/status/amount, etc.
+    if(!vendorCell && !numCell && lastOrder){
+      const patch = {
+        "Promised Date": safeStr(r[col.promisedDate]).trim(),
+        "Delivery Date": safeStr(r[col.deliveryDate]).trim(),
+        "Lead Time": safeStr(r[col.leadTime]).trim(),
+        "Ship via": safeStr(r[col.shipVia]).trim(),
+        "Budget Allocation": safeStr(r[col.budget]).trim(),
+        "CSV Department": safeStr(r[col.dept]).trim(),
+        "Description": safeStr(r[col.desc]).trim(),
+        "CSV Status": safeStr(r[col.status]).trim(),
+        "CSV Follow Ups": safeStr(r[col.followUps]).trim(),
+        "Amount": safeStr(r[col.amount]).trim(),
+        "Open Balance": safeStr(r[col.openBalance]).trim(),
+        "CSV Notes": safeStr(r[col.notes]).trim(),
+      };
+      // Merge only non-empty values
+      Object.entries(patch).forEach(([k,v]) => {
+        if(v && !safeStr(lastOrder[k]).trim()) lastOrder[k] = v;
+      });
+      // Append budget allocation if line looks like extra notes
+      if(patch["Budget Allocation"]){
+        lastOrder["Budget Allocation"] = [safeStr(lastOrder["Budget Allocation"]).trim(), patch["Budget Allocation"]]
+          .filter(Boolean).join(" ");
+      }
+      // Seed tracking fields if present
+      if(STATUS_LIST.includes(lastOrder["CSV Status"])) lastOrder["Status"] = lastOrder["CSV Status"];
+      if(DEPT_LIST.includes(lastOrder["CSV Department"])) lastOrder["Department"] = lastOrder["CSV Department"];
+      const fu = safeStr(lastOrder["CSV Follow Ups"]).toLowerCase();
+      if(fu.includes("critical")) lastOrder["Criticality"] = "Critical";
+      continue;
+    }
 
     // Order line: has num (preferred) OR has order date + amount, etc.
     const orderDate = safeStr(r[col.orderDate]).trim();
@@ -674,6 +1589,100 @@ function extractOrders(rows){
     if(fu.includes("critical")) obj["Criticality"] = "Critical";
 
     out.push(obj);
+    lastOrder = obj;
+  }
+
+  return out;
+}
+
+function extractOrdersFromNoHeader(rows){
+  // Fallback for procurement.json sheet payload where headers are not included in rows.
+  const col = {
+    vendor: 0,
+    notes: 1,
+    orderDate: 2,
+    leadTime: 3,
+    promisedDate: 4,
+    deliveryDate: 5,
+    num: 6,
+    budget: 7,
+    dept: 8,
+    desc: 9,
+    shipVia: 10,
+    status: 11,
+    followUps: 12,
+    amount: 13,
+    openBalance: 14
+  };
+
+  let currentVendor = "";
+  const out = [];
+  let lastOrder = null;
+
+  for(const r of rows){
+    if(!Array.isArray(r)) continue;
+    const trimmed = r.map(safeStr).map(s => s.trim());
+    const nonEmpty = trimmed.filter(Boolean);
+    if(!nonEmpty.length) continue;
+
+    // Single-cell continuation line (e.g., "QUOTE # ...") → append to last order
+    if(nonEmpty.length === 1 && lastOrder){
+      const extra = nonEmpty[0];
+      if(extra){
+        lastOrder["Budget Allocation"] = [safeStr(lastOrder["Budget Allocation"]).trim(), extra]
+          .filter(Boolean).join(" ");
+      }
+      continue;
+    }
+
+    const vendorCell = safeStr(r[col.vendor]).trim();
+    const numCell = safeStr(r[col.num]).trim();
+    const orderDate = safeStr(r[col.orderDate]).trim();
+    const amountRaw = safeStr(r[col.amount]).trim();
+
+    // Vendor header line (vendor present, no num, mostly empty)
+    if(vendorCell && !numCell && nonEmpty.length <= 3){
+      currentVendor = vendorCell;
+      continue;
+    }
+
+    const looksLikeOrder = !!numCell || (!!orderDate && !!amountRaw);
+    if(!looksLikeOrder) continue;
+
+    const obj = {
+      "PO #": numCell || "",
+      "Vendor": currentVendor || vendorCell || "",
+      "Order Date": orderDate,
+      "Promised Date": safeStr(r[col.promisedDate]).trim(),
+      "Delivery Date": safeStr(r[col.deliveryDate]).trim(),
+      "Lead Time": safeStr(r[col.leadTime]).trim(),
+      "Ship via": safeStr(r[col.shipVia]).trim(),
+      "Budget Allocation": safeStr(r[col.budget]).trim(),
+      "CSV Department": safeStr(r[col.dept]).trim(),
+      "Description": safeStr(r[col.desc]).trim(),
+      "CSV Status": safeStr(r[col.status]).trim(),
+      "CSV Follow Ups": safeStr(r[col.followUps]).trim(),
+      "Amount": amountRaw,
+      "Open Balance": safeStr(r[col.openBalance]).trim(),
+      "CSV Notes": safeStr(r[col.notes]).trim(),
+
+      // Tracking fields (editable, validated)
+      "Status": "",
+      "Criticality": "",
+      "Department": "",
+      "Owner": "",
+      "Next Follow-Up": "",
+      "Tracking Notes": "",
+      "Last Updated": ""
+    };
+
+    if(STATUS_LIST.includes(obj["CSV Status"])) obj["Status"] = obj["CSV Status"];
+    if(DEPT_LIST.includes(obj["CSV Department"])) obj["Department"] = obj["CSV Department"];
+    const fu = obj["CSV Follow Ups"].toLowerCase();
+    if(fu.includes("critical")) obj["Criticality"] = "Critical";
+
+    out.push(obj);
+    lastOrder = obj;
   }
 
   return out;
@@ -697,6 +1706,20 @@ function loadMeta(){
   try{ return JSON.parse(localStorage.getItem(STORAGE_META_KEY) || "{}") || {}; }
   catch(e){ return {}; }
 }
+function loadUI(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_UI_KEY) || "{}") || {}; }
+  catch(e){ return {}; }
+}
+function saveUI(patch){
+  const cur = loadUI();
+  const next = Object.assign({}, cur, patch);
+  localStorage.setItem(STORAGE_UI_KEY, JSON.stringify(next));
+}
+function loadActionFilters(){
+  const ui = loadUI();
+  const map = ui && ui.actionFilters && typeof ui.actionFilters === "object" ? ui.actionFilters : null;
+  actionFilterByRole = map ? Object.assign({}, map) : {};
+}
 
 function keyForRow(r){
   // Prefer PO #, else fallback to vendor+orderdate+amount
@@ -707,10 +1730,21 @@ function keyForRow(r){
 
 function applyOverrides(rows){
   const ov = loadOverrides();
+  const allowed = new Set(JSON_FIELDS);
+
   for(const r of rows){
     const k = keyForRow(r);
-    if(ov[k]){
-      Object.assign(r, ov[k]);
+    const patch = ov[k];
+    if(!patch) continue;
+
+    for(const [field, val] of Object.entries(patch)){
+      if(!allowed.has(field)) continue;
+
+      // Never wipe a real value with an empty-string override
+      const current = safeStr(r[field]);
+      if(val === "" && current.trim() !== "") continue;
+
+      r[field] = val;
     }
   }
 }
@@ -724,7 +1758,147 @@ function setOverride(row, patch){
   Object.assign(row, next);
 }
 
+
+/* ========= Derived metrics ========= */
+function isClosed(r){
+  const s = safeStr(r["Status"]);
+  return (s === "Delivered" || s === "Received by Warehouse");
+}
+function isMissingInfo(r){
+  if(!safeStr(r["Vendor"]).trim()) return true;
+  if(!safeStr(r["Status"]).trim()) return true;
+  if(!safeStr(r["Department"]).trim()) return true;
+  if(!safeStr(r["Owner"]).trim()) return true;
+  if(!isClosed(r) && !safeStr(r["Next Follow-Up"]).trim()) return true;
+  return false;
+}
+function dueISO(r){
+  const dt = parseDateLoose(r["Next Follow-Up"]);
+  return dt ? toISODate(dt) : "";
+}
+function isOverdue(r){
+  const iso = dueISO(r);
+  return !!iso && iso < todayISO() && !isClosed(r);
+}
+function isDueSoon(r){
+  const iso = dueISO(r);
+  if(!iso || isClosed(r)) return false;
+  const d = parseDateLoose(iso);
+  if(!d) return false;
+  const today = parseDateLoose(todayISO());
+  const diff = Math.round((d - today) / (1000*60*60*24));
+  return diff >= 0 && diff <= DUE_SOON_DAYS;
+}
+function ageDays(r){
+  const od = parseDateLoose(r["Order Date"]);
+  if(!od) return 0;
+  const today = parseDateLoose(todayISO());
+  return Math.round((today - od) / (1000*60*60*24));
+}
+function isStuck(r){
+  return !isClosed(r) && ageDays(r) >= STUCK_DAYS;
+}
+
 /* ========= UI wiring ========= */
+
+function setRoleUI(){
+  const sel = $("#role");
+  if(sel && !sel.options.length){
+    for(const r of ROLES){
+      const o = document.createElement("option");
+      o.value = r.key;
+      o.textContent = r.label;
+      sel.appendChild(o);
+    }
+  }
+  if(sel) sel.value = currentRole;
+
+  setOrdersTitleForRole(currentRole);
+
+    const isAdmin = !!getRole().isAdmin;
+  const fp = document.getElementById("filtersPanel");
+  if(fp) fp.style.display = isAdmin ? "block" : "none";
+
+  const ap = document.getElementById("actionsPanel");
+  if(ap) ap.style.display = (String(currentRole||"" ).toLowerCase()==="procurement" ? "block" : "none");
+  const piCard = document.getElementById("procInsightsCard");
+  if(piCard) piCard.style.display = isAdmin ? "block" : "none";
+  if(isAdmin) applyInsightsOpenPreference();
+  syncActionChips();
+  applyOrdersOpenPreference();
+  
+
+  const deptSel = $("#fDept");
+  const vendorSel = $("#fVendor");
+
+  if(getRole().isAdmin){
+    // Decouple admin filters from department pills by resetting dept filter on admin view
+    deptSel.value = "";
+    deptSel.disabled = false;
+    deptSel.parentElement.style.opacity = "1";
+    vendorSel.disabled = false;
+    vendorSel.parentElement.style.opacity = "1";
+    const sl = document.getElementById("scopeLabel");
+  if(sl) sl.textContent = "All departments";
+  }else{
+    colFilters = {};
+
+    deptSel.value = getRole().dept;
+    deptSel.disabled = true;
+    deptSel.parentElement.style.opacity = ".85";
+    vendorSel.disabled = false;
+    vendorSel.parentElement.style.opacity = "1";
+    const sl2 = document.getElementById("scopeLabel");
+  if(sl2) sl2.textContent = getRole().dept;
+  }
+
+  syncRolePills();
+}
+
+function setPresetUI(){
+  $("#colPreset").value = currentPreset;
+}
+
+function renderRolePills(){
+  const wrap = $("#rolePills");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+
+  for(const r of ROLES){
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pillBtn" + (r.key === currentRole ? " active" : "");
+    btn.setAttribute("data-role", r.key);
+    btn.innerHTML = `<span class="dot"></span>${escapeHtml(r.key === "Procurement" ? "Procurement" : r.key)}`;
+    btn.addEventListener("click", () => {
+      currentRole = r.key;
+      $("#role").value = currentRole;
+      currentPreset = getRole().isAdmin ? "proc" : "dept";
+      setPresetUI();
+      setRoleUI();
+      renderRolePills();
+
+    // Clear search/filters when switching departments to avoid empty views from stale queries
+  const qEl = document.getElementById("q");
+  if(qEl) qEl.value = "";
+  const laneEl = document.getElementById("lane");
+  if(laneEl) laneEl.value = "";
+  const dueEl = document.getElementById("fDue");
+  if(dueEl) dueEl.value = "";
+  const ovEl = document.getElementById("fOverdue");
+  if(ovEl) ovEl.value = "0";
+  refresh();
+});
+    wrap.appendChild(btn);
+  }
+  }
+
+function syncRolePills(){
+  document.querySelectorAll(".pillBtn").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-role") === currentRole);
+  });
+  }
+
 function setSelectOptions(sel, options, includeBlank=true){
   const s = $(sel);
   const cur = s.value;
@@ -745,12 +1919,17 @@ function setSelectOptions(sel, options, includeBlank=true){
 
 function computeKpis(rows){
   const open = rows.length;
-  const critical = rows.filter(r => r["Criticality"] === "Critical").length;
+  const critical = rows.filter(r => r["Criticality"] === "Critical" && !isClosed(r)).length;
+  const overdue = rows.filter(r => isOverdue(r)).length;
+  const stuck = rows.filter(r => isStuck(r)).length;
   const vendors = new Set(rows.map(r => r["Vendor"]).filter(Boolean)).size;
+
   $("#kpiOpen").textContent = open.toLocaleString();
   $("#kpiCritical").textContent = critical.toLocaleString();
+  $("#kpiOverdue").textContent = overdue.toLocaleString();
+  $("#kpiStuck").textContent = stuck.toLocaleString();
   $("#kpiVendors").textContent = vendors.toLocaleString();
-  $("#kpiOpenHint").textContent = open ? "Tracking is active" : "Upload CSV or JSON to begin";
+  $("#kpiOpenHint").textContent = open ? "Tracking is active" : "Upload CSV to begin";
 }
 
 function badgeForStatus(status){
@@ -798,11 +1977,7 @@ function renderTable(rows){
   empty.style.display="none";
   tbl.style.display="table";
 
-  const columns = [
-    "PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount",
-    "Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes",
-    "Description","Ship via"
-  ];
+  const columns = (COLUMN_PRESETS[currentPreset] || COLUMN_PRESETS.proc).slice();
 
   // Header
   thead.innerHTML = "";
@@ -865,7 +2040,7 @@ function renderTable(rows){
       const td = document.createElement("td");
 
       // Editable fields
-      if(c === "Status"){
+      if(c === "Status" && canEditField("Status")){
         const sel = document.createElement("select");
         sel.className = "cell-edit";
         const opt0 = document.createElement("option");
@@ -879,7 +2054,7 @@ function renderTable(rows){
         sel.value = r["Status"] || "";
         sel.addEventListener("change", () => setOverride(r, { "Status": sel.value }));
         td.appendChild(sel);
-      } else if(c === "Criticality"){
+      } else if(c === "Criticality" && canEditField("Criticality")){
         const sel = document.createElement("select");
         sel.className = "cell-edit tiny";
         const opt0 = document.createElement("option");
@@ -893,7 +2068,7 @@ function renderTable(rows){
         sel.value = r["Criticality"] || "";
         sel.addEventListener("change", () => setOverride(r, { "Criticality": sel.value }));
         td.appendChild(sel);
-      } else if(c === "Department"){
+      } else if(c === "Department" && canEditField("Department")){
         const sel = document.createElement("select");
         sel.className = "cell-edit";
         const opt0 = document.createElement("option");
@@ -907,7 +2082,7 @@ function renderTable(rows){
         sel.value = r["Department"] || "";
         sel.addEventListener("change", () => setOverride(r, { "Department": sel.value }));
         td.appendChild(sel);
-      } else if(c === "Owner"){
+      } else if(c === "Owner" && canEditField("Owner")){
         const inp = document.createElement("input");
         inp.className = "cell-edit small";
         inp.type = "text";
@@ -915,7 +2090,7 @@ function renderTable(rows){
         inp.value = r["Owner"] || "";
         inp.addEventListener("change", () => setOverride(r, { "Owner": inp.value.trim() }));
         td.appendChild(inp);
-      } else if(c === "Next Follow-Up"){
+      } else if(c === "Next Follow-Up" && canEditField("Next Follow-Up")){
         const inp = document.createElement("input");
         inp.className = "cell-edit small";
         inp.type = "date";
@@ -923,7 +2098,7 @@ function renderTable(rows){
         inp.value = dt ? toISODate(dt) : "";
         inp.addEventListener("change", () => setOverride(r, { "Next Follow-Up": inp.value }));
         td.appendChild(inp);
-      } else if(c === "Tracking Notes"){
+      } else if(c === "Tracking Notes" && canEditField("Tracking Notes")){
         const inp = document.createElement("input");
         inp.className = "cell-edit";
         inp.type = "text";
@@ -941,7 +2116,16 @@ function renderTable(rows){
     tbody.appendChild(tr);
   }
 
-  $("#tableMeta").textContent = `${rows.length.toLocaleString()} shown • ${orders.length.toLocaleString()} total`;
+    const tm = document.getElementById("tableMeta");
+  if(tm){
+    if(getRole().isAdmin){
+      tm.style.display = "inline-block";
+      tm.textContent = `${rows.length.toLocaleString()} shown • ${orders.length.toLocaleString()} total`;
+    }else{
+      tm.style.display = "none";
+      tm.textContent = "";
+    }
+  }
 }
 
 /* ========= Filtering + Sorting ========= */
@@ -953,7 +2137,9 @@ function getFilters(){
     dept: $("#fDept").value,
     vendor: $("#fVendor").value,
     due: $("#fDue").value,
-    overdue: $("#fOverdue").value === "1"
+    overdue: $("#fOverdue").value === "1",
+    lane: $("#lane").value,
+    action: getActionFilter()
   };
 }
 
@@ -968,8 +2154,25 @@ function rowMatches(r, f){
     if(iso !== f.due) return false;
   }
   if(f.overdue){
-    const iso = toISODate(parseDateLoose(r["Next Follow-Up"])) || "";
-    if(!iso || iso >= todayISO()) return false;
+    if(!isOverdue(r)) return false;
+  }
+
+  if(f.lane === "overdue" && !isOverdue(r)) return false;
+  if(f.lane === "critical" && !(r["Criticality"] === "Critical" && !isClosed(r))) return false;
+  if(f.lane === "dueSoon" && !isDueSoon(r)) return false;
+  if(f.lane === "needsInfo" && !isMissingInfo(r)) return false;
+
+  if(f.action === "overdue" && !isOverdue(r)) return false;
+  if(f.action === "critical" && !(r["Criticality"] === "Critical" && !isClosed(r))) return false;
+  if(f.action === "dueSoon" && !isDueSoon(r)) return false;
+  if(f.action === "needsInfo" && !isMissingInfo(r)) return false;
+
+  // Column filters (procurement table)
+  for(const [k, v] of Object.entries(colFilters)){
+    if(!v) continue;
+    const cell = safeStr(r[k]).toLowerCase();
+    // For selects (exact match) we still accept substring for convenience
+    if(!cell.includes(v.toLowerCase())) return false;
   }
 
   if(f.q){
@@ -1017,10 +2220,638 @@ function sortRows(rows){
 
 function refresh(){
   const f = getFilters();
-  const filtered = orders.filter(r => rowMatches(r, f));
-  viewRows = sortRows(filtered);
-  computeKpis(orders);
-  renderTable(viewRows);
+  const scoped = orders.filter(r => rowMatches(r, {
+    ...f,
+    dept: (getRole().isAdmin ? f.dept : getRole().dept) || f.dept
+  }));
+
+  viewRows = sortRows(scoped);
+  computeKpis(scoped);
+
+  const isAdmin = !!getRole().isAdmin;
+
+  const fp = document.getElementById("filtersPanel");
+  if(fp) fp.style.display = isAdmin ? "block" : "none";
+
+  const ordersCount = document.getElementById("ordersCount");
+  if(ordersCount){
+    ordersCount.style.display = isAdmin ? "block" : "none";
+    if(!isAdmin) ordersCount.textContent = "";
+  }
+
+  const tm = document.getElementById("tableMeta");
+  const pth = document.getElementById("procTableHeader");
+  const ptc = document.getElementById("procTableCount");
+  if(tm){
+    tm.style.display = "none"; // legacy meta hidden, replaced by header
+    tm.textContent = "";
+  }
+  if(pth){
+    pth.style.display = isAdmin ? "block" : "none";
+  }
+  if(ptc){
+    ptc.textContent = isAdmin ? `${viewRows.length} shown • ${orders.length} total` : "";
+  }
+const tableWrap = document.querySelector(".tablewrap");
+  const deptWrap = document.getElementById("deptListWrap");
+  const deptHdr = document.getElementById("deptListHeader");
+
+  if(getRole().isAdmin){
+    // Procurement view: insights + action panel + full table
+    const ap = document.getElementById("actionsPanel");
+    if(ap) ap.style.display = "block";
+    const ah = document.getElementById("actionsHint");
+    if(ah){ ah.style.display = "block"; }
+    const list = document.getElementById("actionList");
+    if(list){ list.style.display = "grid"; list.innerHTML = ""; }
+    const ordersPanel = document.getElementById("ordersPanel");
+    if(ordersPanel) ordersPanel.style.display = "block";
+    const ordersExtras = document.getElementById("ordersExtras");
+    if(ordersExtras) moveActionsPanel(ordersExtras);
+    restoreDeptList();
+    const piCard = document.getElementById("procInsightsCard");
+    if(piCard) piCard.style.display = "block";
+    if(deptWrap) deptWrap.style.display = "none";
+    if(deptHdr) deptHdr.style.display = "none";
+    if(tableWrap) tableWrap.style.display = "block";
+
+    renderActionPanel(scoped);
+    renderInsights(orders);
+    if(ordersCount){ ordersCount.textContent = `${viewRows.length} shown • ${orders.length} total`; }
+    renderTable(viewRows);
+  }else{
+    // Hide the top actions/header row for non-procurement roles
+    const ap = document.getElementById("actionsPanel");
+    if (ap) ap.style.display = "none";
+
+    const ah = document.getElementById("actionsHint");
+    if (ah) {
+      ah.textContent = "";
+      ah.style.display = "none";
+    }
+
+    const scopeLabel = document.getElementById("scopeLabel");
+    if (scopeLabel && scopeLabel.parentElement) {
+      scopeLabel.textContent = "";
+      scopeLabel.parentElement.style.display = "none";
+    }
+
+    const deptScopeLabel = document.getElementById("deptScopeLabel");
+    if (deptScopeLabel && deptScopeLabel.parentElement) {
+      deptScopeLabel.textContent = "";
+      deptScopeLabel.parentElement.style.display = "none";
+    }
+
+    const list = document.getElementById("actionList");
+    if (list) {
+      list.style.display = "none";
+      list.innerHTML = "";
+    }
+
+    // Ensure the department list still renders
+    const ordersPanel = document.getElementById("ordersPanel");
+    if (ordersPanel) ordersPanel.style.display = "block";
+
+    const ordersExtras = document.getElementById("ordersExtras");
+    if (ordersExtras) {
+      moveActionsPanel(ordersExtras);
+      moveDeptList(ordersExtras);
+    }
+
+    // Hide procurement-only elements
+    const piCard = document.getElementById("procInsightsCard");
+    if (piCard) piCard.style.display = "none";
+    const tableWrap = document.getElementById("ordersTableWrap");
+    if (tableWrap) tableWrap.style.display = "none";
+
+    // Show department header and list
+    const deptHdr = document.getElementById("deptListHeader");
+    if (deptHdr) deptHdr.style.display = "none";
+    const deptWrap = document.getElementById("deptListWrap");
+    if (deptWrap) deptWrap.style.display = "block";
+
+    renderDeptList(viewRows);
+  }
+}
+
+function renderActionPanel(scoped){
+  const hint = $("#actionsHint");
+  const list = $("#actionList");
+
+  const role = getRole();
+  const scopeText = role.isAdmin ? "All departments" : role.dept;
+
+  const overdue = scoped.filter(isOverdue);
+  const critical = scoped.filter(r => r["Criticality"] === "Critical" && !isClosed(r));
+  const dueSoon = scoped.filter(isDueSoon);
+  const needsInfo = scoped.filter(isMissingInfo);
+
+  if(!role.isAdmin){
+    if(hint){
+      const actionFilter = getActionFilter();
+      let label = "All";
+      let count = scoped.length;
+      if(actionFilter === "overdue"){ label = "Overdue"; count = overdue.length; }
+      else if(actionFilter === "critical"){ label = "Critical"; count = critical.length; }
+      else if(actionFilter === "dueSoon"){ label = "Due soon"; count = dueSoon.length; }
+      else if(actionFilter === "needsInfo"){ label = "Missing info"; count = needsInfo.length; }
+      hint.textContent = `${label} • ${count}`;
+      hint.style.display = "block";
+    }
+    if(list){
+      list.innerHTML = "";
+      list.style.display = "none";
+    }
+    return;
+  }else if(list){
+    list.style.display = "grid";
+  }
+
+  if(hint){
+    const actionFilter = getActionFilter();
+    let label = "All";
+    let count = scoped.length;
+    if(actionFilter === "overdue"){ label = "Overdue"; count = overdue.length; }
+    else if(actionFilter === "critical"){ label = "Critical"; count = critical.length; }
+    else if(actionFilter === "dueSoon"){ label = "Due soon"; count = dueSoon.length; }
+    else if(actionFilter === "needsInfo"){ label = "Missing info"; count = needsInfo.length; }
+    hint.textContent = `${scopeText} • ${label} • ${count}`;
+  }
+  let bucket = overdue;
+  const actionFilter = getActionFilter();
+  if(actionFilter === "critical") bucket = critical;
+  else if(actionFilter === "dueSoon") bucket = dueSoon;
+  else if(actionFilter === "needsInfo") bucket = needsInfo;
+  else if(actionFilter === "overdue") bucket = overdue;
+
+  if(!actionFilter) bucket = overdue.length ? overdue : critical;
+
+  const top = bucket.slice(0, 10);
+
+  // Guard: some role views may not render the action list DOM (dept-only simplified UI).
+  if(!list) return;
+
+  list.innerHTML = "";
+
+  if(!top.length){
+    const d = document.createElement("div");
+    d.className = "muted";
+    d.style.padding = "8px 2px 2px";
+    d.textContent = "Nothing urgent in this scope right now.";
+    list.appendChild(d);
+    return;
+  }
+
+  for(const r of top){
+    const div = document.createElement("div");
+    div.className = "item";
+    const po = safeStr(r["PO #"]).trim() || "—";
+    const vend = safeStr(r["Vendor"]).trim() || "—";
+    const st = safeStr(r["Status"]).trim() || "Unassigned";
+    const due = dueISO(r) || "—";
+    const dept = safeStr(r["Department"]).trim() || "—";
+    const owner = safeStr(r["Owner"]).trim() || "—";
+
+    div.innerHTML = `
+      <div>
+        <b>${escapeHtml(vend)}</b>
+        <div class="meta">PO ${escapeHtml(po)} • ${escapeHtml(dept)} • ${escapeHtml(st)}</div>
+      </div>
+      <div class="right">
+        ${isOverdue(r) ? '<span style="color: var(--danger)">OVERDUE</span>' : (isDueSoon(r) ? '<span style="color: var(--warn)">DUE SOON</span>' : '<span>•</span>')}
+        <div class="meta">Owner: ${escapeHtml(owner)} • ${escapeHtml(due)}</div>
+      </div>
+    `;
+list.appendChild(div);
+  }
+}
+
+
+function renderDeptList(rows){
+  const wrap = document.getElementById("deptListWrap");
+  const header = document.getElementById("deptListHeader");
+  const hint = document.getElementById("deptListHint");
+  const scope = document.getElementById("deptScopeLabel");
+  const shownEl = document.getElementById("deptShownCount");
+  const rowsEl = document.getElementById("deptRows");
+  const tableWrap = document.querySelector(".tablewrap");
+
+  if(!wrap || !header || !rowsEl) return;
+
+  // Show list view, hide table view
+  wrap.style.display = "block";
+  if(tableWrap) tableWrap.style.display = "none";
+
+  const role = getRole();
+  if(!role.isAdmin){
+    header.style.display = "none";
+    if(shownEl){
+      shownEl.textContent = "";
+      shownEl.style.display = "none";
+    }
+  }else{
+    header.style.display = "block";
+    if(shownEl) shownEl.style.display = "";
+  }
+  if(scope) scope.textContent = role.isAdmin ? "All departments" : (role.dept || "Department");
+
+  // KPI hint (admin only)
+  const totalAll = rows.length;
+  const overdue = rows.filter(isOverdue).length;
+  const critical = rows.filter(r => r["Criticality"] === "Critical" && !isClosed(r)).length;
+  const dueSoon = rows.filter(isDueSoon).length;
+  const missing = rows.filter(isMissingInfo).length;
+
+  if(hint){
+    hint.textContent = role.isAdmin ? `${overdue} overdue • ${critical} critical • ${dueSoon} due soon • ${missing} missing info` : "";
+  }
+
+  // Column filters (persist per-role)
+  const fKey = `openOrders:deptColFilters:${role.key || role.dept || "role"}`;
+  let filters = {};
+  try{ filters = JSON.parse(localStorage.getItem(fKey) || "{}") || {}; }catch(e){ filters = {}; }
+
+  // Dept roles should show all orders by default, but don't wipe on every render
+  if(!role.isAdmin){
+    const rk = role.key || role.dept || "role";
+    if(!deptFiltersCleared[rk]){
+      filters = {};
+      deptFiltersCleared[rk] = true;
+      try{ localStorage.setItem(fKey, "{}" ); }catch(_e){}
+    }
+  }
+
+  const getF = (id) => document.getElementById(id);
+  const bindOnce = (() => {
+    const k = "data-bound";
+    return (el, fn) => {
+      if(!el || el.getAttribute(k) === "1") return;
+      el.setAttribute(k, "1");
+      el.addEventListener("input", fn);
+    };
+  })();
+
+  const fields = [
+    ["deptF_vendor","vendor"],
+    ["deptF_desc","desc"],
+    ["deptF_promised","promised"],
+    ["deptF_delivery","delivery"],
+    ["deptF_owner","owner"],
+    ["deptF_status","status"],
+    ["deptF_notes","notes"]
+  ];
+
+  const applyInputs = () => {
+    for(const [id, key] of fields){
+      const el = getF(id);
+      if(!el) continue;
+      el.value = filters[key] || "";
+      bindOnce(el, () => {
+        filters[key] = el.value || "";
+        localStorage.setItem(fKey, JSON.stringify(filters));
+        // Re-render with same base rows
+        renderDeptList(rows);
+      });
+    }
+    const clearBtn = document.getElementById("deptClearAll");
+    if(clearBtn && clearBtn.getAttribute("data-bound") !== "1"){
+      clearBtn.setAttribute("data-bound","1");
+      clearBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        filters = {};
+        localStorage.setItem(fKey, JSON.stringify(filters));
+        for(const [id] of fields){
+          const el = getF(id);
+          if(el) el.value = "";
+        }
+        renderDeptList(rows);
+      });
+    }
+  };
+  applyInputs();
+
+
+// Clean department UX: use column pills + a single quick-filter input (hide the full filter row)
+const pillsBar = document.getElementById("deptColPills2");
+const quick = document.getElementById("deptQuickFilter");
+const clearAll = document.getElementById("deptClearAll");
+
+if(pillsBar && quick){
+  // ensure header tools are visible only for dept views
+  if(role.isAdmin){
+    const hdrTools = document.getElementById("deptHdrTools");
+    if(hdrTools) hdrTools.style.display = "none";
+  }else{
+    const hdrTools = document.getElementById("deptHdrTools");
+    if(hdrTools) hdrTools.style.display = "flex";
+  }
+  pillsBar.style.display = role.isAdmin ? "none" : "grid";
+
+  const getRoleKey = () => (getRole().key || getRole().dept || "role");
+  const getActiveKey = () => `openOrders:deptActiveCol:${getRoleKey()}`;
+  let activeCol = (localStorage.getItem(getActiveKey()) || "vendor");
+
+  const colToInputId = {
+    vendor: "deptF_vendor",
+    desc: "deptF_desc",
+    promised: "deptF_promised",
+    delivery: "deptF_delivery",
+    owner: "deptF_owner",
+    status: "deptF_status",
+    notes: "deptF_notes"
+  };
+  const colLabel = {
+    vendor: "Vendor",
+    desc: "Description",
+    promised: "Promised",
+    delivery: "Delivery",
+    owner: "Owner",
+    notes: "Notes",
+    status: "Status"
+  };
+
+  const setActive = (col) => {
+    activeCol = col;
+    localStorage.setItem(getActiveKey(), activeCol);
+
+    // pill visuals
+    pillsBar.querySelectorAll(".colpill").forEach(p => {
+      p.classList.toggle("active", p.getAttribute("data-col") === activeCol);
+    });
+    // reflect saved sort state on UI
+    const sortKey = `openOrders:deptSort:${role.key || role.dept || "role"}`;
+    try{
+      const sortState = JSON.parse(localStorage.getItem(sortKey) || "null");
+      if(sortState && sortState.col){
+        pillsBar.querySelectorAll(".colpill").forEach(p => {
+          p.classList.remove("sortAsc","sortDesc");
+          if(p.getAttribute("data-col") === sortState.col){
+            p.classList.add(sortState.dir === "desc" ? "sortDesc" : "sortAsc");
+          }
+        });
+      }
+    }catch(_e){}
+
+
+    // sync quick input with current filter value for that column
+    const v = filters[activeCol] || "";
+    quick.value = v;
+    quick.placeholder = `Filter ${colLabel[activeCol] || "…" }…`;
+  };
+
+  // bind per render to keep role-specific state in sync
+  pillsBar.onclick = (e) => {
+    const btn = e.target.closest(".colpill");
+    if(!btn) return;
+    e.preventDefault();
+    const col = btn.getAttribute("data-col");
+
+    const sortKey = `openOrders:deptSort:${getRoleKey()}`;
+    let sortState = { col: col, dir: "asc" };
+    try{ sortState = JSON.parse(localStorage.getItem(sortKey) || "null") || sortState; }catch(_e){}
+
+    if(sortState.col === col){
+      sortState.dir = (sortState.dir === "asc") ? "desc" : "asc";
+    }else{
+      sortState.col = col;
+      sortState.dir = "asc";
+    }
+    localStorage.setItem(sortKey, JSON.stringify(sortState));
+
+    setActive(col);
+
+    pillsBar.querySelectorAll(".colpill").forEach(p => {
+      p.classList.remove("sortAsc","sortDesc");
+      if(p.getAttribute("data-col") === sortState.col){
+        p.classList.add(sortState.dir === "asc" ? "sortAsc" : "sortDesc");
+      }
+    });
+
+    quick.focus();
+    renderDeptList(rows);
+  };
+
+  quick.oninput = () => {
+    filters[activeCol] = quick.value || "";
+    localStorage.setItem(fKey, JSON.stringify(filters));
+
+    const id = colToInputId[activeCol];
+    const el = id ? document.getElementById(id) : null;
+    if(el) el.value = quick.value || "";
+
+    renderDeptList(rows);
+  };
+
+  if(clearAll){
+    clearAll.onclick = (e) => {
+      e.preventDefault();
+      filters = {};
+      localStorage.setItem(fKey, JSON.stringify(filters));
+      for(const [id] of fields){
+        const el = getF(id);
+        if(el) el.value = "";
+      }
+      quick.value = "";
+      setActive(activeCol || "vendor");
+      renderDeptList(rows);
+    };
+  }
+
+  // initialize
+  if(!colLabel[activeCol]) activeCol = "vendor";
+  setActive(activeCol);
+}
+
+
+  const norm = (v) => (safeStr(v).trim().toLowerCase());
+  const contains = (hay, needle) => !needle || hay.includes(needle);
+
+  const fv = norm(filters.vendor);
+  const fd = norm(filters.desc);
+  const fp = norm(filters.promised);
+  const fdl = norm(filters.delivery);
+  const fo = norm(filters.owner);
+  const fs = norm(filters.status);
+  const fn = norm(filters.notes);
+
+  let filtered = rows.filter(r => {
+    const vend = norm(r["Vendor"]);
+    const desc = norm(r["Description"]);
+    const notes = norm(r["Tracking Notes"]);
+    const promised = norm(r["Promised Date"]);
+    const delivery = norm(r["Delivery Date"]);
+    const owner = norm(r["Owner"]);
+    const status = norm(r["Status"]);
+    return (
+      contains(vend, fv) &&
+      contains(desc, fd) &&
+      contains(notes, fn) &&
+      contains(promised, fp) &&
+      contains(delivery, fdl) &&
+      contains(owner, fo) &&
+      contains(status, fs)
+    );
+  });
+
+  
+  // Apply sort (per-role) — clicking the header chips toggles asc/desc
+  const sortKey = `openOrders:deptSort:${role.key || role.dept || "role"}`;
+  let sortState = { col: "promised", dir: "asc" };
+  try{ sortState = JSON.parse(localStorage.getItem(sortKey) || "null") || sortState; }catch(_e){}
+  const dirMult = (sortState.dir === "desc") ? -1 : 1;
+
+  const getSortVal = (r) => {
+    const c = sortState.col;
+    if(c === "vendor") return safeStr(r["Vendor"]).toLowerCase();
+    if(c === "desc") return safeStr(r["Description"]).toLowerCase();
+    if(c === "owner") return safeStr(r["Owner"]).toLowerCase();
+    if(c === "status") return safeStr(r["Status"]).toLowerCase();
+    if(c === "notes") return safeStr(r["Tracking Notes"]).toLowerCase();
+    if(c === "promised") return (parseDateLoose(r["Promised Date"])?.getTime() ?? Number.POSITIVE_INFINITY);
+    if(c === "delivery") return (parseDateLoose(r["Delivery Date"])?.getTime() ?? Number.POSITIVE_INFINITY);
+    return safeStr(r["Vendor"]).toLowerCase();
+  };
+
+  filtered = filtered.slice().sort((a,b) => {
+    const va = getSortVal(a), vb = getSortVal(b);
+    if(typeof va === "number" && typeof vb === "number"){
+      if(va === vb) return 0;
+      return (va < vb ? -1 : 1) * dirMult;
+    }
+    const sa = String(va), sb = String(vb);
+    if(sa === sb) return 0;
+    return (sa < sb ? -1 : 1) * dirMult;
+  });
+
+// Limit for speed/clarity (can add pagination later)
+  const shown = filtered.slice(0, 250);
+
+  if(shownEl){
+    shownEl.textContent = `${shown.length} shown • ${filtered.length}${filtered.length !== totalAll ? ` filtered` : ""}`;
+  }
+  const shownTop = document.getElementById("deptShownCountTop");
+  if(shownTop){
+    shownTop.textContent = `${shown.length} shown • ${filtered.length}${filtered.length !== totalAll ? ` filtered` : ""}`;
+  }
+
+  rowsEl.innerHTML = "";
+  for(const r of shown){
+    const vend = safeStr(r["Vendor"]).trim() || "—";
+    const promisedDate = safeStr(r["Promised Date"]).trim() || "—";
+    const deliveryDate = safeStr(r["Delivery Date"]).trim() || "—";
+    const status = safeStr(r["Status"]).trim() || "Unassigned";
+    const owner = safeStr(r["Owner"]).trim() || "—";
+    const desc = safeStr(r["Description"]).trim() || "—";
+    const notes = safeStr(r["Tracking Notes"]).trim() || "—";
+
+    const line = document.createElement("div");
+    line.className = "deptLine";
+    line.innerHTML = `
+      <div class="deptCell" title="${escapeHtml(vend)}">${escapeHtml(vend)}</div>
+
+      <div class="deptCell wrap" title="${escapeHtml(desc)}">
+        <div class="descMain">${escapeHtml(desc)}</div>
+      </div>
+
+      <div class="deptCell muted deptHideMd" title="${escapeHtml(promisedDate)}">${escapeHtml(promisedDate)}</div>
+      <div class="deptCell muted deptHideMd" title="${escapeHtml(deliveryDate)}">${escapeHtml(deliveryDate)}</div>
+      <div class="deptCell muted deptHideSm" title="${escapeHtml(owner)}">${escapeHtml(owner)}</div>
+
+      <div class="deptCell" style="text-align:right;">
+        <span class="deptStatus" data-status="${escapeHtml(status)}" title="${escapeHtml(status)}">${escapeHtml(status)}</span>
+      </div>
+
+      <div class="deptCell wrap deptHideSm" title="${escapeHtml(notes)}">
+        <div class="descNotes" style="margin-top:0; white-space: normal; overflow: visible;">${escapeHtml(notes)}</div>
+      </div>
+    `;
+    rowsEl.appendChild(line);
+  }
+}
+
+
+function renderInsights(allRows){
+  const deptMap = new Map();
+  const vendMap = new Map();
+
+  for(const r of allRows){
+    const dept = safeStr(r["Department"]).trim() || "—";
+    const vend = safeStr(r["Vendor"]).trim() || "—";
+
+    const d = deptMap.get(dept) || { dept, total:0, overdue:0, critical:0, stuck:0 };
+    d.total += 1;
+    if(isOverdue(r)) d.overdue += 1;
+    if(r["Criticality"] === "Critical" && !isClosed(r)) d.critical += 1;
+    if(isStuck(r)) d.stuck += 1;
+    deptMap.set(dept, d);
+
+    const v = vendMap.get(vend) || { vend, total:0, overdue:0, stuck:0 };
+    v.total += 1;
+    if(isOverdue(r)) v.overdue += 1;
+    if(isStuck(r)) v.stuck += 1;
+    vendMap.set(vend, v);
+  }
+
+  const deptArr = [...deptMap.values()].sort((a,b) => (b.overdue - a.overdue) || (b.critical - a.critical) || (b.total - a.total));
+  const vendArr = [...vendMap.values()].sort((a,b) => (b.overdue - a.overdue) || (b.stuck - a.stuck) || (b.total - a.total)).slice(0, 20);
+
+  $("#deptSummary").innerHTML = `
+    <thead><tr><th>Department</th><th>Total</th><th>Overdue</th><th>Critical</th><th>Stuck</th></tr></thead>
+    <tbody>
+      ${deptArr.map(d => `<tr>
+        <td>${escapeHtml(d.dept)}</td>
+        <td class="mono">${d.total}</td>
+        <td class="mono" style="color: ${d.overdue ? 'var(--danger)' : 'rgba(226,232,240,.88)'}">${d.overdue}</td>
+        <td class="mono" style="color: ${d.critical ? 'var(--warn)' : 'rgba(226,232,240,.88)'}">${d.critical}</td>
+        <td class="mono">${d.stuck}</td>
+      </tr>`).join("")}
+    </tbody>
+  `;
+
+  $("#vendorSummary").innerHTML = `
+    <thead><tr><th>Vendor</th><th>Total</th><th>Overdue</th><th>Stuck</th></tr></thead>
+    <tbody>
+      ${vendArr.map(v => `<tr>
+        <td>${escapeHtml(v.vend)}</td>
+        <td class="mono">${v.total}</td>
+        <td class="mono" style="color: ${v.overdue ? 'var(--danger)' : 'rgba(226,232,240,.88)'}">${v.overdue}</td>
+        <td class="mono">${v.stuck}</td>
+      </tr>`).join("")}
+    </tbody>
+  `;
+}
+
+function setInsightsTab(tab){
+  const tabs = document.querySelectorAll("#insightsTabs .btn");
+  const panels = document.querySelectorAll("[data-insight-panel]");
+  tabs.forEach(t => t.classList.toggle("active", t.getAttribute("data-insight") === tab));
+  panels.forEach(p => {
+    p.style.display = (p.getAttribute("data-insight-panel") === tab) ? "block" : "none";
+  });
+  localStorage.setItem("openOrders:insightsTab", tab);
+}
+
+
+let colFilterBound = false;
+function bindColFilters(){
+  if(colFilterBound) return;
+  colFilterBound = true;
+  document.addEventListener("input", (e) => {
+    const el = e.target;
+    if(!(el && el.classList && el.classList.contains("colFilter"))) return;
+    const key = el.getAttribute("data-colfilter");
+    if(!key) return;
+    colFilters[key] = (el.value || "").trim();
+    refresh();
+  });
+  document.addEventListener("change", (e) => {
+    const el = e.target;
+    if(!(el && el.classList && el.classList.contains("colFilter"))) return;
+    const key = el.getAttribute("data-colfilter");
+    if(!key) return;
+    colFilters[key] = (el.value || "").trim();
+    refresh();
+  });
 }
 
 /* ========= Export ========= */
@@ -1081,13 +2912,20 @@ function normalizeOrderFromJSON(r){
 }
 
 function afterLoad(){
-  applyOverrides(orders);
+  try{ applyOverrides(orders); }catch(e){ console.warn("applyOverrides failed", e); }
+  try{
+    window.orders = orders;
+    window.rawRows = rawRows;
+    window.__ordersDebug = { count: orders.length, sample: orders[0] || null };
+  }catch(_e){}
 
   // Fill filter dropdowns
   setSelectOptions("#fStatus", STATUS_LIST, true);
   setSelectOptions("#fDept", DEPT_LIST, true);
   // Vendor options from extracted orders
-  const vendors = [...new Set(orders.map(o => o["Vendor"]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const vendors = [...new Set(orders.map(o => String(o["Vendor"]||""))
+    .map(s=>s.trim())
+    .filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const selVendor = $("#fVendor");
   selVendor.innerHTML = "";
   const optAll = document.createElement("option"); optAll.value=""; optAll.textContent="All"; selVendor.appendChild(optAll);
@@ -1098,8 +2936,7 @@ function afterLoad(){
   $("#loadedHint").textContent = `Loaded: ${csvFilename}`;
   $("#tableMeta").textContent = `${orders.length.toLocaleString()} total`;
   saveMeta();
-
-  refresh();
+refresh();
 }
 
 function handleCSVText(text, name=""){
@@ -1126,6 +2963,69 @@ function handleJSONText(text, name=""){
   }
   orders = arr.map(normalizeOrderFromJSON);
   afterLoad();
+}
+
+function loadFromProcurementStorage(){
+  let data;
+  try{
+    const raw = localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "";
+    if(!raw) return false;
+    data = JSON.parse(raw);
+  }catch(e){
+    console.warn("procurement storage JSON parse failed", e);
+    return false;
+  }
+  // 1) If it's an orders array, use it directly
+  const arr = Array.isArray(data) ? data : (data && Array.isArray(data.orders) ? data.orders : null);
+  if(arr && arr.length){
+    csvFilename = "procurement.json (localStorage)";
+    rawRows = [];
+    orders = arr.map(normalizeOrderFromJSON);
+    afterLoad();
+    return true;
+  }
+
+  // 2) If it's a sheet payload (headers + rows), convert to CSV rows
+  const sheet = data?.sheets?.Procurement || data?.sheets?.["Open Purchase Order List by Vendor"];
+  const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
+  const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
+  if(headers.length && rows.length){
+    // Prefer real header row if the provided headers are just title rows
+    const headerLooksValid = (() => {
+      const norm = headers.map(normalizeHeader);
+      const hasVendor = norm.some(x => x.toLowerCase() === "vendor");
+      const hasNum = norm.some(x => {
+        const v = x.toLowerCase();
+        return v === "num" || v === "po num" || v === "po #" || v === "po number";
+      });
+      const hasOrderDate = norm.some(x => x.toLowerCase() === "order date");
+      return hasVendor && hasNum && hasOrderDate;
+    })();
+
+    csvFilename = "procurement.json (sheet payload)";
+    if(headerLooksValid){
+      const csvText = sheetToCsvText(headers, rows);
+      rawRows = parseCSV(csvText);
+      orders = extractOrders(rawRows);
+    }else{
+      const headerIdx = findHeaderRow(rows);
+      if(headerIdx > 0){
+        rawRows = rows.slice(headerIdx);
+        orders = extractOrders(rawRows);
+      }else{
+        rawRows = rows;
+        orders = extractOrdersFromNoHeader(rows);
+      }
+    }
+    if(!orders || !orders.length){
+      // Fallback: try no-header extraction directly from raw rows
+      orders = extractOrdersFromNoHeader(rows);
+    }
+    afterLoad();
+    return true;
+  }
+
+  return false;
 }
 
 function readFile(file){
@@ -1160,6 +3060,55 @@ $("#btnReset").addEventListener("click", () => {
   $(sel).addEventListener("change", refresh);
 });
 
+
+$("#role").addEventListener("change", () => {
+  currentRole = $("#role").value;
+  currentPreset = getRole().isAdmin ? "proc" : "dept";
+  setPresetUI();
+  setRoleUI();
+    // Clear search/filters when switching departments
+  const qEl = document.getElementById("q");
+  if(qEl) qEl.value = "";
+  const laneEl = document.getElementById("lane");
+  if(laneEl) laneEl.value = "";
+  const dueEl = document.getElementById("fDue");
+  if(dueEl) dueEl.value = "";
+  const ovEl = document.getElementById("fOverdue");
+  if(ovEl) ovEl.value = "0";
+  refresh();
+});
+
+$("#colPreset").addEventListener("change", () => {
+  currentPreset = $("#colPreset").value;
+  refresh();
+});
+
+$("#lane").addEventListener("change", () => refresh());
+
+// Action chips
+document.querySelectorAll(".chip").forEach(ch => {
+  ch.addEventListener("click", () => {
+    const a = ch.getAttribute("data-action");
+    if(a === "clear"){
+      setActionFilter("");
+    }else{
+      const cur = getActionFilter();
+      setActionFilter((cur === a) ? "" : a);
+    }
+    syncActionChips();
+    refresh();
+  });
+});
+
+function syncActionChips(){
+  const af = getActionFilter();
+  document.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
+  if(af){
+    document.querySelectorAll(`.chip[data-action="${af}"]`).forEach(x => x.classList.add("on"));
+  }
+}
+
+
 document.addEventListener("keydown", (e) => {
   if(e.key.toLowerCase() === "u" && (e.ctrlKey || e.metaKey || !e.target.matches("input,textarea,select"))){
     e.preventDefault();
@@ -1167,7 +3116,118 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* Drag & drop */
+
+
+function setFiltersOpen(open){
+  const panel = document.getElementById("filtersPanel");
+  const btn = document.getElementById("btnToggleFilters");
+  if(!panel) return;
+  const bd = panel.querySelector(".bd");
+  if(!bd) return;
+
+  panel.classList.toggle("collapsed", !open);
+  bd.style.display = open ? "block" : "none"; // explicit control
+  if(btn) btn.textContent = open ? "Hide filters" : "Show filters";
+}
+
+function setInsightsOpen(open, persist=true){
+  const panel = document.getElementById("procInsightsCard");
+  const body = document.getElementById("procInsightsBody");
+  const btn = document.getElementById("btnToggleInsights");
+  if(!body) return;
+  if(panel) panel.classList.toggle("collapsed", !open);
+  body.style.display = open ? "block" : "none";
+  if(btn) btn.textContent = open ? "Hide insights" : "Show insights";
+  if(persist) saveUI({ insightsOpen: !!open });
+}
+
+function applyInsightsOpenPreference(){
+  const ui = loadUI();
+  const btn = document.getElementById("btnToggleInsights");
+  if(getRole().isAdmin){
+    if(btn) btn.style.display = "inline-flex";
+    if(typeof ui.insightsOpen === "boolean"){
+      setInsightsOpen(ui.insightsOpen, true);
+    }else{
+      setInsightsOpen(true, true);
+    }
+  }else{
+    if(btn) btn.style.display = "none";
+    setInsightsOpen(true, false);
+  }
+}
+
+function setOrdersOpen(open, persist=true){
+  const panel = document.getElementById("ordersPanel");
+  const body = document.getElementById("ordersExtras");
+  const btn = document.getElementById("btnToggleOrders");
+  if(!body) return;
+  if(panel) panel.classList.toggle("collapsed", !open);
+  body.style.display = open ? "block" : "none";
+  if(btn) btn.textContent = open ? "Hide orders" : "Show orders";
+  if(persist) saveUI({ ordersOpen: !!open });
+}
+
+function applyOrdersOpenPreference(){
+  const ui = loadUI();
+  const btn = document.getElementById("btnToggleOrders");
+  if(getRole().isAdmin){
+    if(btn) btn.style.display = "inline-flex";
+    if(typeof ui.ordersOpen === "boolean"){
+      setOrdersOpen(ui.ordersOpen, true);
+    }else{
+      setOrdersOpen(true, true);
+    }
+  }else{
+    if(btn) btn.style.display = "none";
+    setOrdersOpen(true, false);
+  }
+}
+
+/* Filters collapse */
+(function bindFiltersToggle(){
+  const btn = document.getElementById("btnToggleFilters");
+  const panel = document.getElementById("filtersPanel");
+  if(!btn || !panel) return;
+
+btn.addEventListener("click", () => {
+    const open = !panel.classList.contains("collapsed");
+    setFiltersOpen(!open);
+  });
+})();/* Drag & drop */
+
+(function bindInsightsToggle(){
+  const btn = document.getElementById("btnToggleInsights");
+  const panel = document.getElementById("procInsightsCard");
+  if(!btn || !panel) return;
+  btn.addEventListener("click", () => {
+    const open = !panel.classList.contains("collapsed");
+    setInsightsOpen(!open);
+  });
+})();
+
+(function bindInsightsTabs(){
+  const wrap = document.getElementById("insightsTabs");
+  if(!wrap) return;
+  wrap.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn[data-insight]");
+    if(!btn) return;
+    e.preventDefault();
+    setInsightsTab(btn.getAttribute("data-insight"));
+  });
+  const saved = localStorage.getItem("openOrders:insightsTab") || "dept";
+  setInsightsTab(saved);
+})();
+
+(function bindOrdersToggle(){
+  const btn = document.getElementById("btnToggleOrders");
+  const panel = document.getElementById("ordersPanel");
+  if(!btn || !panel) return;
+  btn.addEventListener("click", () => {
+    const open = !panel.classList.contains("collapsed");
+    setOrdersOpen(!open);
+  });
+})();
 const dz = $("#dropZone");
 ["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, (e) => {
   e.preventDefault(); e.stopPropagation();
@@ -1186,11 +3246,84 @@ dz.addEventListener("drop", (e) => {
 
 /* Restore last used filename hint (optional) */
 (function init(){
-  const meta = loadMeta();
-  if(meta && meta.csvFilename){
-    $("#loadedHint").textContent = `Last: ${meta.csvFilename} (upload to refresh)`;
+  // Default view
+  currentRole = "Procurement";
+
+  loadActionFilters();
+  bindColFilters();
+  // UI defaults
+  setRoleUI();
+  setPresetUI();
+  renderRolePills();
+
+  // Prefer procurement.json from localStorage (hydrated by index.html)
+  let hydrated = false;
+  try{
+    hydrated = loadFromProcurementStorage();
+  }catch(e){
+    console.warn("loadFromProcurementStorage failed", e);
   }
+
+  // No hardcoded fallback; wait for procurement.json hydration
+  if(!hydrated){
+    csvFilename = "";
+    rawRows = [];
+    orders = [];
+    $("#loadedHint").textContent = "Waiting for procurement.json (localStorage)";
+  }
+  refresh();
 })();
+
+function reloadProcurement(reason){
+  try{
+    loadFromProcurementStorage();
+  }catch(e){
+    console.warn("reloadProcurement failed", reason, e);
+  }
+}
+
+function setupLiveListeners(){
+  window.addEventListener("storage", (e) => {
+    if (!e) return;
+    if (
+      e.key === PROCUREMENT_STORAGE_KEY ||
+      e.key === PROCUREMENT_PING_KEY
+    ) reloadProcurement("storage");
+  });
+
+  window.addEventListener("message", (event) => {
+    const msg = event?.data;
+    if (!msg || typeof msg !== "object") return;
+    if (msg.type === MSG_PROCUREMENT) reloadProcurement("message");
+  });
+
+  window.addEventListener(MSG_PROCUREMENT, () => reloadProcurement("customevent"));
+
+  if (bcs.length){
+    bcs.forEach((bc) => {
+      bc.onmessage = (ev) => {
+        const msg = ev?.data;
+        if (msg?.type === MSG_PROCUREMENT) reloadProcurement("broadcast");
+      };
+    });
+  }
+
+  let lastPing = (localStorage.getItem(PROCUREMENT_PING_KEY) || "");
+  let lastLen = (localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "").length;
+  setInterval(() => {
+    const curPing = (localStorage.getItem(PROCUREMENT_PING_KEY) || "");
+    const curLen = (localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "").length;
+    if ((curPing && curPing !== lastPing) || curLen !== lastLen){
+      lastPing = curPing;
+      lastLen = curLen;
+      reloadProcurement("poll");
+    }
+  }, 2000);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupLiveListeners();
+});
 </script>
 </body>
 </html>
