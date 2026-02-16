@@ -898,6 +898,10 @@
                   <span class="dot"></span>
                   SKU × Week heatmap
                 </div>
+                <div class="pill-toggle" id="heatmapMetricToggle">
+                  <button data-heatmap-metric="cases" class="active">Cases</button>
+                  <button data-heatmap-metric="pct">% of week</button>
+                </div>
               </div>
               <div id="skuWeekHeatmap"></div>
             </div>
@@ -1052,6 +1056,7 @@ const skuWeightLbs = {
       timeAxis: "daily",   // chart axis (kept in sync with viewMode)
       unitMode: "cases",
       breakdownMode: "sku",
+      heatmapMetric: "cases", // "cases" or "pct" (% of week total)
       filters: {
         sku: "all",
         customer: "all",
@@ -1822,18 +1827,21 @@ const skuWeightLbs = {
         return;
       }
 
+      const showPctOfWeek = state.heatmapMetric === "pct";
       const skuSet = new Set();
       const weekSet = new Set();
       const showYear = hasMultipleWeekYears(filtered);
-      const matrix = new Map(); // sku -> Map(week -> units)
+      const matrix = new Map(); // sku -> Map(week -> cases)
+      const weekTotals = new Map(); // week -> total cases
 
       filtered.forEach(row => {
-        const units = getUnits(row, state.unitMode);
+        const cases = row.cases;
         skuSet.add(row.sku);
         weekSet.add(row.weekKey);
         if (!matrix.has(row.sku)) matrix.set(row.sku, new Map());
         const m = matrix.get(row.sku);
-        m.set(row.weekKey, (m.get(row.weekKey) || 0) + units);
+        m.set(row.weekKey, (m.get(row.weekKey) || 0) + cases);
+        weekTotals.set(row.weekKey, (weekTotals.get(row.weekKey) || 0) + cases);
       });
 
       const skus = [...skuSet].sort();
@@ -1846,10 +1854,13 @@ const skuWeightLbs = {
       let min = Infinity;
       let max = 0;
       matrix.forEach(m => {
-        m.forEach(v => {
-          if (v > 0) {
-            min = Math.min(min, v);
-            max = Math.max(max, v);
+        m.forEach((v, weekKey) => {
+          const weekTotalCases = weekTotals.get(weekKey) || 0;
+          const metricValue = showPctOfWeek && weekTotalCases > 0 ? (v / weekTotalCases) : v;
+          if (showPctOfWeek && weekTotalCases <= 0) return;
+          if (metricValue > 0) {
+            min = Math.min(min, metricValue);
+            max = Math.max(max, metricValue);
           }
         });
       });
@@ -1858,13 +1869,19 @@ const skuWeightLbs = {
       const rows = skus.map(sku => {
         const weekMap = matrix.get(sku) || new Map();
         const cells = weeks.map(week => {
-          const val = weekMap.get(week) || 0;
-          if (!val) {
+          const rawCases = weekMap.get(week) || 0;
+          const weekTotalCases = weekTotals.get(week) || 0;
+          const val = showPctOfWeek && weekTotalCases > 0 ? (rawCases / weekTotalCases) : rawCases;
+
+          if (!rawCases) {
             return `<td style="background: rgba(34,197,94,0.04)"></td>`;
           }
           const t = max === min ? 0.5 : (val - min) / (max - min);
           const alpha = 0.2 + t * 0.6;
-          return `<td style="background: rgba(34,197,94,${alpha}); color: #e5e7eb;">${formatNumber(val)}</td>`;
+          const cellLabel = showPctOfWeek
+            ? `${(val * 100).toFixed(1)}%`
+            : formatNumber(val);
+          return `<td style="background: rgba(34,197,94,${alpha}); color: #e5e7eb;">${cellLabel}</td>`;
         }).join("");
         return `<tr><th scope="row">${sku}</th>${cells}</tr>`;
       }).join("");
@@ -1901,7 +1918,8 @@ const skuWeightLbs = {
         state.filters.week !== "all" ||
         state.filters.date !== "all" ||
         state.unitMode !== "cases" ||
-        state.viewMode !== "daily";
+        state.viewMode !== "daily" ||
+        state.heatmapMetric !== "cases";
       resetFiltersBtn.classList.toggle("hidden", !needsReset);
     }
 
@@ -1937,6 +1955,7 @@ const skuWeightLbs = {
       const unitToggle = document.getElementById("unitModeToggle");
       const timeAxisToggle = document.getElementById("timeAxisToggle");
       const breakdownToggle = document.getElementById("breakdownToggle");
+      const heatmapMetricToggle = document.getElementById("heatmapMetricToggle");
 
       unitToggle.addEventListener("click", (e) => {
         if (e.target.tagName !== "BUTTON") return;
@@ -1965,15 +1984,27 @@ const skuWeightLbs = {
         refreshDashboard();
       });
 
+      if (heatmapMetricToggle) {
+        heatmapMetricToggle.addEventListener("click", (e) => {
+          if (e.target.tagName !== "BUTTON") return;
+          [...heatmapMetricToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
+          e.target.classList.add("active");
+          state.heatmapMetric = e.target.dataset.heatmapMetric === "pct" ? "pct" : "cases";
+          refreshDashboard();
+        });
+      }
+
       if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener("click", () => {
           state.filters = { sku: "all", customer: "all", week: "all", date: "all" };
           state.unitMode = "cases";
           state.viewMode = "daily";
           state.timeAxis = "daily";
+          state.heatmapMetric = "cases";
 
           setActiveToggle(unitToggle, "unit", "cases");
           setActiveToggle(timeAxisToggle, "view", "daily");
+          setActiveToggle(heatmapMetricToggle, "heatmapMetric", "cases");
           resetStripActive(skuStripEl, "sku");
           resetStripActive(customerStripEl, "customer");
 
