@@ -781,7 +781,7 @@
               View & units
             </div>
               <span class="chip">
-                <strong>Scope:</strong> All ship dates & weeks
+                <strong>Scope:</strong> All invoice dates & weeks
               </span>
             </div>
             <div class="toggle-row">
@@ -833,12 +833,12 @@
         <div class="kpi-card">
           <div class="kpi-label">Total sold</div>
           <div class="kpi-value" id="kpiTotalSold">–</div>
-          <div class="kpi-sub" id="kpiTotalSoldSub">Across all ship dates</div>
+          <div class="kpi-sub" id="kpiTotalSoldSub">Across all invoice dates</div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label" id="kpiAvgPerDayLabel">Average per day</div>
               <div class="kpi-value" id="kpiAvgPerDay">–</div>
-              <div class="kpi-sub" id="kpiAvgPerDaySub">Based on filtered ship days</div>
+              <div class="kpi-sub" id="kpiAvgPerDaySub">Based on filtered invoice days</div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Top customer</div>
@@ -868,13 +868,13 @@
                 </div>
               </div>
               <div class="pill-toggle" id="timeAxisToggle">
-                <button data-view="daily" class="active">By Sales Date</button>
+                <button data-view="daily" class="active">By Invoice Date</button>
                 <button data-view="weekly">By sales week</button>
               </div>
             </div>
             <canvas id="salesPerformanceChart"></canvas>
             <div class="chart-footer-note" id="chartFooterNote">
-              Showing units sold by Sales Date. Data reflects all active filters.
+              Showing units sold by Invoice Date. Data reflects all active filters.
             </div>
           </div>
 
@@ -939,7 +939,7 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Ship date</th>
+                      <th>Invoice date</th>
                       <th>Week</th>
                       <th>SKU</th>
                       <th class="text-right">Cases</th>
@@ -973,7 +973,6 @@
       "Sales Invoice Date",
       "Sales Ship Via",
       "Sales Week",
-      "Sales Ship Date",
       "Sales Invoice No.",
       "Sales SKU",
       "Sales # of Cases",
@@ -1035,23 +1034,22 @@ const skuWeightLbs = {
     function normalizeData(raw) {
       return raw
         .map(r => {
-          const [invoiceDate, shipVia, salesWeek, shipDate, invoiceNo, sku, cases, customer, term = ""] = r;
-          const shipDateObj = new Date(shipDate);
-          const shipDateISO = isNaN(shipDateObj.getTime()) ? "" : shipDateObj.toISOString().slice(0,10);
-          const shipDateSafe = isNaN(shipDateObj.getTime()) ? null : shipDateObj;
-          const shipYear = shipDateObj.getTime && !isNaN(shipDateObj.getTime()) ? shipDateObj.getFullYear() : 0;
-          const weekKey = shipYear ? `${shipYear}-W${Number(salesWeek)}` : `0000-W${Number(salesWeek)}`;
-          const weekOrder = shipYear ? (shipYear * 100 + Number(salesWeek)) : Number(salesWeek);
+          const [invoiceDate, shipVia, salesWeek, invoiceNo, sku, cases, customer, term = ""] = r;
+          const invoiceDateObj = new Date(invoiceDate);
+          const invoiceDateISO = isNaN(invoiceDateObj.getTime()) ? "" : invoiceDateObj.toISOString().slice(0,10);
+          const invoiceDateSafe = isNaN(invoiceDateObj.getTime()) ? null : invoiceDateObj;
+          const invoiceYear = invoiceDateObj.getTime && !isNaN(invoiceDateObj.getTime()) ? invoiceDateObj.getFullYear() : 0;
+          const weekKey = invoiceYear ? `${invoiceYear}-W${Number(salesWeek)}` : `0000-W${Number(salesWeek)}`;
+          const weekOrder = invoiceYear ? (invoiceYear * 100 + Number(salesWeek)) : Number(salesWeek);
           return {
             invoiceDate,
             shipVia,
             salesWeek: Number(salesWeek),
-            shipYear,
+            invoiceYear,
             weekKey,
             weekOrder,
-            shipDate,
-            shipDateObj: shipDateSafe,
-            shipDateISO,
+            invoiceDateObj: invoiceDateSafe,
+            invoiceDateISO,
             invoiceNo: String(invoiceNo),
             sku,
             cases: Number(cases),
@@ -1146,15 +1144,14 @@ const skuWeightLbs = {
         const invoiceDate = String(r["Sales Invoice Date"] ?? "").trim();
         const shipVia = String(r["Sales Ship Via"] ?? "").trim();
         const salesWeek = String(r["Sales Week"] ?? "").trim();
-        const shipDate = String(r["Sales Ship Date"] ?? "").trim();
         const invoiceNo = String(r["Sales Invoice No."] ?? "").trim();
         const sku = String(r["Sales SKU"] ?? "").trim();
         const cases = String(r["Sales # of Cases"] ?? "").trim();
         const customer = String(r["Sales Customer"] ?? "").trim();
         const term = String(r["Sales Term"] ?? "").trim();
 
-        if (!invoiceDate && !shipDate && !sku && !cases && !customer) continue;
-        out.push([invoiceDate, shipVia, salesWeek, shipDate, invoiceNo, sku, cases, customer, term]);
+        if (!invoiceDate && !sku && !cases && !customer) continue;
+        out.push([invoiceDate, shipVia, salesWeek, invoiceNo, sku, cases, customer, term]);
       }
 
       return { rows: out, missing: [] };
@@ -1216,19 +1213,19 @@ const skuWeightLbs = {
         if (state.filters.sku !== "all" && row.sku !== state.filters.sku) return false;
         if (state.filters.customer !== "all" && row.customer !== state.filters.customer) return false;
         if (state.filters.week !== "all" && row.weekKey !== state.filters.week) return false;
-        if (state.filters.date !== "all" && row.shipDateISO !== state.filters.date) return false;
+        if (state.filters.date !== "all" && row.invoiceDateISO !== state.filters.date) return false;
         return true;
       });
     }
 
     function hasMultipleWeekYears(rows) {
-      const years = new Set(rows.map(r => r.shipYear).filter(Boolean));
+      const years = new Set(rows.map(r => r.invoiceYear).filter(Boolean));
       return years.size > 1;
     }
 
     function weekLabelFromRow(row, showYear) {
       if (!row) return "Week —";
-      return showYear ? `W${row.salesWeek} ${row.shipYear}` : `W${row.salesWeek}`;
+      return showYear ? `W${row.salesWeek} ${row.invoiceYear}` : `W${row.salesWeek}`;
     }
 
     function weekLabelFromKey(key, showYear) {
@@ -1279,14 +1276,14 @@ const skuWeightLbs = {
         // DAILY: one row per invoice line (original behavior)
         filtered
           .slice()
-          .sort((a,b)=> (a.shipDateObj?.getTime() || 0) - (b.shipDateObj?.getTime() || 0) || a.invoiceNo.localeCompare(b.invoiceNo))
+          .sort((a,b)=> (a.invoiceDateObj?.getTime() || 0) - (b.invoiceDateObj?.getTime() || 0) || a.invoiceNo.localeCompare(b.invoiceNo))
           .forEach(row => {
             const tr = document.createElement("tr");
             const units = getUnits(row, unitMode);
 
-            const shipTd = document.createElement("td");
-            shipTd.textContent = formatDateShort(row.shipDateObj);
-            tr.appendChild(shipTd);
+            const invoiceDateTd = document.createElement("td");
+            invoiceDateTd.textContent = formatDateShort(row.invoiceDateObj);
+            tr.appendChild(invoiceDateTd);
 
             const weekTd = document.createElement("td");
             weekTd.textContent = row.salesWeek;
@@ -1412,7 +1409,7 @@ const skuWeightLbs = {
         kpiAvgPerDayEl.textContent = "0";
         kpiAvgPerDaySubEl.textContent = isWeekly
           ? "No weeks in filter"
-          : "No ship days in filter";
+          : "No invoice days in filter";
         kpiTopCustomerEl.textContent = "–";
         kpiTopCustomerSubEl.textContent = "No customer data";
         kpiTopSkuEl.textContent = "–";
@@ -1429,7 +1426,7 @@ const skuWeightLbs = {
         const units = getUnits(row, unitMode);
         totalUnits += units;
 
-        const gKey = isWeekly ? row.weekKey : row.shipDateISO;
+        const gKey = isWeekly ? row.weekKey : row.invoiceDateISO;
         byGroup.set(gKey, (byGroup.get(gKey) || 0) + units);
 
         byCustomer.set(row.customer, (byCustomer.get(row.customer) || 0) + units);
@@ -1450,7 +1447,7 @@ const skuWeightLbs = {
         const avgPerDay = groupCount ? totalUnits / groupCount : 0;
         kpiAvgPerDayEl.textContent = formatNumber(avgPerDay);
         kpiAvgPerDaySubEl.textContent =
-          `Avg ${unitLabel}/ship day (${groupCount} days)`;
+          `Avg ${unitLabel}/invoice day (${groupCount} days)`;
       }
 
       let topCustomer = "-";
@@ -1574,8 +1571,8 @@ const skuWeightLbs = {
         let key, labelMeta;
 
         if (by === "date") {
-          key = row.shipDateISO;
-          labelMeta = row.shipDateObj;
+          key = row.invoiceDateISO;
+          labelMeta = row.invoiceDateObj;
         } else {
           key = row.weekKey;
           labelMeta = row.weekOrder;
@@ -1612,16 +1609,16 @@ const skuWeightLbs = {
       const mode = state.breakdownMode;
       const isDaily = state.viewMode === "daily";
       const buckets = new Map();
-      const shipDates = new Set();
+      const invoiceDates = new Set();
 
       filtered.forEach(row => {
         const units = getUnits(row, unitMode);
-        shipDates.add(row.shipDateISO);
+        invoiceDates.add(row.invoiceDateISO);
         const key = mode === "sku" ? row.sku : row.customer;
         buckets.set(key, (buckets.get(key) || 0) + units);
       });
 
-      const divisor = isDaily ? Math.max(shipDates.size, 1) : 1;
+      const divisor = isDaily ? Math.max(invoiceDates.size, 1) : 1;
 
       const entries = [...buckets.entries()]
         .map(([k, v]) => [k, v / divisor])
@@ -1636,7 +1633,7 @@ const skuWeightLbs = {
       const ctx = document.getElementById("salesPerformanceChart").getContext("2d");
       const { labels, data, keys } = buildTimeChartData(filtered);
       const unitLabel = state.unitMode === "cases" ? "Cases sold" : "Pounds sold";
-      const axisText = state.timeAxis === "weekly" ? "sales week" : "ship date";
+      const axisText = state.timeAxis === "weekly" ? "sales week" : "invoice date";
       const windowSize = state.viewMode === "weekly" ? 4 : 7;
 
       const movingAverageData = data.map((_, idx) => {
@@ -1722,12 +1719,12 @@ const skuWeightLbs = {
       });
 
       chartFooterNoteEl.textContent =
-        `Showing ${unitLabel.toLowerCase()} by ${axisText} (${state.viewMode === "weekly" ? "total per week" : "per ship day"}). Data reflects all active filters.`;
+        `Showing ${unitLabel.toLowerCase()} by ${axisText} (${state.viewMode === "weekly" ? "total per week" : "per invoice day"}). Data reflects all active filters.`;
 
       if (performanceSubEl) {
         performanceSubEl.textContent = state.viewMode === "weekly"
           ? "Bars: total units sold per week."
-          : "Bars: total units sold per ship date.";
+          : "Bars: total units sold per invoice date.";
       }
     }
 
@@ -1738,7 +1735,7 @@ const skuWeightLbs = {
       const mode = state.breakdownMode;
       const modeLabel = mode === "sku" ? "SKU" : "customer";
       const isDaily = state.viewMode === "daily";
-      const metricLabel = isDaily ? " (avg per ship day)" : " (total per week)";
+      const metricLabel = isDaily ? " (avg per invoice day)" : " (total per week)";
 
       if (salesBreakdownChart) {
         salesBreakdownChart.destroy();
@@ -1784,7 +1781,7 @@ const skuWeightLbs = {
 
       if (breakdownSubEl) {
         breakdownSubEl.textContent = isDaily
-          ? "Units sold by SKU or customer (avg per ship day)."
+          ? "Units sold by SKU or customer (avg per invoice day)."
           : "Units sold by SKU or customer (total per week).";
       }
     }
