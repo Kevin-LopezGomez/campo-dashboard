@@ -497,6 +497,14 @@
       margin-bottom: 6px;
     }
 
+    .table-header-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .table-title {
       font-size: 0.8rem;
       text-transform: uppercase;
@@ -528,6 +536,33 @@
       overflow-y: auto;
       overflow-x: auto;
       scrollbar-gutter: stable both-edges;
+    }
+
+    .log-toggle-btn {
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--sub);
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .log-toggle-btn:hover {
+      color: #bbf7d0;
+      border-color: rgba(74, 222, 128, 0.65);
+    }
+
+    .log-collapsed-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(55, 65, 81, 0.95);
+      color: var(--muted);
+      font-size: 0.72rem;
     }
 
     .table-wrapper table {
@@ -616,6 +651,31 @@
     #skuWeekHeatmap {
       overflow: auto;
       max-height: 320px;
+    }
+
+    .heatmap-trend-wrap {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(55,65,81,0.7);
+    }
+
+    .heatmap-trend-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    #skuShareAreaChart {
+      width: 100%;
+      height: 190px;
+      max-height: 190px;
+    }
+
+    .heatmap-trend-note {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
     }
 
     .heatmap-table {
@@ -917,6 +977,11 @@
                 </div>
               </div>
               <div id="skuWeekHeatmap"></div>
+              <div class="heatmap-trend-wrap">
+                <div class="heatmap-trend-sub">SKU share over time (percentage line chart)</div>
+                <canvas id="skuShareAreaChart"></canvas>
+                <div class="heatmap-trend-note" id="skuShareAreaChartNote">Top SKU share by week (%).</div>
+              </div>
             </div>
 
             <!-- TABLE -->
@@ -931,11 +996,14 @@
                     Source data driving the dashboard.
                   </div>
                 </div>
-                <div class="chip" id="tableModeChip">
-                  Daily rows
+                <div class="table-header-controls">
+                  <div class="chip" id="tableModeChip">
+                    Daily rows
+                  </div>
+                  <button class="log-toggle-btn" id="toggleSalesLogBtn" type="button" aria-expanded="false">Show log</button>
                 </div>
               </div>
-              <div class="table-wrapper">
+              <div class="table-wrapper" id="salesLogWrapper" style="display:none;">
                 <table>
                   <thead>
                     <tr>
@@ -953,6 +1021,7 @@
                   <tbody id="salesTableBody"></tbody>
                 </table>
               </div>
+              <div id="salesLogCollapsedNote" class="log-collapsed-note">Sales log hidden by default. Click "Show log" to view detailed rows.</div>
             </div>
           </div>
         </main>
@@ -1097,13 +1166,19 @@ const skuWeightLbs = {
     const breakdownSubEl = document.getElementById("breakdownSub");
     const weeklySummaryContainer = document.getElementById("weeklySummaryContainer");
     const skuWeekHeatmapEl = document.getElementById("skuWeekHeatmap");
+    const skuShareAreaChartNoteEl = document.getElementById("skuShareAreaChartNote");
     const leaderboardContainer = document.getElementById("leaderboardContainer");
     const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+    const salesLogWrapperEl = document.getElementById("salesLogWrapper");
+    const salesLogCollapsedNoteEl = document.getElementById("salesLogCollapsedNote");
+    const toggleSalesLogBtnEl = document.getElementById("toggleSalesLogBtn");
 
     const dataInputStatus = document.getElementById("dataInputStatus");
 
     let salesChart = null;
     let salesBreakdownChart = null;
+    let skuShareAreaChart = null;
+    let isSalesLogVisible = false;
 
     function loadMasterPackPayload() {
       const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
@@ -1910,6 +1985,140 @@ const skuWeightLbs = {
       `;
     }
 
+    function colorAt(index, alpha = 1) {
+      // Complementary high-contrast pairs for easier line separation.
+      const palette = [
+        [37, 99, 235],   // blue
+        [249, 115, 22],  // orange (complement of blue)
+        [217, 70, 239],  // fuchsia
+        [132, 204, 22],  // lime (complement of fuchsia)
+        [239, 68, 68],   // red
+        [6, 182, 212],   // cyan (complement of red)
+        [234, 179, 8],   // yellow
+        [139, 92, 246],  // violet (complement of yellow)
+        [20, 184, 166],  // teal
+        [251, 113, 133]  // rose (near-complement of teal)
+      ];
+      const c = palette[index % palette.length];
+      return `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;
+    }
+
+    function renderSkuShareAreaChart(filtered) {
+      const canvas = document.getElementById("skuShareAreaChart");
+      if (!canvas) return;
+
+      if (skuShareAreaChart) {
+        skuShareAreaChart.destroy();
+        skuShareAreaChart = null;
+      }
+
+      if (!filtered.length) {
+        if (skuShareAreaChartNoteEl) skuShareAreaChartNoteEl.textContent = "No data for SKU share trend.";
+        return;
+      }
+
+      const showYear = hasMultipleWeekYears(filtered);
+      const byWeek = new Map(); // week -> { total, weekOrder, bySku: Map }
+      filtered.forEach(row => {
+        const units = getUnits(row, state.unitMode);
+        if (!byWeek.has(row.weekKey)) byWeek.set(row.weekKey, { total: 0, weekOrder: row.weekOrder, bySku: new Map() });
+        const bucket = byWeek.get(row.weekKey);
+        bucket.total += units;
+        bucket.bySku.set(row.sku, (bucket.bySku.get(row.sku) || 0) + units);
+      });
+
+      const weeks = [...byWeek.entries()]
+        .sort((a, b) => (a[1].weekOrder || 0) - (b[1].weekOrder || 0));
+      const labels = weeks.map(([wk]) => weekLabelFromKey(wk, showYear));
+
+      const skuTotals = new Map();
+      weeks.forEach(([, info]) => {
+        info.bySku.forEach((v, sku) => skuTotals.set(sku, (skuTotals.get(sku) || 0) + v));
+      });
+
+      const topSkus = [...skuTotals.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([sku]) => sku);
+      const hasOthers = skuTotals.size > topSkus.length;
+
+      const datasets = topSkus.map((sku, idx) => {
+        const data = weeks.map(([, info]) => {
+          const weekTotal = info.total || 0;
+          const skuValue = info.bySku.get(sku) || 0;
+          return weekTotal ? (skuValue / weekTotal) * 100 : 0;
+        });
+        return {
+          type: "line",
+          label: sku,
+          data,
+          fill: false,
+          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 3,
+          borderWidth: 2,
+          borderColor: colorAt(idx, 0.95)
+        };
+      });
+
+      if (hasOthers) {
+        datasets.push({
+          type: "line",
+          label: "Other SKUs",
+          data: weeks.map(([, info]) => {
+            const weekTotal = info.total || 0;
+            if (!weekTotal) return 0;
+            let topSkuTotal = 0;
+            topSkus.forEach(sku => { topSkuTotal += info.bySku.get(sku) || 0; });
+            return ((weekTotal - topSkuTotal) / weekTotal) * 100;
+          }),
+          fill: false,
+          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 3,
+          borderWidth: 2,
+          borderColor: "rgba(148,163,184,0.95)",
+          borderDash: [6, 4]
+        });
+      }
+
+      skuShareAreaChart = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: "#9ca3af", maxRotation: 0 }
+            },
+            y: {
+              min: 0,
+              max: 100,
+              grid: { color: "rgba(55,65,81,0.45)" },
+              ticks: { color: "#9ca3af", callback: (v) => `${v}%` },
+              title: { display: true, text: "SKU share", color: "#9ca3af" }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: "#e5e7eb", font: { size: 10 }, boxWidth: 12 } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%`
+              }
+            }
+          }
+        }
+      });
+
+      if (skuShareAreaChartNoteEl) {
+        const unit = state.unitMode === "cases" ? "cases" : "lbs";
+        skuShareAreaChartNoteEl.textContent = `Top SKU share by week using ${unit} as the denominator.`;
+      }
+    }
+
     function updateModeLabels() {
       const isWeekly = state.viewMode === "weekly";
       if (isWeekly) {
@@ -1918,6 +2127,17 @@ const skuWeightLbs = {
       } else {
         kpiAvgPerDayLabelEl.textContent = "Average per day";
         tableModeChipEl.textContent = "Daily rows";
+      }
+    }
+
+    function setSalesLogVisibility(visible) {
+      isSalesLogVisible = !!visible;
+      if (salesLogWrapperEl) salesLogWrapperEl.style.display = isSalesLogVisible ? "block" : "none";
+      if (salesLogCollapsedNoteEl) salesLogCollapsedNoteEl.style.display = isSalesLogVisible ? "none" : "block";
+      if (tableModeChipEl) tableModeChipEl.style.display = isSalesLogVisible ? "inline-flex" : "none";
+      if (toggleSalesLogBtnEl) {
+        toggleSalesLogBtnEl.textContent = isSalesLogVisible ? "Hide log" : "Show log";
+        toggleSalesLogBtnEl.setAttribute("aria-expanded", isSalesLogVisible ? "true" : "false");
       }
     }
 
@@ -1944,6 +2164,7 @@ const skuWeightLbs = {
       renderBreakdownChart(filtered);
       renderLeaderboard(filtered);
       renderSkuWeekHeatmap(filtered);
+      renderSkuShareAreaChart(filtered);
       renderTable(filtered);
       updateResetButtonVisibility();
     }
@@ -2031,6 +2252,12 @@ const skuWeightLbs = {
           refreshDashboard();
         });
       }
+
+      if (toggleSalesLogBtnEl) {
+        toggleSalesLogBtnEl.addEventListener("click", () => {
+          setSalesLogVisibility(!isSalesLogVisible);
+        });
+      }
     }
 
     function initFilterEvents() {
@@ -2090,6 +2317,7 @@ const skuWeightLbs = {
     hydrateFromMasterPack("init");
     initToggles();
     initFilterEvents();
+    setSalesLogVisibility(false);
     refreshDashboard();
   </script>
 </body>
