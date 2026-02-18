@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>14.0 Procurement - Live MRP v3.5</title>
+  <style>
+    :root{
+      --bg:#020617; --panel:#0b1222; --panel2:#0f172a;
+      --border:rgba(148,163,184,.18); --border2:rgba(148,163,184,.10);
+      --text:#e5e7eb; --sub:#cbd5e1; --muted:#94a3b8;
+      --accent:#22c55e; --warn:#f59e0b; --bad:#fb7185; --good:#34d399;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --r:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text); background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(34,197,94,.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(96,165,250,.12), transparent 55%),
+        var(--bg);
+    }
+    .wrap{max-width:1320px; margin:0 auto; padding:18px;}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:14px 14px; border:1px solid var(--border); border-radius:calc(var(--r) + 4px);
+      background: linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.62));
+      box-shadow:var(--shadow);
+      position:sticky; top:12px; z-index:20;
+      backdrop-filter: blur(10px);
+    }
+    .title{display:flex; flex-direction:column; gap:2px; min-width: 260px;}
+    .title h1{margin:0; font-size:16px; letter-spacing:.3px}
+    .title .sub{color:var(--muted); font-size:12px; line-height:1.3}
+    .controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.65);
+      color:var(--text);
+      padding:9px 11px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      display:inline-flex; align-items:center; gap:8px;
+      transition: transform .06s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{border-color: rgba(34,197,94,.55); background: rgba(15,23,42,.85)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.10));
+      border-color: rgba(34,197,94,.45);
+    }
+    input[type="file"]{display:none}
+    .chip{
+      border:1px solid var(--border2);
+      background: rgba(2,6,23,.50);
+      padding:8px 10px;
+      border-radius:12px;
+      color: var(--sub);
+      font-size:12px;
+      display:flex; align-items:center; gap:8px;
+      max-width: 420px;
+    }
+    .chip b{color:var(--text); font-family:var(--mono); font-size:11px}
+    .tabs{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
+    .tab{
+      padding:9px 12px; border-radius:999px; border:1px solid var(--border);
+      background: rgba(2,6,23,.35); font-size:12px; cursor:pointer; user-select:none;
+      transition: border-color .12s ease, background .12s ease; white-space:nowrap;
+      font-weight:800; color: var(--sub);
+    }
+    .tab:hover{border-color: rgba(34,197,94,.5)}
+    .tab.active{border-color: rgba(34,197,94,.7); background: rgba(34,197,94,.12); color: var(--text);}
+    .grid{display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px;}
+    .grid.two{grid-template-columns: 1.05fr .95fr;}
+    @media (max-width: 980px){ .grid.two{grid-template-columns: 1fr} }
+    .card{
+      border:1px solid var(--border); background: linear-gradient(180deg, rgba(15,23,42,.72), rgba(2,6,23,.60));
+      border-radius: var(--r); box-shadow: var(--shadow); overflow:hidden;
+    }
+    .card .hd{
+      padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+      border-bottom:1px solid var(--border2);
+    }
+    .card .hd h2{margin:0; font-size:13px; letter-spacing:.25px}
+    .card .hd .hint{color:var(--muted); font-size:12px}
+    .card .bd{padding:12px 14px}
+    .kpis{display:grid; grid-template-columns: repeat(6, 1fr); gap:10px}
+    @media (max-width: 1100px){ .kpis{grid-template-columns: repeat(3, 1fr);} }
+    @media (max-width: 700px){ .kpis{grid-template-columns: repeat(2, 1fr);} }
+    .kpi{padding:10px 10px; border:1px solid var(--border2); border-radius: 14px; background: rgba(2,6,23,.45); min-height: 62px;}
+    .kpi .lab{color:var(--muted); font-size:11px}
+    .kpi .val{margin-top:4px; font-size:16px; font-weight:900; letter-spacing:.2px}
+    .kpi .val.mono{font-family:var(--mono); font-weight:800; font-size:13px}
+    .bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+    .search{
+      flex:1; min-width: 240px; border:1px solid var(--border); background: rgba(2,6,23,.45);
+      color: var(--text); padding:10px 12px; border-radius: 12px; outline:none; font-size:12px;
+    }
+    .select, .numInput{
+      border:1px solid var(--border); background: rgba(2,6,23,.45); color: var(--text);
+      padding:10px 10px; border-radius: 12px; outline:none; font-size:12px;
+    }
+    .numInput{width: 140px; font-family: var(--mono)}
+    .pillrow{display:flex; gap:8px; flex-wrap:wrap}
+    .pill{
+      padding:8px 10px; border-radius:999px; border:1px solid var(--border);
+      background: rgba(2,6,23,.35); font-size:12px; cursor:pointer; user-select:none;
+      transition: border-color .12s ease, background .12s ease; white-space:nowrap;
+      font-weight:800; color: var(--sub);
+    }
+    .pill:hover{border-color: rgba(34,197,94,.5)}
+    .pill.active{border-color: rgba(34,197,94,.7); background: rgba(34,197,94,.12); color: var(--text);}
+    .tableWrap{border-top:1px solid var(--border2); overflow:auto; max-height: 62vh; -webkit-overflow-scrolling: touch;}
+    table{width:100%; border-collapse:separate; border-spacing:0; font-size:12px; min-width: 1280px;}
+    thead th{
+      position:sticky; top:0; z-index:10; background: rgba(11,18,34,.94); backdrop-filter: blur(8px);
+      border-bottom:1px solid var(--border); padding:10px 10px; text-align:left; color: var(--sub);
+      font-weight:900; white-space:nowrap; cursor:pointer; user-select:none;
+      box-shadow: 0 6px 0 rgba(2,6,23,.45);
+    }
+    thead th .s{opacity:.7; font-size:11px; margin-left:6px}
+    tbody td{border-bottom:1px solid rgba(148,163,184,.10); padding:9px 10px; vertical-align:top;}
+    tbody tr:hover td{ background: rgba(34,197,94,.06)}
+    td.num, th.num{text-align:right; font-variant-numeric: tabular-nums; font-family: var(--mono)}
+    td.code{font-family:var(--mono); font-size:11px}
+    td.desc{max-width: 520px}
+    .muted{color:var(--muted)}
+    .foot{
+      padding:10px 14px; border-top:1px solid var(--border2);
+      display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+      color:var(--muted); font-size:12px;
+    }
+    .mini{font-family:var(--mono); font-size:11px; color:var(--sub);
+      padding:4px 8px; border:1px solid var(--border2); border-radius:999px; background: rgba(2,6,23,.35);
+    }
+    .toast{
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px;
+      background: rgba(2,6,23,.92); border:1px solid var(--border); border-radius: 14px;
+      padding:10px 12px; box-shadow: var(--shadow); color: var(--text); font-size: 12px;
+      display:none; z-index: 50; max-width: 86vw;
+    }
+    .toast.show{display:block}
+    .kbd{
+      font-family:var(--mono); border:1px solid var(--border2); background: rgba(15,23,42,.55);
+      padding:2px 6px; border-radius: 8px; font-size: 11px; color: var(--sub);
+    }
+    .badge{
+      font-family:var(--mono); font-size:11px; padding:3px 8px; border-radius:999px;
+      border:1px solid var(--border2); background: rgba(2,6,23,.35);
+      display:inline-flex; gap:6px; align-items:center; white-space:nowrap;
+    }
+    .badge.red{border-color: rgba(251,113,133,.55); background: rgba(251,113,133,.10)}
+    .badge.yellow{border-color: rgba(245,158,11,.55); background: rgba(245,158,11,.10)}
+    .badge.green{border-color: rgba(52,211,153,.55); background: rgba(52,211,153,.10)}
+    .right{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
+    .hr{height:1px; background: rgba(148,163,184,.10); margin:10px 0}
+    .split{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;}
+    @media (max-width: 980px){ .split{grid-template-columns: 1fr} }
+    .label{font-size:11px; color:var(--muted); margin-bottom:6px}
+    .toggle{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--border2); background: rgba(2,6,23,.35);
+      padding:8px 10px; border-radius: 12px; font-size:12px; color: var(--sub);
+      cursor:pointer; user-select:none;
+    }
+    .toggle input{accent-color: var(--accent)}
+    .deltaNeg{color: var(--bad); font-weight:900}
+    .deltaPos{color: var(--good); font-weight:900}
+  
+    /* Horizontal scroll comfort */
+    .tableWrap::-webkit-scrollbar{height:10px}
+    .tableWrap::-webkit-scrollbar-thumb{background: rgba(148,163,184,.22); border-radius:999px}
+    .tableWrap::-webkit-scrollbar-track{background: rgba(2,6,23,.35)}
+    
+    /* Sticky second header row (filters) if present */
+    thead tr.filterRow th{ position: sticky; top: 38px; z-index: 11; background: rgba(11,18,34,.92); }
+    thead tr.filterRow input.colFilter{
+      width: 100%;
+      border:1px solid var(--border);
+      background: rgba(2,6,23,.35);
+      color: var(--text);
+      padding:6px 8px;
+      border-radius:10px;
+      font-size:11px;
+      outline:none;
+    }
+    
+    /* Click-to-sort indicators (Action + Full tables) */
+    thead th[data-sort]{cursor:pointer;}
+    thead th[data-sort][data-dir="asc"]::after{content:" ↑"; opacity:.7; font-size:11px; margin-left:6px;}
+    thead th[data-sort][data-dir="desc"]::after{content:" ↓"; opacity:.7; font-size:11px; margin-left:6px;}
+    thead th input{cursor:text;} /* don't show pointer when clicking filter inputs */
+    </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Procurement • Live MRP  🔵  v3.5</h1>
+        <div class="sub">MRP calculation engine v3.5 (Header Detection Hardened) • validates vs Excel outputs (toggle) • CSV now → Supabase later</div>
+      </div>
+
+      <div class="controls">
+        <label class="btn primary" for="file"><span>📄</span><span>Load CSV</span></label>
+        <input id="file" type="file" accept=".csv,text/csv" />
+
+        <button class="btn" id="btnSnapshot" title="Save a historic snapshot (local for now)"><span>📌</span><span>Save Snapshot</span></button>
+        <button class="btn" id="btnClear" title="Clear loaded data"><span>🧹</span><span>Clear</span></button>
+
+        <div class="chip" id="chipMeta">
+          <span class="muted">Status:</span> <b id="metaStatus">No data</b>
+        </div>
+      </div>
+    
+    <div style="margin-top:8px;padding:8px 12px;border:1px solid #22c55e;border-radius:12px;background:rgba(34,197,94,.12);font-weight:800;">
+        VERSION: v3.5  —  If you do not see this banner, you are opening an old file.
+    <div style="margin-top:10px;padding:10px 12px;border:1px solid rgba(148,163,184,.18);border-radius:12px;background:rgba(2,6,23,.45);">
+      <div style="font-weight:900; margin-bottom:4px;">Change log • v3.5</div>
+      <div style="color:#cbd5e1; font-size:12px; line-height:1.35;">
+        • Layout: Executive Overview stacked above Top Risks<br/>
+        • Versioning: unique filename + unique localStorage namespace per version<br/>
+        • Notes: This build generated on 2026-02-13 16:07 UTC
+      </div>
+    </div>
+
+    </div>
+    </header>
+    
+
+    <div class="tabs" id="modeTabs">
+      <div class="tab active" data-mode="procurement">Procurement</div>
+      <div class="tab" data-mode="executive">Executive</div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab" data-tab="overview">Overview</div>
+      <div class="tab active" data-tab="action">Action Queue</div>
+      <div class="tab" data-tab="table">Current Orders</div>
+      <div class="tab" data-tab="newTable">Output List</div>
+      <div class="tab" data-tab="history">History</div>
+    </div>
+
+    <div class="grid" id="panelOverview" style="display:none">
+      <section class="card">
+        <div class="hd">
+          <h2>Top Risks (soonest to order)</h2>
+          <div class="hint"><span class="mini" id="shownCount">0 shown</span> <span class="mini" id="totalCount">0 total</span></div>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-sort="Risk">Risk <span class="s" id="sRisk"></span></th>
+                <th data-sort="Department">Dept <span class="s" id="sDept"></span></th>
+                <th style="min-width:120px" data-sort="Code">Code <span class="s" id="sCode"></span></th>
+                <th style="min-width:360px" data-sort="Description">Description <span class="s" id="sDesc"></span></th>
+                <th class="num" style="min-width:110px" data-sort="CurrentInv">On Site <span class="s" id="sOn"></span></th>
+                <th class="num" style="min-width:110px" data-sort="AtPort">At Port <span class="s" id="sPort"></span></th>
+                <th class="num" style="min-width:120px" data-sort="InvMonths">Inv (mo) <span class="s" id="sMonths"></span></th>
+                <th class="num" style="min-width:130px" data-sort="DaysToOrder">Days to Order <span class="s" id="sDays"></span></th>
+                <th class="num" style="min-width:150px" data-sort="RecoOrder">Reco Order <span class="s" id="sReco"></span></th>
+                <th class="num excelCol" style="min-width:150px; display:none" data-sort="ExcelDays">Excel Days <span class="s" id="sEDays"></span></th>
+                <th class="num excelCol" style="min-width:150px; display:none" data-sort="ExcelReco">Excel Reco <span class="s" id="sEReco"></span></th>
+              </tr>
+<tr class="filterRow">
+<th></th>
+<th><input class="colFilter" data-col="Department" placeholder="Filter dept"></th>
+<th><input class="colFilter" data-col="Code" placeholder="Filter code"></th>
+<th><input class="colFilter" data-col="Description" placeholder="Filter description"></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+
+            </thead>
+            <tbody id="tbodyTop"></tbody>
+          </table>
+        </div>
+
+        <div class="foot">
+          <div>Click headers to sort. Default sort: Days to Order (ascending).</div>
+          <div class="muted">Engine v1 • Comparison toggle shows Excel columns from CSV.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid" id="panelAction">
+      <section class="card">
+        <div class="hd">
+          <h2>Action Queue</h2>
+          <div class="hint">Urgency first • validate vs Excel when toggle is on</div>
+        </div>
+        <div class="bd">
+          <div class="kpis">
+            <div class="kpi"><div class="lab">Items</div><div class="val mono" id="kpiItems">—</div></div>
+            <div class="kpi"><div class="lab">Departments</div><div class="val mono" id="kpiDepts">—</div></div>
+            <div class="kpi"><div class="lab">Below minimum</div><div class="val" id="kpiBelow">—</div></div>
+            <div class="kpi"><div class="lab">Order now</div><div class="val" id="kpiOrderNow">—</div></div>
+            <div class="kpi"><div class="lab">On-site value</div><div class="val" id="kpiValue">—</div></div>
+            <div class="kpi"><div class="lab">Inbound at port value</div><div class="val" id="kpiPortValue">—</div></div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="bar">
+            <input id="search" class="search" placeholder="Search (Code / Description)…" />
+            <select id="deptSelect" class="select" title="Filter by department"><option value="">All Departments</option></select>
+            <div class="toggle" title="Show Excel outputs side-by-side for validation">
+              <input id="toggleExcel" type="checkbox" />
+              <span>Show Excel comparison</span>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+          <div class="pillrow" id="pills"></div>
+
+          <div style="height:10px"></div>
+          <div class="split">
+            <div>
+              <div class="label">Global minimum override (months)</div>
+              <input id="minOverride" class="numInput" type="number" step="0.1" min="0" placeholder="(off)" />
+            </div>
+            <div>
+              <div class="label">Buffer target (months)</div>
+              <input id="bufferTarget" class="numInput" type="number" step="0.1" min="0" value="1.0" />
+            </div>
+            <div>
+              <div class="label">UOM (display only for now)</div>
+              <select id="uomSelect" class="select">
+                <option value="">(none)</option>
+                <option value="units">units</option>
+                <option value="cases">cases</option>
+                <option value="masters">masters</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+          <div class="muted" id="metaLine">Load a CSV to begin.</div>
+
+          <div class="hr"></div>
+          <div class="bar">
+            <input id="search2" class="search" placeholder="Search (Code / Description)…" />
+            <select id="deptSelect2" class="select"></select>
+            <select id="riskSelect" class="select">
+              <option value="">All Risks</option>
+              <option value="RED">Red (Order now)</option>
+              <option value="YELLOW">Yellow (Watch)</option>
+              <option value="GREEN">Green (Good)</option>
+            </select>
+            <select id="horizonSelect" class="select">
+              <option value="all">All</option>
+              <option value="0">Order now (<=0 days)</option>
+              <option value="7">Next 7 days</option>
+              <option value="14">Next 14 days</option>
+              <option value="30">Next 30 days</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              
+              <tr>
+                <th data-sort="Risk">Risk</th>
+                <th data-sort="Department">Dept</th>
+                <th data-sort="Code" style="min-width:120px">Code</th>
+                <th data-sort="Description" style="min-width:420px">Description</th>
+                <th class="num" data-sort="MinMonths" style="min-width:120px">Min (mo)</th>
+                <th class="num" data-sort="LeadTimeMonths" style="min-width:140px">Lead (mo)</th>
+                <th class="num" data-sort="BurnRateMonthly" style="min-width:150px">Burn (mo)</th>
+                <th class="num" data-sort="CurrentInv" style="min-width:120px">On Site</th>
+                <th class="num" data-sort="AtPort" style="min-width:120px">At Port</th>
+                <th class="num" data-sort="InvMonths" style="min-width:120px">Inv (mo)</th>
+                <th class="num" data-sort="BufferMonths" style="min-width:120px">Buffer (mo)</th>
+                <th class="num" data-sort="DaysToOrder" style="min-width:140px">Days to Order</th>
+                <th class="num" data-sort="RecommendedOrder" style="min-width:160px">Reco Order</th>
+
+                <th class="num excelCol" data-sort="ExcelDaysToOrder" style="min-width:140px; display:none">Excel Days</th>
+                <th class="num excelCol" data-sort="DeltaDays" style="min-width:160px; display:none">Δ Days</th>
+                <th class="num excelCol" data-sort="ExcelRecommendedOrder" style="min-width:160px; display:none">Excel Reco</th>
+                <th class="num excelCol" data-sort="DeltaReco" style="min-width:160px; display:none">Δ Reco</th>
+              </tr>
+<tr class="filterRow">
+<th></th>
+<th><input class="colFilter" data-col="Department" placeholder="Filter dept"></th>
+<th><input class="colFilter" data-col="Code" placeholder="Filter code"></th>
+<th><input class="colFilter" data-col="Description" placeholder="Filter description"></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+
+    
+            </thead>
+            <tbody id="tbodyAction"></tbody>
+          </table>
+        </div>
+
+        <div class="foot">
+          <div><span class="mini" id="actionShown">0 shown</span> <span class="mini" id="actionTotal">0 total</span></div>
+          <div class="muted">Reco = (Min + Lead + Buffer)×Burn − (On Site + At Port).</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid" id="panelTable" style="display:none">
+      <section class="card">
+        <div class="hd">
+          <h2>Current Orders</h2>
+          <div class="hint">User input columns</div>
+        </div>
+        <div class="bd">
+          <div class="bar">
+            <input id="search3" class="search" placeholder="Search full CSV row…" />
+            <select id="deptSelect3" class="select"></select>
+            <button class="btn" id="btnAddFullRow" type="button"><span>➕</span><span>Add Row</span></button>
+            <label class="toggle"><input id="toggleFullActions" type="checkbox" /> Show Delete</label>
+            <span class="muted">Click any column header to sort</span>
+          </div>
+        </div>
+
+        <div class="tableWrap" style="max-height:70vh;">
+          <table>
+            <thead id="theadFull"></thead>
+            <tbody id="tbodyFull"></tbody>
+          </table>
+        </div>
+
+        <div class="foot">
+          <div><span class="mini" id="fullShown">0 shown</span> <span class="mini" id="fullTotal">0 total</span></div>
+          <div class="muted">Input-only table for current orders.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid" id="panelNewTable" style="display:none">
+      <section class="card">
+        <div class="hd">
+          <h2>Output List</h2>
+          <div class="hint">Calculated/output columns</div>
+        </div>
+        <div class="bd">
+          <div class="bar">
+            <input id="search4" class="search" placeholder="Search output rows…" />
+            <select id="deptSelect4" class="select"></select>
+            <span class="muted">Click any output column header to sort</span>
+          </div>
+        </div>
+        <div class="tableWrap" style="max-height:70vh;">
+          <table>
+            <thead id="theadOutput"></thead>
+            <tbody id="tbodyOutput"></tbody>
+          </table>
+        </div>
+        <div class="foot">
+          <div><span class="mini" id="outputShown">0 shown</span> <span class="mini" id="outputTotal">0 total</span></div>
+          <div class="muted">Output columns separated from user inputs.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid" id="panelHistory" style="display:none">
+      <section class="card">
+        <div class="hd"><h2>Historic Snapshots</h2><div class="hint">Local for now • later: Supabase</div></div>
+        <div class="bd">
+          <div class="bar">
+            <button class="btn" id="btnExportHistory"><span>⬇️</span><span>Export JSON</span></button>
+            <button class="btn" id="btnClearHistory"><span>🧨</span><span>Clear History</span></button>
+            <div class="chip"><span class="muted">Snapshots:</span> <b id="snapCount">0</b></div>
+          </div>
+          <div class="hr"></div>
+          <div id="historyList" class="muted">No snapshots yet.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid" id="panelExecutive" style="display:none">
+      <section class="card">
+        <div class="hd">
+          <h2>Executive Summary</h2>
+          <div class="hint">Aggregate-only view</div>
+        </div>
+        <div class="bd">
+          <div class="kpis">
+            <div class="kpi"><div class="lab">Total SKUs</div><div class="val mono" id="exTotalSkus">—</div></div>
+            <div class="kpi"><div class="lab">Red</div><div class="val" id="exRedCount">—</div></div>
+            <div class="kpi"><div class="lab">Yellow</div><div class="val" id="exYellowCount">—</div></div>
+            <div class="kpi"><div class="lab">Green</div><div class="val" id="exGreenCount">—</div></div>
+            <div class="kpi"><div class="lab">Below minimum</div><div class="val" id="exBelowMin">—</div></div>
+            <div class="kpi"><div class="lab">On-site value</div><div class="val" id="exOnSiteValue">—</div></div>
+            <div class="kpi"><div class="lab">Inbound value</div><div class="val" id="exInboundValue">—</div></div>
+            <div class="kpi"><div class="lab">30-day order exposure</div><div class="val" id="exExposure30">—</div></div>
+            <div class="kpi"><div class="lab">7-day order exposure</div><div class="val" id="exExposure7">—</div></div>
+            <div class="kpi"><div class="lab">Total recommended spend</div><div class="val" id="exRecoSpend">—</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="hd">
+          <h2>Department Risk Table</h2>
+          <div class="hint">Sorted by 30-day exposure</div>
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th class="num">Red</th>
+                <th class="num">Yellow</th>
+                <th class="num">Green</th>
+                <th class="num">On-site $</th>
+                <th class="num">Inbound $</th>
+                <th class="num">30-day exposure $</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyExecutiveDept"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="hd">
+          <h2>Trend Deltas</h2>
+          <div class="hint">Compared to latest snapshot</div>
+        </div>
+        <div class="bd" id="executiveTrend">
+          <div class="muted">Save a snapshot to enable trend comparison.</div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const state = {
+
+  items: [],
+  rawHeaders: [],
+  rawRows: [],
+  rawDeptHeader: null,
+  rawCodeHeader: null,
+  rawDescHeader: null,
+  meta: { loadedAt: null, filename: null },
+  mode: "procurement",
+  procurementTab: "action",
+  sort: { key: "DaysToOrder", dir: "asc" },
+  actionSort: { key: "DaysToOrder", dir: "asc" },
+  fullSort: { key: "DaysToOrder", dir: "asc" },
+  outputSort: { key: "", dir: "asc" },
+  pill: "ALL",
+  history: [],
+  showExcel: false,
+  showFullActions: false
+};
+const HISTORY_KEY = "campo.mrp.history.v3.6";
+const MODE_KEY = "campo.mrp.mode.v3.6";
+
+// Column header filters (engine-level)
+const columnFilters = { Department: "", Code: "", Description: "" };
+const STORAGE_NS = "campo.mrp.v3.6";
+const OUTPUT_HEADER_KEYS = new Set([
+  "current inventory in months",
+  "estimated facility arrival date",
+  "inventory in months after arrival from port",
+  "do i meet minimum inventory amount?",
+  "how much buffer do i have (months)?",
+  "how long does it take to get product in (months)",
+  "how many days to order again?",
+  "when to order again?",
+  "recommended order amount",
+  "inventory after next order months"
+]);
+const HARDCODED_FULL_TABLE_CSV = `﻿Code, Price/item , Department , Vendor ,Item Description,Lead Time from Order Date (Days),Minimum Month of Inventory Required,Last Order Date, Last Order Quantity ,Current Inventory,"Avg Monthly 
+Burn Rate",Current Inventory in Months,AT PORT,Estimated Facility Arrival Date,Actual Arrival Date,Inventory in Months After Arrival from Port,Do I meet Minimum Inventory amount?,How much buffer do I have (Months)?,How long does it take to get product in (Months),How many days to order again?,When to order again?,Recommended Order Amount,Inventory After Next Order Months
+1, $92.00 , Procurement , JV Sales ,CAJA DE BOLSAS 30X37 (30) GALONES (500/MASTER),32,1,2/10/2026," 6,966 "," 11,500 ",3000,3.8,2500,3/14/2026,2/17/2026,4.7,Yes,3.67,1.03,82,5/10/2026,2916.00,2.0
+2, $76.00 , Procurement , JV Sales ,CAJA DE BOLSAS 60 GALONES (ROLLOS DE 15) (150/MASTER),9,2,2/10/2026," 2,595 "," 5,100 ",600,8.5,,2/19/2026,2/17/2026,8.5,Yes,6.50,0.29,193,8/29/2026,7615.00,14.7
+3, $91.00 , Procurement , JV Sales ,MASTER DE GUANTES NITRIL XL - MASTER 1000,31,1,2/10/2026," 2,156 "," 22,700 ",6800,3.3,7000,3/13/2026,2/17/2026,4.4,Yes,3.37,1.00,74,5/2/2026,8845.00,2.3
+4, $41.00 , Procurement , JV Sales ,MASTER DE GUANTES NITRIL L - MASTER 1000,38,3,2/10/2026," 4,260 "," 3,200 ",7600,0.4,30000,3/20/2026,2/17/2026,4.4,Yes,1.37,1.23,5,2/22/2026,6998.00,3.9
+5, $72.00 , Procurement , JV Sales ,MASTER DE GUANTES NITRIL M - MASTER 1000,48,1,2/10/2026," 4,542 ", -   ,3200,0.0,15000,3/30/2026,2/17/2026,4.7,Yes,3.69,1.55,67,4/25/2026,6700.00,3.1
+6, $51.00 , Procurement , JV Sales ,MASTER DE GUANTES NITRIL S - MASTER 1000,49,1,2/10/2026," 5,495 "," 1,000 ",0,#DIV/0!,,3/31/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,1.58,#DIV/0!,#DIV/0!,2619.00,#DIV/0!
+7, $40.00 , Procurement , JV Sales ,REDECILLAS DE PELO - MASTER 1000,31,1,2/10/2026," 8,492 "," 7,400 ",3600,2.1,10000,3/13/2026,2/17/2026,4.8,Yes,3.83,1.00,88,5/16/2026,4628.00,2.3
+8, $30.00 , Procurement , JV Sales ,REDECILLAS DE BARBA - MASTER 1000,58,3,2/10/2026," 6,027 ", 900 ,800,1.1,5000,4/9/2026,2/17/2026,7.4,Yes,4.37,1.87,78,5/6/2026,2036.00,5.5
+9, $93.00 , Procurement , JV Sales ,ROLLOS DE PAPEL SECANTE (12/MASTER),38,1,2/10/2026," 7,682 ", 38 ,44,0.9,144,3/20/2026,2/17/2026,4.1,Yes,3.11,1.23,59,4/17/2026,2322.00,53.8
+10, $98.00 , Procurement , JV Sales ,PAPEL SANITARIO (96/MASTER) ,18,1,2/10/2026," 9,772 ", 127 ,120,1.1,480,2/28/2026,2/17/2026,5.1,Yes,4.05,0.58,108,6/5/2026,7873.00,66.6
+11, $95.00 , Procurement , JV Sales ,Caja De Jabon De Galon antibacterial Perlado (4/MASTER),83,2,2/10/2026," 5,077 ", 65 ,16,4.1,,5/4/2026,2/17/2026,3.9,Yes,1.90,2.68,-25,1/23/2026,1063.00,68.4
+12, $44.00 , Procurement , JV Sales ,Dispenser Refils ,34,1,2/10/2026," 7,941 ", 41 ,4,10.3,,3/16/2026,2/17/2026,10.0,Yes,8.98,1.10,245,10/20/2026,8175.00,2044.8
+13, $52.00 , Procurement , JV Sales ,Clorox de Gal,24,1,2/10/2026," 7,893 ", 10 ,8,1.3,32,3/6/2026,2/17/2026,5.2,Yes,4.15,0.77,105,6/2/2026,1385.00,174.1
+14, $55.00 , Procurement , JV Sales ,,33,3,2/10/2026," 8,812 ",,834,0.0,,3/15/2026,2/17/2026,0.0,No,Warning: Order Yesterday,1.06,#VALUE!,#VALUE!,2704.00,6.2
+15, $93.00 , Procurement , JV Sales ,New Dispensers ,27,2,2/10/2026," 2,974 ", 14 ,1,28.0,,3/9/2026,2/17/2026,26.3,Yes,24.26,0.87,725,2/12/2028,6930.00,13862.0
+16, $18.00 , Production , Packaging Materials ,3LB BAG,29,2,2/10/2026," 8,465 "," 34,400 ",4000,8.6,,3/11/2026,2/17/2026,8.6,Yes,6.60,0.94,176,8/12/2026,9337.00,7.6
+17, $81.00 , Production , Packaging Materials ,1LB BAG,13,2,2/10/2026," 7,873 ",,160,0.0,,2/23/2026,2/17/2026,0.0,No,Warning: Order Yesterday,0.42,#VALUE!,#VALUE!,1545.00,#VALUE!
+18, $18.00 , Production , Packaging Materials ,GREEN HARVEST CRATES ,79,3,2/10/2026," 6,241 ", 955 ,220,4.3,,4/30/2026,2/17/2026,4.3,Yes,1.33,2.55,-38,1/10/2026,3442.00,3.2
+19, $39.00 , Production , Packaging Materials ,CARDBOARD BOXES 8/10oz,19,1,2/10/2026," 1,565 "," 4,470 ",384,11.6,,3/1/2026,2/17/2026,11.6,Yes,10.64,0.61,311,12/25/2026,9698.00,11.4
+20, $25.00 , Production , Packaging Materials ,CARDBOARD BOXES 6/5oz,39,2,2/10/2026, 685 ," 4,020 ",3588,1.1," 10,764 ",3/21/2026,2/17/2026,4.1,Yes,2.12,1.26,27,3/16/2026,5615.00,3.1
+21, $28.00 , Production , Packaging Materials ,CARDBOARD BOXES (GENERIC),46,2,2/10/2026, 239 ," 2,000 ",2009,1.0," 7,032 ",3/28/2026,2/17/2026,4.5,Yes,2.49,1.48,32,3/21/2026,9674.00,3.5
+22, $16.00 , Production , Packaging Materials ,READY TO USE CASE BOX (SAMS COTSCO),41,3,2/10/2026," 1,655 ",,6936,0.0,,3/23/2026,2/17/2026,0.0,No,Warning: Order Yesterday,1.32,#VALUE!,#VALUE!,9127.00,#VALUE!
+23, $24.00 , Production , Packaging Materials ,WOOD PALLETS ,65,1,2/10/2026," 5,047 ", 227 ,192,1.2, 600 ,4/16/2026,2/17/2026,4.3,Yes,3.30,2.10,38,3/27/2026,3903.00,3.5
+24, $82.00 , Production , Packaging Materials ,CHEP PALLETS ,44,3,2/10/2026," 7,613 ", -   ,280,0.0," 1,200 ",3/26/2026,2/17/2026,4.3,Yes,1.28,1.42,-5,2/12/2026,4934.00,3.3
+25, $93.00 , Production , Packaging Materials ,FILM - SUPER CRUNCHY 5OZ,51,1,2/10/2026, 388 ," 52,632 ",,#DIV/0!,,4/2/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,1.65,#DIV/0!,#DIV/0!,5588.00,#DIV/0!
+26, $40.00 , Production , Packaging Materials ,FILM - SUPER CRUNCHY 10OZ,41,3,2/10/2026," 1,951 "," 42,770 ",,#DIV/0!,,3/23/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,1.32,#DIV/0!,#DIV/0!,4130.00,#DIV/0!
+27, $98.00 , Production , Packaging Materials ,FILM - SUPER CRUNCHY 16OZ,41,3,2/10/2026," 7,838 "," 42,770 ",,#DIV/0!,,3/23/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,1.32,#DIV/0!,#DIV/0!,2166.00,#DIV/0!
+28, $47.00 , Production , Packaging Materials ,FILM - SUPER CRISPY 5OZ,80,1,2/10/2026," 7,385 "," 228,434 ",5800,39.4,,5/1/2026,2/17/2026,39.4,Yes,38.38,2.58,1110,3/3/2029,6890.00,38.6
+29, $65.00 , Production , Packaging Materials ,FILM - SUPER CRISPY 10OZ,76,3,2/10/2026," 1,306 "," 75,670 ",3200,23.6,,4/27/2026,2/17/2026,23.6,Yes,20.65,2.45,565,9/5/2027,8396.00,22.8
+30, $68.00 , Production , Packaging Materials ,FILM - SUPER CRISPY 16OZ,66,1,2/10/2026," 9,055 "," 36,190 ",,#DIV/0!,,4/17/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,2.13,#DIV/0!,#DIV/0!,1503.00,#DIV/0!
+31, $84.00 , Production , Packaging Materials ,FILM - SUPER COMBO 5OZ,51,2,2/10/2026," 2,075 "," 210,528 ",17920,11.7,,4/2/2026,2/17/2026,11.7,Yes,9.75,1.65,252,10/27/2026,1780.00,10.8
+32, $90.00 , Production , Packaging Materials ,FILM - SUPER COMBO 10OZ,38,3,2/10/2026," 4,407 "," 72,380 ",2560,28.3,,3/20/2026,2/17/2026,28.3,Yes,25.27,1.23,746,3/4/2028,1764.00,27.6
+33, $15.00 , Production , Packaging Materials ,FILM - SUPER COMBO 16OZ,49,1,2/10/2026," 6,703 "," 179,610 ",52000,3.5," 129,600 ",3/31/2026,2/17/2026,5.9,Yes,4.95,1.58,105,6/2/2026,6481.00,4.9
+34, $84.00 , Production , Packaging Materials ,CLAMSHELLS 5OZ,73,2,2/10/2026," 7,445 "," 163,440 ",17920,9.1,,4/24/2026,2/17/2026,9.1,Yes,7.12,2.35,148,7/15/2026,6544.00,8.1
+35, $64.00 , Production , Packaging Materials ,CLAMSHELLS 10OZ (8OZ),72,1,2/10/2026, 426 ," 24,720 ",2560,9.7,,4/23/2026,2/17/2026,9.7,Yes,8.66,2.32,197,9/2/2026,2221.00,8.7
+36, $21.00 , Production , Packaging Materials ,CLAMSHELLS 16OZ,18,1,2/10/2026, 688 ," 170,520 ",52000,3.3,,2/28/2026,2/17/2026,3.3,Yes,2.28,0.58,53,4/11/2026,2906.00,2.3
+37, $20.00 , Production , Packaging Materials ,HAND WRAP,12,1,2/10/2026," 8,760 ", 80 ,20,4.0,,2/22/2026,2/17/2026,4.0,Yes,2.98,0.39,81,5/9/2026,5907.00,7.0
+38, $89.00 , Production , Packaging Materials ,LABELS 2X1.25 CLEAR CON BARRA DE MARCA,36,1,2/10/2026," 5,600 ",,,#DIV/0!,,3/18/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,1.16,#DIV/0!,#DIV/0!,3720.00,#DIV/0!
+39, $90.00 , Production , Packaging Materials ,,46,3,2/10/2026," 9,778 ",,,#DIV/0!,,3/28/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,1.48,#DIV/0!,#DIV/0!,1460.00,#DIV/0!
+40, $66.00 , Production , Packaging Materials , LABEL BLANCO T.T. NO PRINTED CON PRE-CORTE,66,1,2/10/2026," 7,804 ",,,#DIV/0!,,4/17/2026,2/17/2026,#DIV/0!,#DIV/0!,#DIV/0!,2.13,#DIV/0!,#DIV/0!,6254.00,#DIV/0!
+41, $89.00 , Grow , Growing Material ,LALIQUE,51,3,2/10/2026," 6,526 "," 1,122,846 ",1318800,0.9,,4/2/2026,2/17/2026,0.9,No,Warning: Order Yesterday,1.65,#VALUE!,#VALUE!,2325.00,#VALUE!
+42, $100.00 , Grow , Growing Material ,AQUINO,14,3,2/10/2026," 9,886 "," 1,318,570 ",791280,1.7,,2/24/2026,2/17/2026,1.7,No,Warning: Order Yesterday,0.45,#VALUE!,#VALUE!,8130.00,#VALUE!
+43, $26.00 , Grow , Growing Material ,KLEE,18,1,2/10/2026," 1,262 "," 100,501 ",527520,0.2," 1,400,000 ",2/28/2026,2/17/2026,2.8,Yes,1.84,0.58,40,3/29/2026,8929.00,1.8
+44, $59.00 , Grow , Growing Material ,QP MEDIA ,67,2,2/10/2026," 1,654 "," 4,284 ",13188,0.3," 23,712 ",4/18/2026,2/17/2026,2.1,Yes,0.12,2.16,-64,12/15/2025,8850.00,1.1`;
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* CSV parse */
+function parseCSV(text){
+  const rows = [];
+  let row = [], cur = "", inQuotes = false;
+  for (let i=0; i<text.length; i++){
+    const ch = text[i], next = text[i+1];
+    if (ch === '"'){
+      if (inQuotes && next === '"'){ cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+      continue;
+    }
+    if (!inQuotes && ch === ','){ row.push(cur); cur=""; continue; }
+    if (!inQuotes && (ch === '\n' || ch === '\r')){
+      if (ch === '\r' && next === '\n') i++;
+      row.push(cur); rows.push(row);
+      row=[]; cur=""; continue;
+    }
+    cur += ch;
+  }
+  row.push(cur); rows.push(row);
+  while (rows.length && rows[rows.length-1].every(c => String(c||"").trim()==="")) rows.pop();
+  return rows;
+}
+
+function stripBOM(rows){
+  if (!rows || !rows.length || !rows[0] || !rows[0].length) return rows;
+  const bom = '\ufeff';
+  if (typeof rows[0][0] === 'string' && rows[0][0].startsWith(bom)){
+    rows[0][0] = rows[0][0].slice(1);
+  }
+  return rows;
+
+}
+
+function canonHeader(h){
+  return String(h||"")
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function keyHeader(h){
+  return canonHeader(h).toLowerCase();
+}
+function normalizeHeaderLabel(h){
+  const k = keyHeader(h);
+  if (k === "last order date") return "Most Recent Order Date";
+  return canonHeader(h);
+}
+
+function cleanNum(v){
+  if (v == null) return null;
+  const s0 = String(v).trim();
+  if (!s0) return null;
+  if (s0 === "-") return 0;
+  if (s0.includes("#DIV")) return null;
+  const s = s0.replace(/\$/g,"").replace(/,/g,"").trim();
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function cleanText(v){ return String(v ?? "").replace(/\s+/g, " ").trim(); }
+
+function fmtNum(n, digits=0){
+  if (n == null || !Number.isFinite(n)) return "—";
+  return n.toLocaleString(undefined, {maximumFractionDigits:digits, minimumFractionDigits:digits});
+}
+function fmtMoney(n){
+  if (n == null || !Number.isFinite(n)) return "—";
+  return n.toLocaleString(undefined, {style:"currency", currency:"USD"});
+}
+function fmtDate(d){
+  if (!(d instanceof Date) || isNaN(d.getTime())) return "—";
+  return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+}
+function parseMDY(s){
+  const t = String(s||"").trim();
+  if (!t) return null;
+  const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return null;
+  const mm = Number(m[1]), dd = Number(m[2]), yy = Number(m[3]);
+  const yyyy = yy < 100 ? (2000 + yy) : yy;
+  const d = new Date(yyyy, mm-1, dd);
+  return isNaN(d.getTime()) ? null : d;
+}
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, (m)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
+
+function computeMRP(raw){
+  const bufferTarget = Math.max(0, cleanNum($("bufferTarget").value) ?? 1);
+  const overrideMin = cleanNum($("minOverride").value);
+
+  const leadMonths = (raw.LeadTimeDays != null) ? (raw.LeadTimeDays / 30.44) : null;
+  const burn = raw.BurnRateMonthly;
+  const onSite = raw.CurrentInv;
+  const atPort = raw.AtPort ?? 0;
+
+  const minMonths = (overrideMin != null) ? overrideMin : raw.MinMonths;
+  const invMonths = (burn != null && burn > 0 && onSite != null) ? (onSite / burn) : null;
+  const bufferMonths = (invMonths != null && minMonths != null) ? (invMonths - minMonths) : null;
+
+  let daysToOrder = null;
+  if (invMonths != null && minMonths != null && leadMonths != null){
+    daysToOrder = ((invMonths - minMonths) - leadMonths) * 30.44;
+  }
+
+  const today = new Date();
+  const whenToOrder = (daysToOrder != null && Number.isFinite(daysToOrder))
+    ? new Date(today.getTime() + Math.round(daysToOrder) * 86400000)
+    : null;
+
+  let reco = null;
+  if (burn != null && burn > 0 && minMonths != null && leadMonths != null){
+    const targetMonths = minMonths + leadMonths + bufferTarget;
+    const targetUnits = targetMonths * burn;
+    const cur = (onSite ?? 0) + (atPort ?? 0);
+    reco = Math.max(0, targetUnits - cur);
+  }
+
+  let risk = "GREEN";
+  if (bufferMonths == null) risk = "YELLOW";
+  if (bufferMonths != null && bufferMonths < 0) risk = "RED";
+  if (daysToOrder != null && daysToOrder <= 0) risk = "RED";
+  if (bufferMonths != null && bufferMonths >= 0 && bufferMonths < 1) risk = "YELLOW";
+
+  const unit = raw.UnitCost;
+  const onSiteValue = (unit != null && onSite != null) ? unit * onSite : null;
+  const portValue = (unit != null && atPort != null) ? unit * atPort : null;
+
+  return {
+    ...raw,
+    LeadTimeMonths: leadMonths,
+    InvMonths: invMonths,
+    BufferMonths: bufferMonths,
+    DaysToOrder: daysToOrder,
+    WhenToOrder: whenToOrder,
+    RecommendedOrder: reco,
+    Risk: risk,
+    OnSiteValue: onSiteValue,
+    PortValue: portValue
+  };
+}
+
+function findHeaderRow(rows){
+  // look for a row containing "code" and "item description" (canonicalized)
+  for (let r=0; r<Math.min(rows.length, 80); r++){
+    const rowKeys = rows[r].map(keyHeader);
+    if (rowKeys.includes("code") && (rowKeys.includes("item description") || rowKeys.includes("description"))){
+      return r;
+    }
+  }
+  return null;
+}
+
+function buildIndex(headers){
+  // map canonical keys to index
+  const idx = {};
+  headers.forEach((h,i)=>{ idx[keyHeader(h)] = i; });
+
+  // required canonical names in your CSV
+  const required = {
+    price: "price/item",
+    dept: "department",
+    code: "code",
+    desc: "item description",
+    leadDays: "lead time from order date (days)",
+    minMonths: "minimum month of inventory required",
+    currentInv: "current inventory",
+    burn: "avg monthly burn rate",
+    atPort: "at port"
+  };
+
+  // some files might have slightly different canonical keys, provide fallbacks:
+  const fallbacks = {
+    burn: ["avg monthly burn rate", "avg monthly burn", "avg monthly sales/use", "avg monthly sales/use burn rate"],
+    desc: ["item description", "description"],
+    dept: ["department", "dept"]
+  };
+
+  const pick = (key)=>{
+    const main = required[key];
+    if (idx[main] != null) return idx[main];
+    const alts = fallbacks[key] || [];
+    for (const a of alts){
+      if (idx[a] != null) return idx[a];
+    }
+    return null;
+  };
+
+  const map = {
+    price: pick("price"),
+    dept: pick("dept"),
+    code: pick("code"),
+    desc: pick("desc"),
+    leadDays: pick("leadDays"),
+    minMonths: pick("minMonths"),
+    currentInv: pick("currentInv"),
+    burn: pick("burn"),
+    atPort: pick("atPort")
+  };
+
+  const missing = Object.entries(map).filter(([k,v])=>{
+    // price and atPort are optional
+    if (k==="price" || k==="atPort") return false;
+    return v == null;
+  }).map(([k])=>k);
+
+  // Excel output columns (optional) - canonicalize keys
+  const excel = {
+    excelDays: idx["how many days to order again?"] ?? null,
+    excelWhen: idx["when to order again?"] ?? null,
+    excelReco: idx["recommended order amount"] ?? null
+  };
+
+  return { map, missing, excel, idx };
+}
+
+function loadFromRows(rows, filename){
+  const hr = findHeaderRow(rows);
+  if (hr == null){
+    try{
+      console.log("MRP: header not found. First rows (canonical keys):");
+      for (let r=0; r<Math.min(rows.length, 5); r++){
+        console.log(r, rows[r].map(keyHeader));
+      }
+    }catch(_){}
+    throw new Error("Header row not found. Expected columns like 'Code' and 'Item Description'.");
+  }
+
+  const headers = rows[hr].map(normalizeHeaderLabel);
+  const { map, missing, excel } = buildIndex(headers);
+
+  if (missing.length){
+    throw new Error("Missing required columns: " + missing.join(", ") + ". (Headers are space/newline normalized.)");
+  }
+
+  const items = [];
+  const rawRows = [];
+  const rawDeptHeader = headers.find(h => keyHeader(h) === "department") || null;
+  const rawCodeHeader = headers.find(h => keyHeader(h) === "code") || null;
+  const rawDescHeader = headers.find(h => {
+    const k = keyHeader(h);
+    return k === "item description" || k === "description";
+  }) || null;
+  for (let r=hr+1; r<rows.length; r++){
+    const row = rows[r];
+    const rawObj = {};
+    headers.forEach((h, i)=>{
+      rawObj[h] = String(row[i] ?? "").trim();
+    });
+    if (Object.values(rawObj).some(v=>v !== "")) rawRows.push(rawObj);
+
+    const code = cleanText(row[map.code]);
+    const desc = cleanText(row[map.desc]);
+    const dept = cleanText(row[map.dept]);
+
+    if (!code && !desc) continue;
+
+    const raw = {
+      Department: dept || "—",
+      Code: code || "—",
+      Description: desc || "—",
+      UnitCost: map.price != null ? cleanNum(row[map.price]) : null,
+      LeadTimeDays: cleanNum(row[map.leadDays]),
+      MinMonths: cleanNum(row[map.minMonths]),
+      CurrentInv: cleanNum(row[map.currentInv]),
+      BurnRateMonthly: cleanNum(row[map.burn]),
+      AtPort: map.atPort != null ? (cleanNum(row[map.atPort]) ?? 0) : 0,
+
+      // Excel outputs (for validation)
+      ExcelDaysToOrder: excel.excelDays != null ? cleanNum(row[excel.excelDays]) : null,
+      ExcelWhenToOrder: excel.excelWhen != null ? parseMDY(row[excel.excelWhen]) : null,
+      ExcelRecommendedOrder: excel.excelReco != null ? cleanNum(row[excel.excelReco]) : null
+    };
+
+    items.push(computeMRP(raw));
+  }
+
+  state.items = items;
+  state.rawHeaders = headers;
+  state.rawRows = rawRows;
+  state.rawDeptHeader = rawDeptHeader;
+  state.rawCodeHeader = rawCodeHeader;
+  state.rawDescHeader = rawDescHeader;
+  state.meta = { loadedAt: new Date(), filename };
+  if (headers.length) state.fullSort.key = headers[0];
+
+  // dept selects
+  const depts = [...new Set(rawRows.map(x=>cleanText(rawDeptHeader ? x[rawDeptHeader] : "")).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const options = `<option value="">All Departments</option>` + depts.map(d=>`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+  $("deptSelect").innerHTML = options;
+  $("deptSelect2").innerHTML = options;
+  $("deptSelect3").innerHTML = options;
+  $("deptSelect4").innerHTML = options;
+
+  buildPills();
+  refreshAll();
+  $("metaStatus").textContent = `${items.length} items`;
+  $("metaLine").textContent = `Loaded ${items.length.toLocaleString()} items • ${filename} • ${state.meta.loadedAt.toLocaleString()}`;
+  toast(`Loaded ${filename}`);
+}
+
+function buildPills(){
+  const pills = [
+    {key:"ALL", label:"All"},
+    {key:"RED", label:"Red (Order now)"},
+    {key:"YELLOW", label:"Yellow (Watch)"},
+    {key:"GREEN", label:"Green (Good)"},
+    {key:"BELOW", label:"Below minimum"},
+    {key:"PORT", label:"At Port > 0"}
+  ];
+  const host = $("pills");
+  host.innerHTML = "";
+  pills.forEach((p, idx)=>{
+    const el = document.createElement("div");
+    el.className = "pill" + (idx===0 ? " active" : "");
+    el.textContent = p.label;
+    el.dataset.key = p.key;
+    el.onclick = ()=>{
+      [...host.querySelectorAll(".pill")].forEach(x=>x.classList.remove("active"));
+      el.classList.add("active");
+      state.pill = p.key;
+      refreshAll();
+    };
+    host.appendChild(el);
+  });
+}
+
+function currentFilters(){
+  return {
+    q: ($("search").value || "").trim().toLowerCase(),
+    dept: $("deptSelect").value || ""
+  };
+}
+function applyBaseFilter(list, {q, dept}, pillKey){
+  return list.filter(x=>{
+    if (dept && x.Department !== dept) return false;
+    if (q){
+      const hit = (x.Code||"").toLowerCase().includes(q) || (x.Description||"").toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    // Column header filters (shared)
+    if (columnFilters.Department && !(x.Department||"").toLowerCase().includes(columnFilters.Department)) return false;
+    if (columnFilters.Code && !(x.Code||"").toLowerCase().includes(columnFilters.Code)) return false;
+    if (columnFilters.Description && !(x.Description||"").toLowerCase().includes(columnFilters.Description)) return false;
+    switch(pillKey){
+      case "RED": return x.Risk === "RED";
+      case "YELLOW": return x.Risk === "YELLOW";
+      case "GREEN": return x.Risk === "GREEN";
+      case "BELOW": return (x.BufferMonths != null && x.BufferMonths < 0);
+      case "PORT": return (x.AtPort != null && x.AtPort > 0);
+      default: return true;
+    }
+  });
+}
+function sortList(list, key, dir){
+  const m = dir === "desc" ? -1 : 1;
+  const get = (x)=>{
+    switch(key){
+      case "Risk": return x.Risk;
+      case "Department": return x.Department;
+      case "Code": return x.Code;
+      case "Description": return x.Description;
+      case "CurrentInv": return x.CurrentInv ?? -Infinity;
+      case "AtPort": return x.AtPort ?? -Infinity;
+      case "InvMonths": return x.InvMonths ?? Infinity;
+      case "DaysToOrder": return x.DaysToOrder ?? Infinity;
+      case "RecoOrder": return x.RecommendedOrder ?? -Infinity;
+      case "UnitCost": return x.UnitCost ?? -Infinity;
+      case "OnSiteValue": return x.OnSiteValue ?? -Infinity;
+      case "LeadTimeMonths": return x.LeadTimeMonths ?? Infinity;
+      case "MinMonths": return x.MinMonths ?? Infinity;
+      case "BurnRateMonthly": return x.BurnRateMonthly ?? Infinity;
+      case "BufferMonths": return x.BufferMonths ?? Infinity;
+      case "ExcelDaysToOrder": return x.ExcelDaysToOrder ?? Infinity;
+      case "ExcelRecommendedOrder": return x.ExcelRecommendedOrder ?? -Infinity;
+      case "WhenToOrderTS": return x.WhenToOrder ? x.WhenToOrder.getTime() : Infinity;
+      case "ExcelWhenToOrderTS": return x.ExcelWhenToOrder ? x.ExcelWhenToOrder.getTime() : Infinity;
+      case "DeltaDays": {
+        if (x.ExcelDaysToOrder==null || x.DaysToOrder==null) return Infinity;
+        return Math.round(x.DaysToOrder) - x.ExcelDaysToOrder;
+      }
+      case "DeltaReco": {
+        if (x.ExcelRecommendedOrder==null || x.RecommendedOrder==null) return Infinity;
+        return Math.ceil(x.RecommendedOrder) - x.ExcelRecommendedOrder;
+      }
+
+      case "ExcelDays": return x.ExcelDaysToOrder ?? Infinity;
+      case "ExcelReco": return x.ExcelRecommendedOrder ?? -Infinity;
+      default: return x[key];
+    }
+  };
+  return list.slice().sort((a,b)=>{
+    const av = get(a), bv = get(b);
+    if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv) * m;
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av - bv) * m;
+  });
+}
+
+function setSortHeader(tableSelector, key, dir){
+  const ths = document.querySelectorAll(tableSelector + " thead th[data-sort]");
+  ths.forEach(th=>{
+    if (th.dataset.sort === key) th.dataset.dir = dir;
+    else th.removeAttribute("data-dir");
+  });
+}
+
+function riskBadge(risk){
+  const cls = risk === "RED" ? "red" : (risk === "YELLOW" ? "yellow" : "green");
+  return `<span class="badge ${cls}">${risk}</span>`;
+}
+function deltaCell(val){
+  if (val == null || !Number.isFinite(val)) return "—";
+  const cls = val < 0 ? "deltaNeg" : "deltaPos";
+  const sign = val > 0 ? "+" : "";
+  return `<span class="${cls}">${sign}${fmtNum(val,0)}</span>`;
+}
+
+function executiveDeltaCell(val, isMoney=false){
+  if (val == null || !Number.isFinite(val)) return "—";
+  const cls = val < 0 ? "deltaNeg" : "deltaPos";
+  const sign = val > 0 ? "+" : "";
+  const txt = isMoney ? fmtMoney(Math.abs(val)) : fmtNum(Math.abs(val),0);
+  return `<span class="${cls}">${sign}${val < 0 ? "-" : ""}${txt}</span>`;
+}
+
+function rawCellComparable(v){
+  const s = String(v ?? "").trim();
+  if (!s) return { t: "null", v: null };
+
+  const d = parseMDY(s);
+  if (d) return { t: "num", v: d.getTime() };
+
+  const n = cleanNum(s);
+  if (n != null) return { t: "num", v: n };
+
+  return { t: "str", v: s.toLowerCase() };
+}
+
+function splitFullTableHeaders(headers){
+  const outputs = [];
+  const inputs = [];
+  headers.forEach(h=>{
+    if (OUTPUT_HEADER_KEYS.has(keyHeader(h))) outputs.push(h);
+    else inputs.push(h);
+  });
+  return { inputs, outputs, ordered: [...inputs, ...outputs] };
+}
+
+function setExcelColsVisible(on){
+  state.showExcel = !!on;
+  document.querySelectorAll(".excelCol").forEach(el=>{
+    el.style.display = state.showExcel ? "" : "none";
+  });
+  refreshAll();
+}
+
+/* Render */
+function refreshAll(){
+  // recompute with sliders
+  state.items = state.items.map(x => computeMRP(x));
+  const base = applyBaseFilter(state.items, currentFilters(), state.pill);
+
+  renderKPIs(base);
+
+  // Top risks
+  let sorted = sortList(base, state.sort.key, state.sort.dir);
+  if (state.sort.key === "DaysToOrder" && state.sort.dir === "asc"){ /* ok */ }
+  const top = sorted.slice(0, 18);
+  renderTop(top, base.length, state.items.length);
+
+  renderAction();
+  renderFull();
+  renderOutputList();
+  renderExecutive();
+}
+
+function renderExecutive(){
+  const rows = state.items || [];
+  const red = rows.filter(x=>x.Risk==="RED").length;
+  const yellow = rows.filter(x=>x.Risk==="YELLOW").length;
+  const green = rows.filter(x=>x.Risk==="GREEN").length;
+  const below = rows.filter(x=>x.BufferMonths != null && x.BufferMonths < 0).length;
+  const orderExposure30 = rows.reduce((a,x)=>{
+    if (x.DaysToOrder == null || x.DaysToOrder > 30) return a;
+    const spend = (x.UnitCost != null && x.RecommendedOrder != null) ? Math.max(0, x.RecommendedOrder) * x.UnitCost : 0;
+    return a + spend;
+  },0);
+  const orderExposure7 = rows.reduce((a,x)=>{
+    if (x.DaysToOrder == null || x.DaysToOrder > 7) return a;
+    const spend = (x.UnitCost != null && x.RecommendedOrder != null) ? Math.max(0, x.RecommendedOrder) * x.UnitCost : 0;
+    return a + spend;
+  },0);
+  const recoSpend = rows.reduce((a,x)=>{
+    const spend = (x.UnitCost != null && x.RecommendedOrder != null) ? Math.max(0, x.RecommendedOrder) * x.UnitCost : 0;
+    return a + spend;
+  },0);
+  const onSiteValue = rows.reduce((a,x)=>a + (x.OnSiteValue || 0),0);
+  const inboundValue = rows.reduce((a,x)=>a + (x.PortValue || 0),0);
+
+  $("exTotalSkus").textContent = fmtNum(rows.length,0);
+  $("exRedCount").textContent = fmtNum(red,0);
+  $("exYellowCount").textContent = fmtNum(yellow,0);
+  $("exGreenCount").textContent = fmtNum(green,0);
+  $("exBelowMin").textContent = fmtNum(below,0);
+  $("exOnSiteValue").textContent = fmtMoney(onSiteValue);
+  $("exInboundValue").textContent = fmtMoney(inboundValue);
+  $("exExposure30").textContent = fmtMoney(orderExposure30);
+  $("exExposure7").textContent = fmtMoney(orderExposure7);
+  $("exRecoSpend").textContent = fmtMoney(recoSpend);
+
+  const byDept = {};
+  rows.forEach(x=>{
+    const dept = x.Department || "—";
+    if (!byDept[dept]){
+      byDept[dept] = {
+        Department: dept,
+        Red: 0,
+        Yellow: 0,
+        Green: 0,
+        OnSiteValue: 0,
+        InboundValue: 0,
+        Exposure30: 0
+      };
+    }
+    if (x.Risk === "RED") byDept[dept].Red += 1;
+    else if (x.Risk === "YELLOW") byDept[dept].Yellow += 1;
+    else byDept[dept].Green += 1;
+    byDept[dept].OnSiteValue += (x.OnSiteValue || 0);
+    byDept[dept].InboundValue += (x.PortValue || 0);
+    if (x.DaysToOrder != null && x.DaysToOrder <= 30){
+      const spend = (x.UnitCost != null && x.RecommendedOrder != null) ? Math.max(0, x.RecommendedOrder) * x.UnitCost : 0;
+      byDept[dept].Exposure30 += spend;
+    }
+  });
+
+  const deptRows = Object.values(byDept).sort((a,b)=>b.Exposure30 - a.Exposure30);
+  $("tbodyExecutiveDept").innerHTML = deptRows.map(d=>`
+    <tr>
+      <td>${escapeHtml(d.Department)}</td>
+      <td class="num">${fmtNum(d.Red,0)}</td>
+      <td class="num">${fmtNum(d.Yellow,0)}</td>
+      <td class="num">${fmtNum(d.Green,0)}</td>
+      <td class="num">${fmtMoney(d.OnSiteValue)}</td>
+      <td class="num">${fmtMoney(d.InboundValue)}</td>
+      <td class="num">${fmtMoney(d.Exposure30)}</td>
+    </tr>
+  `).join("");
+
+  const host = $("executiveTrend");
+  if (!state.history.length){
+    host.innerHTML = `<div class="muted">Save a snapshot to enable trend comparison.</div>`;
+    return;
+  }
+
+  const latest = state.history[0];
+  const currentOrderNow = rows.filter(x=>x.DaysToOrder != null && x.DaysToOrder <= 0).length;
+  const deltas = {
+    skus: rows.length - (latest.totals?.items || 0),
+    below: below - (latest.totals?.below || 0),
+    orderNow: currentOrderNow - (latest.totals?.orderNow || 0),
+    onSite: onSiteValue - (latest.totals?.totalOnSiteValue || 0),
+    inbound: inboundValue - (latest.totals?.totalPortValue || 0)
+  };
+
+  host.innerHTML = `
+    <div class="split">
+      <div><div class="label">Total SKUs</div><div>${executiveDeltaCell(deltas.skus)}</div></div>
+      <div><div class="label">Below</div><div>${executiveDeltaCell(deltas.below)}</div></div>
+      <div><div class="label">Order now</div><div>${executiveDeltaCell(deltas.orderNow)}</div></div>
+      <div><div class="label">On-site value</div><div>${executiveDeltaCell(deltas.onSite, true)}</div></div>
+      <div><div class="label">Inbound value</div><div>${executiveDeltaCell(deltas.inbound, true)}</div></div>
+    </div>
+  `;
+}
+
+function renderKPIs(list){
+  $("kpiItems").textContent = fmtNum(list.length,0);
+  $("kpiDepts").textContent = fmtNum(new Set(list.map(x=>x.Department)).size,0);
+  $("kpiBelow").textContent = fmtNum(list.filter(x=>x.BufferMonths != null && x.BufferMonths < 0).length,0);
+  $("kpiOrderNow").textContent = fmtNum(list.filter(x=>x.DaysToOrder != null && x.DaysToOrder <= 0).length,0);
+  $("kpiValue").textContent = fmtMoney(list.reduce((a,x)=>a+(x.OnSiteValue||0),0));
+  $("kpiPortValue").textContent = fmtMoney(list.reduce((a,x)=>a+(x.PortValue||0),0));
+}
+
+function renderTop(rows, shown, total){
+  $("shownCount").textContent = `${shown.toLocaleString()} shown`;
+  $("totalCount").textContent = `${total.toLocaleString()} total`;
+
+  $("tbodyTop").innerHTML = rows.map(x=>{
+    return `
+      <tr>
+        <td>${riskBadge(x.Risk)}</td>
+        <td>${escapeHtml(x.Department)}</td>
+        <td class="code">${escapeHtml(x.Code)}</td>
+        <td class="desc">${escapeHtml(x.Description)}</td>
+        <td class="num">${x.CurrentInv==null ? "—" : fmtNum(x.CurrentInv,0)}</td>
+        <td class="num">${x.AtPort==null ? "—" : fmtNum(x.AtPort,0)}</td>
+        <td class="num">${x.InvMonths==null ? "—" : fmtNum(x.InvMonths,2)}</td>
+        <td class="num">${x.DaysToOrder==null ? "—" : fmtNum(Math.round(x.DaysToOrder),0)}</td>
+        <td class="num">${x.RecommendedOrder==null ? "—" : fmtNum(Math.ceil(x.RecommendedOrder),0)}</td>
+        <td class="num excelCol" style="display:${state.showExcel?"":"none"}">${x.ExcelDaysToOrder==null ? "—" : fmtNum(x.ExcelDaysToOrder,0)}</td>
+        <td class="num excelCol" style="display:${state.showExcel?"":"none"}">${x.ExcelRecommendedOrder==null ? "—" : fmtNum(x.ExcelRecommendedOrder,0)}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderAction(){
+  const q = ($("search2").value || "").trim().toLowerCase();
+  const dept = $("deptSelect2").value || "";
+  const risk = $("riskSelect").value || "";
+  const horizon = $("horizonSelect").value || "all";
+  const horizonDays = horizon === "all" ? null : Number(horizon);
+
+  let rows = state.items.filter(x=>{
+    if (dept && x.Department !== dept) return false;
+    if (risk && x.Risk !== risk) return false;
+    if (q){
+      const hit = (x.Code||"").toLowerCase().includes(q) || (x.Description||"").toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    if (horizonDays != null){
+      const d = x.DaysToOrder;
+      if (d == null) return false;
+      if (horizonDays === 0) return d <= 0;
+      return d <= horizonDays;
+    }
+    return true;
+  });
+
+  rows = sortList(rows, state.actionSort.key, state.actionSort.dir);
+  setSortHeader('#panelAction table', state.actionSort.key, state.actionSort.dir);
+
+  $("actionShown").textContent = `${rows.length.toLocaleString()} shown`;
+  $("actionTotal").textContent = `${state.items.length.toLocaleString()} total`;
+
+  $("tbodyAction").innerHTML = rows.map(x=>{
+    const dDays = (x.ExcelDaysToOrder != null && x.DaysToOrder != null) ? Math.round(x.DaysToOrder) - x.ExcelDaysToOrder : null;
+    const dReco = (x.ExcelRecommendedOrder != null && x.RecommendedOrder != null) ? Math.ceil(x.RecommendedOrder) - x.ExcelRecommendedOrder : null;
+
+    return `
+      <tr>
+        <td>${riskBadge(x.Risk)}</td>
+        <td>${escapeHtml(x.Department)}</td>
+        <td class="code">${escapeHtml(x.Code)}</td>
+        <td class="desc">${escapeHtml(x.Description)}</td>
+        <td class="num">${x.MinMonths==null ? "—" : fmtNum(x.MinMonths,1)}</td>
+        <td class="num">${x.LeadTimeMonths==null ? "—" : fmtNum(x.LeadTimeMonths,2)}</td>
+        <td class="num">${x.BurnRateMonthly==null ? "—" : fmtNum(x.BurnRateMonthly,0)}</td>
+        <td class="num">${x.CurrentInv==null ? "—" : fmtNum(x.CurrentInv,0)}</td>
+        <td class="num">${x.AtPort==null ? "—" : fmtNum(x.AtPort,0)}</td>
+        <td class="num">${x.InvMonths==null ? "—" : fmtNum(x.InvMonths,2)}</td>
+        <td class="num">${x.BufferMonths==null ? "—" : fmtNum(x.BufferMonths,2)}</td>
+        <td class="num">${x.DaysToOrder==null ? "—" : fmtNum(Math.round(x.DaysToOrder),0)}</td>
+        <td class="num">${x.RecommendedOrder==null ? "—" : fmtNum(Math.ceil(x.RecommendedOrder),0)}</td>
+
+        <td class="num excelCol" style="display:${state.showExcel?"":"none"}">${x.ExcelDaysToOrder==null ? "—" : fmtNum(x.ExcelDaysToOrder,0)}</td>
+        <td class="num excelCol" style="display:${state.showExcel?"":"none"}">${dDays==null ? "—" : deltaCell(dDays)}</td>
+        <td class="num excelCol" style="display:${state.showExcel?"":"none"}">${x.ExcelRecommendedOrder==null ? "—" : fmtNum(x.ExcelRecommendedOrder,0)}</td>
+        <td class="num excelCol" style="display:${state.showExcel?"":"none"}">${dReco==null ? "—" : deltaCell(dReco)}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderFull(){
+  const q = ($("search3").value || "").trim().toLowerCase();
+  const dept = $("deptSelect3").value || "";
+
+  const headers = state.rawHeaders || [];
+  const { inputs } = splitFullTableHeaders(headers);
+  const deptHeader = state.rawDeptHeader;
+  const codeHeader = state.rawCodeHeader;
+  const descHeader = state.rawDescHeader;
+
+  let rows = (state.rawRows || []).filter(x=>{
+    if (dept && deptHeader && cleanText(x[deptHeader]) !== dept) return false;
+    if (q){
+      const code = (codeHeader ? x[codeHeader] : "") || "";
+      const desc = (descHeader ? x[descHeader] : "") || "";
+      const hay = `${code} ${desc} ${Object.values(x).join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (!state.fullSort.key || !inputs.includes(state.fullSort.key)){
+    state.fullSort.key = inputs[0] || "Code";
+    state.fullSort.dir = "asc";
+  }
+  const sortKey = state.fullSort.key;
+  const m = state.fullSort.dir === "desc" ? -1 : 1;
+
+  rows = rows.slice().sort((a,b)=>{
+    const av = rawCellComparable(a[sortKey]);
+    const bv = rawCellComparable(b[sortKey]);
+    if (av.t !== bv.t){
+      if (av.t === "null") return 1;
+      if (bv.t === "null") return -1;
+      if (av.t === "num") return -1;
+      if (bv.t === "num") return 1;
+    }
+    if (av.v == null && bv.v == null) return 0;
+    if (av.v == null) return 1;
+    if (bv.v == null) return -1;
+    if (av.t === "str") return av.v.localeCompare(bv.v) * m;
+    return (av.v - bv.v) * m;
+  });
+
+  $("fullShown").textContent = `${rows.length.toLocaleString()} shown`;
+  $("fullTotal").textContent = `${(state.rawRows || []).length.toLocaleString()} total`;
+
+  $("theadFull").innerHTML = `<tr>${state.showFullActions ? `<th>Actions</th>` : ``}${inputs.map(h=>`<th data-sort="${escapeHtml(h)}">${escapeHtml(h)}</th>`).join("")}</tr>`;
+  setSortHeader('#panelTable table', state.fullSort.key, state.fullSort.dir);
+
+  $("tbodyFull").innerHTML = rows.map(x=>`
+    <tr>
+      ${state.showFullActions ? `<td><button class="btn" type="button" data-del-full="1">Delete</button></td>` : ``}
+      ${inputs.map(h=>`<td>${escapeHtml(x[h] || "")}</td>`).join("")}
+    </tr>
+  `).join("");
+}
+
+function renderOutputList(){
+  const q = ($("search4").value || "").trim().toLowerCase();
+  const dept = $("deptSelect4").value || "";
+  const headers = state.rawHeaders || [];
+  const { outputs } = splitFullTableHeaders(headers);
+  const deptHeader = state.rawDeptHeader;
+  const codeHeader = state.rawCodeHeader;
+  const descHeader = state.rawDescHeader;
+
+  let rows = (state.rawRows || []).filter(x=>{
+    if (dept && deptHeader && cleanText(x[deptHeader]) !== dept) return false;
+    if (q){
+      const code = (codeHeader ? x[codeHeader] : "") || "";
+      const desc = (descHeader ? x[descHeader] : "") || "";
+      const hay = `${code} ${desc} ${Object.values(x).join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (!state.outputSort.key || !outputs.includes(state.outputSort.key)){
+    state.outputSort.key = outputs[0] || "";
+    state.outputSort.dir = "asc";
+  }
+  const sortKey = state.outputSort.key;
+  const m = state.outputSort.dir === "desc" ? -1 : 1;
+  if (sortKey){
+    rows = rows.slice().sort((a,b)=>{
+      const av = rawCellComparable(a[sortKey]);
+      const bv = rawCellComparable(b[sortKey]);
+      if (av.t !== bv.t){
+        if (av.t === "null") return 1;
+        if (bv.t === "null") return -1;
+        if (av.t === "num") return -1;
+        if (bv.t === "num") return 1;
+      }
+      if (av.v == null && bv.v == null) return 0;
+      if (av.v == null) return 1;
+      if (bv.v == null) return -1;
+      if (av.t === "str") return av.v.localeCompare(bv.v) * m;
+      return (av.v - bv.v) * m;
+    });
+  }
+
+  $("outputShown").textContent = `${rows.length.toLocaleString()} shown`;
+  $("outputTotal").textContent = `${(state.rawRows || []).length.toLocaleString()} total`;
+  $("theadOutput").innerHTML = `<tr>${outputs.map(h=>`<th data-sort="${escapeHtml(h)}">${escapeHtml(h)}</th>`).join("")}</tr>`;
+  setSortHeader('#panelNewTable table', state.outputSort.key, state.outputSort.dir);
+  $("tbodyOutput").innerHTML = rows.map(x=>`
+    <tr>
+      ${outputs.map(h=>`<td>${escapeHtml(x[h] || "")}</td>`).join("")}
+    </tr>
+  `).join("");
+}
+
+/* Sorting (top table) */
+
+function attachTableSort(tableSelector, which){
+  const table = document.querySelector(tableSelector);
+  if(!table) return;
+  table.addEventListener("click", (e)=>{
+    if (e.target && (e.target.tagName === "INPUT" || e.target.closest("input"))) return;
+    const th = e.target.closest("th[data-sort]");
+    if (!th || !table.contains(th)) return;
+    const key = th.dataset.sort;
+    let s = (which === "action") ? state.actionSort : (which === "output" ? state.outputSort : state.fullSort);
+    let dir = "asc";
+    if (s.key === key) dir = (s.dir === "asc" ? "desc" : "asc");
+    s.key = key; s.dir = dir;
+    if (which === "action") renderAction();
+    else if (which === "output") renderOutputList();
+    else renderFull();
+  });
+}
+
+function attachHeaderSort(){
+  const ths = document.querySelectorAll("#panelOverview thead th[data-sort]");
+  ths.forEach(th=>{
+    th.addEventListener("click", ()=>{
+      const key = th.dataset.sort;
+      let dir = "asc";
+      if (state.sort.key === key) dir = (state.sort.dir === "asc" ? "desc" : "asc");
+      state.sort = { key, dir };
+
+      const ids = {Risk:"sRisk", Department:"sDept", Code:"sCode", Description:"sDesc", CurrentInv:"sOn", AtPort:"sPort", InvMonths:"sMonths", DaysToOrder:"sDays", RecoOrder:"sReco", ExcelDays:"sEDays", ExcelReco:"sEReco"};
+      Object.values(ids).forEach(id => { const el=$(id); if (el) el.textContent=""; });
+      const arrow = dir === "asc" ? "↑" : "↓";
+      const id = ids[key];
+      if (id) $(id).textContent = arrow;
+
+      refreshAll();
+    });
+  });
+  $("sDays").textContent = "↑";
+}
+
+/* History */
+function loadHistory(){
+  try{ state.history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); }
+  catch(_){ state.history = []; }
+  renderHistory();
+  renderExecutive();
+}
+function saveHistory(){ localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history)); }
+function makeSnapshot(){
+  if (!state.items.length){ toast("Load data first"); return; }
+  const ts = new Date();
+  const totalOnSiteValue = state.items.reduce((a,x)=>a+(x.OnSiteValue||0),0);
+  const totalPortValue = state.items.reduce((a,x)=>a+(x.PortValue||0),0);
+  const below = state.items.filter(x=>x.BufferMonths != null && x.BufferMonths < 0).length;
+  const orderNow = state.items.filter(x=>x.DaysToOrder != null && x.DaysToOrder <= 0).length;
+
+  const byDept = {};
+  state.items.forEach(x=>{
+    const d = x.Department || "—";
+    if (!byDept[d]) byDept[d] = {items:0, onSiteValue:0, portValue:0, below:0, orderNow:0};
+    byDept[d].items += 1;
+    byDept[d].onSiteValue += (x.OnSiteValue||0);
+    byDept[d].portValue += (x.PortValue||0);
+    if (x.BufferMonths != null && x.BufferMonths < 0) byDept[d].below += 1;
+    if (x.DaysToOrder != null && x.DaysToOrder <= 0) byDept[d].orderNow += 1;
+  });
+
+  state.history.unshift({
+    ts: ts.toISOString(),
+    filename: state.meta.filename,
+    totals: { totalOnSiteValue, totalPortValue, below, orderNow, items: state.items.length },
+    byDept
+  });
+  saveHistory();
+  renderHistory();
+  renderExecutive();
+  toast("Snapshot saved");
+}
+function renderHistory(){
+  $("snapCount").textContent = String(state.history.length);
+  const host = $("historyList");
+  if (!state.history.length){ host.innerHTML = "No snapshots yet."; return; }
+  host.innerHTML = state.history.slice(0, 60).map(s=>{
+    const dt = new Date(s.ts);
+    return `
+      <div style="padding:10px 0; border-bottom:1px solid rgba(148,163,184,.10)">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap">
+          <div><b>${escapeHtml(dt.toLocaleString())}</b> <span class="muted">• ${escapeHtml(s.filename||"")}</span></div>
+          <div class="right">
+            <span class="mini">items: ${fmtNum(s.totals.items,0)}</span>
+            <span class="mini">below: ${fmtNum(s.totals.below,0)}</span>
+            <span class="mini">order now: ${fmtNum(s.totals.orderNow,0)}</span>
+            <span class="mini">on-site: ${fmtMoney(s.totals.totalOnSiteValue)}</span>
+            <span class="mini">port: ${fmtMoney(s.totals.totalPortValue)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function loadHardcodedFullTableData(){
+  if (!HARDCODED_FULL_TABLE_CSV || state.rawRows.length) return;
+  try{
+    let rows = parseCSV(HARDCODED_FULL_TABLE_CSV);
+    rows = stripBOM(rows);
+    loadFromRows(rows, "MASTER MRP CAMPO CARIBE LLC 2025 (Hardcoded)");
+  }catch(err){
+    console.error(err);
+    $("metaStatus").textContent = "Error";
+    $("metaLine").textContent = "Error loading hardcoded table: " + (err?.message || String(err));
+    toast("Could not load hardcoded full table");
+  }
+}
+
+/* Wiring */
+$("file").addEventListener("change", async (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  try{
+    const text = await f.text();
+    let rows = parseCSV(text);
+    rows = stripBOM(rows);
+
+    loadFromRows(rows, f.name);
+  }catch(err){
+    console.error(err);
+    $("metaStatus").textContent = "Error";
+    $("metaLine").textContent = "Error: " + (err?.message || String(err));
+    toast("Could not parse CSV (see meta line)");
+  } finally {
+    e.target.value = "";
+  }
+});
+
+$("btnClear").addEventListener("click", ()=>{
+  state.items = [];
+  state.rawHeaders = [];
+  state.rawRows = [];
+  state.rawDeptHeader = null;
+  state.rawCodeHeader = null;
+  state.rawDescHeader = null;
+  state.meta = { loadedAt:null, filename:null };
+  $("metaStatus").textContent = "No data";
+  $("metaLine").textContent = "Cleared. Load a CSV to begin.";
+  $("tbodyTop").innerHTML = "";
+  $("tbodyAction").innerHTML = "";
+  $("theadFull").innerHTML = "";
+  $("tbodyFull").innerHTML = "";
+  $("theadOutput").innerHTML = "";
+  $("tbodyOutput").innerHTML = "";
+  ["kpiItems","kpiDepts","kpiBelow","kpiOrderNow","kpiValue","kpiPortValue"].forEach(id=>$(id).textContent="—");
+  $("shownCount").textContent = "0 shown";
+  $("totalCount").textContent = "0 total";
+  $("actionShown").textContent = "0 shown";
+  $("actionTotal").textContent = "0 total";
+  $("fullShown").textContent = "0 shown";
+  $("fullTotal").textContent = "0 total";
+  $("outputShown").textContent = "0 shown";
+  $("outputTotal").textContent = "0 total";
+  $("deptSelect").innerHTML = `<option value="">All Departments</option>`;
+  $("deptSelect2").innerHTML = `<option value="">All Departments</option>`;
+  $("deptSelect3").innerHTML = `<option value="">All Departments</option>`;
+  $("deptSelect4").innerHTML = `<option value="">All Departments</option>`;
+  $("pills").innerHTML = "";
+  renderExecutive();
+  toast("Cleared");
+});
+
+$("btnSnapshot").addEventListener("click", makeSnapshot);
+
+$("search").addEventListener("input", ()=> state.items.length && refreshAll());
+$("deptSelect").addEventListener("change", ()=> state.items.length && refreshAll());
+$("minOverride").addEventListener("input", ()=> state.items.length && refreshAll());
+$("bufferTarget").addEventListener("input", ()=> state.items.length && refreshAll());
+
+$("search2").addEventListener("input", ()=> state.items.length && renderAction());
+$("deptSelect2").addEventListener("change", ()=> state.items.length && renderAction());
+$("riskSelect").addEventListener("change", ()=> state.items.length && renderAction());
+$("horizonSelect").addEventListener("change", ()=> state.items.length && renderAction());
+
+$("search3").addEventListener("input", ()=> state.rawRows.length && renderFull());
+$("deptSelect3").addEventListener("change", ()=> state.rawRows.length && renderFull());
+$("search4").addEventListener("input", ()=> state.rawRows.length && renderOutputList());
+$("deptSelect4").addEventListener("change", ()=> state.rawRows.length && renderOutputList());
+$("toggleFullActions").addEventListener("change", (e)=>{
+  state.showFullActions = !!e.target.checked;
+  renderFull();
+});
+$("btnAddFullRow").addEventListener("click", ()=>{
+  if (!state.rawHeaders.length){
+    toast("No headers available to add a row");
+    return;
+  }
+  const newRow = {};
+  state.rawHeaders.forEach(h=>{ newRow[h] = ""; });
+  state.rawRows.unshift(newRow);
+  renderFull();
+  toast("Row added");
+});
+$("tbodyFull").addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-del-full]");
+  if (!btn) return;
+  const tr = btn.closest("tr");
+  if (!tr) return;
+  const idxInView = Array.from($("tbodyFull").children).indexOf(tr);
+  if (idxInView < 0) return;
+
+  const q = ($("search3").value || "").trim().toLowerCase();
+  const dept = $("deptSelect3").value || "";
+  const headers = state.rawHeaders || [];
+  const { inputs } = splitFullTableHeaders(headers);
+  const deptHeader = state.rawDeptHeader;
+  const codeHeader = state.rawCodeHeader;
+  const descHeader = state.rawDescHeader;
+  let rows = (state.rawRows || []).filter(x=>{
+    if (dept && deptHeader && cleanText(x[deptHeader]) !== dept) return false;
+    if (q){
+      const code = (codeHeader ? x[codeHeader] : "") || "";
+      const desc = (descHeader ? x[descHeader] : "") || "";
+      const hay = `${code} ${desc} ${Object.values(x).join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (!state.fullSort.key || !inputs.includes(state.fullSort.key)){
+    state.fullSort.key = inputs[0] || "Code";
+    state.fullSort.dir = "asc";
+  }
+  const sortKey = state.fullSort.key;
+  const m = state.fullSort.dir === "desc" ? -1 : 1;
+  rows = rows.slice().sort((a,b)=>{
+    const av = rawCellComparable(a[sortKey]);
+    const bv = rawCellComparable(b[sortKey]);
+    if (av.t !== bv.t){
+      if (av.t === "null") return 1;
+      if (bv.t === "null") return -1;
+      if (av.t === "num") return -1;
+      if (bv.t === "num") return 1;
+    }
+    if (av.v == null && bv.v == null) return 0;
+    if (av.v == null) return 1;
+    if (bv.v == null) return -1;
+    if (av.t === "str") return av.v.localeCompare(bv.v) * m;
+    return (av.v - bv.v) * m;
+  });
+
+  const target = rows[idxInView];
+  const rawIdx = state.rawRows.indexOf(target);
+  if (rawIdx < 0) return;
+  state.rawRows.splice(rawIdx, 1);
+  renderFull();
+  toast("Row deleted");
+});
+
+$("toggleExcel").addEventListener("change", (e)=> setExcelColsVisible(e.target.checked));
+
+// ================================
+// COLUMN HEADER FILTERING (ENGINE)
+// ================================
+document.addEventListener('input', function(e){
+  if(!e.target.classList.contains('colFilter')) return;
+  const col = e.target.dataset.col;
+  columnFilters[col] = (e.target.value || '').trim().toLowerCase();
+  if(state.items.length) refreshAll();
+});
+
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey){
+    e.preventDefault();
+    const activeTab = document.querySelector("#tabs .tab.active")?.dataset?.tab || "overview";
+    if (activeTab === "action") $("search2").focus();
+    else if (activeTab === "table") $("search3").focus();
+    else $("search").focus();
+  }
+});
+
+// Tabs
+function setMode(mode){
+  const next = (mode === "executive") ? "executive" : "procurement";
+  state.mode = next;
+  localStorage.setItem(MODE_KEY, next);
+
+  document.querySelectorAll("#modeTabs .tab").forEach(t=>t.classList.toggle("active", t.dataset.mode===next));
+  $("tabs").style.display = (next === "procurement") ? "" : "none";
+
+  if (next === "executive"){
+    $("panelOverview").style.display = "none";
+    $("panelAction").style.display = "none";
+    $("panelTable").style.display = "none";
+    $("panelNewTable").style.display = "none";
+    $("panelHistory").style.display = "none";
+    $("panelExecutive").style.display = "";
+    renderExecutive();
+    return;
+  }
+
+  $("panelExecutive").style.display = "none";
+  setTab(state.procurementTab || "action");
+}
+
+function setTab(name){
+  state.procurementTab = name;
+  document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===name));
+  if (state.mode !== "procurement") return;
+  $("panelOverview").style.display = (name==="overview") ? "" : "none";
+  $("panelAction").style.display = (name==="action") ? "" : "none";
+  $("panelTable").style.display = (name==="table") ? "" : "none";
+  $("panelNewTable").style.display = (name==="newTable") ? "" : "none";
+  $("panelHistory").style.display = (name==="history") ? "" : "none";
+  if (name === "table" && state.rawRows.length) renderFull();
+  if (name === "newTable" && state.rawRows.length) renderOutputList();
+}
+document.querySelectorAll("#tabs .tab").forEach(t=>t.addEventListener("click", ()=> setTab(t.dataset.tab)));
+document.querySelectorAll("#modeTabs .tab").forEach(t=>t.addEventListener("click", ()=> setMode(t.dataset.mode)));
+
+// History buttons
+$("btnExportHistory").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(state.history, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "mrp_history_snapshots.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+});
+$("btnClearHistory").addEventListener("click", ()=>{
+  if (!confirm("Clear all local snapshot history?")) return;
+  state.history = [];
+  saveHistory();
+  renderHistory();
+  renderExecutive();
+  toast("History cleared");
+});
+
+attachHeaderSort();
+attachTableSort('#panelAction table', 'action');
+attachTableSort('#panelTable table', 'full');
+attachTableSort('#panelNewTable table', 'output');
+loadHistory();
+loadHardcodedFullTableData();
+setTab("action");
+setMode(localStorage.getItem(MODE_KEY) || "procurement");
+</script>
+</body>
+</html>

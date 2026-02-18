@@ -436,6 +436,22 @@
       border: 1px solid rgba(55, 65, 81, 0.9);
     }
     .trend-toggle input { margin: 0; }
+    .mini-select, .mini-date {
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--sub);
+      border-radius: 999px;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      outline: none;
+    }
+    .mini-date { padding: 3px 10px; }
+    .mini-range-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
 
     .hidden { display: none; }
   </style>
@@ -513,7 +529,7 @@
           <div class="panel-header">
             <div>
               <div class="panel-title"><span class="panel-title-dot"></span><span>Performance over time</span></div>
-              <div class="panel-subtitle">Top: Boards transplanted · Bottom: Boards / person / hour. View by date or transplant week.</div>
+              <div class="panel-subtitle"></div>
             </div>
             <div class="panel-header-right">
               <div class="badge-soft"><span class="badge-dot"></span><span>Live from table below</span></div>
@@ -524,6 +540,19 @@
               <label class="trend-toggle">
                 <input type="checkbox" id="trend-toggle-input" />
                 <span>Trend line</span>
+              </label>
+              <div class="mini-range-wrap">
+                <select id="pct-range-mode" class="mini-select" title="Percentile calculation range">
+                  <option value="all">Whole chart</option>
+                  <option value="last7">Last 7 days</option>
+                  <option value="custom">Custom range</option>
+                </select>
+                <input id="pct-range-start" class="mini-date hidden" type="date" />
+                <input id="pct-range-end" class="mini-date hidden" type="date" />
+              </div>
+              <label class="trend-toggle">
+                <input type="checkbox" id="pctavg-toggle-input" />
+                <span>Avg</span>
               </label>
             </div>
           </div>
@@ -640,6 +669,10 @@
     let bphChart = null;
     let chartMode = "date"; // "date" or "week"
     let showTrendLine = false;
+    let showAvgLine = false;
+    let percentileRangeMode = "all"; // all | last7 | custom
+    let percentileStartDate = "";
+    let percentileEndDate = "";
 
     // fallback sample data (used only if master is missing/invalid)
     const defaultTransplantData = [
@@ -678,6 +711,27 @@
       const trend = [];
       for (let i = 0; i < n; i++) trend.push(slope * (i + 1) + intercept);
       return trend;
+    }
+
+    function getPercentileSourceData(data) {
+      if (!Array.isArray(data) || !data.length) return [];
+      if (percentileRangeMode === "last7") return data.slice(-7);
+      if (percentileRangeMode === "custom") {
+        // Read current controls directly to avoid stale state from browser-restored values.
+        const startEl = document.getElementById("pct-range-start");
+        const endEl = document.getElementById("pct-range-end");
+        const startRaw = parseDateToISO((startEl && startEl.value) || percentileStartDate || "");
+        const endRaw = parseDateToISO((endEl && endEl.value) || percentileEndDate || "");
+        let start = startRaw || data[0].date;
+        let end = endRaw || data[data.length - 1].date;
+        if (start > end) {
+          const tmp = start;
+          start = end;
+          end = tmp;
+        }
+        return data.filter(d => d.date >= start && d.date <= end);
+      }
+      return data;
     }
 
     function fmt0(n){ return (Number(n)||0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
@@ -1138,6 +1192,10 @@
       const boardsValues = chartMode === "week" ? boardsByWeek : boardsByDate;
       const targetValues = chartMode === "week" ? targetByWeek : targetByDate;
       const bphValues = chartMode === "week" ? bphByWeek : bphByDate;
+      const percentileSourceRows = getPercentileSourceData(data);
+      const percentileSourceValues = chartMode === "week"
+        ? computeWeeklyAggregation(percentileSourceRows).map(w => w.totalBoards)
+        : percentileSourceRows.map(d => d.boards);
 
       const ctxBoards = document.getElementById("chart-boards").getContext("2d");
       const ctxBPH = document.getElementById("chart-bph").getContext("2d");
@@ -1175,30 +1233,50 @@
         }
       };
 
+      const boardsDatasets = [
+        {
+          label: "Boards transplanted",
+          data: boardsValues,
+          borderWidth: 0,
+          borderRadius: 4,
+          backgroundColor: "rgba(59, 130, 246, 0.8)"
+        },
+        {
+          label: "Target boards",
+          data: targetValues,
+          type: "line",
+          borderWidth: 1.8,
+          tension: 0.25,
+          pointRadius: 1.5,
+          borderDash: [4, 3],
+          borderColor: "rgba(148, 163, 184, 1)",
+          backgroundColor: "rgba(148, 163, 184, 0.1)"
+        }
+      ];
+
+      if (showAvgLine && labels.length) {
+        const vals = (percentileSourceValues || []).map(v => Number(v)).filter(v => Number.isFinite(v));
+        const avg = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : NaN;
+        if (Number.isFinite(avg)) {
+          boardsDatasets.push({
+            label: "Average boards",
+            data: Array(labels.length).fill(avg),
+            type: "line",
+            borderWidth: 1.8,
+            pointRadius: 0,
+            tension: 0,
+            borderDash: [10, 4],
+            borderColor: "rgba(16, 185, 129, 0.95)",
+            backgroundColor: "rgba(0, 0, 0, 0)"
+          });
+        }
+      }
+
       boardsChart = new Chart(ctxBoards, {
         type: "bar",
         data: {
           labels,
-          datasets: [
-            {
-              label: "Boards transplanted",
-              data: boardsValues,
-              borderWidth: 0,
-              borderRadius: 4,
-              backgroundColor: "rgba(59, 130, 246, 0.8)"
-            },
-            {
-              label: "Target boards",
-              data: targetValues,
-              type: "line",
-              borderWidth: 1.8,
-              tension: 0.25,
-              pointRadius: 1.5,
-              borderDash: [4, 3],
-              borderColor: "rgba(148, 163, 184, 1)",
-              backgroundColor: "rgba(148, 163, 184, 0.1)"
-            }
-          ]
+          datasets: boardsDatasets
         },
         options: {
           ...commonOptions,
@@ -1364,10 +1442,68 @@
     function setupTrendToggle() {
       const chk = document.getElementById("trend-toggle-input");
       if (!chk) return;
+      chk.checked = false;
+      showTrendLine = false;
       chk.addEventListener("change", () => {
         showTrendLine = chk.checked;
         recomputeDashboard();
       });
+    }
+
+    function setupPercentileToggles() {
+      const pavg = document.getElementById("pctavg-toggle-input");
+      if (pavg) showAvgLine = !!pavg.checked;
+      if (pavg) {
+        pavg.addEventListener("change", () => {
+          showAvgLine = pavg.checked;
+          recomputeDashboard();
+        });
+      }
+    }
+
+    function setPercentileRangeMode(mode) {
+      percentileRangeMode = (mode === "last7" || mode === "custom") ? mode : "all";
+      const start = document.getElementById("pct-range-start");
+      const end = document.getElementById("pct-range-end");
+      const showCustom = percentileRangeMode === "custom";
+      if (start) start.classList.toggle("hidden", !showCustom);
+      if (end) end.classList.toggle("hidden", !showCustom);
+      recomputeDashboard();
+    }
+
+    function setupPercentileRangeControls() {
+      const mode = document.getElementById("pct-range-mode");
+      const start = document.getElementById("pct-range-start");
+      const end = document.getElementById("pct-range-end");
+      if (mode) {
+        percentileRangeMode = mode.value || "all";
+        mode.addEventListener("change", () => setPercentileRangeMode(mode.value));
+      }
+      if (start) {
+        percentileStartDate = parseDateToISO(start.value || "");
+        start.value = percentileStartDate || "";
+        start.addEventListener("input", () => {
+          percentileStartDate = parseDateToISO(start.value || "");
+          if (percentileRangeMode === "custom") recomputeDashboard();
+        });
+        start.addEventListener("change", () => {
+          percentileStartDate = parseDateToISO(start.value || "");
+          if (percentileRangeMode === "custom") recomputeDashboard();
+        });
+      }
+      if (end) {
+        percentileEndDate = parseDateToISO(end.value || "");
+        end.value = percentileEndDate || "";
+        end.addEventListener("input", () => {
+          percentileEndDate = parseDateToISO(end.value || "");
+          if (percentileRangeMode === "custom") recomputeDashboard();
+        });
+        end.addEventListener("change", () => {
+          percentileEndDate = parseDateToISO(end.value || "");
+          if (percentileRangeMode === "custom") recomputeDashboard();
+        });
+      }
+      setPercentileRangeMode(percentileRangeMode);
     }
 
     function setupTableViewToggle() {
@@ -1407,6 +1543,8 @@
     document.addEventListener("DOMContentLoaded", () => {
       setupViewToggle();
       setupTrendToggle();
+      setupPercentileRangeControls();
+      setupPercentileToggles();
       setupTableViewToggle();
 
       tryLoadIntoDashboard();
