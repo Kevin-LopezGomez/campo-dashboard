@@ -1501,11 +1501,7 @@ const NEW_CSV_HEADERS = [
 const NEW_CSV_HEADERS_NORM = NEW_CSV_HEADERS.map(h => normalizeHeader(h).toLowerCase());
 
 function headerKey(s){
-  return normalizeHeader(s)
-    .toLowerCase()
-    .replace(/[^a-z0-9#\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return normalizeHeader(s).toLowerCase();
 }
 
 const HEADER_SYNONYMS = {
@@ -1543,6 +1539,21 @@ function findCol(headers, idxMap, candidates){
     if(idxMap.has(k)) return idxMap.get(k);
   }
   return -1;
+}
+
+function hasRequiredHeadersAnyOrder(headers){
+  if(!Array.isArray(headers)) return false;
+  const idx = buildHeaderIndex(headers);
+
+  // require at least vendor + po + amount + order date + description (practical minimum)
+  const requiredGroups = [
+    HEADER_SYNONYMS.vendor,
+    HEADER_SYNONYMS.po,
+    HEADER_SYNONYMS.amount,
+    HEADER_SYNONYMS.orderDate,
+    HEADER_SYNONYMS.description
+  ];
+  return requiredGroups.every(group => findCol(headers, idx, group) >= 0);
 }
 
 function normalizeCsvRowCells(row){
@@ -1593,10 +1604,11 @@ function buildOrderFromHeaderRow(cells, col){
 
 function extractOrdersStrict(rows){
   // NOTE: kept name for backward compatibility with existing calls,
-  // but now it maps by header name and does NOT require exact order
-  // or the presence of specific columns.
+  // but now it maps by header name and does NOT require exact order.
   if(!Array.isArray(rows) || rows.length < 2) return [];
   const headers = normalizeCsvRowCells(rows[0]) || [];
+  if(!hasRequiredHeadersAnyOrder(headers)) return [];
+
   const idxMap = buildHeaderIndex(headers);
 
   const col = {
@@ -1614,10 +1626,6 @@ function extractOrdersStrict(rows){
     shipVia: findCol(headers, idxMap, HEADER_SYNONYMS.shipVia),
     followUps: findCol(headers, idxMap, HEADER_SYNONYMS.followUps)
   };
-  const found = Object.fromEntries(Object.entries(col).map(([k, v]) => [k, v >= 0]));
-  const missing = Object.entries(found).filter(([, ok]) => !ok).map(([k]) => k);
-  console.log("[proc-csv] detected headers:", headers);
-  console.log("[proc-csv] canonical mapping:", { found, missing, indexes: col });
 
   const out = [];
   for(let i=1; i<rows.length; i++){
@@ -2881,6 +2889,10 @@ function handleCSVText(text, name=""){
   csvFilename = name || "uploaded.csv";
   rawRows = parseCSV(text);
   orders = extractOrdersStrict(rawRows);
+  if(!orders.length){
+    alert(`CSV format mismatch. Required headers (any order):\nVendor, Order No./PO Number, Total Amount/Cost, Status, Notes, Order Date, Lead Time, Promised Date, Delivery Date, Budget Allocation, Description, Ship via/Notes, Follow Ups`);
+    return;
+  }
   afterLoad();
 }
 
