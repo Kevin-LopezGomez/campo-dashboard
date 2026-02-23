@@ -911,7 +911,6 @@
         <button class="btn primary" id="btnUpload">
           <span class="dot"></span> Upload File <span class="kbd">U</span>
         </button>
-        <button class="btn" id="btnExportJSON">Export JSON</button>
         <button class="btn" id="btnExportCSV">Export CSV</button>
         <button class="btn danger" id="btnReset">Reset Local Changes</button>
       </div>
@@ -1033,8 +1032,8 @@
           </div>
 
           <div class="drop" id="dropZone">
-            <strong>Drop a CSV or JSON here</strong>
-            <p>Or click “Upload File”. We’ll extract purchase orders and let you track statuses.</p>
+            <strong>Drop the Procurement CSV here</strong>
+            <p>Or click “Upload File”. The file must use the required 13 procurement headers.</p>
             <div class="mini">
               <span class="badge"><span class="b b-accent"></span> Local tracking</span>
               <span class="badge"><span class="b b-blue"></span> Filters + export</span>
@@ -1047,7 +1046,7 @@
             <code>Status</code>, <code>Criticality</code>, and <code>Department</code>.
           </div>
 
-          <input id="file" type="file" accept=".csv,.json,text/csv,application/json" hidden />
+          <input id="file" type="file" accept=".csv,text/csv" hidden />
         </div>
       </div>
 
@@ -1169,7 +1168,7 @@
 
         <div class="tablewrap" id="ordersTableWrap">
           <div class="empty" id="emptyState">
-            Upload the vendor purchase order CSV or JSON to start tracking open orders.
+            Upload the vendor purchase order CSV to start tracking open orders.
           </div>
 
           <table id="tbl" style="display:none">
@@ -1258,9 +1257,33 @@ function setOrdersTitleForRole(role){
 
 const COLUMN_PRESETS = {
   dept: ["PO #","Vendor","Status","Criticality","Promised Date","Delivery Date","Owner","Next Follow-Up","Tracking Notes","Description"],
-  proc: ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount","Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes","Description","Ship via"],
-  finance: ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount","Open Balance","Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes"]
+  proc: ["Vendor","Order No./PO Number","Total Amount/Cost","Status","Notes","Order Date","Lead Time","Promised Date","Delivery Date","Budget Allocation","Description","Ship via/Notes","Follow Ups"],
+  finance: ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Amount","Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes"]
 };
+
+const PROC_CSV_COL_MAP = {
+  "Vendor": "Vendor",
+  "Order No./PO Number": "PO #",
+  "Total Amount/Cost": "Amount",
+  "Status": "CSV Status",
+  "Notes": "CSV Notes",
+  "Order Date": "Order Date",
+  "Lead Time": "Lead Time",
+  "Promised Date": "Promised Date",
+  "Delivery Date": "Delivery Date",
+  "Budget Allocation": "Budget Allocation",
+  "Description": "Description",
+  "Ship via/Notes": "Ship via",
+  "Follow Ups": "CSV Follow Ups"
+};
+
+function getCellValueByColumn(row, column){
+  if(currentPreset === "proc"){
+    const key = PROC_CSV_COL_MAP[column] || column;
+    return row[key];
+  }
+  return row[column];
+}
 
 let currentRole = "Procurement";
 let currentPreset = "proc";
@@ -1375,6 +1398,19 @@ function toISODate(dt){
 function normalizeHeader(h){
   return safeStr(h).replace(/^\uFEFF/, "").trim().replace(/\s+/g," ");
 }
+function findHeaderIndex(headers, aliases){
+  const list = Array.isArray(aliases) ? aliases : [aliases];
+  const lowers = list.map(v => safeStr(v).toLowerCase());
+  return headers.findIndex(h => lowers.includes(safeStr(h).toLowerCase()));
+}
+function inferDepartmentFromBudget(budgetValue){
+  const b = safeStr(budgetValue).toLowerCase();
+  if(!b) return "";
+  for(const dept of DEPT_LIST){
+    if(b.includes(dept.toLowerCase())) return dept;
+  }
+  return "";
+}
 
 /* Robust-ish CSV parser for common cases (quoted commas/newlines). */
 function parseCSV(text){
@@ -1446,245 +1482,154 @@ function sheetToCsvText(headers, rows){
   return lines.join("\n");
 }
 
-function findHeaderRow(rows){
-  // Find row containing Vendor and Num (as seen in your export).
-  for(let r=0; r<rows.length; r++){
-    const norm = rows[r].map(normalizeHeader);
-    const hasVendor = norm.some(x => x.toLowerCase() === "vendor");
-    const hasNum = norm.some(x => {
-      const v = x.toLowerCase();
-      return v === "num" || v === "po num" || v === "po #" || v === "po number";
-    });
-    const hasOrderDate = norm.some(x => x.toLowerCase() === "order date");
-    if(hasVendor && hasNum && hasOrderDate) return r;
-  }
-  // fallback: the first row with 5+ non-empty cells
-  let best = -1, bestCount = 0;
-  for(let r=0; r<Math.min(rows.length, 30); r++){
-    const cnt = rows[r].filter(c => safeStr(c).trim()).length;
-    if(cnt > bestCount){ bestCount=cnt; best=r; }
-  }
-  return Math.max(best, 0);
+const NEW_CSV_HEADERS = [
+  "Vendor",
+  "Order No./PO Number",
+  "Total Amount/Cost",
+  "Status",
+  "Notes",
+  "Order Date",
+  "Lead Time",
+  "Promised Date",
+  "Delivery Date",
+  "Budget Allocation",
+  "Description",
+  "Ship via/Notes",
+  "Follow Ups"
+];
+
+const NEW_CSV_HEADERS_NORM = NEW_CSV_HEADERS.map(h => normalizeHeader(h).toLowerCase());
+
+function headerKey(s){
+  return normalizeHeader(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9#\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function extractOrders(rows){
-  const headerIdx = findHeaderRow(rows);
-  const headers = rows[headerIdx].map(normalizeHeader);
+const HEADER_SYNONYMS = {
+  vendor: ["vendor"],
+  po: ["order no./po number","order no", "order number", "po number", "po #", "po", "p.o.", "p.o"],
+  amount: ["total amount/cost","total amount", "total cost", "amount", "cost", "total"],
+  status: ["status"],
+  notes: ["notes","note"],
+  orderDate: ["order date","date ordered","ordered date"],
+  leadTime: ["lead time","leadtime"],
+  promisedDate: ["promised date","promise date","promised"],
+  deliveryDate: ["delivery date","delivered date","delivery"],
+  budget: ["budget allocation","budget","allocation"],
+  description: ["description","item description","product description"],
+  shipVia: ["ship via/notes","ship via","shipvia","shipping","ship via notes"],
+  followUps: ["follow ups","follow-ups","followups","follow up","follow-up"]
+};
 
-  // Build map of known columns (we keep originals if present)
-  const col = {
-    vendor: headers.findIndex(h => h.toLowerCase() === "vendor"),
-    notes: headers.findIndex(h => h.toLowerCase() === "notes"),
-    orderDate: headers.findIndex(h => h.toLowerCase() === "order date"),
-    leadTime: headers.findIndex(h => h.toLowerCase() === "lead time"),
-    promisedDate: headers.findIndex(h => h.toLowerCase() === "promised date"),
-    deliveryDate: headers.findIndex(h => h.toLowerCase() === "delivery date"),
-    num: headers.findIndex(h => h.toLowerCase() === "num"),
-    budget: headers.findIndex(h => h.toLowerCase() === "budget allocation"),
-    dept: headers.findIndex(h => h.toLowerCase() === "department"),
-    desc: headers.findIndex(h => h.toLowerCase() === "description"),
-    shipVia: headers.findIndex(h => h.toLowerCase() === "ship via"),
-    status: headers.findIndex(h => h.toLowerCase() === "status"),
-    followUps: headers.findIndex(h => h.toLowerCase() === "follow ups"),
-    amount: headers.findIndex(h => h.toLowerCase() === "amount"),
-    openBalance: headers.findIndex(h => h.toLowerCase() === "open balance"),
-  };
-
-  const dataRows = rows.slice(headerIdx + 1);
-
-  let currentVendor = "";
-  const out = [];
-  let lastOrder = null;
-
-  for(const r of dataRows){
-    const vendorCell = safeStr(r[col.vendor]).trim();
-    const numCell = safeStr(r[col.num]).trim();
-
-    const isTotal = vendorCell.toLowerCase().startsWith("total for ");
-    const hasAnyData = r.some(c => safeStr(c).trim());
-
-    // Vendor header line (vendor present, but no num and mostly empty)
-    if(vendorCell && !isTotal && !numCell){
-      currentVendor = vendorCell;
-      continue;
-    }
-
-    // Total line or empty line: ignore
-    if(!hasAnyData || isTotal) continue;
-
-    // Continuation line (no vendor/num) that carries dept/status/amount, etc.
-    if(!vendorCell && !numCell && lastOrder){
-      const patch = {
-        "Promised Date": safeStr(r[col.promisedDate]).trim(),
-        "Delivery Date": safeStr(r[col.deliveryDate]).trim(),
-        "Lead Time": safeStr(r[col.leadTime]).trim(),
-        "Ship via": safeStr(r[col.shipVia]).trim(),
-        "Budget Allocation": safeStr(r[col.budget]).trim(),
-        "CSV Department": safeStr(r[col.dept]).trim(),
-        "Description": safeStr(r[col.desc]).trim(),
-        "CSV Status": safeStr(r[col.status]).trim(),
-        "CSV Follow Ups": safeStr(r[col.followUps]).trim(),
-        "Amount": safeStr(r[col.amount]).trim(),
-        "Open Balance": safeStr(r[col.openBalance]).trim(),
-        "CSV Notes": safeStr(r[col.notes]).trim(),
-      };
-      // Merge only non-empty values
-      Object.entries(patch).forEach(([k,v]) => {
-        if(v && !safeStr(lastOrder[k]).trim()) lastOrder[k] = v;
-      });
-      // Append budget allocation if line looks like extra notes
-      if(patch["Budget Allocation"]){
-        lastOrder["Budget Allocation"] = [safeStr(lastOrder["Budget Allocation"]).trim(), patch["Budget Allocation"]]
-          .filter(Boolean).join(" ");
-      }
-      // Seed tracking fields if present
-      if(STATUS_LIST.includes(lastOrder["CSV Status"])) lastOrder["Status"] = lastOrder["CSV Status"];
-      if(DEPT_LIST.includes(lastOrder["CSV Department"])) lastOrder["Department"] = lastOrder["CSV Department"];
-      const fu = safeStr(lastOrder["CSV Follow Ups"]).toLowerCase();
-      if(fu.includes("critical")) lastOrder["Criticality"] = "Critical";
-      continue;
-    }
-
-    // Order line: has num (preferred) OR has order date + amount, etc.
-    const orderDate = safeStr(r[col.orderDate]).trim();
-    const amountRaw = safeStr(r[col.amount]).trim();
-    const looksLikeOrder = !!numCell || (!!orderDate && !!amountRaw);
-
-    if(!looksLikeOrder) continue;
-
-    const obj = {
-      "PO #": numCell || "",
-      "Vendor": currentVendor || vendorCell || "",
-      "Order Date": orderDate,
-      "Promised Date": safeStr(r[col.promisedDate]).trim(),
-      "Delivery Date": safeStr(r[col.deliveryDate]).trim(),
-      "Lead Time": safeStr(r[col.leadTime]).trim(),
-      "Ship via": safeStr(r[col.shipVia]).trim(),
-      "Budget Allocation": safeStr(r[col.budget]).trim(),
-      "CSV Department": safeStr(r[col.dept]).trim(),
-      "Description": safeStr(r[col.desc]).trim(),
-      "CSV Status": safeStr(r[col.status]).trim(),
-      "CSV Follow Ups": safeStr(r[col.followUps]).trim(),
-      "Amount": amountRaw,
-      "Open Balance": safeStr(r[col.openBalance]).trim(),
-      "CSV Notes": safeStr(r[col.notes]).trim(),
-
-      // Tracking fields (editable, validated)
-      "Status": "",        // from STATUS_LIST
-      "Criticality": "",   // Critical / Not Critical
-      "Department": "",    // from DEPT_LIST
-      "Owner": "",
-      "Next Follow-Up": "",
-      "Tracking Notes": "",
-      "Last Updated": ""
-    };
-
-    // Seed tracking fields from CSV where possible
-    // If CSV status already matches one of the approved values, keep it.
-    if(STATUS_LIST.includes(obj["CSV Status"])) obj["Status"] = obj["CSV Status"];
-    if(DEPT_LIST.includes(obj["CSV Department"])) obj["Department"] = obj["CSV Department"];
-
-    // if CSV follow-ups hints critical
-    const fu = obj["CSV Follow Ups"].toLowerCase();
-    if(fu.includes("critical")) obj["Criticality"] = "Critical";
-
-    out.push(obj);
-    lastOrder = obj;
+function buildHeaderIndex(headers){
+  const idx = new Map(); // key -> index
+  const seen = new Set();
+  for(let i=0;i<headers.length;i++){
+    const k = headerKey(headers[i] ?? "");
+    if(!k) continue;
+    if(seen.has(k)) continue; // keep first occurrence
+    seen.add(k);
+    idx.set(k, i);
   }
-
-  return out;
+  return idx;
 }
 
-function extractOrdersFromNoHeader(rows){
-  // Fallback for procurement.json sheet payload where headers are not included in rows.
-  const col = {
-    vendor: 0,
-    notes: 1,
-    orderDate: 2,
-    leadTime: 3,
-    promisedDate: 4,
-    deliveryDate: 5,
-    num: 6,
-    budget: 7,
-    dept: 8,
-    desc: 9,
-    shipVia: 10,
-    status: 11,
-    followUps: 12,
-    amount: 13,
-    openBalance: 14
+function findCol(headers, idxMap, candidates){
+  for(const c of candidates){
+    const k = headerKey(c);
+    if(idxMap.has(k)) return idxMap.get(k);
+  }
+  return -1;
+}
+
+function normalizeCsvRowCells(row){
+  if(!Array.isArray(row)) return null;
+  if(row.length === 1 && safeStr(row[0]).includes(",")){
+    const parsed = parseCSV(String(row[0]));
+    return Array.isArray(parsed[0]) ? parsed[0] : null;
+  }
+  return row;
+}
+
+function buildOrderFromHeaderRow(cells, col){
+  const get = (i) => (i >= 0 && i < cells.length) ? safeStr(cells[i]).trim() : "";
+
+  const vendor = get(col.vendor);
+  const obj = {
+    "PO #": get(col.po),
+    "Vendor": vendor,
+    "Order Date": get(col.orderDate),
+    "Promised Date": get(col.promisedDate),
+    "Delivery Date": get(col.deliveryDate),
+    "Lead Time": get(col.leadTime),
+    "Ship via": get(col.shipVia),
+    "Budget Allocation": get(col.budget),
+    "CSV Department": "",
+    "Description": get(col.description),
+    "CSV Status": get(col.status),
+    "CSV Follow Ups": get(col.followUps),
+    "Amount": get(col.amount),
+    "CSV Notes": get(col.notes),
+
+    "Status": "",
+    "Criticality": "",
+    "Department": "",
+    "Owner": "",
+    "Next Follow-Up": "",
+    "Tracking Notes": "",
+    "Last Updated": ""
   };
 
-  let currentVendor = "";
+  if(STATUS_LIST.includes(obj["CSV Status"])) obj["Status"] = obj["CSV Status"];
+  const deptFromBudget = inferDepartmentFromBudget(obj["Budget Allocation"]);
+  if(deptFromBudget) obj["Department"] = deptFromBudget;
+  const fu = obj["CSV Follow Ups"].toLowerCase();
+  if(fu.includes("critical")) obj["Criticality"] = "Critical";
+  return obj;
+}
+
+function extractOrdersStrict(rows){
+  // NOTE: kept name for backward compatibility with existing calls,
+  // but now it maps by header name and does NOT require exact order
+  // or the presence of specific columns.
+  if(!Array.isArray(rows) || rows.length < 2) return [];
+  const headers = normalizeCsvRowCells(rows[0]) || [];
+  const idxMap = buildHeaderIndex(headers);
+
+  const col = {
+    vendor: findCol(headers, idxMap, HEADER_SYNONYMS.vendor),
+    po: findCol(headers, idxMap, HEADER_SYNONYMS.po),
+    amount: findCol(headers, idxMap, HEADER_SYNONYMS.amount),
+    status: findCol(headers, idxMap, HEADER_SYNONYMS.status),
+    notes: findCol(headers, idxMap, HEADER_SYNONYMS.notes),
+    orderDate: findCol(headers, idxMap, HEADER_SYNONYMS.orderDate),
+    leadTime: findCol(headers, idxMap, HEADER_SYNONYMS.leadTime),
+    promisedDate: findCol(headers, idxMap, HEADER_SYNONYMS.promisedDate),
+    deliveryDate: findCol(headers, idxMap, HEADER_SYNONYMS.deliveryDate),
+    budget: findCol(headers, idxMap, HEADER_SYNONYMS.budget),
+    description: findCol(headers, idxMap, HEADER_SYNONYMS.description),
+    shipVia: findCol(headers, idxMap, HEADER_SYNONYMS.shipVia),
+    followUps: findCol(headers, idxMap, HEADER_SYNONYMS.followUps)
+  };
+  const found = Object.fromEntries(Object.entries(col).map(([k, v]) => [k, v >= 0]));
+  const missing = Object.entries(found).filter(([, ok]) => !ok).map(([k]) => k);
+  console.log("[proc-csv] detected headers:", headers);
+  console.log("[proc-csv] canonical mapping:", { found, missing, indexes: col });
+
   const out = [];
-  let lastOrder = null;
+  for(let i=1; i<rows.length; i++){
+    const cells = normalizeCsvRowCells(rows[i]);
+    if(!cells || !cells.some(c => safeStr(c).trim())) continue;
 
-  for(const r of rows){
-    if(!Array.isArray(r)) continue;
-    const trimmed = r.map(safeStr).map(s => s.trim());
-    const nonEmpty = trimmed.filter(Boolean);
-    if(!nonEmpty.length) continue;
+    const o = buildOrderFromHeaderRow(cells, col);
 
-    // Single-cell continuation line (e.g., "QUOTE # ...") → append to last order
-    if(nonEmpty.length === 1 && lastOrder){
-      const extra = nonEmpty[0];
-      if(extra){
-        lastOrder["Budget Allocation"] = [safeStr(lastOrder["Budget Allocation"]).trim(), extra]
-          .filter(Boolean).join(" ");
-      }
-      continue;
-    }
-
-    const vendorCell = safeStr(r[col.vendor]).trim();
-    const numCell = safeStr(r[col.num]).trim();
-    const orderDate = safeStr(r[col.orderDate]).trim();
-    const amountRaw = safeStr(r[col.amount]).trim();
-
-    // Vendor header line (vendor present, no num, mostly empty)
-    if(vendorCell && !numCell && nonEmpty.length <= 3){
-      currentVendor = vendorCell;
-      continue;
-    }
-
-    const looksLikeOrder = !!numCell || (!!orderDate && !!amountRaw);
-    if(!looksLikeOrder) continue;
-
-    const obj = {
-      "PO #": numCell || "",
-      "Vendor": currentVendor || vendorCell || "",
-      "Order Date": orderDate,
-      "Promised Date": safeStr(r[col.promisedDate]).trim(),
-      "Delivery Date": safeStr(r[col.deliveryDate]).trim(),
-      "Lead Time": safeStr(r[col.leadTime]).trim(),
-      "Ship via": safeStr(r[col.shipVia]).trim(),
-      "Budget Allocation": safeStr(r[col.budget]).trim(),
-      "CSV Department": safeStr(r[col.dept]).trim(),
-      "Description": safeStr(r[col.desc]).trim(),
-      "CSV Status": safeStr(r[col.status]).trim(),
-      "CSV Follow Ups": safeStr(r[col.followUps]).trim(),
-      "Amount": amountRaw,
-      "Open Balance": safeStr(r[col.openBalance]).trim(),
-      "CSV Notes": safeStr(r[col.notes]).trim(),
-
-      // Tracking fields (editable, validated)
-      "Status": "",
-      "Criticality": "",
-      "Department": "",
-      "Owner": "",
-      "Next Follow-Up": "",
-      "Tracking Notes": "",
-      "Last Updated": ""
-    };
-
-    if(STATUS_LIST.includes(obj["CSV Status"])) obj["Status"] = obj["CSV Status"];
-    if(DEPT_LIST.includes(obj["CSV Department"])) obj["Department"] = obj["CSV Department"];
-    const fu = obj["CSV Follow Ups"].toLowerCase();
-    if(fu.includes("critical")) obj["Criticality"] = "Critical";
-
-    out.push(obj);
-    lastOrder = obj;
+    if(!o["Vendor"] && !o["PO #"] && !o["Amount"] && !o["Order Date"] && !o["Description"]) continue;
+    if(o["Vendor"].toLowerCase().startsWith("total for ")) continue;
+    out.push(o);
   }
-
   return out;
 }
 
@@ -1730,7 +1675,7 @@ function keyForRow(r){
 
 function applyOverrides(rows){
   const ov = loadOverrides();
-  const allowed = new Set(JSON_FIELDS);
+  const allowed = new Set(ORDER_FIELDS);
 
   for(const r of rows){
     const k = keyForRow(r);
@@ -1969,7 +1914,7 @@ function renderTable(rows){
   if(!rows.length){
     tbl.style.display="none";
     empty.style.display="block";
-    empty.textContent = orders.length ? "No results. Try clearing filters." : "Upload the vendor purchase order CSV or JSON to start tracking open orders.";
+    empty.textContent = orders.length ? "No results. Try clearing filters." : "Upload the vendor purchase order CSV to start tracking open orders.";
     $("#tableMeta").textContent = orders.length ? "0 results" : "—";
     return;
   }
@@ -1994,7 +1939,7 @@ function renderTable(rows){
         sortDir = (sortDir==="asc") ? "desc" : "asc";
       }else{
         sortKey = c;
-        sortDir = (c==="Order Date" || c==="Next Follow-Up" || c==="Amount") ? "desc" : "asc";
+        sortDir = (c==="Order Date" || c==="Next Follow-Up" || c==="Amount" || c==="Total Amount/Cost") ? "desc" : "asc";
       }
       refresh();
     });
@@ -2006,14 +1951,25 @@ function renderTable(rows){
   tbody.innerHTML = "";
   for(const r of rows){
     const tr = document.createElement("tr");
+    const isProcCsvView = currentPreset === "proc";
 
     const cells = {
       "PO #": () => `<span class="mono">${escapeHtml(r["PO #"] || "")}</span>`,
       "Vendor": () => `<span>${escapeHtml(r["Vendor"] || "")}</span>`,
+      "Order No./PO Number": () => `<span class="mono">${escapeHtml(r["PO #"] || "")}</span>`,
       "Order Date": () => `<span class="small">${escapeHtml(r["Order Date"] || "")}</span>`,
       "Promised Date": () => `<span class="small">${escapeHtml(r["Promised Date"] || "")}</span>`,
       "Delivery Date": () => `<span class="small">${escapeHtml(r["Delivery Date"] || "")}</span>`,
+      "Lead Time": () => `<span class="small">${escapeHtml(r["Lead Time"] || "")}</span>`,
+      "Notes": () => `<span class="muted">${escapeHtml(r["CSV Notes"] || "")}</span>`,
+      "Follow Ups": () => `<span class="small">${escapeHtml(r["CSV Follow Ups"] || "")}</span>`,
+      "Budget Allocation": () => `<span class="small">${escapeHtml(r["Budget Allocation"] || "")}</span>`,
+      "Ship via/Notes": () => `<span class="small">${escapeHtml(r["Ship via"] || "")}</span>`,
       "Amount": () => {
+        const m = parseMoney(r["Amount"]);
+        return `<span class="mono">${m===null ? escapeHtml(r["Amount"]||"") : escapeHtml(formatMoney(m))}</span>`;
+      },
+      "Total Amount/Cost": () => {
         const m = parseMoney(r["Amount"]);
         return `<span class="mono">${m===null ? escapeHtml(r["Amount"]||"") : escapeHtml(formatMoney(m))}</span>`;
       },
@@ -2034,13 +1990,20 @@ function renderTable(rows){
       "Ship via": () => `<span class="small">${escapeHtml(r["Ship via"] || "")}</span>`
     };
 
-    const columns = Object.keys(cells);
+    const columns = (COLUMN_PRESETS[currentPreset] || COLUMN_PRESETS.proc).slice();
 
     for(const c of columns){
       const td = document.createElement("td");
 
+      // Procurement preset should mirror CSV values exactly (raw mapped cells).
+      if(isProcCsvView){
+        td.textContent = safeStr(getCellValueByColumn(r, c));
+        tr.appendChild(td);
+        continue;
+      }
+
       // Editable fields
-      if(c === "Status" && canEditField("Status")){
+      if(c === "Status" && canEditField("Status") && !isProcCsvView){
         const sel = document.createElement("select");
         sel.className = "cell-edit";
         const opt0 = document.createElement("option");
@@ -2054,7 +2017,7 @@ function renderTable(rows){
         sel.value = r["Status"] || "";
         sel.addEventListener("change", () => setOverride(r, { "Status": sel.value }));
         td.appendChild(sel);
-      } else if(c === "Criticality" && canEditField("Criticality")){
+      } else if(c === "Criticality" && canEditField("Criticality") && !isProcCsvView){
         const sel = document.createElement("select");
         sel.className = "cell-edit tiny";
         const opt0 = document.createElement("option");
@@ -2068,7 +2031,7 @@ function renderTable(rows){
         sel.value = r["Criticality"] || "";
         sel.addEventListener("change", () => setOverride(r, { "Criticality": sel.value }));
         td.appendChild(sel);
-      } else if(c === "Department" && canEditField("Department")){
+      } else if(c === "Department" && canEditField("Department") && !isProcCsvView){
         const sel = document.createElement("select");
         sel.className = "cell-edit";
         const opt0 = document.createElement("option");
@@ -2082,7 +2045,7 @@ function renderTable(rows){
         sel.value = r["Department"] || "";
         sel.addEventListener("change", () => setOverride(r, { "Department": sel.value }));
         td.appendChild(sel);
-      } else if(c === "Owner" && canEditField("Owner")){
+      } else if(c === "Owner" && canEditField("Owner") && !isProcCsvView){
         const inp = document.createElement("input");
         inp.className = "cell-edit small";
         inp.type = "text";
@@ -2090,7 +2053,7 @@ function renderTable(rows){
         inp.value = r["Owner"] || "";
         inp.addEventListener("change", () => setOverride(r, { "Owner": inp.value.trim() }));
         td.appendChild(inp);
-      } else if(c === "Next Follow-Up" && canEditField("Next Follow-Up")){
+      } else if(c === "Next Follow-Up" && canEditField("Next Follow-Up") && !isProcCsvView){
         const inp = document.createElement("input");
         inp.className = "cell-edit small";
         inp.type = "date";
@@ -2098,7 +2061,7 @@ function renderTable(rows){
         inp.value = dt ? toISODate(dt) : "";
         inp.addEventListener("change", () => setOverride(r, { "Next Follow-Up": inp.value }));
         td.appendChild(inp);
-      } else if(c === "Tracking Notes" && canEditField("Tracking Notes")){
+      } else if(c === "Tracking Notes" && canEditField("Tracking Notes") && !isProcCsvView){
         const inp = document.createElement("input");
         inp.className = "cell-edit";
         inp.type = "text";
@@ -2106,8 +2069,10 @@ function renderTable(rows){
         inp.value = r["Tracking Notes"] || "";
         inp.addEventListener("change", () => setOverride(r, { "Tracking Notes": inp.value }));
         td.appendChild(inp);
-      } else {
+      } else if(cells[c]){
         td.innerHTML = cells[c]();
+      } else {
+        td.innerHTML = `<span>${escapeHtml(getCellValueByColumn(r, c) || "")}</span>`;
       }
 
       tr.appendChild(td);
@@ -2170,7 +2135,7 @@ function rowMatches(r, f){
   // Column filters (procurement table)
   for(const [k, v] of Object.entries(colFilters)){
     if(!v) continue;
-    const cell = safeStr(r[k]).toLowerCase();
+    const cell = safeStr(getCellValueByColumn(r, k)).toLowerCase();
     // For selects (exact match) we still accept substring for convenience
     if(!cell.includes(v.toLowerCase())) return false;
   }
@@ -2191,9 +2156,9 @@ function sortRows(rows){
 
   const copy = rows.slice();
   copy.sort((a,b) => {
-    const av = a[k], bv = b[k];
+    const av = getCellValueByColumn(a, k), bv = getCellValueByColumn(b, k);
 
-    if(k === "Amount"){
+    if(k === "Amount" || k === "Total Amount/Cost"){
       const an = parseMoney(av), bn = parseMoney(bv);
       if(an===null && bn===null) return 0;
       if(an===null) return 1;
@@ -2866,50 +2831,23 @@ function download(name, text, type="text/plain"){
   setTimeout(()=>URL.revokeObjectURL(url), 800);
 }
 
-function exportJSON(){
-  const payload = {
-    meta: {
-      exportedAt: new Date().toISOString(),
-      csvFilename,
-      totalOrders: orders.length
-    },
-    orders
-  };
-  download(`Open_Orders_Tracker_${(new Date()).toISOString().slice(0,10)}.json`, JSON.stringify(payload, null, 2), "application/json");
-}
-
 function exportCSV(){
-  // export viewRows with tracking fields
-  const cols = ["PO #","Vendor","Order Date","Promised Date","Delivery Date","Lead Time","Ship via","Budget Allocation",
-                "Status","Criticality","Department","Owner","Next Follow-Up","Tracking Notes","Description","Amount","Open Balance"];
-  const lines = [cols.join(",")];
+  const cols = NEW_CSV_HEADERS.slice();
+  const lines = [cols.map(csvEscapeCell).join(",")];
   for(const r of orders){
-    const row = cols.map(c => {
-      const v = safeStr(r[c]);
-      const needs = /[",\n]/.test(v);
-      const esc = v.replaceAll('"','""');
-      return needs ? `"${esc}"` : esc;
-    }).join(",");
-    lines.push(row);
+    const row = cols.map(c => safeStr(r[PROC_CSV_COL_MAP[c] || c]));
+    lines.push(row.map(csvEscapeCell).join(","));
   }
   download(`Open_Orders_Tracker_${(new Date()).toISOString().slice(0,10)}.csv`, lines.join("\n"), "text/csv");
 }
 
 /* ========= File load ========= */
-const JSON_FIELDS = [
+const ORDER_FIELDS = [
   "PO #","Vendor","Order Date","Promised Date","Delivery Date","Lead Time","Ship via",
   "Budget Allocation","CSV Department","Description","CSV Status","CSV Follow Ups","Amount",
-  "Open Balance","CSV Notes","Status","Criticality","Department","Owner","Next Follow-Up",
+  "CSV Notes","Status","Criticality","Department","Owner","Next Follow-Up",
   "Tracking Notes","Last Updated"
 ];
-
-function normalizeOrderFromJSON(r){
-  const obj = {};
-  for(const f of JSON_FIELDS){
-    obj[f] = safeStr(r && r[f]);
-  }
-  return obj;
-}
 
 function afterLoad(){
   try{ applyOverrides(orders); }catch(e){ console.warn("applyOverrides failed", e); }
@@ -2942,26 +2880,7 @@ refresh();
 function handleCSVText(text, name=""){
   csvFilename = name || "uploaded.csv";
   rawRows = parseCSV(text);
-  orders = extractOrders(rawRows);
-  afterLoad();
-}
-
-function handleJSONText(text, name=""){
-  csvFilename = name || "uploaded.json";
-  rawRows = [];
-  let data;
-  try{
-    data = JSON.parse(text);
-  }catch(e){
-    alert("That JSON file could not be parsed.");
-    return;
-  }
-  const arr = Array.isArray(data) ? data : (data && Array.isArray(data.orders) ? data.orders : null);
-  if(!arr){
-    alert("JSON must be an array of orders or an object with an \"orders\" array.");
-    return;
-  }
-  orders = arr.map(normalizeOrderFromJSON);
+  orders = extractOrdersStrict(rawRows);
   afterLoad();
 }
 
@@ -2975,52 +2894,16 @@ function loadFromProcurementStorage(){
     console.warn("procurement storage JSON parse failed", e);
     return false;
   }
-  // 1) If it's an orders array, use it directly
-  const arr = Array.isArray(data) ? data : (data && Array.isArray(data.orders) ? data.orders : null);
-  if(arr && arr.length){
-    csvFilename = "procurement.json (localStorage)";
-    rawRows = [];
-    orders = arr.map(normalizeOrderFromJSON);
-    afterLoad();
-    return true;
-  }
-
-  // 2) If it's a sheet payload (headers + rows), convert to CSV rows
+  // Expect strict sheet payload (headers + rows) from Procurement source.
   const sheet = data?.sheets?.Procurement || data?.sheets?.["Open Purchase Order List by Vendor"];
   const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
   const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
   if(headers.length && rows.length){
-    // Prefer real header row if the provided headers are just title rows
-    const headerLooksValid = (() => {
-      const norm = headers.map(normalizeHeader);
-      const hasVendor = norm.some(x => x.toLowerCase() === "vendor");
-      const hasNum = norm.some(x => {
-        const v = x.toLowerCase();
-        return v === "num" || v === "po num" || v === "po #" || v === "po number";
-      });
-      const hasOrderDate = norm.some(x => x.toLowerCase() === "order date");
-      return hasVendor && hasNum && hasOrderDate;
-    })();
-
     csvFilename = "procurement.json (sheet payload)";
-    if(headerLooksValid){
-      const csvText = sheetToCsvText(headers, rows);
-      rawRows = parseCSV(csvText);
-      orders = extractOrders(rawRows);
-    }else{
-      const headerIdx = findHeaderRow(rows);
-      if(headerIdx > 0){
-        rawRows = rows.slice(headerIdx);
-        orders = extractOrders(rawRows);
-      }else{
-        rawRows = rows;
-        orders = extractOrdersFromNoHeader(rows);
-      }
-    }
-    if(!orders || !orders.length){
-      // Fallback: try no-header extraction directly from raw rows
-      orders = extractOrdersFromNoHeader(rows);
-    }
+    const csvText = sheetToCsvText(headers, rows);
+    rawRows = parseCSV(csvText);
+    orders = extractOrdersStrict(rawRows);
+    if(!orders.length) return false;
     afterLoad();
     return true;
   }
@@ -3030,11 +2913,9 @@ function loadFromProcurementStorage(){
 
 function readFile(file){
   const reader = new FileReader();
-  const isJson = !!file && (file.type === "application/json" || file.name.toLowerCase().endsWith(".json"));
   reader.onload = () => {
     const text = String(reader.result || "");
-    if(isJson) handleJSONText(text, file.name);
-    else handleCSVText(text, file.name);
+    handleCSVText(text, file.name);
   };
   reader.readAsText(file);
 }
@@ -3046,7 +2927,6 @@ $("#file").addEventListener("change", (e) => {
   if(f) readFile(f);
 });
 
-$("#btnExportJSON").addEventListener("click", exportJSON);
 $("#btnExportCSV").addEventListener("click", exportCSV);
 
 $("#btnReset").addEventListener("click", () => {

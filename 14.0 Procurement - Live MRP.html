@@ -129,6 +129,18 @@
     td.num, th.num{text-align:right; font-variant-numeric: tabular-nums; font-family: var(--mono)}
     td.code{font-family:var(--mono); font-size:11px}
     td.desc{max-width: 520px}
+    td.editCell.on{
+      cursor:text;
+      background: rgba(34,197,94,.08);
+    }
+    td.editCell.on:focus{
+      outline: 2px solid rgba(34,197,94,.55);
+      outline-offset: -2px;
+      background: rgba(34,197,94,.14);
+    }
+    td.editCell.off{
+      cursor: default;
+    }
     .muted{color:var(--muted)}
     .foot{
       padding:10px 14px; border-top:1px solid var(--border2);
@@ -437,6 +449,7 @@
             <input id="search3" class="search" placeholder="Search full CSV row…" />
             <select id="deptSelect3" class="select"></select>
             <button class="btn" id="btnAddFullRow" type="button"><span>➕</span><span>Add Row</span></button>
+            <label class="toggle"><input id="toggleFullEdit" type="checkbox" /> Enable Edit</label>
             <label class="toggle"><input id="toggleFullActions" type="checkbox" /> Show Delete</label>
             <span class="muted">Click any column header to sort</span>
           </div>
@@ -578,7 +591,8 @@ const state = {
   pill: "ALL",
   history: [],
   showExcel: false,
-  showFullActions: false
+  showFullActions: false,
+  fullEditEnabled: false
 };
 const HISTORY_KEY = "campo.mrp.history.v3.6";
 const MODE_KEY = "campo.mrp.mode.v3.6";
@@ -939,6 +953,8 @@ function loadFromRows(rows, filename){
   state.rawCodeHeader = rawCodeHeader;
   state.rawDescHeader = rawDescHeader;
   state.meta = { loadedAt: new Date(), filename };
+  state.fullEditEnabled = false;
+  if ($("toggleFullEdit")) $("toggleFullEdit").checked = false;
   if (headers.length) state.fullSort.key = headers[0];
 
   // dept selects
@@ -1373,12 +1389,53 @@ function renderFull(){
   $("theadFull").innerHTML = `<tr>${state.showFullActions ? `<th>Actions</th>` : ``}${inputs.map(h=>`<th data-sort="${escapeHtml(h)}">${escapeHtml(h)}</th>`).join("")}</tr>`;
   setSortHeader('#panelTable table', state.fullSort.key, state.fullSort.dir);
 
-  $("tbodyFull").innerHTML = rows.map(x=>`
+  $("tbodyFull").innerHTML = rows.map(x=>{
+    const rawIdx = state.rawRows.indexOf(x);
+    return `
     <tr>
       ${state.showFullActions ? `<td><button class="btn" type="button" data-del-full="1">Delete</button></td>` : ``}
-      ${inputs.map(h=>`<td>${escapeHtml(x[h] || "")}</td>`).join("")}
+      ${inputs.map(h=>`<td class="editCell ${state.fullEditEnabled ? "on" : "off"}" ${state.fullEditEnabled ? 'contenteditable="true"' : ""} data-edit-idx="${rawIdx}" data-edit-col="${escapeHtml(h)}">${escapeHtml(x[h] || "")}</td>`).join("")}
     </tr>
-  `).join("");
+  `;
+  }).join("");
+}
+
+function rebuildItemsFromRawRows(){
+  const headers = state.rawHeaders || [];
+  if (!headers.length) {
+    state.items = [];
+    return;
+  }
+
+  const { map, missing, excel } = buildIndex(headers);
+  if (missing.length) return;
+
+  const items = [];
+  for (const rawObj of (state.rawRows || [])) {
+    const get = (idx) => (idx == null ? "" : (rawObj[headers[idx]] ?? ""));
+    const code = cleanText(get(map.code));
+    const desc = cleanText(get(map.desc));
+    const dept = cleanText(get(map.dept));
+    if (!code && !desc) continue;
+
+    const raw = {
+      Department: dept || "—",
+      Code: code || "—",
+      Description: desc || "—",
+      UnitCost: map.price != null ? cleanNum(get(map.price)) : null,
+      LeadTimeDays: cleanNum(get(map.leadDays)),
+      MinMonths: cleanNum(get(map.minMonths)),
+      CurrentInv: cleanNum(get(map.currentInv)),
+      BurnRateMonthly: cleanNum(get(map.burn)),
+      AtPort: map.atPort != null ? (cleanNum(get(map.atPort)) ?? 0) : 0,
+      ExcelDaysToOrder: excel.excelDays != null ? cleanNum(get(excel.excelDays)) : null,
+      ExcelWhenToOrder: excel.excelWhen != null ? parseMDY(get(excel.excelWhen)) : null,
+      ExcelRecommendedOrder: excel.excelReco != null ? cleanNum(get(excel.excelReco)) : null
+    };
+
+    items.push(computeMRP(raw));
+  }
+  state.items = items;
 }
 
 function renderOutputList(){
@@ -1580,6 +1637,8 @@ $("btnClear").addEventListener("click", ()=>{
   state.rawCodeHeader = null;
   state.rawDescHeader = null;
   state.meta = { loadedAt:null, filename:null };
+  state.fullEditEnabled = false;
+  if ($("toggleFullEdit")) $("toggleFullEdit").checked = false;
   $("metaStatus").textContent = "No data";
   $("metaLine").textContent = "Cleared. Load a CSV to begin.";
   $("tbodyTop").innerHTML = "";
@@ -1625,6 +1684,11 @@ $("deptSelect4").addEventListener("change", ()=> state.rawRows.length && renderO
 $("toggleFullActions").addEventListener("change", (e)=>{
   state.showFullActions = !!e.target.checked;
   renderFull();
+});
+$("toggleFullEdit").addEventListener("change", (e)=>{
+  state.fullEditEnabled = !!e.target.checked;
+  renderFull();
+  toast(state.fullEditEnabled ? "Edit enabled" : "Edit locked");
 });
 $("btnAddFullRow").addEventListener("click", ()=>{
   if (!state.rawHeaders.length){
@@ -1691,6 +1755,33 @@ $("tbodyFull").addEventListener("click", (e)=>{
   state.rawRows.splice(rawIdx, 1);
   renderFull();
   toast("Row deleted");
+});
+
+$("tbodyFull").addEventListener("keydown", (e)=>{
+  const cell = e.target.closest("td[data-edit-col]");
+  if (!cell || !state.fullEditEnabled) return;
+  if (e.key === "Enter") {
+    e.preventDefault();
+    cell.blur();
+  }
+});
+
+$("tbodyFull").addEventListener("focusout", (e)=>{
+  const cell = e.target.closest("td[data-edit-col]");
+  if (!cell || !state.fullEditEnabled) return;
+  const rawIdx = Number(cell.dataset.editIdx);
+  const col = cell.dataset.editCol;
+  if (!Number.isInteger(rawIdx) || rawIdx < 0 || !col) return;
+  const row = state.rawRows[rawIdx];
+  if (!row) return;
+
+  const nextValue = String(cell.textContent || "").replace(/\s+/g, " ").trim();
+  if ((row[col] ?? "") === nextValue) return;
+  row[col] = nextValue;
+
+  rebuildItemsFromRawRows();
+  if (state.items.length) refreshAll();
+  else renderFull();
 });
 
 $("toggleExcel").addEventListener("change", (e)=> setExcelColsVisible(e.target.checked));
