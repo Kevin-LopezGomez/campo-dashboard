@@ -1208,8 +1208,10 @@ const CRIT_LIST = ["Critical", "Not Critical"];
 const DEPT_LIST = ["Growing","Food Safety","Ops","HR","CEO","Maintenance","Procurement","Sales","Marketing"];
 
 /* ========= Storage keys ========= */
-const PROCUREMENT_STORAGE_KEY = "campo_procurement_v1";
-const PROCUREMENT_PING_KEY = "campo_procurement_push_ping_v1";
+const PROCUREMENT_STORAGE_KEY = "campo_master_procurement_v1";
+const PROCUREMENT_PING_KEY = "campo_master_procurement_push_ping_v1";
+const LEGACY_PROCUREMENT_STORAGE_KEY = "campo_procurement_v1";
+const LEGACY_PROCUREMENT_PING_KEY = "campo_procurement_push_ping_v1";
 const MSG_PROCUREMENT = "PROCUREMENT_UPDATED";
 const BC_NAMES = ["campo_master_bus_v1","campo_updates_v1"];
 const bcs = [];
@@ -1634,7 +1636,13 @@ function extractOrdersStrict(rows){
 
     const o = buildOrderFromHeaderRow(cells, col);
 
-    if(!o["Vendor"] && !o["PO #"] && !o["Amount"] && !o["Order Date"] && !o["Description"]) continue;
+    if(
+      !displayText(o["Vendor"]) &&
+      !displayText(o["PO #"]) &&
+      !displayText(o["Amount"]) &&
+      !displayText(o["Order Date"]) &&
+      !displayText(o["Description"])
+    ) continue;
     if(o["Vendor"].toLowerCase().startsWith("total for ")) continue;
     out.push(o);
   }
@@ -1886,7 +1894,7 @@ function computeKpis(rows){
 }
 
 function badgeForStatus(status){
-  const s = safeStr(status);
+  const s = displayText(status);
   if(!s) return `<span class="badge"><span class="b"></span>Unassigned</span>`;
   let cls="b-blue";
   if(s==="Delivered" || s==="Received by Warehouse") cls="b-accent";
@@ -1898,7 +1906,7 @@ function badgeForStatus(status){
 }
 
 function pillForCriticality(c){
-  const v = safeStr(c);
+  const v = displayText(c);
   if(!v) return `<span class="pill mid">—</span>`;
   if(v==="Critical") return `<span class="pill crit">Critical</span>`;
   return `<span class="pill ok">Not Critical</span>`;
@@ -1911,6 +1919,19 @@ function escapeHtml(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+
+function isZeroLike(v){
+  const s = safeStr(v).trim();
+  if(!s) return false;
+  const n = s.replace(/[$,\s]/g, "");
+  return /^[-+]?0*(?:\.0+)?$/.test(n);
+}
+
+function displayText(v){
+  const s = safeStr(v).trim();
+  if(!s) return "";
+  return isZeroLike(s) ? "" : s;
 }
 
 function renderTable(rows){
@@ -1962,40 +1983,42 @@ function renderTable(rows){
     const isProcCsvView = currentPreset === "proc";
 
     const cells = {
-      "PO #": () => `<span class="mono">${escapeHtml(r["PO #"] || "")}</span>`,
-      "Vendor": () => `<span>${escapeHtml(r["Vendor"] || "")}</span>`,
-      "Order No./PO Number": () => `<span class="mono">${escapeHtml(r["PO #"] || "")}</span>`,
-      "Order Date": () => `<span class="small">${escapeHtml(r["Order Date"] || "")}</span>`,
-      "Promised Date": () => `<span class="small">${escapeHtml(r["Promised Date"] || "")}</span>`,
-      "Delivery Date": () => `<span class="small">${escapeHtml(r["Delivery Date"] || "")}</span>`,
-      "Lead Time": () => `<span class="small">${escapeHtml(r["Lead Time"] || "")}</span>`,
-      "Notes": () => `<span class="muted">${escapeHtml(r["CSV Notes"] || "")}</span>`,
-      "Follow Ups": () => `<span class="small">${escapeHtml(r["CSV Follow Ups"] || "")}</span>`,
-      "Budget Allocation": () => `<span class="small">${escapeHtml(r["Budget Allocation"] || "")}</span>`,
-      "Ship via/Notes": () => `<span class="small">${escapeHtml(r["Ship via"] || "")}</span>`,
+      "PO #": () => `<span class="mono">${escapeHtml(displayText(r["PO #"]))}</span>`,
+      "Vendor": () => `<span>${escapeHtml(displayText(r["Vendor"]))}</span>`,
+      "Order No./PO Number": () => `<span class="mono">${escapeHtml(displayText(r["PO #"]))}</span>`,
+      "Order Date": () => `<span class="small">${escapeHtml(displayText(r["Order Date"]))}</span>`,
+      "Promised Date": () => `<span class="small">${escapeHtml(displayText(r["Promised Date"]))}</span>`,
+      "Delivery Date": () => `<span class="small">${escapeHtml(displayText(r["Delivery Date"]))}</span>`,
+      "Lead Time": () => `<span class="small">${escapeHtml(displayText(r["Lead Time"]))}</span>`,
+      "Notes": () => `<span class="muted">${escapeHtml(displayText(r["CSV Notes"]))}</span>`,
+      "Follow Ups": () => `<span class="small">${escapeHtml(displayText(r["CSV Follow Ups"]))}</span>`,
+      "Budget Allocation": () => `<span class="small">${escapeHtml(displayText(r["Budget Allocation"]))}</span>`,
+      "Ship via/Notes": () => `<span class="small">${escapeHtml(displayText(r["Ship via"]))}</span>`,
       "Amount": () => {
         const m = parseMoney(r["Amount"]);
-        return `<span class="mono">${m===null ? escapeHtml(r["Amount"]||"") : escapeHtml(formatMoney(m))}</span>`;
+        if(m === 0) return `<span class="mono"></span>`;
+        return `<span class="mono">${m===null ? escapeHtml(displayText(r["Amount"])) : escapeHtml(formatMoney(m))}</span>`;
       },
       "Total Amount/Cost": () => {
         const m = parseMoney(r["Amount"]);
-        return `<span class="mono">${m===null ? escapeHtml(r["Amount"]||"") : escapeHtml(formatMoney(m))}</span>`;
+        if(m === 0) return `<span class="mono"></span>`;
+        return `<span class="mono">${m===null ? escapeHtml(displayText(r["Amount"])) : escapeHtml(formatMoney(m))}</span>`;
       },
       "Status": () => badgeForStatus(r["Status"]),
       "Criticality": () => pillForCriticality(r["Criticality"]),
-      "Department": () => `<span class="badge"><span class="b b-blue"></span>${escapeHtml(r["Department"] || "—")}</span>`,
-      "Owner": () => `<span class="muted">${escapeHtml(r["Owner"] || "—")}</span>`,
+      "Department": () => `<span class="badge"><span class="b b-blue"></span>${escapeHtml(displayText(r["Department"]) || "—")}</span>`,
+      "Owner": () => `<span class="muted">${escapeHtml(displayText(r["Owner"]) || "—")}</span>`,
       "Next Follow-Up": () => {
-        const d = r["Next Follow-Up"];
+        const d = displayText(r["Next Follow-Up"]);
         if(!d) return `<span class="muted">—</span>`;
         const dt = parseDateLoose(d);
         const iso = dt ? toISODate(dt) : "";
         const isOverdue = iso && iso < todayISO();
         return `<span class="${isOverdue ? "" : "small"}" style="${isOverdue ? "color: var(--danger); font-weight:800;" : ""}">${escapeHtml(iso || d)}</span>`;
       },
-      "Tracking Notes": () => `<span class="muted">${escapeHtml(r["Tracking Notes"] || "—")}</span>`,
-      "Description": () => `<span class="small">${escapeHtml(r["Description"] || "")}</span>`,
-      "Ship via": () => `<span class="small">${escapeHtml(r["Ship via"] || "")}</span>`
+      "Tracking Notes": () => `<span class="muted">${escapeHtml(displayText(r["Tracking Notes"]) || "—")}</span>`,
+      "Description": () => `<span class="small">${escapeHtml(displayText(r["Description"]))}</span>`,
+      "Ship via": () => `<span class="small">${escapeHtml(displayText(r["Ship via"]))}</span>`
     };
 
     const columns = (COLUMN_PRESETS[currentPreset] || COLUMN_PRESETS.proc).slice();
@@ -2005,7 +2028,7 @@ function renderTable(rows){
 
       // Procurement preset should mirror CSV values exactly (raw mapped cells).
       if(isProcCsvView){
-        td.textContent = safeStr(getCellValueByColumn(r, c));
+        td.textContent = displayText(getCellValueByColumn(r, c));
         tr.appendChild(td);
         continue;
       }
@@ -2080,7 +2103,7 @@ function renderTable(rows){
       } else if(cells[c]){
         td.innerHTML = cells[c]();
       } else {
-        td.innerHTML = `<span>${escapeHtml(getCellValueByColumn(r, c) || "")}</span>`;
+        td.innerHTML = `<span>${escapeHtml(displayText(getCellValueByColumn(r, c)))}</span>`;
       }
 
       tr.appendChild(td);
@@ -2378,12 +2401,12 @@ function renderActionPanel(scoped){
   for(const r of top){
     const div = document.createElement("div");
     div.className = "item";
-    const po = safeStr(r["PO #"]).trim() || "—";
-    const vend = safeStr(r["Vendor"]).trim() || "—";
-    const st = safeStr(r["Status"]).trim() || "Unassigned";
+    const po = displayText(r["PO #"]) || "—";
+    const vend = displayText(r["Vendor"]) || "—";
+    const st = displayText(r["Status"]) || "Unassigned";
     const due = dueISO(r) || "—";
-    const dept = safeStr(r["Department"]).trim() || "—";
-    const owner = safeStr(r["Owner"]).trim() || "—";
+    const dept = displayText(r["Department"]) || "—";
+    const owner = displayText(r["Owner"]) || "—";
 
     div.innerHTML = `
       <div>
@@ -2709,13 +2732,13 @@ if(pillsBar && quick){
 
   rowsEl.innerHTML = "";
   for(const r of shown){
-    const vend = safeStr(r["Vendor"]).trim() || "—";
-    const promisedDate = safeStr(r["Promised Date"]).trim() || "—";
-    const deliveryDate = safeStr(r["Delivery Date"]).trim() || "—";
-    const status = safeStr(r["Status"]).trim() || "Unassigned";
-    const owner = safeStr(r["Owner"]).trim() || "—";
-    const desc = safeStr(r["Description"]).trim() || "—";
-    const notes = safeStr(r["Tracking Notes"]).trim() || "—";
+    const vend = displayText(r["Vendor"]) || "—";
+    const promisedDate = displayText(r["Promised Date"]) || "—";
+    const deliveryDate = displayText(r["Delivery Date"]) || "—";
+    const status = displayText(r["Status"]) || "Unassigned";
+    const owner = displayText(r["Owner"]) || "—";
+    const desc = displayText(r["Description"]) || "—";
+    const notes = displayText(r["Tracking Notes"]) || "—";
 
     const line = document.createElement("div");
     line.className = "deptLine";
@@ -2748,8 +2771,8 @@ function renderInsights(allRows){
   const vendMap = new Map();
 
   for(const r of allRows){
-    const dept = safeStr(r["Department"]).trim() || "—";
-    const vend = safeStr(r["Vendor"]).trim() || "—";
+    const dept = displayText(r["Department"]) || "—";
+    const vend = displayText(r["Vendor"]) || "—";
 
     const d = deptMap.get(dept) || { dept, total:0, overdue:0, critical:0, stuck:0 };
     d.total += 1;
@@ -2869,7 +2892,7 @@ function afterLoad(){
   setSelectOptions("#fStatus", STATUS_LIST, true);
   setSelectOptions("#fDept", DEPT_LIST, true);
   // Vendor options from extracted orders
-  const vendors = [...new Set(orders.map(o => String(o["Vendor"]||""))
+  const vendors = [...new Set(orders.map(o => String(displayText(o["Vendor"])||""))
     .map(s=>s.trim())
     .filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const selVendor = $("#fVendor");
@@ -2899,9 +2922,16 @@ function handleCSVText(text, name=""){
 function loadFromProcurementStorage(){
   let data;
   try{
-    const raw = localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "";
+    const rawPrimary = localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "";
+    const rawLegacy = localStorage.getItem(LEGACY_PROCUREMENT_STORAGE_KEY) || "";
+    const raw = rawPrimary || rawLegacy;
     if(!raw) return false;
     data = JSON.parse(raw);
+    if(!rawPrimary && rawLegacy){
+      try{
+        localStorage.setItem(PROCUREMENT_STORAGE_KEY, rawLegacy);
+      }catch(_e){}
+    }
   }catch(e){
     console.warn("procurement storage JSON parse failed", e);
     return false;
@@ -3179,7 +3209,9 @@ function setupLiveListeners(){
     if (!e) return;
     if (
       e.key === PROCUREMENT_STORAGE_KEY ||
-      e.key === PROCUREMENT_PING_KEY
+      e.key === PROCUREMENT_PING_KEY ||
+      e.key === LEGACY_PROCUREMENT_STORAGE_KEY ||
+      e.key === LEGACY_PROCUREMENT_PING_KEY
     ) reloadProcurement("storage");
   });
 
@@ -3200,11 +3232,11 @@ function setupLiveListeners(){
     });
   }
 
-  let lastPing = (localStorage.getItem(PROCUREMENT_PING_KEY) || "");
-  let lastLen = (localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "").length;
+  let lastPing = (localStorage.getItem(PROCUREMENT_PING_KEY) || localStorage.getItem(LEGACY_PROCUREMENT_PING_KEY) || "");
+  let lastLen = (localStorage.getItem(PROCUREMENT_STORAGE_KEY) || localStorage.getItem(LEGACY_PROCUREMENT_STORAGE_KEY) || "").length;
   setInterval(() => {
-    const curPing = (localStorage.getItem(PROCUREMENT_PING_KEY) || "");
-    const curLen = (localStorage.getItem(PROCUREMENT_STORAGE_KEY) || "").length;
+    const curPing = (localStorage.getItem(PROCUREMENT_PING_KEY) || localStorage.getItem(LEGACY_PROCUREMENT_PING_KEY) || "");
+    const curLen = (localStorage.getItem(PROCUREMENT_STORAGE_KEY) || localStorage.getItem(LEGACY_PROCUREMENT_STORAGE_KEY) || "").length;
     if ((curPing && curPing !== lastPing) || curLen !== lastLen){
       lastPing = curPing;
       lastLen = curLen;
