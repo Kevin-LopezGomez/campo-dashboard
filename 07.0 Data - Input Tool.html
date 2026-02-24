@@ -52,6 +52,26 @@
     }
     .drop.dragover{border-color: rgba(34,197,94,.8);background: rgba(34,197,94,.08);}
     .btnrow{display:flex;flex-wrap:wrap;gap:8px;}
+    .btnrow.topActions{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:8px;
+      align-items:stretch;
+    }
+    .btnrow.topActions button{
+      width:100%;
+      justify-content:center;
+      white-space:nowrap;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    @media(max-width:1100px){
+      .btnrow.topActions{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media(max-width:640px){
+      .btnrow.topActions{ grid-template-columns: 1fr; }
+    }
     button{
       background: rgba(15,23,42,.95);
       border:1px solid rgba(55,65,81,.9);
@@ -73,6 +93,11 @@
       background: radial-gradient(circle at 0 0, rgba(239,68,68,.20), rgba(127,29,29,.85));
       border-color: rgba(239,68,68,.75);
     }
+    button.info{
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,.25), rgba(3,105,161,.9));
+      border-color: rgba(56,189,248,.8);
+      box-shadow: 0 9px 24px rgba(2,132,199,.2);
+    }
     button.ghost{
       background: rgba(2,6,23,.35);
       border-color: rgba(55,65,81,.75);
@@ -89,6 +114,21 @@
     }
     .kv{display:flex;justify-content:space-between;gap:10px;color:var(--sub);font-size:.82rem;}
     .kv b{color:var(--text);}
+    .kvRight{display:inline-flex;align-items:center;gap:8px;}
+    .iconBtn{
+      background: rgba(2,6,23,.35);
+      border:1px solid rgba(55,65,81,.75);
+      color:var(--text);
+      border-radius:999px;
+      padding:2px 8px;
+      font-size:.72rem;
+      line-height:1.2;
+      min-height:24px;
+    }
+    .iconBtn:disabled{
+      opacity:.4;
+      cursor:not-allowed;
+    }
     .tag{
       border:1px solid rgba(148,163,184,.25);
       border-radius:999px;
@@ -120,6 +160,89 @@
       border:1px solid rgba(55,65,81,.75);
       border-radius:12px;
       background: rgba(2,6,23,.28);
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .hint code{
+      white-space:normal;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .wizard{
+      margin-top:10px;
+      padding:10px 12px;
+      border:1px solid rgba(34,197,94,.45);
+      border-radius:12px;
+      background: rgba(16,185,129,.08);
+      display:none;
+      gap:8px;
+    }
+    .wizardTitle{
+      font-size:.92rem;
+      font-weight:800;
+      color:#e2fbe9;
+      letter-spacing:.01em;
+    }
+    .wizardDetect{
+      font-size:.84rem;
+      line-height:1.4;
+      color:#dbeafe;
+      font-weight:600;
+      background: rgba(2,6,23,.35);
+      border:1px solid rgba(59,130,246,.35);
+      border-radius:10px;
+      padding:8px 10px;
+    }
+    .wizardLabel{
+      font-size:.82rem;
+      font-weight:800;
+      color:#e5e7eb;
+      letter-spacing:.01em;
+    }
+    .wizardRow{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:8px;
+    }
+    .wizard select{
+      background: rgba(2,6,23,.6);
+      color: var(--text);
+      border:1px solid rgba(55,65,81,.9);
+      border-radius:10px;
+      padding:6px 8px;
+      font-size:.8rem;
+    }
+    .wizList{
+      margin:0;
+      padding-left:16px;
+      color:var(--sub);
+      font-size:.78rem;
+    }
+    .wizList li{
+      margin:6px 0;
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:8px;
+      color:var(--sub);
+    }
+    .wizList .wsel{
+      background: rgba(2,6,23,.6);
+      color: var(--text);
+      border:1px solid rgba(55,65,81,.9);
+      border-radius:10px;
+      padding:4px 6px;
+      font-size:.76rem;
+    }
+    .flag{
+      border:1px solid rgba(59,130,246,.45);
+      border-radius:12px;
+      background: rgba(30,58,138,.18);
+      color:#bfdbfe;
+      padding:8px 10px;
+      font-size:.76rem;
+      line-height:1.35;
     }
     code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;color:#c7d2fe;}
     .warnline{color:#fbbf24;}
@@ -137,48 +260,54 @@
     <div class="row">
       <div class="drop" id="dropzone">
         <strong>Drop .xlsx or .csv here</strong>
-        <span class="small">If CSV filename includes “grow” or “pack”, it auto-assigns. Otherwise use the assign buttons.</span>
+        <span class="small">Upload, review detected destination, then confirm assignment in the wizard before save.</span>
 
         <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,text/csv" hidden />
-        <input id="storeCsvInput" type="file" accept=".csv,text/csv" hidden />
 
-        <div class="btnrow">
+        <div class="btnrow topActions">
           <button class="primary" id="chooseBtn" type="button">📄 Choose File</button>
-          <button class="primary" id="chooseStoreBtn" type="button">🗺️ Choose Store Visit CSV</button>
-          <button id="assignGrowBtn" type="button" disabled>🧩 Assign last CSV → Master Grow</button>
-          <button id="assignPackBtn" type="button" disabled>📦 Assign last CSV → Master Pack</button>
-          <button id="assignExpBtn" type="button" disabled>🧪 Assign last CSV → Current Experiments</button>
-          <button id="assignProcBtn" type="button" disabled>🧾 Assign last CSV → Procurement</button>
-          <button id="assignStoreBtn" type="button" disabled>🗺️ Assign last CSV → Store Visit</button>
+          <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
+          <button class="info" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
           <button class="danger" id="clearBtn" type="button">✕ Clear Stored Sources</button>
         </div>
 
-        <div class="btnrow" style="margin-top:6px;">
-          <button class="ghost" id="downloadGrowBtn" type="button">⬇️ Download grow.json</button>
-          <button class="ghost" id="downloadPackBtn" type="button">⬇️ Download pack.json</button>
-          <button class="ghost" id="downloadExpBtn" type="button">⬇️ Download experiments.json</button>
-          <button class="ghost" id="downloadProcBtn" type="button">⬇️ Download procurement.json</button>
-          <button class="ghost" id="downloadStoreBtn" type="button">⬇️ Download store-visit.json</button>
-          <button class="ghost" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
-          <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
-          <button class="primary" id="publishStoreOnlyBtn" type="button">🗺️ Publish Store Visits Only</button>
+        <div class="wizard" id="importWizard">
+          <div class="wizardTitle"><b>Import Wizard</b></div>
+          <div class="wizardDetect" id="wizDetect">No staged upload.</div>
+          <div class="wizardRow" id="wizCsvRow">
+            <label class="wizardLabel" for="wizTarget">Assign to:</label>
+            <select id="wizTarget">
+              <option value="">Select dataset</option>
+              <option value="grow">Master Grow</option>
+              <option value="pack">Master Pack</option>
+              <option value="exp">Current Experiments</option>
+              <option value="proc">Procurement</option>
+              <option value="store">Store Visit</option>
+            </select>
+            <button class="primary" id="wizConfirmCsvBtn" type="button">✅ Confirm CSV Assignment</button>
+            <button class="ghost" id="wizCancelBtn" type="button">Cancel</button>
+          </div>
+          <div id="wizXlsxRow" style="display:none;">
+            <ul class="wizList" id="wizXlsxList"></ul>
+            <div class="wizardRow">
+              <button class="primary" id="wizConfirmXlsxBtn" type="button">✅ Confirm XLSX Assignments</button>
+              <button class="ghost" id="wizCancelBtn2" type="button">Cancel</button>
+            </div>
+          </div>
         </div>
 
         <div class="hint small">
           <b>Bulletproof contract:</b> this tool always saves Excel/CSV into:
           <br>
-          <code>payload.sheets["Master Grow"]</code> and <code>payload.sheets["Master Pack"]</code>
+          <code>payload.sheets["Master Grow"]</code>, <code>payload.sheets["Master Pack"]</code>, <code>payload.sheets["Current Experiments"]</code>, <code>payload.sheets["Procurement"]</code>, and <code>payload.sheets["Store Visit"]</code>
           <br><br>
           Uploads save JSON into <code>localStorage</code> so dashboards read immediately.
           “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
           <br><br>
           Worker endpoints:
-          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>,
+          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>, <code>GET /data/master/Store%20Visits.json</code>,
           <br>
-          <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>.
-          <br><br>
-          Store Visits (public):
-          <code>GET https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json</code>
+          <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>, <code>PUT /data/master/Store%20Visits.json</code>.
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
@@ -186,16 +315,17 @@
       </div>
 
       <div class="meta">
-        <div class="kv"><span>Master Grow</span><span class="tag" id="growTag"><span class="dot bad"></span>Missing</span></div>
-        <div class="kv"><span>Master Pack</span><span class="tag" id="packTag"><span class="dot bad"></span>Missing</span></div>
-        <div class="kv"><span>Current Experiments</span><span class="tag" id="expTag"><span class="dot bad"></span>Missing</span></div>
-        <div class="kv"><span>Procurement</span><span class="tag" id="procTag"><span class="dot bad"></span>Missing</span></div>
-        <div class="kv"><span>Store Visit</span><span class="tag" id="storeTag"><span class="dot bad"></span>Missing</span></div>
+        <div class="kv"><span>Master Grow</span><span class="kvRight"><button class="iconBtn" id="growDlBtn" type="button" title="Download grow.json" disabled>⬇</button><span class="tag" id="growTag"><span class="dot bad"></span>Missing</span></span></div>
+        <div class="kv"><span>Master Pack</span><span class="kvRight"><button class="iconBtn" id="packDlBtn" type="button" title="Download pack.json" disabled>⬇</button><span class="tag" id="packTag"><span class="dot bad"></span>Missing</span></span></div>
+        <div class="kv"><span>Current Experiments</span><span class="kvRight"><button class="iconBtn" id="expDlBtn" type="button" title="Download experiments.json" disabled>⬇</button><span class="tag" id="expTag"><span class="dot bad"></span>Missing</span></span></div>
+        <div class="kv"><span>Procurement</span><span class="kvRight"><button class="iconBtn" id="procDlBtn" type="button" title="Download procurement.json" disabled>⬇</button><span class="tag" id="procTag"><span class="dot bad"></span>Missing</span></span></div>
+        <div class="kv"><span>Store Visit</span><span class="kvRight"><button class="iconBtn" id="storeDlBtn" type="button" title="Download store-visit.json" disabled>⬇</button><span class="tag" id="storeTag"><span class="dot bad"></span>Missing</span></span></div>
         <div class="kv"><span>Grow updated</span><b id="growUpdated">–</b></div>
         <div class="kv"><span>Pack updated</span><b id="packUpdated">–</b></div>
         <div class="kv"><span>Experiments updated</span><b id="expUpdated">–</b></div>
         <div class="kv"><span>Procurement updated</span><b id="procUpdated">–</b></div>
         <div class="kv"><span>Store Visit updated</span><b id="storeUpdated">–</b></div>
+        <div class="flag" id="lastAssignFlag">Last assigned upload: none</div>
         <div class="small" id="fileMeta">Last file: –</div>
       </div>
     </div>
@@ -227,6 +357,7 @@ const MASTER_PACK_KEY = "campo_master_pack_v1";
 const MASTER_EXP_KEY  = "campo_master_experiments_v1";
 const MASTER_PROC_KEY = "campo_master_procurement_v1";
 const MASTER_STORE_KEY = "campo_master_store_visit_v1";
+const LAST_ASSIGN_META_KEY = "campo_last_assignment_meta_v1";
 
 const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
 const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
@@ -261,25 +392,12 @@ const MSG_STORE = "STORE_VISIT_UPDATED";
   // =========================================================
   // UI REFS
   // =========================================================
-  const dropzone = document.getElementById("dropzone");
-  const fileInput = document.getElementById("fileInput");
-  const chooseBtn = document.getElementById("chooseBtn");
-  const chooseStoreBtn = document.getElementById("chooseStoreBtn");
-  const storeCsvInput = document.getElementById("storeCsvInput");
-  const assignGrowBtn = document.getElementById("assignGrowBtn");
-  const assignPackBtn = document.getElementById("assignPackBtn");
-const assignExpBtn  = document.getElementById("assignExpBtn");
-const assignProcBtn = document.getElementById("assignProcBtn");
-const assignStoreBtn = document.getElementById("assignStoreBtn");
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("fileInput");
+const chooseBtn = document.getElementById("chooseBtn");
 const clearBtn = document.getElementById("clearBtn");
-const downloadGrowBtn = document.getElementById("downloadGrowBtn");
-const downloadPackBtn = document.getElementById("downloadPackBtn");
-const downloadExpBtn  = document.getElementById("downloadExpBtn");
-const downloadProcBtn = document.getElementById("downloadProcBtn");
-const downloadStoreBtn = document.getElementById("downloadStoreBtn");
 
   const publishBtn = document.getElementById("publishBtn");
-  const publishStoreOnlyBtn = document.getElementById("publishStoreOnlyBtn");
   const pullBtn = document.getElementById("pullBtn");
   const statusEl = document.getElementById("status");
   const previewEl = document.getElementById("preview");
@@ -288,17 +406,42 @@ const downloadStoreBtn = document.getElementById("downloadStoreBtn");
 const expTag  = document.getElementById("expTag");
 const procTag = document.getElementById("procTag");
 const storeTag = document.getElementById("storeTag");
+const growDlBtn = document.getElementById("growDlBtn");
+const packDlBtn = document.getElementById("packDlBtn");
+const expDlBtn  = document.getElementById("expDlBtn");
+const procDlBtn = document.getElementById("procDlBtn");
+const storeDlBtn = document.getElementById("storeDlBtn");
 const growUpdated = document.getElementById("growUpdated");
 const packUpdated = document.getElementById("packUpdated");
 const expUpdated  = document.getElementById("expUpdated");
 const procUpdated = document.getElementById("procUpdated");
 const storeUpdated = document.getElementById("storeUpdated");
 const fileMeta = document.getElementById("fileMeta");
+const lastAssignFlag = document.getElementById("lastAssignFlag");
+const importWizard = document.getElementById("importWizard");
+const wizDetect = document.getElementById("wizDetect");
+const wizTarget = document.getElementById("wizTarget");
+const wizCsvRow = document.getElementById("wizCsvRow");
+const wizXlsxRow = document.getElementById("wizXlsxRow");
+const wizXlsxList = document.getElementById("wizXlsxList");
+const wizConfirmCsvBtn = document.getElementById("wizConfirmCsvBtn");
+const wizConfirmXlsxBtn = document.getElementById("wizConfirmXlsxBtn");
+const wizCancelBtn = document.getElementById("wizCancelBtn");
+const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
 
   const contractWarn = document.getElementById("contractWarn");
 
   function setStatus(msg){ statusEl.textContent = msg; }
   function norm(s){ return String(s||"").trim().toLowerCase(); }
+  const KIND_LABEL = {
+    grow: "Master Grow",
+    pack: "Master Pack",
+    exp: "Current Experiments",
+    proc: "Procurement",
+    store: "Store Visit"
+  };
+
+  let stagedUpload = null;
 
   function showContractWarning(msg){
     if (!contractWarn) return;
@@ -309,6 +452,92 @@ const fileMeta = document.getElementById("fileMeta");
     }
     contractWarn.style.display = "block";
     contractWarn.textContent = msg;
+  }
+
+  function renderLastAssignFlag(){
+    if(!lastAssignFlag) return;
+    let meta = null;
+    try{
+      meta = JSON.parse(localStorage.getItem(LAST_ASSIGN_META_KEY) || "null");
+    }catch(_e){
+      meta = null;
+    }
+    if(!meta || !meta.when || !meta.target){
+      lastAssignFlag.textContent = "Last assigned upload: none";
+      return;
+    }
+    const ts = new Date(meta.when);
+    const when = isNaN(ts.getTime()) ? meta.when : ts.toLocaleString();
+    const target = KIND_LABEL[meta.target] || meta.target;
+    const file = meta.fileName || "unknown file";
+    lastAssignFlag.textContent = `Last assigned upload: ${file} -> ${target} (${when})`;
+  }
+
+  function setLastAssignMeta(target, sourceLabel, fileName){
+    const meta = {
+      target,
+      sourceLabel: sourceLabel || "",
+      fileName: fileName || "",
+      when: new Date().toISOString()
+    };
+    try{ localStorage.setItem(LAST_ASSIGN_META_KEY, JSON.stringify(meta)); }catch(_e){}
+    renderLastAssignFlag();
+  }
+
+  function inferFileNameFromSourceLabel(sourceLabel){
+    const s = String(sourceLabel || "");
+    const i = s.indexOf(": ");
+    if(i >= 0 && i + 2 < s.length) return s.slice(i + 2).trim();
+    return s;
+  }
+
+  function clearWizard(){
+    stagedUpload = null;
+    if(importWizard) importWizard.style.display = "none";
+    if(wizTarget) wizTarget.value = "";
+    if(wizXlsxList) wizXlsxList.innerHTML = "";
+  }
+
+  function detectCsvKind(fileName){
+    const n = norm(fileName);
+    if(n.includes("store") && n.includes("visit")) return { kind:"store", confidence:"high" };
+    if(n.includes("procure") || n.includes("procurement") || n.includes("purch")) return { kind:"proc", confidence:"high" };
+    if(n.includes("experiment") || n.includes("experiments") || n.includes("exp")) return { kind:"exp", confidence:"high" };
+    if(n.includes("pack")) return { kind:"pack", confidence:"high" };
+    if(n.includes("grow")) return { kind:"grow", confidence:"high" };
+    return { kind:"", confidence:"low" };
+  }
+
+  function showCsvWizard(fileName){
+    const detection = detectCsvKind(fileName);
+    const guess = detection.kind ? (KIND_LABEL[detection.kind] || detection.kind) : "No strong guess";
+    if(!importWizard) return;
+    importWizard.style.display = "grid";
+    wizCsvRow.style.display = "flex";
+    wizXlsxRow.style.display = "none";
+    wizDetect.textContent = `Detected CSV: ${fileName} | Suggested: ${guess} (${detection.confidence})`;
+    wizTarget.value = detection.kind || "";
+  }
+
+  function showXlsxWizard(fileName, plans){
+    if(!importWizard) return;
+    importWizard.style.display = "grid";
+    wizCsvRow.style.display = "none";
+    wizXlsxRow.style.display = "block";
+    wizDetect.textContent = `Detected XLSX: ${fileName} · ${plans.length} dataset assignment(s) ready.`;
+    wizXlsxList.innerHTML = plans.map((p, i) => {
+      const opts = [
+        ["grow","Master Grow"],
+        ["pack","Master Pack"],
+        ["exp","Current Experiments"],
+        ["proc","Procurement"],
+        ["store","Store Visit"]
+      ].map(([val,label]) => `<option value="${val}" ${p.kind===val ? "selected" : ""}>${label}</option>`).join("");
+      return `<li>
+        <span>Sheet "${escapeHtml(p.sheetName)}" \u2192</span>
+        <select class="wsel" data-plan-index="${i}">${opts}</select>
+      </li>`;
+    }).join("");
   }
 
   // =========================================================
@@ -395,6 +624,11 @@ function refreshBadges(){
   setTag(expTag,  hasExp);
   setTag(procTag, hasProc);
   setTag(storeTag, hasStore);
+  if(growDlBtn) growDlBtn.disabled = !hasGrow;
+  if(packDlBtn) packDlBtn.disabled = !hasPack;
+  if(expDlBtn) expDlBtn.disabled = !hasExp;
+  if(procDlBtn) procDlBtn.disabled = !hasProc;
+  if(storeDlBtn) storeDlBtn.disabled = !hasStore;
 
   growUpdated.textContent = fmtTs(localStorage.getItem(MASTER_GROW_PING));
   packUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PACK_PING));
@@ -404,6 +638,7 @@ function refreshBadges(){
 
   const v = validateStorageContract();
   showContractWarning(v.ok ? "" : v.msg);
+  renderLastAssignFlag();
 }
 
 // =========================================================
@@ -513,42 +748,49 @@ function refreshBadges(){
   // =========================================================
   function saveSource(which, payload, sourceLabel){
   const now = String(Date.now());
+  let saved = false;
   try{
     if(which === "grow"){
       if (!payload?.sheets?.[CANON_GROW_SHEET]) throw new Error(`Grow payload missing sheets["${CANON_GROW_SHEET}"]`);
       localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_GROW_PING, now);
       emit(MSG_GROW, MASTER_GROW_KEY);
+      saved = true;
       setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}`);
     } else if(which === "pack"){
       if (!payload?.sheets?.[CANON_PACK_SHEET]) throw new Error(`Pack payload missing sheets["${CANON_PACK_SHEET}"]`);
       localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
+      saved = true;
       setStatus(`Saved Master Pack (JSON overwritten): ${sourceLabel}`);
     } else if(which === "exp"){
       if (!payload?.sheets?.[CANON_EXP_SHEET]) throw new Error(`Experiments payload missing sheets["${CANON_EXP_SHEET}"]`);
       localStorage.setItem(MASTER_EXP_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_EXP_PING, now);
       emit(MSG_EXP, MASTER_EXP_KEY);
+      saved = true;
       setStatus(`Saved Current Experiments (JSON overwritten): ${sourceLabel}`);
     } else if(which === "proc"){
       if (!payload?.sheets?.[CANON_PROC_SHEET]) throw new Error(`Procurement payload missing sheets["${CANON_PROC_SHEET}"]`);
       localStorage.setItem(MASTER_PROC_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_PROC_PING, now);
       emit(MSG_PROC, MASTER_PROC_KEY);
+      saved = true;
       setStatus(`Saved Procurement (JSON overwritten): ${sourceLabel}`);
     } else if(which === "store"){
       if (!payload?.sheets?.[CANON_STORE_SHEET]) throw new Error(`Store Visit payload missing sheets["${CANON_STORE_SHEET}"]`);
       localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_STORE_PING, now);
       emit(MSG_STORE, MASTER_STORE_KEY);
+      saved = true;
       setStatus(`Saved Store Visit (JSON overwritten): ${sourceLabel}`);
     }
   }catch(e){
     console.warn("Save failed:", e);
     setStatus("Failed to write to localStorage (blocked/full) or payload contract violated.");
   }
+  if(saved) setLastAssignMeta(which, sourceLabel, lastCsvName || inferFileNameFromSourceLabel(sourceLabel));
   refreshBadges();
 }
 
@@ -584,13 +826,9 @@ function refreshBadges(){
   async function handleFile(file){
     if(!file) return;
 
-    assignGrowBtn.disabled = true;
-    assignPackBtn.disabled = true;
-    assignExpBtn.disabled = true;
-    assignProcBtn.disabled = true;
-    assignStoreBtn.disabled = true;
     lastCsvMatrix = null;
     lastCsvName = "";
+    clearWizard();
 
     fileMeta.textContent = `Last file: ${file.name}`;
     showContractWarning("");
@@ -609,44 +847,14 @@ function refreshBadges(){
       lastCsvName = file.name;
 
       previewRows(rows, `Preview CSV: ${file.name}`);
-      // Allow manual assignment after any CSV load
-      assignGrowBtn.disabled = false;
-      assignPackBtn.disabled = false;
-      assignExpBtn.disabled = false;
-      assignProcBtn.disabled = false;
-      assignStoreBtn.disabled = false;
 
-      // Auto-assign
-if(lower.includes("grow")){
-  const hr = rowsToHeaderRows(rows);
-  const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `CSV: ${file.name}` });
-  saveSource("grow", payload, `CSV: ${file.name}`);
-  setStatus("CSV loaded and auto-assigned to Master Grow. You can reassign with the buttons.");
-}
-else if(lower.includes("pack")){
-  const hr = rowsToHeaderRows(rows);
-  const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `CSV: ${file.name}` });
-  saveSource("pack", payload, `CSV: ${file.name}`);
-  setStatus("CSV loaded and auto-assigned to Master Pack. You can reassign with the buttons.");
-}
-else if(lower.includes("experiment") || lower.includes("experiments") || lower.includes("exp")){
-  const hr = rowsToHeaderRows(rows);
-  const payload = buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel: `CSV: ${file.name}` });
-  saveSource("exp", payload, `CSV: ${file.name}`);
-  setStatus("CSV loaded and auto-assigned to Current Experiments. You can reassign with the buttons.");
-} else if(lower.includes("procure") || lower.includes("procurement") || lower.includes("purch")){
-  const hr = rowsToHeaderRows(rows);
-  const payload = buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel: `CSV: ${file.name}` });
-  saveSource("proc", payload, `CSV: ${file.name}`);
-  setStatus("CSV loaded and auto-assigned to Procurement. You can reassign with the buttons.");
-} else if(lower.includes("store") && lower.includes("visit")){
-  const hr = rowsToHeaderRows(rows);
-  const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV: ${file.name}` });
-  saveSource("store", payload, `CSV: ${file.name}`);
-  setStatus("CSV loaded and auto-assigned to Store Visit. You can reassign with the buttons.");
-} else {
-        setStatus("CSV loaded. Assign it to Master Grow, Master Pack, Experiments, Procurement, or Store Visit.");
-      }
+      stagedUpload = {
+        type: "csv",
+        fileName: file.name,
+        rows
+      };
+      showCsvWizard(file.name);
+      setStatus("CSV staged. Confirm destination in Import Wizard before saving.");
       return;
     }
 
@@ -665,69 +873,18 @@ const expSheet  = pickSheetByName(wb, ["current experiments","experiments","expe
 const procSheet = pickSheetByName(wb, ["procurement","procure","purchasing","purchase","vendor","supplies"]);
 const storeSheet = pickSheetByName(wb, ["store visit","store_visit","store","visit"]);
 
-let wroteAny = false;
-
-    // Grow
-    if(growSheet){
-      const hr = sheetToHeaderRows(wb.Sheets[growSheet]);
-      if(isNonEmptySheet(hr)){
-        // *** CRITICAL FIX: ALWAYS SAVE UNDER "Master Grow" ***
-        const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `XLSX sheet: ${growSheet}` });
-        saveSource("grow", payload, `XLSX sheet: ${growSheet}`);
-        wroteAny = true;
-      } else {
-        setStatus(`Found sheet "${growSheet}" but it was empty (did not overwrite Master Grow).`);
-      }
-    }
-
-    // Pack
-    if(packSheet){
-      const hr = sheetToHeaderRows(wb.Sheets[packSheet]);
-      if(isNonEmptySheet(hr)){
-        // *** ALWAYS SAVE UNDER "Master Pack" ***
-        const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `XLSX sheet: ${packSheet}` });
-        saveSource("pack", payload, `XLSX sheet: ${packSheet}`);
-        wroteAny = true;
-      } else {
-        setStatus(`Found sheet "${packSheet}" but it was empty (did not overwrite Master Pack).`);
-      }
-    }
-
-// Experiments
-if(expSheet){
-  const hr = sheetToHeaderRows(wb.Sheets[expSheet]);
-  if(isNonEmptySheet(hr)){
-    const payload = buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel: `XLSX sheet: ${expSheet}` });
-    saveSource("exp", payload, `XLSX sheet: ${expSheet}`);
-    wroteAny = true;
-  } else {
-    setStatus(`Found sheet "${expSheet}" but it was empty (did not overwrite Experiments).`);
-  }
-}
-
-// Procurement
-if(procSheet){
-  const hr = sheetToHeaderRows(wb.Sheets[procSheet]);
-  if(isNonEmptySheet(hr)){
-    const payload = buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel: `XLSX sheet: ${procSheet}` });
-    saveSource("proc", payload, `XLSX sheet: ${procSheet}`);
-    wroteAny = true;
-  } else {
-    setStatus(`Found sheet "${procSheet}" but it was empty (did not overwrite Procurement).`);
-  }
-}
-
-// Store Visit
-if(storeSheet){
-  const hr = sheetToHeaderRows(wb.Sheets[storeSheet]);
-  if(isNonEmptySheet(hr)){
-    const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `XLSX sheet: ${storeSheet}` });
-    saveSource("store", payload, `XLSX sheet: ${storeSheet}`);
-    wroteAny = true;
-  } else {
-    setStatus(`Found sheet "${storeSheet}" but it was empty (did not overwrite Store Visit).`);
-  }
-}
+const plans = [];
+    const toPlan = (kind, sheetName) => {
+      if(!sheetName) return;
+      const hr = sheetToHeaderRows(wb.Sheets[sheetName]);
+      if(!isNonEmptySheet(hr)) return;
+      plans.push({ kind, sheetName, hr, sourceLabel: `XLSX sheet: ${sheetName}` });
+    };
+    toPlan("grow", growSheet);
+    toPlan("pack", packSheet);
+    toPlan("exp", expSheet);
+    toPlan("proc", procSheet);
+    toPlan("store", storeSheet);
 
 // Preview: whichever is present, otherwise first sheet
     const previewName = growSheet || packSheet || expSheet || procSheet || storeSheet || pickFallbackSheet(wb);
@@ -739,14 +896,23 @@ if(storeSheet){
       previewEl.innerHTML = `<div class="small" style="padding:10px;">No sheets found.</div>`;
     }
 
-    if(!wroteAny){
-      setStatus("Excel loaded, but Master Grow/Master Pack sheets were not found (no overwrite performed).");
+    if(!plans.length){
+      setStatus("Excel loaded, but no recognized non-empty data sheets were found.");
       // Add a helpful warning about canonical keys
       showContractWarning(
         `Tip: Your dashboards require the canonical keys: sheets["${CANON_GROW_SHEET}"] and sheets["${CANON_PACK_SHEET}"]. ` +
-        `This tool will save canonically only if it can identify Grow/Pack sheets in the Excel file.`
+        `This tool stages assignments only when it can identify supported sheets.`
       );
+      return;
     }
+
+    stagedUpload = {
+      type: "xlsx",
+      fileName: file.name,
+      plans
+    };
+    showXlsxWizard(file.name, plans);
+    setStatus("XLSX staged. Confirm Import Wizard assignments before saving.");
   }
 
   // =========================================================
@@ -990,120 +1156,74 @@ async function publishToSupabase(){
     }
   }
 
-
-  // =========================================================
-  // STORE VISIT (DEDICATED CSV FLOW)
-  // =========================================================
-  async function handleStoreVisitCsvFile(file){
-    if(!file) return;
-    setStatus("Reading Store Visit CSV…");
-    fileMeta.textContent = `Last file: ${file.name}`;
-    showContractWarning("");
-
-    const text = await file.text();
-    const matrix = parseCsvToRows(text);
-    lastCsvMatrix = matrix;
-    lastCsvName = file.name;
-
-    previewRows(matrix, `Preview Store Visit CSV: ${file.name}`);
-
-    const hr = rowsToHeaderRows(matrix);
-    const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV: ${file.name}` });
-    saveSource("store", payload, `CSV: ${file.name}`);
-
-    // allow reassigning same CSV if desired
-    assignGrowBtn.disabled = false;
-    assignPackBtn.disabled = false;
-    assignExpBtn.disabled = false;
-    assignProcBtn.disabled = false;
-    assignStoreBtn.disabled = false;
-
-    setStatus("Store Visit CSV loaded → saved to localStorage. Click “Publish Store Visits Only” to push to Supabase.");
-  }
-
-  async function publishStoreVisitsOnly(){
-    const storeStr = localStorage.getItem(MASTER_STORE_KEY);
-    if(!storeStr){
-      setStatus("No Store Visit JSON stored yet. Upload/assign a Store Visit CSV first.");
-      return;
-    }
-    try{ JSON.parse(storeStr); } catch { setStatus("Store Visit JSON is invalid (cannot publish)."); return; }
-
-    const v = validateStorageContract();
-    if (!v.ok) showContractWarning(v.msg);
-
-    publishStoreOnlyBtn.disabled = true;
-    setStatus("Publishing Store Visits to Supabase (via Worker PUT)…");
-
-    try{
-      const res = await fetch(WORKER_STORE_URL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: storeStr
-      });
-      const text = await res.text().catch(() => "");
-      if(!res.ok) throw new Error(`Store Visits publish failed (${res.status}): ${text}`);
-
-      setStatus("✅ Published Store Visits.json");
-    }catch(err){
-      console.error(err);
-      setStatus(`❌ Publish failed: ${err.message}`);
-    }finally{
-      publishStoreOnlyBtn.disabled = false;
-      refreshBadges();
-    }
-  }
-
-
   // =========================================================
   // WIRE EVENTS
   // =========================================================
   chooseBtn.addEventListener("click", () => fileInput.click());
-  chooseStoreBtn.addEventListener("click", () => storeCsvInput.click());
-  storeCsvInput.addEventListener("change", (e) => handleStoreVisitCsvFile(e.target.files?.[0] || null));
   fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
 
-  assignGrowBtn.addEventListener("click", () => {
-    if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
-    const hr = rowsToHeaderRows(lastCsvMatrix);
-    const payload = buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel: `CSV (manual): ${lastCsvName}` });
-    saveSource("grow", payload, `CSV (manual): ${lastCsvName}`);
-    // Keep assign buttons enabled so the same CSV can be reassigned if needed.
+  wizConfirmCsvBtn.addEventListener("click", () => {
+    if(!stagedUpload || stagedUpload.type !== "csv"){
+      setStatus("No staged CSV upload to confirm.");
+      return;
+    }
+    const target = wizTarget.value;
+    if(!target){
+      setStatus("Pick a destination dataset before confirming.");
+      return;
+    }
+    const hr = rowsToHeaderRows(stagedUpload.rows || []);
+    const sourceLabel = `CSV: ${stagedUpload.fileName}`;
+    if(target === "grow") saveSource("grow", buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel }), sourceLabel);
+    else if(target === "pack") saveSource("pack", buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel }), sourceLabel);
+    else if(target === "exp") saveSource("exp", buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel }), sourceLabel);
+    else if(target === "proc") saveSource("proc", buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel }), sourceLabel);
+    else if(target === "store") saveSource("store", buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel }), sourceLabel);
+    clearWizard();
+    setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}.`);
   });
 
-  assignPackBtn.addEventListener("click", () => {
-    if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
-    const hr = rowsToHeaderRows(lastCsvMatrix);
-    const payload = buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel: `CSV (manual): ${lastCsvName}` });
-    saveSource("pack", payload, `CSV (manual): ${lastCsvName}`);
-    // Keep assign buttons enabled so the same CSV can be reassigned if needed.
+  wizConfirmXlsxBtn.addEventListener("click", () => {
+    if(!stagedUpload || stagedUpload.type !== "xlsx"){
+      setStatus("No staged XLSX upload to confirm.");
+      return;
+    }
+    const plans = stagedUpload.plans || [];
+    if(!plans.length){
+      setStatus("No staged XLSX assignments found.");
+      return;
+    }
+    const selects = Array.from(wizXlsxList.querySelectorAll("select[data-plan-index]"));
+    for(let i=0; i<plans.length; i++){
+      const p = plans[i];
+      const sel = selects.find(s => Number(s.getAttribute("data-plan-index")) === i);
+      const target = sel ? sel.value : p.kind;
+      const canonical =
+        target === "grow" ? CANON_GROW_SHEET :
+        target === "pack" ? CANON_PACK_SHEET :
+        target === "exp" ? CANON_EXP_SHEET :
+        target === "proc" ? CANON_PROC_SHEET :
+        CANON_STORE_SHEET;
+      const payload = buildPayloadSingleCanonical(canonical, p.hr, { kind: target, sourceLabel: p.sourceLabel });
+      saveSource(target, payload, p.sourceLabel);
+    }
+    clearWizard();
+    const chosen = selects.map(s => KIND_LABEL[s.value] || s.value);
+    setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}.`);
   });
 
-assignExpBtn.addEventListener("click", () => {
-  if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
-  const hr = rowsToHeaderRows(lastCsvMatrix);
-  const payload = buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel: `CSV (manual): ${lastCsvName}` });
-  saveSource("exp", payload, `CSV (manual): ${lastCsvName}`);
-  // Keep assign buttons enabled so the same CSV can be reassigned if needed.
-});
-
-assignProcBtn.addEventListener("click", () => {
-  if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
-  const hr = rowsToHeaderRows(lastCsvMatrix);
-  const payload = buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel: `CSV (manual): ${lastCsvName}` });
-  saveSource("proc", payload, `CSV (manual): ${lastCsvName}`);
-  // Keep assign buttons enabled so the same CSV can be reassigned if needed.
-});
-
-assignStoreBtn.addEventListener("click", () => {
-  if(!lastCsvMatrix || !lastCsvMatrix.length) return setStatus("No CSV loaded to assign.");
-  const hr = rowsToHeaderRows(lastCsvMatrix);
-  const payload = buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel: `CSV (manual): ${lastCsvName}` });
-  saveSource("store", payload, `CSV (manual): ${lastCsvName}`);
-  // Keep assign buttons enabled so the same CSV can be reassigned if needed.
-});
+  wizCancelBtn.addEventListener("click", () => {
+    clearWizard();
+    setStatus("Staged upload cancelled.");
+  });
+  wizCancelBtn2.addEventListener("click", () => {
+    clearWizard();
+    setStatus("Staged upload cancelled.");
+  });
 
   clearBtn.addEventListener("click", () => {
+    lastCsvMatrix = null;
+    lastCsvName = "";
     try{
       localStorage.removeItem(MASTER_GROW_KEY);
   localStorage.removeItem(MASTER_PACK_KEY);
@@ -1115,6 +1235,7 @@ assignStoreBtn.addEventListener("click", () => {
   localStorage.removeItem(MASTER_EXP_PING);
   localStorage.removeItem(MASTER_PROC_PING);
   localStorage.removeItem(MASTER_STORE_PING);
+  localStorage.removeItem(LAST_ASSIGN_META_KEY);
     }catch(e){}
 
     emit(MSG_GROW, MASTER_GROW_KEY);
@@ -1124,19 +1245,19 @@ assignStoreBtn.addEventListener("click", () => {
     emit(MSG_STORE, MASTER_STORE_KEY);
 
     previewEl.innerHTML = `<div class="small" style="padding:10px;">Upload a file to preview data.</div>`;
+    clearWizard();
     setStatus("Cleared stored sources.");
     showContractWarning("");
     refreshBadges();
   });
 
-  downloadGrowBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_GROW_KEY, "grow.json"));
-downloadPackBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PACK_KEY, "pack.json"));
-downloadExpBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_EXP_KEY, "experiments.json"));
-downloadProcBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PROC_KEY, "procurement.json"));
-downloadStoreBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_STORE_KEY, "store-visit.json"));
+  growDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_GROW_KEY, "grow.json"));
+  packDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PACK_KEY, "pack.json"));
+  expDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_EXP_KEY, "experiments.json"));
+  procDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PROC_KEY, "procurement.json"));
+  storeDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_STORE_KEY, "store-visit.json"));
 
   publishBtn.addEventListener("click", publishToSupabase);
-  publishStoreOnlyBtn.addEventListener("click", publishStoreVisitsOnly);
   pullBtn.addEventListener("click", pullFromSupabase);
 
   // Drag & drop
@@ -1160,7 +1281,7 @@ downloadStoreBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MA
   // Keep badges fresh if something else updates localStorage
   window.addEventListener("storage", (e) => {
     if (!e) return;
-    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_STORE_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_STORE_PING].includes(e.key)) {
+    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_STORE_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_STORE_PING, LAST_ASSIGN_META_KEY].includes(e.key)) {
       refreshBadges();
     }
   });
