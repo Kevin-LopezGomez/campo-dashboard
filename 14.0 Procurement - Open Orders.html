@@ -183,18 +183,27 @@
     }
     .deptHdrTools .deptQuick{
       width: 100%;
-      min-height: 38px;
-      border:1px solid rgba(148,163,184,.18);
-      background: rgba(2,6,23,.26);
+      min-height: 46px;
+      border:1px solid rgba(148,163,184,.24);
+      background: rgba(2,6,23,.40);
       color: var(--text);
-      border-radius: 14px;
-      padding: 8px 12px;
-      font-weight:700;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-weight:800;
+      font-size: 16px;
     }
+    .deptHdrTools .deptQuick::placeholder{ color: rgba(203,213,225,.78); }
     #deptShownCountTop{
       margin-left: 10px;
       min-width: 110px;
       text-align: right;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    #ordersPanel .hd h2{
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: .01em;
     }
     .panel .hd small{ color: var(--muted); font-weight:600; }
 
@@ -273,7 +282,12 @@
     }
 
     /* Table */
-    .tablewrap{ overflow:auto; border-top: 1px solid var(--border2); }
+    .tablewrap{
+      overflow:auto;
+      border-top: 1px solid var(--border2);
+      max-height: min(68vh, 780px);
+      min-height: 260px;
+    }
     table{ width:100%; border-collapse: collapse; min-width: 980px; }
     th, td{
       padding: 10px 10px;
@@ -293,6 +307,12 @@
       cursor: pointer;
       user-select:none;
       white-space:nowrap;
+    }
+    #tbl thead th{
+      position: sticky;
+      top: 0;
+      z-index: 8;
+      background: rgba(11,18,34,.96);
     }
     th .sort{ opacity:.65; font-size: 11px; margin-left:6px; }
     td.mono{ font-family: var(--mono); font-size: 12px; }
@@ -476,6 +496,7 @@
       background: rgba(2,6,23,.25);
       position: sticky;
       top: 0;
+      z-index: 6;
     }
     details.insights summary{
       cursor:pointer;
@@ -654,14 +675,20 @@
   
     /* Header pill cleanup */
     .pillBtn{
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 14px;
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 999px;
+      letter-spacing: .01em;
+      min-height: 42px;
     }
     .pillBtn.active{
       background: rgba(34,197,94,.12);
       box-shadow: none;
+    }
+    .pillBtn .dot{
+      width: 10px;
+      height: 10px;
     }
 
   
@@ -697,9 +724,8 @@
 
   
     /* Layout tighten */
-    .pillsBar{ margin-top: 0; padding: 6px 10px; }
-    .pills{ gap: 6px; }
-    .pillBtn{ padding: 6px 9px; }
+    .pillsBar{ margin-top: 0; padding: 10px 14px; }
+    .pills{ gap: 10px; }
 
   
     /* Collapsible filters (class-based) */
@@ -716,21 +742,20 @@
   border: 1px solid rgba(148,163,184,.14);
   background: rgba(2,6,23,.28);
   border-radius: 18px;
-  overflow: hidden;
+  overflow: auto;
+  max-height: calc(100vh - 220px);
 }
 .deptTableHeader{
-  /* Was sticky; sticky headers were visually overlapping the first row text (e.g., “milestones”).
-     Keep it clean + predictable for department managers. */
-  position: relative;
-  top: auto;
-  z-index: 2;
+  position: sticky;
+  top: 0;
+  z-index: 14;
   background: linear-gradient(180deg, rgba(11,18,34,.86), rgba(2,6,23,.78));
   border-bottom: 1px solid rgba(148,163,184,.14);
   backdrop-filter: blur(10px);
 }
 .deptCols{
   display:grid;
-  grid-template-columns:  1.15fr 1.9fr .9fr .9fr .8fr 1.05fr 1.4fr;
+  grid-template-columns:  1.15fr 1.9fr .9fr .9fr .9fr 1.05fr 1.35fr;
   gap:10px;
   align-items:center;
   padding: 10px 12px;
@@ -760,34 +785,59 @@
 
 .deptCols.pills{ padding: 10px 12px; }
 
-.deptCols.pills .colpill{ width:100%; justify-content:flex-start; }
+.deptCols.pills .colpill{
+  width:100%;
+  justify-content:flex-start;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 800;
+  border-color: rgba(148,163,184,.24);
+  background: rgba(2,6,23,.48);
+}
+.deptCols.pills .colpill[data-col="orderDate"],
+.deptCols.pills .colpill[data-col="promised"],
+.deptCols.pills .colpill[data-col="delivery"],
+.deptCols.pills .colpill[data-col="status"],
+.deptCols.pills .colpill[data-col="notes"]{
+  justify-content: center;
+}
 .deptCols.quick{ padding: 0 12px 12px; }
-.deptQuick{ grid-column: 1 / 7; width:100%; min-height: 40px; border:1px solid rgba(148,163,184,.18); background: rgba(2,6,23,.26); color: var(--text); border-radius: 14px; padding: 10px 12px; font-weight:700; }
+.deptQuick{ grid-column: 1 / 7; width:100%; min-height: 44px; border:1px solid rgba(148,163,184,.22); background: rgba(2,6,23,.34); color: var(--text); border-radius: 16px; padding: 10px 14px; font-weight:800; font-size: 15px; }
 .deptQuick:focus{ outline:none; border-color: rgba(96,165,250,.35); box-shadow: 0 0 0 3px rgba(96,165,250,.10); }
 .deptColFilter::placeholder{ color: rgba(148,163,184,.70); font-weight: 700; }
 .deptRows{ display:block; }
 .deptLine{
   display:grid;
-  grid-template-columns:  1.15fr 1.9fr .9fr .9fr .8fr 1.05fr 1.4fr;
+  grid-template-columns:  1.15fr 1.9fr .9fr .9fr .9fr 1.05fr 1.35fr;
   gap:10px;
   align-items:center;
-  padding: 10px 12px;
-  border-top: 1px solid rgba(148,163,184,.10);
-  background: rgba(2,6,23,.18);
+  padding: 13px 12px;
+  border-top: 1px solid rgba(148,163,184,.14);
+  background: rgba(2,6,23,.22);
+}
+.deptLine:nth-child(odd){
+  background: linear-gradient(90deg, rgba(8,23,52,.42), rgba(2,6,23,.22));
+}
+.deptLine:nth-child(even){
+  background: linear-gradient(90deg, rgba(6,14,38,.56), rgba(2,6,23,.16));
 }
 .deptLine:hover{
-  background: rgba(15,23,42,.40);
+  background: linear-gradient(90deg, rgba(24,44,86,.62), rgba(15,23,42,.45));
+  box-shadow: inset 3px 0 0 rgba(56,189,248,.55);
 }
 .deptCell{
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(226,232,240,.92);
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(241,245,249,.98);
 }
-.deptCell.muted{ color: rgba(148,163,184,.92); font-weight: 700; }
+.deptCell.center{
+  text-align: center;
+}
+.deptCell.muted{ color: rgba(186,205,226,.96); font-weight: 800; }
 .deptCell.wrap{
   white-space: normal;
   overflow: visible;
@@ -795,16 +845,19 @@
   line-height: 1.25;
 }
 .descMain{ font-weight: 800; }
-.descNotes{ margin-top:4px; font-size:12px; line-height:1.25; color: rgba(148,163,184,.82); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.descNotes{ margin-top:4px; font-size:14px; line-height:1.3; color: rgba(186,205,226,.90); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.deptCell.center .descNotes{
+  text-align: center;
+}
 
     .deptStatus{
       display:inline-flex;
       align-items:center;
       gap:6px;
-      padding: 4px 10px;
+      padding: 6px 12px;
       border-radius: 999px;
       border: 1px solid rgba(148,163,184,.18);
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 900;
       background: rgba(2,6,23,.35);
       color: rgba(226,232,240,.90);
@@ -833,6 +886,20 @@
       color: #86efac;
       background: rgba(34,197,94,.14);
     }
+    .deptStatus[data-status="Open"],
+    .deptStatus[data-status="OPEN"],
+    .deptStatus[data-status="open"]{
+      border-color: rgba(34,197,94,.45);
+      color: #86efac;
+      background: rgba(34,197,94,.14);
+    }
+    .deptStatus[data-status="Closed"],
+    .deptStatus[data-status="CLOSED"],
+    .deptStatus[data-status="closed"]{
+      border-color: rgba(248,113,113,.45);
+      color: #fca5a5;
+      background: rgba(239,68,68,.14);
+    }
     .deptStatus[data-status="Unassigned"],
     .deptStatus[data-status=""]{
       border-color: rgba(148,163,184,.25);
@@ -846,16 +913,18 @@
   text-align:right;
 }
 @media (max-width: 980px){
-  .deptTableHeader{ top: 112px; }
+  .deptTable{ max-height: calc(100vh - 240px); }
+  .deptTableHeader{ top: 0; }
   .deptCols.labels, .deptCols.filters, .deptLine{
-    grid-template-columns:  1.15fr 1.6fr .9fr .9fr 1.05fr 1.4fr;
+    grid-template-columns:  1.15fr 1.7fr .9fr .9fr 1.05fr;
   }
   .deptHideSm{ display:none; }
 }
 @media (max-width: 680px){
-  .deptTableHeader{ top: 130px; }
+  .deptTable{ max-height: calc(100vh - 260px); }
+  .deptTableHeader{ top: 0; }
   .deptCols.labels, .deptCols.filters, .deptLine{
-    grid-template-columns:  1.2fr 1.6fr .9fr 1.05fr 1.4fr;
+    grid-template-columns:  1.2fr 1.8fr 1.1fr;
   }
   .deptHideMd{ display:none; }
 }
@@ -1132,9 +1201,9 @@
     <div class="deptCols pills" id="deptColPills2" role="tablist" aria-label="Department list column filter">
       <button class="colpill" data-col="vendor" type="button">Vendor</button>
       <button class="colpill" data-col="desc" type="button">Description</button>
-      <button class="colpill deptHideMd" data-col="promised" type="button">Promised</button>
-      <button class="colpill deptHideMd" data-col="delivery" type="button">Delivery</button>
-      <button class="colpill deptHideSm" data-col="owner" type="button">Owner</button>
+      <button class="colpill deptHideMd" data-col="orderDate" type="button">Order Date</button>
+      <button class="colpill deptHideMd" data-col="promised" type="button">Promised Date</button>
+      <button class="colpill deptHideMd" data-col="delivery" type="button">Delivery Date</button>
       <button class="colpill" data-col="status" type="button">Status</button>
       <button class="colpill deptHideSm" data-col="notes" type="button">Notes</button>
       
@@ -1145,9 +1214,9 @@
     <div class="deptCols filters" style="display:none">
       <input class="deptColFilter" id="deptF_vendor" />
       <input class="deptColFilter" id="deptF_desc" />
+      <input class="deptColFilter" id="deptF_orderDate" />
       <input class="deptColFilter" id="deptF_promised" />
       <input class="deptColFilter" id="deptF_delivery" />
-      <input class="deptColFilter" id="deptF_owner" />
       <input class="deptColFilter" id="deptF_notes" />
       <input class="deptColFilter" id="deptF_status" />
       <div><button class="btn" id="deptClearFilters" type="button">Clear</button></div>
@@ -1722,13 +1791,17 @@ function setOverride(row, patch){
 
 /* ========= Derived metrics ========= */
 function isClosed(r){
-  const s = safeStr(r["Status"]);
-  return (s === "Delivered" || s === "Received by Warehouse");
+  const s = safeStr(getStatusFromRow(r) || r["Status"]).trim().toLowerCase();
+  return (
+    s === "delivered" ||
+    s === "received by warehouse" ||
+    s === "closed"
+  );
 }
 function isMissingInfo(r){
   if(!safeStr(r["Vendor"]).trim()) return true;
   if(!safeStr(r["Status"]).trim()) return true;
-  if(!safeStr(r["Department"]).trim()) return true;
+  if(!safeStr(getDeptFromRow(r)).trim()) return true;
   if(!safeStr(r["Owner"]).trim()) return true;
   if(!isClosed(r) && !safeStr(r["Next Follow-Up"]).trim()) return true;
   return false;
@@ -1934,6 +2007,32 @@ function displayText(v){
   return isZeroLike(s) ? "" : s;
 }
 
+function getDeptFromRow(r){
+  const fromBudget = inferDepartmentFromBudget(r && r["Budget Allocation"]);
+  if(fromBudget) return fromBudget;
+  return displayText(r && r["Department"]);
+}
+function getStatusFromRow(r){
+  return displayText(r && (r["CSV Status"] || r["Status"]));
+}
+function getNotesFromRow(r){
+  return displayText(r && (r["CSV Notes"] || r["Tracking Notes"]));
+}
+function getDeliveryTimeForSort(r){
+  const dt = parseDateLoose(r && r["Delivery Date"]);
+  return dt ? dt.getTime() : Number.NEGATIVE_INFINITY;
+}
+function compareClosedThenDeliveryDesc(a, b){
+  const aClosed = isClosed(a) ? 1 : 0;
+  const bClosed = isClosed(b) ? 1 : 0;
+  if(aClosed !== bClosed) return aClosed - bClosed; // closed always bottom
+
+  const at = getDeliveryTimeForSort(a);
+  const bt = getDeliveryTimeForSort(b);
+  if(at !== bt) return bt - at; // most recent delivery closest to top
+  return 0;
+}
+
 function renderTable(rows){
   const tbl = $("#tbl");
   const thead = $("#theadRow");
@@ -1990,7 +2089,7 @@ function renderTable(rows){
       "Promised Date": () => `<span class="small">${escapeHtml(displayText(r["Promised Date"]))}</span>`,
       "Delivery Date": () => `<span class="small">${escapeHtml(displayText(r["Delivery Date"]))}</span>`,
       "Lead Time": () => `<span class="small">${escapeHtml(displayText(r["Lead Time"]))}</span>`,
-      "Notes": () => `<span class="muted">${escapeHtml(displayText(r["CSV Notes"]))}</span>`,
+      "Notes": () => `<span class="muted">${escapeHtml(getNotesFromRow(r))}</span>`,
       "Follow Ups": () => `<span class="small">${escapeHtml(displayText(r["CSV Follow Ups"]))}</span>`,
       "Budget Allocation": () => `<span class="small">${escapeHtml(displayText(r["Budget Allocation"]))}</span>`,
       "Ship via/Notes": () => `<span class="small">${escapeHtml(displayText(r["Ship via"]))}</span>`,
@@ -2004,9 +2103,9 @@ function renderTable(rows){
         if(m === 0) return `<span class="mono"></span>`;
         return `<span class="mono">${m===null ? escapeHtml(displayText(r["Amount"])) : escapeHtml(formatMoney(m))}</span>`;
       },
-      "Status": () => badgeForStatus(r["Status"]),
+      "Status": () => badgeForStatus(getStatusFromRow(r)),
       "Criticality": () => pillForCriticality(r["Criticality"]),
-      "Department": () => `<span class="badge"><span class="b b-blue"></span>${escapeHtml(displayText(r["Department"]) || "—")}</span>`,
+      "Department": () => `<span class="badge"><span class="b b-blue"></span>${escapeHtml(getDeptFromRow(r) || "—")}</span>`,
       "Owner": () => `<span class="muted">${escapeHtml(displayText(r["Owner"]) || "—")}</span>`,
       "Next Follow-Up": () => {
         const d = displayText(r["Next Follow-Up"]);
@@ -2016,7 +2115,7 @@ function renderTable(rows){
         const isOverdue = iso && iso < todayISO();
         return `<span class="${isOverdue ? "" : "small"}" style="${isOverdue ? "color: var(--danger); font-weight:800;" : ""}">${escapeHtml(iso || d)}</span>`;
       },
-      "Tracking Notes": () => `<span class="muted">${escapeHtml(displayText(r["Tracking Notes"]) || "—")}</span>`,
+      "Tracking Notes": () => `<span class="muted">${escapeHtml(getNotesFromRow(r) || "—")}</span>`,
       "Description": () => `<span class="small">${escapeHtml(displayText(r["Description"]))}</span>`,
       "Ship via": () => `<span class="small">${escapeHtml(displayText(r["Ship via"]))}</span>`
     };
@@ -2142,7 +2241,7 @@ function getFilters(){
 function rowMatches(r, f){
   if(f.status && (r["Status"] || "") !== f.status) return false;
   if(f.crit && (r["Criticality"] || "") !== f.crit) return false;
-  if(f.dept && (r["Department"] || "") !== f.dept) return false;
+  if(f.dept && (getDeptFromRow(r) || "") !== f.dept) return false;
   if(f.vendor && (r["Vendor"] || "") !== f.vendor) return false;
 
   if(f.due){
@@ -2187,6 +2286,9 @@ function sortRows(rows){
 
   const copy = rows.slice();
   copy.sort((a,b) => {
+    const priority = compareClosedThenDeliveryDesc(a, b);
+    if(priority !== 0) return priority;
+
     const av = getCellValueByColumn(a, k), bv = getCellValueByColumn(b, k);
 
     if(k === "Amount" || k === "Total Amount/Cost"){
@@ -2405,7 +2507,7 @@ function renderActionPanel(scoped){
     const vend = displayText(r["Vendor"]) || "—";
     const st = displayText(r["Status"]) || "Unassigned";
     const due = dueISO(r) || "—";
-    const dept = displayText(r["Department"]) || "—";
+    const dept = getDeptFromRow(r) || "—";
     const owner = displayText(r["Owner"]) || "—";
 
     div.innerHTML = `
@@ -2490,9 +2592,9 @@ function renderDeptList(rows){
   const fields = [
     ["deptF_vendor","vendor"],
     ["deptF_desc","desc"],
+    ["deptF_orderDate","orderDate"],
     ["deptF_promised","promised"],
     ["deptF_delivery","delivery"],
-    ["deptF_owner","owner"],
     ["deptF_status","status"],
     ["deptF_notes","notes"]
   ];
@@ -2550,18 +2652,18 @@ if(pillsBar && quick){
   const colToInputId = {
     vendor: "deptF_vendor",
     desc: "deptF_desc",
+    orderDate: "deptF_orderDate",
     promised: "deptF_promised",
     delivery: "deptF_delivery",
-    owner: "deptF_owner",
     status: "deptF_status",
     notes: "deptF_notes"
   };
   const colLabel = {
     vendor: "Vendor",
     desc: "Description",
-    promised: "Promised",
-    delivery: "Delivery",
-    owner: "Owner",
+    orderDate: "Order Date",
+    promised: "Promised Date",
+    delivery: "Delivery Date",
     notes: "Notes",
     status: "Status"
   };
@@ -2664,27 +2766,27 @@ if(pillsBar && quick){
 
   const fv = norm(filters.vendor);
   const fd = norm(filters.desc);
+  const foDate = norm(filters.orderDate);
   const fp = norm(filters.promised);
   const fdl = norm(filters.delivery);
-  const fo = norm(filters.owner);
   const fs = norm(filters.status);
   const fn = norm(filters.notes);
 
   let filtered = rows.filter(r => {
     const vend = norm(r["Vendor"]);
     const desc = norm(r["Description"]);
-    const notes = norm(r["Tracking Notes"]);
+    const orderDate = norm(r["Order Date"]);
+    const notes = norm(getNotesFromRow(r));
     const promised = norm(r["Promised Date"]);
     const delivery = norm(r["Delivery Date"]);
-    const owner = norm(r["Owner"]);
-    const status = norm(r["Status"]);
+    const status = norm(getStatusFromRow(r));
     return (
       contains(vend, fv) &&
       contains(desc, fd) &&
+      contains(orderDate, foDate) &&
       contains(notes, fn) &&
       contains(promised, fp) &&
       contains(delivery, fdl) &&
-      contains(owner, fo) &&
       contains(status, fs)
     );
   });
@@ -2700,15 +2802,18 @@ if(pillsBar && quick){
     const c = sortState.col;
     if(c === "vendor") return safeStr(r["Vendor"]).toLowerCase();
     if(c === "desc") return safeStr(r["Description"]).toLowerCase();
-    if(c === "owner") return safeStr(r["Owner"]).toLowerCase();
-    if(c === "status") return safeStr(r["Status"]).toLowerCase();
-    if(c === "notes") return safeStr(r["Tracking Notes"]).toLowerCase();
+    if(c === "orderDate") return (parseDateLoose(r["Order Date"])?.getTime() ?? Number.POSITIVE_INFINITY);
+    if(c === "status") return safeStr(getStatusFromRow(r)).toLowerCase();
+    if(c === "notes") return safeStr(getNotesFromRow(r)).toLowerCase();
     if(c === "promised") return (parseDateLoose(r["Promised Date"])?.getTime() ?? Number.POSITIVE_INFINITY);
     if(c === "delivery") return (parseDateLoose(r["Delivery Date"])?.getTime() ?? Number.POSITIVE_INFINITY);
     return safeStr(r["Vendor"]).toLowerCase();
   };
 
   filtered = filtered.slice().sort((a,b) => {
+    const priority = compareClosedThenDeliveryDesc(a, b);
+    if(priority !== 0) return priority;
+
     const va = getSortVal(a), vb = getSortVal(b);
     if(typeof va === "number" && typeof vb === "number"){
       if(va === vb) return 0;
@@ -2733,12 +2838,12 @@ if(pillsBar && quick){
   rowsEl.innerHTML = "";
   for(const r of shown){
     const vend = displayText(r["Vendor"]) || "—";
+    const orderDate = displayText(r["Order Date"]) || "—";
     const promisedDate = displayText(r["Promised Date"]) || "—";
     const deliveryDate = displayText(r["Delivery Date"]) || "—";
-    const status = displayText(r["Status"]) || "Unassigned";
-    const owner = displayText(r["Owner"]) || "—";
+    const status = getStatusFromRow(r) || "Unassigned";
     const desc = displayText(r["Description"]) || "—";
-    const notes = displayText(r["Tracking Notes"]) || "—";
+    const notes = getNotesFromRow(r) || "—";
 
     const line = document.createElement("div");
     line.className = "deptLine";
@@ -2749,15 +2854,15 @@ if(pillsBar && quick){
         <div class="descMain">${escapeHtml(desc)}</div>
       </div>
 
-      <div class="deptCell muted deptHideMd" title="${escapeHtml(promisedDate)}">${escapeHtml(promisedDate)}</div>
-      <div class="deptCell muted deptHideMd" title="${escapeHtml(deliveryDate)}">${escapeHtml(deliveryDate)}</div>
-      <div class="deptCell muted deptHideSm" title="${escapeHtml(owner)}">${escapeHtml(owner)}</div>
+      <div class="deptCell muted center deptHideMd" title="${escapeHtml(orderDate)}">${escapeHtml(orderDate)}</div>
+      <div class="deptCell muted center deptHideMd" title="${escapeHtml(promisedDate)}">${escapeHtml(promisedDate)}</div>
+      <div class="deptCell muted center deptHideMd" title="${escapeHtml(deliveryDate)}">${escapeHtml(deliveryDate)}</div>
 
-      <div class="deptCell" style="text-align:right;">
+      <div class="deptCell center">
         <span class="deptStatus" data-status="${escapeHtml(status)}" title="${escapeHtml(status)}">${escapeHtml(status)}</span>
       </div>
 
-      <div class="deptCell wrap deptHideSm" title="${escapeHtml(notes)}">
+      <div class="deptCell wrap center deptHideSm" title="${escapeHtml(notes)}">
         <div class="descNotes" style="margin-top:0; white-space: normal; overflow: visible;">${escapeHtml(notes)}</div>
       </div>
     `;
@@ -2771,7 +2876,7 @@ function renderInsights(allRows){
   const vendMap = new Map();
 
   for(const r of allRows){
-    const dept = displayText(r["Department"]) || "—";
+    const dept = getDeptFromRow(r) || "—";
     const vend = displayText(r["Vendor"]) || "—";
 
     const d = deptMap.get(dept) || { dept, total:0, overdue:0, critical:0, stuck:0 };
