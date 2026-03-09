@@ -1,0 +1,1793 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Production Planning (Inputs → Daily Balance)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#121926;
+      --muted:#9fb2c8;
+      --text:#eaf2fb;
+      --line:#223044;
+      --bad:#ff4d4f;
+      --warn:#ffb020;
+      --good:#2ecc71;
+      --chip:#1a2433;
+      --focus:#4aa3ff;
+      --field:#0c1524;
+      --field2:#0a1220;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.35;
+    }
+    header{
+      padding:20px 18px 10px;
+      border-bottom:1px solid var(--line);
+      position:sticky; top:0; background:rgba(11,15,20,.92); backdrop-filter: blur(8px);
+      z-index:10;
+    }
+    h1{margin:0; font-size:18px}
+    .sub{color:var(--muted); font-size:12px; margin-top:6px}
+    .pillnav{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+    }
+    .pill{
+      border:1px solid var(--line);
+      background:var(--field2);
+      color:var(--muted);
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .pill.active{
+      color:var(--text);
+      border-color:#36547a;
+      background:#102038;
+    }
+    main{padding:18px; max-width:1500px; margin:0 auto}
+    .page{display:none}
+    .page.active{display:block}
+    .grid{
+      display:grid;
+      grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 1140px){
+      .grid{grid-template-columns:1fr}
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      box-shadow: 0 10px 20px rgba(0,0,0,.25);
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:14px;
+      color:#d8e3ee;
+      letter-spacing:.2px;
+    }
+    .row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      margin:10px 0;
+    }
+    label{font-size:12px; color:var(--muted)}
+    input[type="number"], input[type="text"], select{
+      width:170px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:var(--field);
+      color:var(--text);
+      outline:none;
+      font-size:13px;
+    }
+    input[type="number"]:focus, input[type="text"]:focus, select:focus{
+      border-color:var(--focus);
+      box-shadow: 0 0 0 3px rgba(74,163,255,.15);
+    }
+
+    /* HARVEST INPUTS — bigger + obvious */
+    .harvestGrid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+    .harvestItem{
+      background:var(--field2);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .harvestItem .day{
+      font-size:12px;
+      color:var(--muted);
+      width:46px;
+      flex:0 0 46px;
+    }
+    .harvestItem input{
+      width:100%;
+      min-width:0;
+      font-size:14px;
+      padding:12px 12px;
+      background:var(--field);
+    }
+
+    .chips{
+      display:flex; flex-wrap:wrap; gap:6px;
+      margin-top:8px;
+    }
+    .chip{
+      background:var(--chip);
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:6px 8px;
+      font-size:11px;
+      color:var(--muted);
+      display:flex; align-items:center; gap:6px;
+      user-select:none;
+    }
+    .chip input{accent-color: var(--focus);}
+
+    .btnbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    button{
+      border:1px solid var(--line);
+      background:var(--field2);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      cursor:pointer;
+    }
+    button:hover{border-color:#2d4666}
+
+    .tablewrap{overflow:auto; border-radius:14px; border:1px solid var(--line)}
+    table{border-collapse:collapse; width:100%; min-width:840px; background:var(--field2)}
+    thead th{
+      position:sticky; top:0;
+      background:#0b1220;
+      border-bottom:1px solid var(--line);
+      font-size:10.5px; color:var(--muted);
+      padding:8px 6px;
+      text-align:right;
+      white-space:nowrap;
+    }
+    thead th:first-child, tbody td:first-child{ text-align:left; }
+    thead th:first-child, tbody td:first-child{
+      width:200px;
+      max-width:220px;
+      white-space:normal;
+    }
+    tbody td{
+      border-bottom:1px solid rgba(34,48,68,.6);
+      font-size:11.5px;
+      padding:8px 6px;
+      text-align:right;
+      white-space:nowrap;
+    }
+    tbody tr:hover td{background: rgba(255,255,255,.02)}
+    .k{color:var(--muted); font-size:11px}
+    .neg{color:var(--bad); font-weight:700}
+    .pos{color:var(--good); font-weight:600}
+    .warn{color:var(--warn); font-weight:600}
+    .note{color:var(--muted); font-size:12px; margin-top:10px}
+    .split{display:flex; gap:10px; flex-wrap:wrap}
+    .split > *{flex:1; min-width:260px}
+    .tiny{font-size:11px; color:var(--muted)}
+    .hr{height:1px; background:var(--line); margin:12px 0}
+    .righthead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+    .righthead .meta{font-size:11px; color:var(--muted); margin-top:2px}
+
+    .helpCallout{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px dashed rgba(74,163,255,.4);
+      background: rgba(74,163,255,.07);
+      color: var(--text);
+      font-size:12px;
+    }
+    .collapsible{
+      margin:10px 0;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:var(--field2);
+      overflow:hidden;
+    }
+    .collapsible > summary{
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      cursor:pointer;
+      padding:12px;
+      font-size:14px;
+      font-weight:600;
+      color:#d8e3ee;
+      user-select:none;
+    }
+    .collapsible > summary::-webkit-details-marker{display:none}
+    .collapsible .chev{
+      color:var(--muted);
+      transition:transform .15s ease;
+      font-size:11px;
+    }
+    .collapsible[open] .chev{transform:rotate(180deg)}
+    .sectionBody{padding:0 12px 12px}
+    .miniCard{
+      margin-top:12px;
+      background:var(--field2);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+    }
+    .packParent{cursor:pointer}
+    .packParent:hover td{background:rgba(255,255,255,.03)}
+    .packChild td{
+      font-size:12.5px;
+      color:#d2e3f5;
+      background:rgba(31,57,89,.55);
+    }
+    .packName{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .packCaret{
+      width:14px;
+      display:inline-block;
+      color:var(--muted);
+    }
+    .plannerOutputCard{
+      border-color:#2e4666;
+      background:linear-gradient(180deg, #11213a 0%, #0f1b2f 100%);
+      box-shadow:0 12px 24px rgba(1,10,24,.45);
+    }
+    .plannerMiniCard{
+      border-color:#2e4666;
+      background:linear-gradient(180deg, #11213a 0%, #0f1b2f 100%);
+    }
+    .plannerTable{
+      min-width:900px;
+      font-variant-numeric:tabular-nums;
+      background:#0e1a2f;
+    }
+    .plannerTable thead th{
+      font-size:12.5px;
+      color:#dbe9f8;
+      background:#1a2d4a;
+      padding:11px 9px;
+      letter-spacing:.2px;
+      border-bottom:1px solid #315075;
+    }
+    .plannerTable tbody td{
+      font-size:13.5px;
+      color:#f0f7ff;
+      padding:10px 9px;
+      border-bottom:1px solid rgba(66,100,138,.6);
+      background:rgba(12,28,50,.68);
+    }
+    .plannerTable tbody tr:nth-child(even) td{
+      background:rgba(22,42,72,.62);
+    }
+    .plannerTable tbody tr:hover td{
+      background:rgba(87,138,200,.2);
+    }
+    .plannerTable th:first-child,
+    .plannerTable td:first-child{
+      min-width:250px;
+      max-width:320px;
+      font-size:13px;
+      color:#f4f9ff;
+      font-weight:650;
+      background:#173151;
+    }
+    .plannerTable tbody tr:nth-child(even) td:first-child{
+      background:#1a3658;
+    }
+    .plannerMiniTable{
+      min-width:820px !important;
+      font-variant-numeric:tabular-nums;
+      background:#0e1a2f;
+    }
+    .plannerMiniTable thead th{
+      font-size:12px;
+      color:#d8e8f9;
+      background:#19304e;
+      padding:10px 8px;
+      letter-spacing:.2px;
+      border-bottom:1px solid #315075;
+    }
+    .plannerMiniTable tbody td{
+      font-size:13px;
+      color:#ecf6ff;
+      padding:9px 8px;
+      border-bottom:1px solid rgba(66,100,138,.56);
+      background:rgba(12,28,50,.65);
+    }
+    .plannerMiniTable tbody tr:nth-child(even) td{
+      background:rgba(21,40,68,.62);
+    }
+    .plannerMiniTable tbody tr:hover td{
+      background:rgba(87,138,200,.2);
+    }
+    .plannerMiniTable th:first-child,
+    .plannerMiniTable td:first-child{
+      min-width:210px;
+      max-width:260px;
+      font-size:12.5px;
+      color:#f1f8ff;
+      font-weight:650;
+      background:#173151;
+    }
+    .plannerMiniTable tbody tr:nth-child(even) td:first-child{
+      background:#1a3658;
+    }
+    .plannerMiniTable tr.pack-demand td{
+      background:rgba(66,47,20,.58);
+    }
+    .plannerMiniTable tr.pack-demand td:first-child{
+      background:#7a4f1f;
+      color:#fff4e3;
+    }
+    .plannerMiniTable tr.pack-plan td{
+      background:rgba(38,53,79,.58);
+    }
+    .plannerMiniTable tr.pack-plan td:first-child{
+      background:#355179;
+      color:#eaf2fe;
+    }
+    .plannerMiniTable tr.pack-total td{
+      background:rgba(19,66,52,.56);
+    }
+    .plannerMiniTable tr.pack-total td:first-child{
+      background:#1f6a54;
+      color:#e8fff5;
+    }
+    .plannerMiniTable tr.pack-total td.warn{
+      color:#7dffb2 !important;
+      font-weight:800;
+    }
+    .plannerOutputNote{
+      color:#d4e4f5;
+      font-size:13px;
+      line-height:1.5;
+      padding:10px 12px;
+      border:1px solid rgba(61,92,129,.8);
+      border-radius:12px;
+      background:rgba(18,35,58,.65);
+    }
+    .plannerTable tr.out-supply td{
+      background:rgba(20,54,91,.62);
+    }
+    .plannerTable tr.out-supply td:first-child{
+      background:#1f436c;
+      color:#e8f4ff;
+    }
+    .plannerTable tr.out-demand td{
+      background:rgba(66,47,20,.58);
+    }
+    .plannerTable tr.out-demand td:first-child{
+      background:#7a4f1f;
+      color:#fff4e3;
+    }
+    .plannerTable tr.out-balance td{
+      background:rgba(19,66,52,.56);
+    }
+    .plannerTable tr.out-balance td:first-child{
+      background:#1f6a54;
+      color:#e8fff5;
+    }
+    .plannerTable tr.out-plan td{
+      background:rgba(38,53,79,.58);
+    }
+    .plannerTable tr.out-plan td:first-child{
+      background:#355179;
+      color:#eaf2fe;
+    }
+    .plannerTable tr.out-total td{
+      background:rgba(19,66,52,.56);
+    }
+    .plannerTable tr.out-total td:first-child{
+      background:#1f6a54;
+      color:#e8fff5;
+    }
+    .plannerTable tr[class^="out-"]:hover td{
+      filter:brightness(1.1);
+    }
+    .plannerTable td.neg,
+    .plannerMiniTable td.neg{
+      color:#ff5f6d !important;
+      font-weight:800;
+      box-shadow:none;
+      text-shadow:none;
+    }
+    .plannerTable tr.out-balance td.pos{
+      color:#7dffb2 !important;
+      font-weight:800;
+      text-shadow:0 0 10px rgba(125,255,178,.22);
+    }
+    .plannerOutputNote .neg{
+      color:#ff8e99;
+      font-weight:800;
+      padding:1px 5px;
+      border-radius:7px;
+      background:rgba(159,37,51,.35);
+      border:1px solid rgba(255,137,154,.35);
+    }
+    .plannerTable td.plan-nz{
+      color:#ffd76a !important;
+      font-weight:800;
+      text-shadow:0 0 12px rgba(255,215,106,.28);
+    }
+    .packPlanNote{
+      color:#d4e4f5;
+      font-size:13px;
+      line-height:1.5;
+      padding:10px 12px;
+      border:1px solid rgba(61,92,129,.8);
+      border-radius:12px;
+      background:rgba(18,35,58,.65);
+    }
+    .packModeToggle{
+      display:flex;
+      gap:6px;
+      margin-top:8px;
+      margin-bottom:8px;
+      flex-wrap:wrap;
+    }
+    .packModeToggle .pill{
+      padding:6px 10px;
+      font-size:11px;
+    }
+
+    .resourcesCard{
+      border-color:#2d4462;
+      background:linear-gradient(180deg, #172438 0%, #111c2e 100%);
+    }
+    .resourcesCard .meta{
+      font-size:12.5px;
+      color:#c6d8ea;
+      line-height:1.45;
+    }
+    .resourcesKpis{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(160px, 1fr));
+      gap:10px;
+      margin:12px 0 14px;
+    }
+    .resourcesKpi{
+      border:1px solid #38506f;
+      background:rgba(12,24,39,.7);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .resourcesKpi .label{
+      color:#adc0d5;
+      font-size:11px;
+      letter-spacing:.2px;
+      text-transform:uppercase;
+    }
+    .resourcesKpi .value{
+      margin-top:6px;
+      color:#f0f7ff;
+      font-size:21px;
+      line-height:1.15;
+      font-weight:700;
+      font-variant-numeric:tabular-nums;
+    }
+    .resourcesKpi .sub{
+      margin-top:3px;
+      font-size:11px;
+      color:#9eb1c6;
+    }
+    .resourcesTable{
+      min-width:1020px;
+      font-variant-numeric: tabular-nums;
+    }
+    .resourcesTable thead th{
+      font-size:11.5px;
+      padding:11px 9px;
+      color:#d2e1ef;
+      letter-spacing:.25px;
+      background:#122136;
+    }
+    .resourcesTable tbody td{
+      font-size:13px;
+      padding:11px 9px;
+      border-bottom:1px solid rgba(88,113,143,.45);
+    }
+    .resourcesTable tbody tr:nth-child(even) td{
+      background:rgba(255,255,255,.018);
+    }
+    .resourcesTable tbody tr:hover td{
+      background:rgba(110,157,210,.13);
+    }
+    .resourcesTable th:first-child,
+    .resourcesTable td:first-child{
+      position:sticky;
+      left:0;
+      z-index:2;
+      background:#122136;
+      text-align:left;
+      min-width:250px;
+      max-width:280px;
+      white-space:normal;
+      font-weight:600;
+      color:#e4effa;
+    }
+    .resourcesTable tbody tr:nth-child(even) td:first-child{
+      background:#13243a;
+    }
+    .resourcesTable th:nth-child(2),
+    .resourcesTable td:nth-child(2){
+      text-align:center;
+      min-width:74px;
+      width:74px;
+      color:#b8ccdf;
+      font-size:11px;
+      letter-spacing:.2px;
+    }
+    .resourcesTable .resourceTop td:first-child{
+      color:#ffffff;
+      font-weight:700;
+    }
+    .resourcesTable .resourceMaterial td{
+      background:rgba(20,54,91,.62);
+    }
+    .resourcesTable .resourceMaterial td:first-child{
+      background:#1f436c;
+      color:#e8f4ff;
+      font-weight:700;
+    }
+    .resourcesTable .resourceUnits td{
+      background:rgba(66,47,20,.58);
+    }
+    .resourcesTable .resourceUnits td:first-child{
+      background:#7a4f1f;
+      color:#fff4e3;
+      font-weight:650;
+    }
+    .resourcesTable .resourceCase td{
+      background:rgba(19,66,52,.56);
+    }
+    .resourcesTable .resourceCase td:first-child{
+      background:#1f6a54;
+      color:#e8fff5;
+      font-weight:650;
+    }
+    .resourcesTable .resourcePallet td{
+      background:rgba(38,53,79,.58);
+    }
+    .resourcesTable .resourcePallet td:first-child{
+      background:#355179;
+      color:#eaf2fe;
+      font-weight:650;
+    }
+    .resourcesTable tr[class^="resource"] td:last-child{
+      font-weight:800;
+      color:#f4fbff;
+    }
+    .resourcesTable .resourceSection td{
+      background:#0d1829 !important;
+      color:#9fb7d0;
+      text-transform:uppercase;
+      font-size:10.5px;
+      letter-spacing:.35px;
+      font-weight:700;
+      text-align:left;
+      padding:9px 10px;
+      border-top:1px solid #365173;
+      border-bottom:1px solid #365173;
+    }
+    .resourcesTable .resourceTotal{
+      color:#f5fbff;
+      font-weight:700;
+    }
+    .resourcesSummary{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid #3d5a7f;
+      background:rgba(22,42,65,.55);
+      color:#e1ecf7;
+      line-height:1.55;
+      font-size:13px;
+    }
+    @media (max-width: 980px){
+      .resourcesKpis{
+        grid-template-columns:repeat(2, minmax(140px, 1fr));
+      }
+      .resourcesKpi .value{
+        font-size:18px;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Production Planning — Inputs → Daily Balance</h1>
+  <div class="sub">Harvest (optionally shifted) → subtract customer requirements by priority → flag shortages.</div>
+  <div class="pillnav">
+    <button class="pill active" id="pillPlanner" type="button">Planner</button>
+    <button class="pill" id="pillResources" type="button">Resources</button>
+  </div>
+</header>
+
+<main>
+  <div class="page active" id="pagePlanner">
+  <div class="grid">
+    <section class="card plannerOutputCard">
+      <details class="collapsible" id="sectionHarvest">
+        <summary>
+          <span>1) Harvest supply inputs (lbs)</span>
+          <span class="chev">▼</span>
+        </summary>
+        <div class="sectionBody">
+          <div class="tiny">These are the editable inputs. Click a day’s box and type pounds.</div>
+
+          <div class="row">
+            <label for="packDelayDays">Harvest-to-packing delay (days)</label>
+            <input id="packDelayDays" type="number" value="1" min="0" max="6" step="1">
+          </div>
+
+          <div class="helpCallout">
+            Default is <b>1 day</b> because product is typically held to dry before packing/shipping.
+          </div>
+
+          <div class="row">
+            <label for="holdPct">Quality hold %</label>
+            <input id="holdPct" type="number" value="0" min="0" max="100" step="0.1">
+          </div>
+
+          <div class="harvestGrid" id="harvestInputs"></div>
+
+          <div class="helpCallout">
+            If harvest is <b>2,600</b> on Mon–Fri, enter 2600 for those days. The output row “Available inventory used for shipping (shifted)” will show the shifted availability.
+          </div>
+        </div>
+      </details>
+
+      <details class="collapsible" id="sectionDemand">
+        <summary>
+          <span>2) Customer demand inputs</span>
+          <span class="chev">▼</span>
+        </summary>
+        <div class="sectionBody">
+          <div class="tiny">Enter weekly totals (lbs). Configure each customer's distribution mode and lead-time shift before shipping.</div>
+
+          <div class="split">
+            <div class="card" style="padding:12px;border-radius:12px;background:#0f1726">
+              <div class="righthead">
+                <div>
+                  <div style="font-weight:700;font-size:12px">Agro</div>
+                  <div class="meta">Priority 1</div>
+                </div>
+              </div>
+
+              <div class="row"><label>5oz clamshell demand (lbs)</label><input id="agro5oz" type="number" value="0" min="0" step="1"></div>
+              <div class="row"><label>10oz clamshell demand (lbs)</label><input id="agro10oz" type="number" value="0" min="0" step="1"></div>
+              <div class="row"><label>16oz clamshell demand (lbs)</label><input id="agro16oz" type="number" value="1780" min="0" step="1"></div>
+              <div class="row"><label>3lb bag demand (lbs)</label><input id="agro3lb" type="number" value="0" min="0" step="1"></div>
+              <div class="tiny">Agro total requirement: <b id="agroWeeklyTotal">1,780</b> lbs</div>
+              <div class="row"><label>Buffer %</label><input id="agroBuffer" type="number" value="20" min="0" max="200" step="0.5"></div>
+              <div class="row">
+                <label for="agroMode">Distribution</label>
+                <select id="agroMode">
+                  <option value="split" selected>Split across ship days</option>
+                  <option value="full">Full total on each ship day</option>
+                </select>
+              </div>
+              <div class="row"><label>Lead time (allowed days)</label><input id="agroLeadDays" type="number" value="1" min="0" max="6" step="1"></div>
+              <div class="k">Ship days</div>
+              <div class="chips" id="agroDays"></div>
+            </div>
+
+            <div class="card" style="padding:12px;border-radius:12px;background:#0f1726">
+              <div class="righthead">
+                <div>
+                  <div style="font-weight:700;font-size:12px">Sam's</div>
+                  <div class="meta">Priority 2</div>
+                </div>
+              </div>
+
+              <div class="row"><label>16oz clamshell demand (lbs)</label><input id="sams16oz" type="number" value="1500" min="0" step="1"></div>
+              <div class="row"><label>3lb bag demand (lbs)</label><input id="sams3lb" type="number" value="0" min="0" step="1"></div>
+              <div class="tiny">Sam's total requirement: <b id="samsWeeklyTotal">1,500</b> lbs</div>
+              <div class="row"><label>Buffer %</label><input id="samsBuffer" type="number" value="0" min="0" max="200" step="0.5"></div>
+              <div class="row">
+                <label for="samsMode">Distribution</label>
+                <select id="samsMode">
+                  <option value="split" selected>Split across ship days</option>
+                  <option value="full">Full total on each ship day</option>
+                </select>
+              </div>
+              <div class="row"><label>Lead time (allowed days)</label><input id="samsLeadDays" type="number" value="1" min="0" max="6" step="1"></div>
+              <div class="k">Ship days</div>
+              <div class="chips" id="samsDays"></div>
+            </div>
+
+            <div class="card" style="padding:12px;border-radius:12px;background:#0f1726">
+              <div class="righthead">
+                <div>
+                  <div style="font-weight:700;font-size:12px">Costco</div>
+                  <div class="meta">Priority 3</div>
+                </div>
+              </div>
+
+              <div class="row"><label>16oz clamshell demand (lbs)</label><input id="costcoWeekly" type="number" value="5000" min="0" step="1"></div>
+              <div class="row"><label>Buffer %</label><input id="costcoBuffer" type="number" value="0" min="0" max="200" step="0.5"></div>
+              <div class="row">
+                <label for="costcoMode">Distribution</label>
+                <select id="costcoMode">
+                  <option value="split" selected>Split across ship days</option>
+                  <option value="full">Full total on each ship day</option>
+                </select>
+              </div>
+              <div class="row"><label>Lead time (allowed days)</label><input id="costcoLeadDays" type="number" value="2" min="0" max="6" step="1"></div>
+              <div class="k">Ship days</div>
+              <div class="chips" id="costcoDays"></div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="collapsible" id="sectionOther">
+        <summary>
+          <span>3) Optional “other” demand</span>
+          <span class="chev">▼</span>
+        </summary>
+        <div class="sectionBody">
+          <div class="row"><label>Weekly demand (lbs)</label><input id="otherWeekly" type="number" value="0" min="0" step="1"></div>
+          <div class="row"><label>Buffer %</label><input id="otherBuffer" type="number" value="0" min="0" max="200" step="0.5"></div>
+          <div class="k">Ship days</div>
+          <div class="chips" id="otherDays"></div>
+        </div>
+      </details>
+
+      <details class="collapsible" id="sectionShipping">
+        <summary>
+          <span>4) Shipping days</span>
+          <span class="chev">▼</span>
+        </summary>
+        <div class="sectionBody">
+          <div class="tiny">Set a shared shipping-day pattern, then apply it to all customers.</div>
+          <div class="chips" id="shipTemplateDays"></div>
+          <div class="btnbar">
+            <button id="applyShipDaysBtn" type="button">Apply to all customers</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="btnbar">
+        <button id="resetBtn" type="button">Reset sample inputs</button>
+        <button id="zeroBtn" type="button">Zero all demands</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="righthead">
+        <div>
+          <h2 style="margin:0">Daily Balance Output</h2>
+          <div class="meta">Computed as: <span class="k">Available - Agro - Sam's - Costco - Other</span> (sequential priority subtraction).</div>
+        </div>
+        <div>
+          <div class="k">Shortage rule</div>
+          <div style="font-size:12px"><span class="neg">Negative</span> = cannot fulfill given priorities</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="tablewrap">
+        <table class="plannerTable">
+          <thead>
+            <tr>
+              <th>Line item</th>
+              <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Weekly / End</th>
+            </tr>
+          </thead>
+          <tbody id="outBody"></tbody>
+        </table>
+      </div>
+
+      <div class="note plannerOutputNote" id="summary"></div>
+
+      <div class="miniCard plannerMiniCard">
+        <h2 style="margin:0" id="packPlanTitle">Packing Plan By SKU (lbs/day)</h2>
+        <div class="tiny">Lead-time-adjusted daily pack plan by SKU.</div>
+        <div class="packModeToggle">
+          <button class="pill active" id="packModeLbs" type="button">Lbs</button>
+          <button class="pill" id="packModeUnits" type="button">Units</button>
+          <button class="pill" id="packModeCases" type="button">Cases</button>
+          <button class="pill" id="packModePallets" type="button">Pallets</button>
+        </div>
+        <div class="tablewrap" style="margin-top:8px">
+          <table class="plannerMiniTable">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Weekly</th>
+              </tr>
+            </thead>
+            <tbody id="packSkuBody"></tbody>
+          </table>
+        </div>
+        <div class="note packPlanNote" id="packPlanSummary"></div>
+      </div>
+    </section>
+  </div>
+  </div>
+
+  <div class="page" id="pageResources">
+    <section class="card resourcesCard">
+      <div class="righthead">
+        <div>
+          <h2 style="margin:0">Resources Used</h2>
+          <div class="meta">Daily and weekly resource usage derived from the current packing plan.</div>
+        </div>
+      </div>
+      <div class="resourcesKpis" id="resourcesKpis"></div>
+      <div class="hr"></div>
+      <div class="tablewrap">
+        <table class="resourcesTable">
+          <thead>
+            <tr>
+              <th>Resource</th>
+              <th>Unit</th>
+              <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Weekly</th>
+            </tr>
+          </thead>
+          <tbody id="resourcesBody"></tbody>
+        </table>
+      </div>
+      <div class="note resourcesSummary" id="resourcesSummary"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+  const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const STORAGE_KEY = "logistics_planning_model_v2_state";
+  const SECTION_IDS = ["sectionHarvest","sectionDemand","sectionOther","sectionShipping"];
+  const packExpandState = {};
+
+  const fmt = (n) => {
+    if (n === null || n === undefined || Number.isNaN(n)) return "";
+    const sign = n < 0 ? "-" : "";
+    const abs = Math.abs(n);
+    return sign + abs.toLocaleString(undefined, {maximumFractionDigits:0});
+  };
+
+  function el(tag, attrs={}, children=[]) {
+    const e = document.createElement(tag);
+    Object.entries(attrs).forEach(([k,v]) => {
+      if (k === "class") e.className = v;
+      else if (k === "html") e.innerHTML = v;
+      else e.setAttribute(k, v);
+    });
+    children.forEach(c => e.appendChild(c));
+    return e;
+  }
+
+  function setActivePage(page) {
+    const isResources = page === "resources";
+    document.getElementById("pagePlanner").classList.toggle("active", !isResources);
+    document.getElementById("pageResources").classList.toggle("active", isResources);
+    document.getElementById("pillPlanner").classList.toggle("active", !isResources);
+    document.getElementById("pillResources").classList.toggle("active", isResources);
+  }
+
+  function getPackMode() {
+    if (document.getElementById("packModeUnits").classList.contains("active")) return "units";
+    if (document.getElementById("packModeCases").classList.contains("active")) return "cases";
+    if (document.getElementById("packModePallets").classList.contains("active")) return "pallets";
+    return "lbs";
+  }
+
+  function setPackMode(mode) {
+    const normalized = (mode === "units" || mode === "cases" || mode === "pallets") ? mode : "lbs";
+    document.getElementById("packModeLbs").classList.toggle("active", normalized === "lbs");
+    document.getElementById("packModeUnits").classList.toggle("active", normalized === "units");
+    document.getElementById("packModeCases").classList.toggle("active", normalized === "cases");
+    document.getElementById("packModePallets").classList.toggle("active", normalized === "pallets");
+  }
+
+  function makeDayCheckboxes(containerId, prefix) {
+    const c = document.getElementById(containerId);
+    c.innerHTML = "";
+    DAYS.forEach((d, i) => {
+      const id = `${prefix}_${i}`;
+      const wrap = el("label", {class:"chip", for:id});
+      const cb = el("input", {type:"checkbox", id:id});
+      cb.checked = (d === "Tue" || d === "Fri");
+      wrap.appendChild(cb);
+      wrap.appendChild(el("span", {html:d}));
+      c.appendChild(wrap);
+    });
+  }
+
+  function makeHarvestInputs() {
+    const c = document.getElementById("harvestInputs");
+    c.innerHTML = "";
+    DAYS.forEach((d, i) => {
+      const item = el("div", {class:"harvestItem"});
+      item.appendChild(el("div", {class:"day", html:d}));
+      const inp = el("input", {type:"number", id:`harvest_${i}`, min:"0", step:"1"});
+      // sample default
+      inp.value = (["Mon","Tue","Wed","Thu","Fri"].includes(d)) ? 2600 : 0;
+      item.appendChild(inp);
+      c.appendChild(item);
+    });
+  }
+
+  function selectedDays(prefix) {
+    const idx = [];
+    for (let i=0;i<7;i++){
+      const cb = document.getElementById(`${prefix}_${i}`);
+      if (cb && cb.checked) idx.push(i);
+    }
+    return idx;
+  }
+
+  function weeklyToDaily(weeklyLbs, bufferPct, shipIdxs) {
+    const daily = Array(7).fill(0);
+    const shipDays = shipIdxs.length ? shipIdxs : [];
+    const buffered = weeklyLbs * (1 + bufferPct/100);
+    if (shipDays.length === 0) return daily;
+    const perDay = buffered / shipDays.length;
+    shipDays.forEach(i => daily[i] = perDay);
+    return daily;
+  }
+
+  // Put the full buffered weekly amount on each selected ship day (no split).
+  function weeklyToShipDaysNoSplit(weeklyLbs, bufferPct, shipIdxs) {
+    const daily = Array(7).fill(0);
+    const shipDays = shipIdxs.length ? shipIdxs : [];
+    const buffered = weeklyLbs * (1 + bufferPct / 100);
+    if (!shipDays.length) return daily;
+    shipDays.forEach(i => daily[i] = buffered);
+    return daily;
+  }
+
+  function distributeDemand(weeklyLbs, bufferPct, shipIdxs, mode) {
+    return mode === "full"
+      ? weeklyToShipDaysNoSplit(weeklyLbs, bufferPct, shipIdxs)
+      : weeklyToDaily(weeklyLbs, bufferPct, shipIdxs);
+  }
+
+  function shiftByAllowedDays(dailyVals, allowedIdxs, leadDays = 0) {
+    const shifted = Array(7).fill(0);
+    if (!allowedIdxs.length) return shifted;
+    const allowedSet = new Set(allowedIdxs);
+    dailyVals.forEach((qty, shipDayIdx) => {
+      if (!qty) return;
+      let seenAllowed = 0;
+      for (let step = 0; step <= 7; step++) {
+        const targetIdx = (shipDayIdx - step + 7) % 7;
+        if (allowedSet.has(targetIdx)) {
+          if (seenAllowed === leadDays) {
+            shifted[targetIdx] += qty;
+            return;
+          }
+          seenAllowed += 1;
+        }
+      }
+    });
+    return shifted;
+  }
+
+  // Move ready inventory to the next allowed shipping day (including same day).
+  function rollToNextShippingDay(readyDaily, shippingIdxs) {
+    const rolled = Array(7).fill(0);
+    if (!shippingIdxs.length) return rolled;
+    const shipSet = new Set(shippingIdxs);
+    readyDaily.forEach((qty, dayIdx) => {
+      if (!qty) return;
+      for (let step = 0; step < 7; step++) {
+        const target = (dayIdx + step) % 7;
+        if (shipSet.has(target)) {
+          rolled[target] += qty;
+          return;
+        }
+      }
+    });
+    return rolled;
+  }
+
+  function compute() {
+    const packDelayDays = Math.max(0, Math.min(6, Math.round(parseFloat(document.getElementById("packDelayDays").value || "1"))));
+    const holdPct = parseFloat(document.getElementById("holdPct").value || "0");
+    const harvest = DAYS.map((_, i) => parseFloat(document.getElementById(`harvest_${i}`).value || "0"));
+    const shippingTemplateIdx = selectedDays("shiptemplate");
+    const shippingTemplateSet = new Set(shippingTemplateIdx);
+
+    const availableRaw = harvest.map(v => v * (1 - holdPct/100));
+
+    const readyDaily = Array(7).fill(0).map((_, i) => {
+      const prev = (i - packDelayDays + 7) % 7;
+      return availableRaw[prev];
+    });
+    const available = rollToNextShippingDay(readyDaily, shippingTemplateIdx);
+
+    const agro5oz = parseFloat(document.getElementById("agro5oz").value || "0");
+    const agro10oz = parseFloat(document.getElementById("agro10oz").value || "0");
+    const agro16oz = parseFloat(document.getElementById("agro16oz").value || "0");
+    const agro3lb = parseFloat(document.getElementById("agro3lb").value || "0");
+    const agroWeekly = agro5oz + agro10oz + agro16oz + agro3lb;
+    document.getElementById("agroWeeklyTotal").textContent = fmt(Math.round(agroWeekly));
+    const agroMode = document.getElementById("agroMode").value;
+    const agroLeadDays = Math.max(0, Math.min(6, Math.round(parseFloat(document.getElementById("agroLeadDays").value || "1"))));
+    const agroBuffer = parseFloat(document.getElementById("agroBuffer").value || "0");
+    const agroShipDays = selectedDays("agro");
+
+    const agro5Daily = shiftByAllowedDays(distributeDemand(agro5oz, agroBuffer, agroShipDays, agroMode), shippingTemplateIdx, agroLeadDays);
+    const agro10Daily = shiftByAllowedDays(distributeDemand(agro10oz, agroBuffer, agroShipDays, agroMode), shippingTemplateIdx, agroLeadDays);
+    const agro16Daily = shiftByAllowedDays(distributeDemand(agro16oz, agroBuffer, agroShipDays, agroMode), shippingTemplateIdx, agroLeadDays);
+    const agro3Daily = shiftByAllowedDays(distributeDemand(agro3lb, agroBuffer, agroShipDays, agroMode), shippingTemplateIdx, agroLeadDays);
+    const agroDaily = DAYS.map((_, i) => agro5Daily[i] + agro10Daily[i] + agro16Daily[i] + agro3Daily[i]);
+
+    const sams16oz = parseFloat(document.getElementById("sams16oz").value || "0");
+    const sams3lb = parseFloat(document.getElementById("sams3lb").value || "0");
+    const samsWeekly = sams16oz + sams3lb;
+    document.getElementById("samsWeeklyTotal").textContent = fmt(Math.round(samsWeekly));
+    const samsMode = document.getElementById("samsMode").value;
+    const samsLeadDays = Math.max(0, Math.min(6, Math.round(parseFloat(document.getElementById("samsLeadDays").value || "1"))));
+    const samsBuffer = parseFloat(document.getElementById("samsBuffer").value || "0");
+    const samsShipDays = selectedDays("sams");
+
+    const sams16Daily = shiftByAllowedDays(distributeDemand(sams16oz, samsBuffer, samsShipDays, samsMode), shippingTemplateIdx, samsLeadDays);
+    const sams3Daily = shiftByAllowedDays(distributeDemand(sams3lb, samsBuffer, samsShipDays, samsMode), shippingTemplateIdx, samsLeadDays);
+    const samsDaily = DAYS.map((_, i) => sams16Daily[i] + sams3Daily[i]);
+
+    const costcoMode = document.getElementById("costcoMode").value;
+    const costcoLeadDays = Math.max(0, Math.min(6, Math.round(parseFloat(document.getElementById("costcoLeadDays").value || "2"))));
+    const costcoWeekly = parseFloat(document.getElementById("costcoWeekly").value || "0");
+    const costcoBuffer = parseFloat(document.getElementById("costcoBuffer").value || "0");
+    const costcoShipDays = selectedDays("costco");
+    const costco16Daily = shiftByAllowedDays(distributeDemand(costcoWeekly, costcoBuffer, costcoShipDays, costcoMode), shippingTemplateIdx, costcoLeadDays);
+    const costcoDaily = costco16Daily.slice();
+
+    const otherWeekly = parseFloat(document.getElementById("otherWeekly").value || "0");
+    const otherBuffer = parseFloat(document.getElementById("otherBuffer").value || "0");
+    const otherDaily = weeklyToDaily(
+      otherWeekly,
+      otherBuffer,
+      selectedDays("other")
+    );
+
+    const afterAgro = available.map((v,i)=> v - agroDaily[i]);
+    const afterSams = afterAgro.map((v,i)=> v - samsDaily[i]);
+    const afterCostco = afterSams.map((v,i)=> v - costcoDaily[i]);
+    const afterOther = afterCostco.map((v,i)=> v - otherDaily[i]);
+
+    const totalDemand = DAYS.map((_,i)=> agroDaily[i]+samsDaily[i]+costcoDaily[i]+otherDaily[i]);
+    const clamshell5Daily = agro5Daily.slice();
+    const clamshell10Daily = agro10Daily.slice();
+    const clamshell16Daily = DAYS.map((_, i) => agro16Daily[i] + sams16Daily[i] + costco16Daily[i]);
+    const bag3lbDaily = DAYS.map((_, i) => agro3Daily[i] + sams3Daily[i]);
+
+    const plannedStoragePack = Array(7).fill(0);
+    const totalPackDaily = totalDemand.slice();
+
+    const packSkuRows = [
+      {
+        key:"clam_5oz",
+        name:"5oz clamshell (all customers)",
+        vals:clamshell5Daily,
+        breakdown:[{name:"Agro 5oz clamshell", vals:agro5Daily}]
+      },
+      {
+        key:"clam_10oz",
+        name:"10oz clamshell (all customers)",
+        vals:clamshell10Daily,
+        breakdown:[{name:"Agro 10oz clamshell", vals:agro10Daily}]
+      },
+      {
+        key:"clam_16oz",
+        name:"16oz clamshell (all customers)",
+        vals:clamshell16Daily,
+        breakdown:[
+          {name:"Agro 16oz clamshell", vals:agro16Daily},
+          {name:"Sam's 16oz clamshell", vals:sams16Daily},
+          {name:"Costco 16oz clamshell", vals:costco16Daily},
+        ]
+      },
+      {
+        key:"bag_3lb",
+        name:"3lb bag (all customers)",
+        vals:bag3lbDaily,
+        breakdown:[
+          {name:"Agro 3lb bag", vals:agro3Daily},
+          {name:"Sam's 3lb bag", vals:sams3Daily},
+        ]
+      },
+      {key:"other", name:"Other", vals:otherDaily},
+      {key:"storage", name:"Planned storage reserve (save plan)", vals:plannedStoragePack},
+      {key:"total", name:"Total pack (all SKUs + storage reserve)", vals:totalPackDaily},
+    ];
+
+    // Informational carryover view: how prior-day surplus can cover same-day gaps.
+    const carryUsed = Array(7).fill(0);
+    const uncoveredAfterCarry = Array(7).fill(0);
+    const afterOtherWithCarry = Array(7).fill(0);
+    // Seed carry with prior-week Friday surplus (using this week's Friday pattern value).
+    const priorFridayCarry = Math.max(0, afterOther[5] || 0);
+    let carryBank = priorFridayCarry;
+    for (let i=0; i<7; i++) {
+      const gap = Math.max(0, totalDemand[i] - available[i]);
+      carryUsed[i] = Math.min(carryBank, gap);
+      uncoveredAfterCarry[i] = Math.max(0, gap - carryUsed[i]);
+      carryBank = carryBank + available[i] - totalDemand[i];
+      afterOtherWithCarry[i] = carryBank;
+    }
+
+    // Suggested reserve plan: how much to save on earlier days to cover red days later.
+    const saveForFuture = Array(7).fill(0);
+    const surplusByDay = afterOther.map(v => Math.max(0, v));
+    // Cyclical reserve target: cover raw red days even if opening carry covered them this week.
+    // This shows where to rebuild carry (e.g., Friday reserved for next Monday).
+    const structuralRedNeed = afterOther.map(v => Math.max(0, -v));
+    const totalRedNeed = structuralRedNeed.reduce((sum, v) => sum + v, 0);
+    for (let day=0; day<7; day++) {
+      let remainingNeed = structuralRedNeed[day];
+      if (!remainingNeed) continue;
+      // Cyclical week: allow late-week surplus (e.g., Fri) to cover early-week reds (e.g., Mon).
+      for (let step=1; step<=6 && remainingNeed>0; step++) {
+        const prev = (day - step + 7) % 7;
+        const canSave = Math.max(0, surplusByDay[prev] - saveForFuture[prev]);
+        if (!canSave) continue;
+        const use = Math.min(canSave, remainingNeed);
+        saveForFuture[prev] += use;
+        remainingNeed -= use;
+      }
+    }
+    for (let i=0; i<7; i++) {
+      plannedStoragePack[i] = saveForFuture[i];
+      totalPackDaily[i] = totalDemand[i] + saveForFuture[i];
+    }
+
+    // Simple balancing rule: if reserve is planned on the peak pack day,
+    // hold it and pack on the next available packing day.
+    const peakDay = totalPackDaily.indexOf(Math.max(...totalPackDaily));
+    if (plannedStoragePack[peakDay] > 0) {
+      let nextPackDay = -1;
+      for (let step=1; step<=7; step++) {
+        const cand = (peakDay + step) % 7;
+        if (!shippingTemplateSet.size || shippingTemplateSet.has(cand)) {
+          nextPackDay = cand;
+          break;
+        }
+      }
+      if (nextPackDay >= 0 && nextPackDay !== peakDay) {
+        const move = plannedStoragePack[peakDay];
+        plannedStoragePack[peakDay] -= move;
+        plannedStoragePack[nextPackDay] += move;
+        totalPackDaily[peakDay] -= move;
+        totalPackDaily[nextPackDay] += move;
+      }
+    }
+
+    const units5oz = clamshell5Daily.map(v => (v * 16) / 5);
+    const units10oz = clamshell10Daily.map(v => (v * 16) / 10);
+    const units16oz = clamshell16Daily.map(v => v);
+    const units3lb = bag3lbDaily.map(v => v / 3);
+    const totalUnitsKnown = DAYS.map((_, i) => units5oz[i] + units10oz[i] + units16oz[i] + units3lb[i]);
+    const agro5Units = agro5Daily.map(v => (v * 16) / 5);
+    const agro10Units = agro10Daily.map(v => (v * 16) / 10);
+    const agro16Units = agro16Daily.slice();
+    const sams16Units = sams16Daily.slice();
+    const costco16Units = costco16Daily.slice();
+    const agro3Units = agro3Daily.map(v => v / 3);
+    const sams3Units = sams3Daily.map(v => v / 3);
+
+    const cases5oz = units5oz.map(u => Math.ceil(u / 18));
+    const cases10oz = units10oz.map(u => Math.ceil(u / 12));
+    const cases16oz = units16oz.map(u => Math.ceil(u / 9));
+    // Assumption: 3lb bags are packed 1 bag per case unless you provide a different pack-out.
+    const cases3lb = units3lb.map(u => Math.ceil(u));
+    const totalCasesKnown = DAYS.map((_, i) => cases5oz[i] + cases10oz[i] + cases16oz[i] + cases3lb[i]);
+    const agro5Cases = agro5Units.map(u => Math.ceil(u / 18));
+    const agro10Cases = agro10Units.map(u => Math.ceil(u / 12));
+    const agro16Cases = agro16Units.map(u => Math.ceil(u / 9));
+    const sams16Cases = sams16Units.map(u => Math.ceil(u / 9));
+    const costco16Cases = costco16Units.map(u => Math.ceil(u / 9));
+    const agro3Cases = agro3Units.map(u => Math.ceil(u));
+    const sams3Cases = sams3Units.map(u => Math.ceil(u));
+    const pallets5oz = cases5oz.map(c => Math.ceil(c / 25));
+    const pallets10oz = cases10oz.map(c => Math.ceil(c / 25));
+    const agro16Pallets = agro16Cases.map(c => Math.ceil(c / 25));
+    const sams16Pallets = sams16Cases.map(c => Math.ceil(c / 30));
+    const costco16Pallets = costco16Cases.map(c => Math.ceil(c / 25));
+    const pallets16oz = DAYS.map((_, i) => agro16Pallets[i] + sams16Pallets[i] + costco16Pallets[i]);
+    const pallets3lb = cases3lb.map(c => Math.ceil(c / 25));
+    const totalPalletsKnown = DAYS.map((_, i) => pallets5oz[i] + pallets10oz[i] + pallets16oz[i] + pallets3lb[i]);
+
+    const totalPlannedSave = saveForFuture.reduce((a,b)=>a+b,0);
+    const uncoveredRed = Math.max(0, totalRedNeed - totalPlannedSave);
+
+    const afterOtherDisplay = afterOther.map((v, i) => shippingTemplateSet.has(i) ? v : null);
+    const afterOtherWithCarryDisplay = afterOtherWithCarry.map((v, i) => shippingTemplateSet.has(i) ? v : null);
+
+    const rows = [
+      {name:"Harvest weight (input)", vals:harvest, type:"supply"},
+      {name:"Available to pack (after hold)", vals:availableRaw, type:"supply"},
+      {name:"Available inventory used for shipping (shifted)", vals:available.map((v, i) => shippingTemplateSet.has(i) ? v : null), type:"supply"},
+      {name:"Agro requirement (lead-time adjusted)", vals:agroDaily, type:"demand"},
+      {name:"Remaining after Agro", vals:afterAgro, type:"balance"},
+      {name:"Sam's requirement (lead-time adjusted)", vals:samsDaily, type:"demand"},
+      {name:"Remaining after Sam's", vals:afterSams, type:"balance"},
+      {name:"Costco requirement (lead-time adjusted)", vals:costcoDaily, type:"demand"},
+      {name:"Remaining after Costco", vals:afterCostco, type:"balance"},
+      {name:"Other requirement (daily)", vals:otherDaily, type:"demand"},
+      {name:"Remaining after Other (final)", vals:afterOtherDisplay, type:"balance"},
+      {name:"Save on this day for future red days after carryover check (plan)", vals:saveForFuture, type:"plan"},
+      {name:"Carryover used from previous days to cover same-day gap (info)", vals:carryUsed, type:"plan"},
+      {name:"Remaining after Other (with carryover)", vals:afterOtherWithCarryDisplay, type:"balance"},
+      {name:"Total demand (all customers)", vals:totalDemand.map(v => -v), type:"demand"},
+    ];
+
+    const tbody = document.getElementById("outBody");
+    tbody.innerHTML = "";
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      if (r.type) tr.classList.add(`out-${r.type}`);
+      tr.appendChild(el("td", {html: r.name}));
+      r.vals.forEach(v => {
+        const td = document.createElement("td");
+        const val = (v === null || v === undefined) ? null : Math.round(v);
+        td.textContent = fmt(val);
+        if (val !== null) {
+          if (val < 0) td.classList.add("neg");
+          else if (r.type === "plan" && val !== 0) td.classList.add("plan-nz");
+          else if (r.name.startsWith("Remaining") && val > 0) td.classList.add("pos");
+          else if (r.name.includes("requirement") || r.name.includes("demand")) td.classList.add("warn");
+        }
+        tr.appendChild(td);
+      });
+      const totalTd = document.createElement("td");
+      const totalVal = r.name.startsWith("Remaining")
+        ? Math.round(([...r.vals].reverse().find(v => v !== null && v !== undefined) ?? 0))
+        : Math.round(r.vals.reduce((sum, v) => sum + (v ?? 0), 0));
+      totalTd.textContent = fmt(totalVal);
+      if (totalVal < 0) totalTd.classList.add("neg");
+      else if (r.type === "plan" && totalVal !== 0) totalTd.classList.add("plan-nz");
+      else if (r.name.startsWith("Remaining") && totalVal > 0) totalTd.classList.add("pos");
+      else if (r.name.includes("requirement") || r.name.includes("demand")) totalTd.classList.add("warn");
+      tr.appendChild(totalTd);
+      tbody.appendChild(tr);
+    });
+
+    const worst = Math.min(...afterOther.map(v=>Math.round(v)));
+    const worstDayIdx = afterOther.map(v=>Math.round(v)).indexOf(worst);
+    const totalWeekAvail = Math.round(available.reduce((a,b)=>a+b,0));
+    const totalWeekDem = Math.round(totalDemand.reduce((a,b)=>a+b,0));
+
+    document.getElementById("summary").innerHTML = [
+      `<b>Week totals</b> — Available (shifted): <b>${fmt(totalWeekAvail)}</b> lbs · Demand: <b>${fmt(totalWeekDem)}</b> lbs · Net: <b class="${(totalWeekAvail-totalWeekDem)<0?'neg':'pos'}">${fmt(totalWeekAvail-totalWeekDem)}</b> lbs.`,
+      `<br/>Worst day (final remaining): <b class="${worst<0?'neg':'pos'}">${DAYS[worstDayIdx]}</b> with <b class="${worst<0?'neg':'pos'}">${fmt(worst)}</b> lbs.`,
+      `<br/><span class="k">Sequence: the model first uses carryover from previous days to cover same-day gaps (seeded from prior Friday: ${fmt(Math.round(priorFridayCarry))} lbs).</span>`,
+      `<br/><span class="k">Then the save-plan shows what to reserve on surplus days for remaining cyclical red need: ${fmt(totalPlannedSave)} lbs planned vs ${fmt(totalRedNeed)} lbs need${uncoveredRed>0 ? ` · still uncovered: <span class="neg">${fmt(uncoveredRed)}</span> lbs` : ""}.</span>`
+    ].join("");
+
+    const packBody = document.getElementById("packSkuBody");
+    packBody.innerHTML = "";
+    const packMode = getPackMode();
+    const packModeTitle = {
+      lbs: "Packing Plan By SKU (lbs/day)",
+      units: "Packing Plan By SKU (units/day)",
+      cases: "Packing Plan By SKU (cases/day)",
+      pallets: "Packing Plan By SKU (pallets/day)"
+    };
+    document.getElementById("packPlanTitle").textContent = packModeTitle[packMode] || packModeTitle.lbs;
+
+    const modeRows = packSkuRows
+      .filter(r => packMode === "lbs" || (r.key !== "other" && r.key !== "storage"))
+      .map(r => {
+        const next = { ...r, breakdown: packMode === "lbs" ? r.breakdown : [] };
+        if (packMode === "units") {
+          if (r.key === "clam_5oz") {
+            next.vals = units5oz;
+            next.breakdown = [{name:"Agro 5oz clamshell", vals:agro5Units}];
+          }
+          else if (r.key === "clam_10oz") {
+            next.vals = units10oz;
+            next.breakdown = [{name:"Agro 10oz clamshell", vals:agro10Units}];
+          }
+          else if (r.key === "clam_16oz") {
+            next.vals = units16oz;
+            next.breakdown = [
+              {name:"Agro 16oz clamshell", vals:agro16Units},
+              {name:"Sam's 16oz clamshell", vals:sams16Units},
+              {name:"Costco 16oz clamshell", vals:costco16Units},
+            ];
+          }
+          else if (r.key === "bag_3lb") {
+            next.vals = units3lb;
+            next.breakdown = [
+              {name:"Agro 3lb bag", vals:agro3Units},
+              {name:"Sam's 3lb bag", vals:sams3Units},
+            ];
+          }
+          else if (r.key === "total") {
+            next.name = "Total pack (known SKUs)";
+            next.vals = totalUnitsKnown;
+          }
+        } else if (packMode === "cases") {
+          if (r.key === "clam_5oz") {
+            next.vals = cases5oz;
+            next.breakdown = [{name:"Agro 5oz clamshell", vals:agro5Cases}];
+          }
+          else if (r.key === "clam_10oz") {
+            next.vals = cases10oz;
+            next.breakdown = [{name:"Agro 10oz clamshell", vals:agro10Cases}];
+          }
+          else if (r.key === "clam_16oz") {
+            next.vals = cases16oz;
+            next.breakdown = [
+              {name:"Agro 16oz clamshell", vals:agro16Cases},
+              {name:"Sam's 16oz clamshell", vals:sams16Cases},
+              {name:"Costco 16oz clamshell", vals:costco16Cases},
+            ];
+          }
+          else if (r.key === "bag_3lb") {
+            next.vals = cases3lb;
+            next.breakdown = [
+              {name:"Agro 3lb bag", vals:agro3Cases},
+              {name:"Sam's 3lb bag", vals:sams3Cases},
+            ];
+          }
+          else if (r.key === "total") {
+            next.name = "Total pack (known SKUs)";
+            next.vals = totalCasesKnown;
+          }
+        } else if (packMode === "pallets") {
+          if (r.key === "clam_5oz") {
+            next.vals = pallets5oz;
+            next.breakdown = [{name:"Agro 5oz clamshell", vals:agro5Cases.map(c => Math.ceil(c / 25))}];
+          }
+          else if (r.key === "clam_10oz") {
+            next.vals = pallets10oz;
+            next.breakdown = [{name:"Agro 10oz clamshell", vals:agro10Cases.map(c => Math.ceil(c / 25))}];
+          }
+          else if (r.key === "clam_16oz") {
+            next.vals = pallets16oz;
+            next.breakdown = [
+              {name:"Agro 16oz clamshell", vals:agro16Pallets},
+              {name:"Sam's 16oz clamshell", vals:sams16Pallets},
+              {name:"Costco 16oz clamshell", vals:costco16Pallets},
+            ];
+          }
+          else if (r.key === "bag_3lb") {
+            next.vals = pallets3lb;
+            next.breakdown = [
+              {name:"Agro 3lb bag", vals:agro3Cases.map(c => Math.ceil(c / 25))},
+              {name:"Sam's 3lb bag", vals:sams3Cases.map(c => Math.ceil(c / 25))},
+            ];
+          }
+          else if (r.key === "total") {
+            next.name = "Total pack (known SKUs)";
+            next.vals = totalPalletsKnown;
+          }
+        }
+        return next;
+      });
+
+    modeRows.forEach(r => {
+      const tr = document.createElement("tr");
+      if (r.key === "total") tr.classList.add("pack-total");
+      else if (r.key === "storage") tr.classList.add("pack-plan");
+      else tr.classList.add("pack-demand");
+      const hasBreakdown = Array.isArray(r.breakdown) && r.breakdown.length > 0;
+      const isExpanded = hasBreakdown && !!packExpandState[r.key];
+      if (hasBreakdown) {
+        tr.classList.add("packParent");
+        tr.addEventListener("click", () => {
+          packExpandState[r.key] = !packExpandState[r.key];
+          compute();
+        });
+      }
+      const nameTd = document.createElement("td");
+      if (hasBreakdown) {
+        const wrap = el("div", {class:"packName"});
+        wrap.appendChild(el("span", {class:"packCaret", html:isExpanded ? "▼" : "▶"}));
+        wrap.appendChild(el("span", {html:r.name}));
+        nameTd.appendChild(wrap);
+      } else {
+        nameTd.textContent = r.name;
+      }
+      tr.appendChild(nameTd);
+      r.vals.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = fmt(Math.round(v));
+        if (r.key === "total") td.classList.add("warn");
+        tr.appendChild(td);
+      });
+      const tdTotal = document.createElement("td");
+      tdTotal.textContent = fmt(Math.round(r.vals.reduce((a,b)=>a+b,0)));
+      if (r.key === "total") tdTotal.classList.add("warn");
+      tr.appendChild(tdTotal);
+      packBody.appendChild(tr);
+
+      if (hasBreakdown && isExpanded) {
+        r.breakdown.forEach(child => {
+          const childTr = document.createElement("tr");
+          childTr.classList.add("packChild");
+          childTr.appendChild(el("td", {html:`&nbsp;&nbsp;&nbsp;${child.name}`}));
+          child.vals.forEach(v => {
+            const td = document.createElement("td");
+            td.textContent = fmt(Math.round(v));
+            childTr.appendChild(td);
+          });
+          const childTotal = document.createElement("td");
+          childTotal.textContent = fmt(Math.round(child.vals.reduce((a,b)=>a+b,0)));
+          childTr.appendChild(childTotal);
+          packBody.appendChild(childTr);
+        });
+      }
+    });
+    const packTotalSource =
+      packMode === "lbs" ? totalPackDaily :
+      (packMode === "units" ? totalUnitsKnown :
+      (packMode === "cases" ? totalCasesKnown : totalPalletsKnown));
+    const packTotal = Math.round(packTotalSource.reduce((a,b)=>a+b,0));
+    const avgPerDay = Math.round(packTotal / 7);
+    const storageReserveWeek = Math.round(plannedStoragePack.reduce((a,b)=>a+b,0));
+    const unitLabel =
+      packMode === "lbs" ? "lbs" :
+      (packMode === "units" ? "units" :
+      (packMode === "cases" ? "cases" : "pallets"));
+    document.getElementById("packPlanSummary").innerHTML =
+      `<b>Pack total (week):</b> ${fmt(packTotal)} ${unitLabel} · <b>Avg/day:</b> ${fmt(avgPerDay)} ${unitLabel}` +
+      (packMode === "lbs"
+        ? ` · <b>Storage reserve planned:</b> ${fmt(storageReserveWeek)} lbs`
+        : ` · <span class="k">Other + storage reserve shown in lbs mode only.</span>`);
+
+    const sharedCaseTypeCases = DAYS.map((_, i) => cases5oz[i] + cases10oz[i] + cases3lb[i]);
+    const case16TypeCases = cases16oz.slice();
+    const sharedPalletType = DAYS.map((_, i) => pallets5oz[i] + pallets10oz[i] + pallets3lb[i]);
+    const pallets16Type = pallets16oz.slice();
+
+    const resourcesRows = [
+      {group:"Material", name:"Lettuce packed", unit:"lbs", vals:totalPackDaily, kind:"material"},
+      {group:"Material", name:"Planned storage reserve", unit:"lbs", vals:plannedStoragePack, kind:"material"},
+      {group:"Packed units", name:"5oz clamshells", unit:"units", vals:units5oz, kind:"units"},
+      {group:"Packed units", name:"10oz clamshells", unit:"units", vals:units10oz, kind:"units"},
+      {group:"Packed units", name:"16oz clamshells", unit:"units", vals:units16oz, kind:"units"},
+      {group:"Packed units", name:"3lb bags", unit:"units", vals:units3lb, kind:"units"},
+      {group:"Case requirements", name:"5oz cases (18 units/case)", unit:"cases", vals:cases5oz, kind:"case"},
+      {group:"Case requirements", name:"10oz cases (12 units/case)", unit:"cases", vals:cases10oz, kind:"case"},
+      {group:"Case requirements", name:"16oz cases (9 units/case)", unit:"cases", vals:cases16oz, kind:"case"},
+      {group:"Case requirements", name:"3lb bag cases (assumed 1 bag/case)", unit:"cases", vals:cases3lb, kind:"case"},
+      {group:"Case requirements", name:"Shared case type needed (5oz/10oz/3lb)", unit:"cases", vals:sharedCaseTypeCases, kind:"case"},
+      {group:"Case requirements", name:"16oz case type needed", unit:"cases", vals:case16TypeCases, kind:"case"},
+      {group:"Pallet requirements", name:"5oz pallets (25 cases/pallet)", unit:"pallets", vals:pallets5oz, kind:"pallet"},
+      {group:"Pallet requirements", name:"10oz pallets (25 cases/pallet)", unit:"pallets", vals:pallets10oz, kind:"pallet"},
+      {group:"Pallet requirements", name:"16oz pallets (Sam's: 30 cases/pallet; others: 25)", unit:"pallets", vals:pallets16oz, kind:"pallet"},
+      {group:"Pallet requirements", name:"3lb pallets (25 cases/pallet)", unit:"pallets", vals:pallets3lb, kind:"pallet"},
+      {group:"Pallet requirements", name:"Shared pallet type needed (5oz/10oz/3lb)", unit:"pallets", vals:sharedPalletType, kind:"pallet"},
+      {group:"Pallet requirements", name:"16oz pallet type needed", unit:"pallets", vals:pallets16Type, kind:"pallet"},
+    ];
+
+    const resourcesBody = document.getElementById("resourcesBody");
+    resourcesBody.innerHTML = "";
+    let currentGroup = "";
+    resourcesRows.forEach(r => {
+      if (r.group !== currentGroup) {
+        currentGroup = r.group;
+        const sectionTr = document.createElement("tr");
+        sectionTr.className = "resourceSection";
+        const sectionTd = document.createElement("td");
+        sectionTd.colSpan = DAYS.length + 3;
+        sectionTd.textContent = r.group;
+        sectionTr.appendChild(sectionTd);
+        resourcesBody.appendChild(sectionTr);
+      }
+
+      const tr = document.createElement("tr");
+      if (r.kind === "material") tr.classList.add("resourceMaterial");
+      if (r.kind === "units") tr.classList.add("resourceUnits");
+      if (r.kind === "case") tr.classList.add("resourceCase");
+      if (r.kind === "pallet") tr.classList.add("resourcePallet");
+      tr.appendChild(el("td", {html:r.name}));
+      tr.appendChild(el("td", {html:r.unit}));
+      r.vals.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = fmt(Math.round(v));
+        tr.appendChild(td);
+      });
+      const tdTotal = document.createElement("td");
+      tdTotal.className = "resourceTotal";
+      tdTotal.textContent = fmt(Math.round(r.vals.reduce((a,b)=>a+b,0)));
+      tr.appendChild(tdTotal);
+      resourcesBody.appendChild(tr);
+    });
+
+    const totalUnits = resourcesRows
+      .filter(r => r.unit === "units")
+      .reduce((sum, r) => sum + r.vals.reduce((a,b)=>a+b,0), 0);
+    const totalSharedCases = sharedCaseTypeCases.reduce((a,b)=>a+b,0);
+    const total16Cases = case16TypeCases.reduce((a,b)=>a+b,0);
+    const totalSharedPallets = sharedPalletType.reduce((a,b)=>a+b,0);
+    const total16Pallets = pallets16Type.reduce((a,b)=>a+b,0);
+    const totalPackedLbsWeek = Math.round(totalPackDaily.reduce((a,b)=>a+b,0));
+    const peakPackDay = Math.max(...totalPackDaily);
+    const peakUnitDay = Math.max(
+      ...DAYS.map((_, i) => units5oz[i] + units10oz[i] + units16oz[i] + units3lb[i])
+    );
+
+    const resourcesKpis = document.getElementById("resourcesKpis");
+    resourcesKpis.innerHTML = `
+      <div class="resourcesKpi">
+        <div class="label">Total Packed</div>
+        <div class="value">${fmt(totalPackedLbsWeek)}</div>
+        <div class="sub">lbs this week</div>
+      </div>
+      <div class="resourcesKpi">
+        <div class="label">Total Units</div>
+        <div class="value">${fmt(Math.round(totalUnits))}</div>
+        <div class="sub">all pack formats</div>
+      </div>
+      <div class="resourcesKpi">
+        <div class="label">Shared Cases</div>
+        <div class="value">${fmt(Math.round(totalSharedCases))}</div>
+        <div class="sub">5oz + 10oz + 3lb</div>
+      </div>
+      <div class="resourcesKpi">
+        <div class="label">16oz Cases</div>
+        <div class="value">${fmt(Math.round(total16Cases))}</div>
+        <div class="sub">dedicated case type</div>
+      </div>
+    `;
+
+    document.getElementById("resourcesSummary").innerHTML =
+      `<b>Peak daily lettuce packed:</b> ${fmt(Math.round(peakPackDay))} lbs · <b>Peak daily units:</b> ${fmt(Math.round(peakUnitDay))}` +
+      `<br/><b>Case types (week):</b> Shared ${fmt(Math.round(totalSharedCases))} · 16oz ${fmt(Math.round(total16Cases))}` +
+      `<br/><b>Pallet types (week):</b> Shared ${fmt(Math.round(totalSharedPallets))} · 16oz ${fmt(Math.round(total16Pallets))}` +
+      `<br/><span class="k">Assumptions: 3lb bags = 1 bag/case; pallets use 25 cases/pallet, except Sam's 16oz uses 30.</span>`;
+  }
+
+  function saveState() {
+    const state = {
+      uiPage: document.getElementById("pillResources").classList.contains("active") ? "resources" : "planner",
+      packMode: getPackMode(),
+      packDelayDays: document.getElementById("packDelayDays").value,
+      holdPct: document.getElementById("holdPct").value,
+      harvest: DAYS.map((_, i) => document.getElementById(`harvest_${i}`).value),
+      agro5oz: document.getElementById("agro5oz").value,
+      agro10oz: document.getElementById("agro10oz").value,
+      agro16oz: document.getElementById("agro16oz").value,
+      agro3lb: document.getElementById("agro3lb").value,
+      agroBuffer: document.getElementById("agroBuffer").value,
+      agroMode: document.getElementById("agroMode").value,
+      agroLeadDays: document.getElementById("agroLeadDays").value,
+      sams16oz: document.getElementById("sams16oz").value,
+      sams3lb: document.getElementById("sams3lb").value,
+      samsBuffer: document.getElementById("samsBuffer").value,
+      samsMode: document.getElementById("samsMode").value,
+      samsLeadDays: document.getElementById("samsLeadDays").value,
+      costcoWeekly: document.getElementById("costcoWeekly").value,
+      costcoBuffer: document.getElementById("costcoBuffer").value,
+      costcoMode: document.getElementById("costcoMode").value,
+      costcoLeadDays: document.getElementById("costcoLeadDays").value,
+      otherWeekly: document.getElementById("otherWeekly").value,
+      otherBuffer: document.getElementById("otherBuffer").value,
+      days: {
+        agro: DAYS.map((_, i) => document.getElementById(`agro_${i}`).checked),
+        sams: DAYS.map((_, i) => document.getElementById(`sams_${i}`).checked),
+        costco: DAYS.map((_, i) => document.getElementById(`costco_${i}`).checked),
+        other: DAYS.map((_, i) => document.getElementById(`other_${i}`).checked),
+        shiptemplate: DAYS.map((_, i) => document.getElementById(`shiptemplate_${i}`).checked),
+      },
+      sections: SECTION_IDS.reduce((acc, id) => {
+        const section = document.getElementById(id);
+        acc[id] = section ? section.open : false;
+        return acc;
+      }, {})
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {}
+  }
+
+  function loadState() {
+    let state = null;
+    try {
+      state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    } catch (err) {
+      state = null;
+    }
+    if (!state) return;
+
+    const applyValue = (id, value) => {
+      if (value === undefined || value === null) return;
+      const input = document.getElementById(id);
+      if (input) input.value = value;
+    };
+
+    applyValue("packDelayDays", state.packDelayDays);
+    applyValue("holdPct", state.holdPct);
+    applyValue("agro5oz", state.agro5oz);
+    applyValue("agro10oz", state.agro10oz);
+    applyValue("agro16oz", state.agro16oz);
+    applyValue("agro3lb", state.agro3lb);
+    applyValue("agroBuffer", state.agroBuffer);
+    applyValue("agroMode", state.agroMode);
+    applyValue("agroLeadDays", state.agroLeadDays);
+    applyValue("sams16oz", state.sams16oz);
+    applyValue("sams3lb", state.sams3lb);
+    applyValue("samsBuffer", state.samsBuffer);
+    applyValue("samsMode", state.samsMode);
+    applyValue("samsLeadDays", state.samsLeadDays);
+    applyValue("costcoWeekly", state.costcoWeekly);
+    applyValue("costcoBuffer", state.costcoBuffer);
+    applyValue("costcoMode", state.costcoMode);
+    applyValue("costcoLeadDays", state.costcoLeadDays);
+    applyValue("otherWeekly", state.otherWeekly);
+    applyValue("otherBuffer", state.otherBuffer);
+    setActivePage(state.uiPage === "resources" ? "resources" : "planner");
+    setPackMode(state.packMode);
+
+    if (Array.isArray(state.harvest)) {
+      DAYS.forEach((_, i) => {
+        if (state.harvest[i] === undefined) return;
+        const input = document.getElementById(`harvest_${i}`);
+        if (input) input.value = state.harvest[i];
+      });
+    }
+
+    ["agro","sams","costco","other","shiptemplate"].forEach(prefix => {
+      const values = state.days && Array.isArray(state.days[prefix]) ? state.days[prefix] : null;
+      if (!values) return;
+      DAYS.forEach((_, i) => {
+        if (typeof values[i] !== "boolean") return;
+        const cb = document.getElementById(`${prefix}_${i}`);
+        if (cb) cb.checked = values[i];
+      });
+    });
+
+    if (state.sections && typeof state.sections === "object") {
+      SECTION_IDS.forEach(id => {
+        if (typeof state.sections[id] !== "boolean") return;
+        const section = document.getElementById(id);
+        if (section) section.open = state.sections[id];
+      });
+    }
+  }
+
+  function wireEvents() {
+    const ids = ["packDelayDays","holdPct","agro5oz","agro10oz","agro16oz","agro3lb","agroBuffer","agroMode","agroLeadDays","sams16oz","sams3lb","samsBuffer","samsMode","samsLeadDays","costcoWeekly","costcoBuffer","costcoMode","costcoLeadDays","otherWeekly","otherBuffer"];
+    ids.forEach(id => {
+      document.getElementById(id).addEventListener("input", () => {
+        compute();
+        saveState();
+      });
+      document.getElementById(id).addEventListener("change", () => {
+        compute();
+        saveState();
+      });
+    });
+    for (let i=0;i<7;i++){
+      document.getElementById(`harvest_${i}`).addEventListener("input", () => {
+        compute();
+        saveState();
+      });
+      ["agro","sams","costco","other","shiptemplate"].forEach(p => {
+        document.getElementById(`${p}_${i}`).addEventListener("change", () => {
+          compute();
+          saveState();
+        });
+      });
+    }
+    SECTION_IDS.forEach(id => {
+      document.getElementById(id).addEventListener("toggle", saveState);
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      DAYS.forEach((d,i)=> document.getElementById(`harvest_${i}`).value = (["Mon","Tue","Wed","Thu","Fri"].includes(d)) ? 2600 : 0);
+      document.getElementById("packDelayDays").value = 1;
+      document.getElementById("holdPct").value = 0;
+
+      document.getElementById("agro5oz").value = 0;
+      document.getElementById("agro10oz").value = 0;
+      document.getElementById("agro16oz").value = 1780;
+      document.getElementById("agro3lb").value = 0;
+      document.getElementById("agroBuffer").value = 20;
+      document.getElementById("agroMode").value = "split";
+      document.getElementById("agroLeadDays").value = 1;
+      document.getElementById("sams16oz").value = 1500;
+      document.getElementById("sams3lb").value = 0;
+      document.getElementById("samsBuffer").value = 0;
+      document.getElementById("samsMode").value = "split";
+      document.getElementById("samsLeadDays").value = 1;
+      document.getElementById("costcoWeekly").value = 5000;
+      document.getElementById("costcoBuffer").value = 0;
+      document.getElementById("costcoMode").value = "split";
+      document.getElementById("costcoLeadDays").value = 2;
+      document.getElementById("otherWeekly").value = 0;
+      document.getElementById("otherBuffer").value = 0;
+
+      ["agro","sams","costco","other"].forEach(p => {
+        for (let i=0;i<7;i++){
+          const d = DAYS[i];
+          document.getElementById(`${p}_${i}`).checked = (d==="Tue" || d==="Fri");
+        }
+      });
+      for (let i=0;i<7;i++){
+        const d = DAYS[i];
+        document.getElementById(`shiptemplate_${i}`).checked = (d==="Tue" || d==="Fri");
+      }
+      compute();
+      saveState();
+    });
+
+    document.getElementById("zeroBtn").addEventListener("click", () => {
+      ["agro5oz","agro10oz","agro16oz","agro3lb","sams16oz","sams3lb","costcoWeekly","otherWeekly"].forEach(id => document.getElementById(id).value = 0);
+      compute();
+      saveState();
+    });
+
+    document.getElementById("applyShipDaysBtn").addEventListener("click", () => {
+      ["agro","sams","costco","other"].forEach(p => {
+        for (let i=0;i<7;i++){
+          document.getElementById(`${p}_${i}`).checked = document.getElementById(`shiptemplate_${i}`).checked;
+        }
+      });
+      compute();
+      saveState();
+    });
+
+    document.getElementById("pillPlanner").addEventListener("click", () => {
+      setActivePage("planner");
+      saveState();
+    });
+    document.getElementById("pillResources").addEventListener("click", () => {
+      setActivePage("resources");
+      saveState();
+    });
+
+    ["packModeLbs","packModeUnits","packModeCases","packModePallets"].forEach(id => {
+      document.getElementById(id).addEventListener("click", () => {
+        const mode =
+          id === "packModeUnits" ? "units" :
+          (id === "packModeCases" ? "cases" :
+          (id === "packModePallets" ? "pallets" : "lbs"));
+        setPackMode(mode);
+        compute();
+        saveState();
+      });
+    });
+  }
+
+  makeHarvestInputs();
+  makeDayCheckboxes("agroDays","agro");
+  makeDayCheckboxes("samsDays","sams");
+  makeDayCheckboxes("costcoDays","costco");
+  makeDayCheckboxes("otherDays","other");
+  makeDayCheckboxes("shipTemplateDays","shiptemplate");
+  loadState();
+  wireEvents();
+  compute();
+  saveState();
+</script>
+</body>
+</html>
