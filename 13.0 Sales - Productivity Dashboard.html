@@ -853,6 +853,13 @@
                   <button data-unit="pounds">Pounds</button>
                 </div>
               </div>
+              <div class="chip">
+                Week source
+                <div class="pill-toggle" id="weekSourceToggle">
+                  <button data-week-source="sales" class="active">Sales Week</button>
+                  <button data-week-source="ship">Sales Ship Week</button>
+                </div>
+              </div>
               <button class="chip reset-btn hidden" id="resetFiltersBtn">Reset filters</button>
             </div>
           </div>
@@ -1008,7 +1015,7 @@
                   <thead>
                     <tr>
                       <th>Invoice date</th>
-                      <th>Week</th>
+                      <th id="weekColHeader">Sales week</th>
                       <th>SKU</th>
                       <th class="text-right">Cases</th>
                       <th class="text-right">Units</th>
@@ -1103,20 +1110,27 @@ const skuWeightLbs = {
     function normalizeData(raw) {
       return raw
         .map(r => {
-          const [invoiceDate, shipVia, salesWeek, invoiceNo, sku, cases, customer, term = ""] = r;
+          const [invoiceDate, shipVia, salesWeek, salesShipWeek, invoiceNo, sku, cases, customer, term = ""] = r;
           const invoiceDateObj = new Date(invoiceDate);
           const invoiceDateISO = isNaN(invoiceDateObj.getTime()) ? "" : invoiceDateObj.toISOString().slice(0,10);
           const invoiceDateSafe = isNaN(invoiceDateObj.getTime()) ? null : invoiceDateObj;
           const invoiceYear = invoiceDateObj.getTime && !isNaN(invoiceDateObj.getTime()) ? invoiceDateObj.getFullYear() : 0;
-          const weekKey = invoiceYear ? `${invoiceYear}-W${Number(salesWeek)}` : `0000-W${Number(salesWeek)}`;
-          const weekOrder = invoiceYear ? (invoiceYear * 100 + Number(salesWeek)) : Number(salesWeek);
+          const salesWeekNum = Number(salesWeek) || 0;
+          const salesShipWeekNum = Number(salesShipWeek) || 0;
+          const weekKey = invoiceYear ? `${invoiceYear}-W${salesWeekNum}` : `0000-W${salesWeekNum}`;
+          const weekOrder = invoiceYear ? (invoiceYear * 100 + salesWeekNum) : salesWeekNum;
+          const shipWeekKey = invoiceYear ? `${invoiceYear}-W${salesShipWeekNum}` : `0000-W${salesShipWeekNum}`;
+          const shipWeekOrder = invoiceYear ? (invoiceYear * 100 + salesShipWeekNum) : salesShipWeekNum;
           return {
             invoiceDate,
             shipVia,
-            salesWeek: Number(salesWeek),
+            salesWeek: salesWeekNum,
+            salesShipWeek: salesShipWeekNum,
             invoiceYear,
             weekKey,
             weekOrder,
+            shipWeekKey,
+            shipWeekOrder,
             invoiceDateObj: invoiceDateSafe,
             invoiceDateISO,
             invoiceNo: String(invoiceNo),
@@ -1135,6 +1149,7 @@ const skuWeightLbs = {
       viewMode: "daily",   // "daily" or "weekly" (global)
       timeAxis: "daily",   // chart axis (kept in sync with viewMode)
       unitMode: "cases",
+      weekSource: "sales", // "sales" or "ship"
       breakdownMode: "sku",
       heatmapMetric: "value", // "value" or "pct" (% of week total in selected unit mode)
       filters: {
@@ -1162,6 +1177,7 @@ const skuWeightLbs = {
     const chartFooterNoteEl = document.getElementById("chartFooterNote");
     const breakdownFooterNoteEl = document.getElementById("breakdownFooterNote");
     const tableModeChipEl = document.getElementById("tableModeChip");
+    const weekColHeaderEl = document.getElementById("weekColHeader");
     const performanceSubEl = document.getElementById("performanceSub");
     const breakdownSubEl = document.getElementById("breakdownSub");
     const weeklySummaryContainer = document.getElementById("weeklySummaryContainer");
@@ -1219,6 +1235,7 @@ const skuWeightLbs = {
         const invoiceDate = String(r["Sales Invoice Date"] ?? "").trim();
         const shipVia = String(r["Sales Ship Via"] ?? "").trim();
         const salesWeek = String(r["Sales Week"] ?? "").trim();
+        const salesShipWeek = String(r["Sales Ship Week"] ?? r["Sales Week"] ?? "").trim();
         const invoiceNo = String(r["Sales Invoice No."] ?? "").trim();
         const sku = String(r["Sales SKU"] ?? "").trim();
         const cases = String(r["Sales # of Cases"] ?? "").trim();
@@ -1226,7 +1243,7 @@ const skuWeightLbs = {
         const term = String(r["Sales Term"] ?? "").trim();
 
         if (!invoiceDate && !sku && !cases && !customer) continue;
-        out.push([invoiceDate, shipVia, salesWeek, invoiceNo, sku, cases, customer, term]);
+        out.push([invoiceDate, shipVia, salesWeek, salesShipWeek, invoiceNo, sku, cases, customer, term]);
       }
 
       return { rows: out, missing: [] };
@@ -1283,11 +1300,32 @@ const skuWeightLbs = {
       return record.cases * unitsPerCase;
     }
 
+    function getWeekSourceLabel(titleCase = false) {
+      const label = state.weekSource === "ship" ? "sales ship week" : "sales week";
+      return titleCase ? label.replace(/\b\w/g, c => c.toUpperCase()) : label;
+    }
+
+    function getSelectedWeekMeta(row) {
+      if (state.weekSource === "ship") {
+        return {
+          week: row.salesShipWeek,
+          weekKey: row.shipWeekKey,
+          weekOrder: row.shipWeekOrder
+        };
+      }
+      return {
+        week: row.salesWeek,
+        weekKey: row.weekKey,
+        weekOrder: row.weekOrder
+      };
+    }
+
     function applyFilters() {
       return salesData.filter(row => {
+        const selectedWeek = getSelectedWeekMeta(row);
         if (state.filters.sku !== "all" && row.sku !== state.filters.sku) return false;
         if (state.filters.customer !== "all" && row.customer !== state.filters.customer) return false;
-        if (state.filters.week !== "all" && row.weekKey !== state.filters.week) return false;
+        if (state.filters.week !== "all" && selectedWeek.weekKey !== state.filters.week) return false;
         if (state.filters.date !== "all" && row.invoiceDateISO !== state.filters.date) return false;
         return true;
       });
@@ -1300,7 +1338,8 @@ const skuWeightLbs = {
 
     function weekLabelFromRow(row, showYear) {
       if (!row) return "Week —";
-      return showYear ? `W${row.salesWeek} ${row.invoiceYear}` : `W${row.salesWeek}`;
+      const selectedWeek = getSelectedWeekMeta(row);
+      return showYear ? `W${selectedWeek.week} ${row.invoiceYear}` : `W${selectedWeek.week}`;
     }
 
     function weekLabelFromKey(key, showYear) {
@@ -1355,13 +1394,14 @@ const skuWeightLbs = {
           .forEach(row => {
             const tr = document.createElement("tr");
             const units = getUnits(row, unitMode);
+            const selectedWeek = getSelectedWeekMeta(row);
 
             const invoiceDateTd = document.createElement("td");
             invoiceDateTd.textContent = formatDateShort(row.invoiceDateObj);
             tr.appendChild(invoiceDateTd);
 
             const weekTd = document.createElement("td");
-            weekTd.textContent = row.salesWeek;
+            weekTd.textContent = selectedWeek.week;
             tr.appendChild(weekTd);
 
             const skuTd = document.createElement("td");
@@ -1403,11 +1443,12 @@ const skuWeightLbs = {
         const showYear = hasMultipleWeekYears(filtered);
         filtered.forEach(row => {
           const units = getUnits(row, unitMode);
-          const key = `${row.weekKey}||${row.sku}||${row.customer}`;
+          const selectedWeek = getSelectedWeekMeta(row);
+          const key = `${selectedWeek.weekKey}||${row.sku}||${row.customer}`;
           if (!buckets.has(key)) {
             buckets.set(key, {
-              weekKey: row.weekKey,
-              weekOrder: row.weekOrder,
+              weekKey: selectedWeek.weekKey,
+              weekOrder: selectedWeek.weekOrder,
               weekLabel: weekLabelFromRow(row, showYear),
               sku: row.sku,
               customer: row.customer,
@@ -1500,8 +1541,9 @@ const skuWeightLbs = {
       filtered.forEach(row => {
         const units = getUnits(row, unitMode);
         totalUnits += units;
+        const selectedWeek = getSelectedWeekMeta(row);
 
-        const gKey = isWeekly ? row.weekKey : row.invoiceDateISO;
+        const gKey = isWeekly ? selectedWeek.weekKey : row.invoiceDateISO;
         byGroup.set(gKey, (byGroup.get(gKey) || 0) + units);
 
         byCustomer.set(row.customer, (byCustomer.get(row.customer) || 0) + units);
@@ -1560,7 +1602,8 @@ const skuWeightLbs = {
       const showYear = hasMultipleWeekYears(filtered);
 
       filtered.forEach(row => {
-        const wk = row.weekKey;
+        const selectedWeek = getSelectedWeekMeta(row);
+        const wk = selectedWeek.weekKey;
 
         // First metric: always raw cases
         const cases = row.cases;
@@ -1575,7 +1618,7 @@ const skuWeightLbs = {
         if (!byWeek.has(wk)) {
           byWeek.set(wk, {
             weekLabel: weekLabelFromRow(row, showYear),
-            weekOrder: row.weekOrder,
+            weekOrder: selectedWeek.weekOrder,
             cases: 0,
             metric: 0,
             customers: new Set(),
@@ -1609,6 +1652,7 @@ const skuWeightLbs = {
       const chipLabel = unitMode === "cases"
         ? "Mode: Cases + units/case"
         : "Mode: Lbs (cases × lbs/case)";
+      const weekHeaderLabel = getWeekSourceLabel(true);
 
       weeklySummaryContainer.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
@@ -1622,7 +1666,7 @@ const skuWeightLbs = {
           <table class="weekly-summary-table">
             <thead>
               <tr>
-                <th>Week</th>
+                <th>${weekHeaderLabel}</th>
                 <th class="text-right">Cases</th>
                 <th class="text-right">${secondHeader}</th>
                 <th class="text-center">Customers</th>
@@ -1649,8 +1693,9 @@ const skuWeightLbs = {
           key = row.invoiceDateISO;
           labelMeta = row.invoiceDateObj;
         } else {
-          key = row.weekKey;
-          labelMeta = row.weekOrder;
+          const selectedWeek = getSelectedWeekMeta(row);
+          key = selectedWeek.weekKey;
+          labelMeta = selectedWeek.weekOrder;
         }
 
         if (!buckets.has(key)) {
@@ -1708,7 +1753,7 @@ const skuWeightLbs = {
       const ctx = document.getElementById("salesPerformanceChart").getContext("2d");
       const { labels, data, keys } = buildTimeChartData(filtered);
       const unitLabel = state.unitMode === "cases" ? "Cases sold" : "Pounds sold";
-      const axisText = state.timeAxis === "weekly" ? "sales week" : "invoice date";
+      const axisText = state.timeAxis === "weekly" ? getWeekSourceLabel() : "invoice date";
       const windowSize = state.viewMode === "weekly" ? 4 : 7;
 
       const movingAverageData = data.map((_, idx) => {
@@ -1922,12 +1967,13 @@ const skuWeightLbs = {
 
       filtered.forEach(row => {
         const amount = getUnits(row, heatmapUnitMode);
+        const selectedWeek = getSelectedWeekMeta(row);
         skuSet.add(row.sku);
-        weekSet.add(row.weekKey);
+        weekSet.add(selectedWeek.weekKey);
         if (!matrix.has(row.sku)) matrix.set(row.sku, new Map());
         const m = matrix.get(row.sku);
-        m.set(row.weekKey, (m.get(row.weekKey) || 0) + amount);
-        weekTotals.set(row.weekKey, (weekTotals.get(row.weekKey) || 0) + amount);
+        m.set(selectedWeek.weekKey, (m.get(selectedWeek.weekKey) || 0) + amount);
+        weekTotals.set(selectedWeek.weekKey, (weekTotals.get(selectedWeek.weekKey) || 0) + amount);
       });
 
       const skus = [...skuSet].sort();
@@ -2020,9 +2066,12 @@ const skuWeightLbs = {
       const showYear = hasMultipleWeekYears(filtered);
       const byWeek = new Map(); // week -> { total, weekOrder, bySku: Map }
       filtered.forEach(row => {
+        const selectedWeek = getSelectedWeekMeta(row);
         const units = getUnits(row, state.unitMode);
-        if (!byWeek.has(row.weekKey)) byWeek.set(row.weekKey, { total: 0, weekOrder: row.weekOrder, bySku: new Map() });
-        const bucket = byWeek.get(row.weekKey);
+        if (!byWeek.has(selectedWeek.weekKey)) {
+          byWeek.set(selectedWeek.weekKey, { total: 0, weekOrder: selectedWeek.weekOrder, bySku: new Map() });
+        }
+        const bucket = byWeek.get(selectedWeek.weekKey);
         bucket.total += units;
         bucket.bySku.set(row.sku, (bucket.bySku.get(row.sku) || 0) + units);
       });
@@ -2115,12 +2164,16 @@ const skuWeightLbs = {
 
       if (skuShareAreaChartNoteEl) {
         const unit = state.unitMode === "cases" ? "cases" : "lbs";
-        skuShareAreaChartNoteEl.textContent = `Top SKU share by week using ${unit} as the denominator.`;
+        skuShareAreaChartNoteEl.textContent = `Top SKU share by ${getWeekSourceLabel()} using ${unit} as the denominator.`;
       }
     }
 
     function updateModeLabels() {
       const isWeekly = state.viewMode === "weekly";
+      const weekSourceLabel = getWeekSourceLabel(true);
+      if (weekColHeaderEl) weekColHeaderEl.textContent = weekSourceLabel;
+      const weeklyAxisBtn = document.querySelector("#timeAxisToggle button[data-view=\"weekly\"]");
+      if (weeklyAxisBtn) weeklyAxisBtn.textContent = `By ${weekSourceLabel}`;
       if (isWeekly) {
         kpiAvgPerDayLabelEl.textContent = "Average per day (7-day week)";
         tableModeChipEl.textContent = "Weekly rows";
@@ -2149,6 +2202,7 @@ const skuWeightLbs = {
         state.filters.week !== "all" ||
         state.filters.date !== "all" ||
         state.unitMode !== "cases" ||
+        state.weekSource !== "sales" ||
         state.viewMode !== "daily" ||
         state.heatmapMetric !== "value";
       resetFiltersBtn.classList.toggle("hidden", !needsReset);
@@ -2194,6 +2248,7 @@ const skuWeightLbs = {
 
     function initToggles() {
       const unitToggle = document.getElementById("unitModeToggle");
+      const weekSourceToggle = document.getElementById("weekSourceToggle");
       const timeAxisToggle = document.getElementById("timeAxisToggle");
       const breakdownToggle = document.getElementById("breakdownToggle");
       const heatmapMetricToggle = document.getElementById("heatmapMetricToggle");
@@ -2217,6 +2272,17 @@ const skuWeightLbs = {
         refreshDashboard();
       });
 
+      if (weekSourceToggle) {
+        weekSourceToggle.addEventListener("click", (e) => {
+          if (e.target.tagName !== "BUTTON") return;
+          [...weekSourceToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
+          e.target.classList.add("active");
+          state.weekSource = e.target.dataset.weekSource === "ship" ? "ship" : "sales";
+          state.filters.week = "all";
+          refreshDashboard();
+        });
+      }
+
       breakdownToggle.addEventListener("click", (e) => {
         if (e.target.tagName !== "BUTTON") return;
         [...breakdownToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
@@ -2239,11 +2305,13 @@ const skuWeightLbs = {
         resetFiltersBtn.addEventListener("click", () => {
           state.filters = { sku: "all", customer: "all", week: "all", date: "all" };
           state.unitMode = "cases";
+          state.weekSource = "sales";
           state.viewMode = "daily";
           state.timeAxis = "daily";
           state.heatmapMetric = "value";
 
           setActiveToggle(unitToggle, "unit", "cases");
+          setActiveToggle(weekSourceToggle, "weekSource", "sales");
           setActiveToggle(timeAxisToggle, "view", "daily");
           setActiveToggle(heatmapMetricToggle, "heatmapMetric", "value");
           resetStripActive(skuStripEl, "sku");
