@@ -542,12 +542,13 @@
       background: rgba(2, 6, 23, 0.75);
       backdrop-filter: blur(4px);
       z-index: 1000;
+      overflow-y: auto;
     }
     .modal-backdrop.open { display: flex; }
     .modal-card {
       width: min(920px, 100%);
-      max-height: min(84vh, 980px);
-      overflow: hidden;
+      max-height: calc(100dvh - 36px);
+      overflow: auto;
       border-radius: 16px;
       border: 1px solid rgba(148, 163, 184, 0.35);
       background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
@@ -555,6 +556,7 @@
       padding: 14px;
       display: grid;
       gap: 10px;
+      margin: auto;
     }
     .modal-head {
       display: flex;
@@ -570,8 +572,9 @@
       color: #e2e8f0;
     }
     .modal-table-wrap {
-      max-height: 62vh;
+      max-height: min(62vh, calc(100dvh - 240px));
       overflow: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     @media (max-width: 1100px) {
@@ -741,10 +744,10 @@
             <table>
               <thead>
                 <tr>
-                  <th>Employee</th>
-                  <th>Department</th>
-                  <th>Why</th>
-                  <th>Excused</th>
+                  <th id="deptModalTh1">Employee</th>
+                  <th id="deptModalTh2">Department</th>
+                  <th id="deptModalTh3">Why</th>
+                  <th id="deptModalTh4">Excused</th>
                 </tr>
               </thead>
               <tbody id="deptModalBody"></tbody>
@@ -987,7 +990,6 @@
       if (!modal) return;
       modal.classList.remove("open");
       modal.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
     }
 
     function openDeptModal(departmentName) {
@@ -995,29 +997,54 @@
       const title = $("deptModalTitle");
       const count = $("deptModalCount");
       const body = $("deptModalBody");
+      const th1 = $("deptModalTh1");
+      const th2 = $("deptModalTh2");
+      const th3 = $("deptModalTh3");
+      const th4 = $("deptModalTh4");
       if (!modal || !title || !count || !body) return;
+
+      if (th1) th1.textContent = "Employee";
+      if (th2) th2.textContent = "Department";
+      if (th3) th3.textContent = "Times Absent";
+      if (th4) th4.textContent = "Excused Rows";
 
       const dep = displayText(departmentName);
       const rows = currentFilteredRows.filter((r) => displayText(r.dept) === dep);
       title.textContent = `Department: ${dep}`;
-      count.textContent = `Showing ${formatInt(rows.length)} records`;
+      count.textContent = `Showing ${formatInt(rows.length)} absence records`;
 
-      if (!rows.length) {
+      const isExcused = (v) => {
+        const s = String(v || "").trim().toLowerCase();
+        return ["yes", "y", "si", "true", "1", "excused"].includes(s);
+      };
+      const byPerson = new Map();
+      for (const r of rows) {
+        const person = displayText(r.person);
+        if (!byPerson.has(person)) {
+          byPerson.set(person, { person, dept: dep, absentCount: 0, excusedCount: 0 });
+        }
+        const agg = byPerson.get(person);
+        if (r.absent) agg.absentCount += 1;
+        if (isExcused(r.hrExcused)) agg.excusedCount += 1;
+      }
+      const summary = [...byPerson.values()]
+        .sort((a, b) => (b.absentCount - a.absentCount) || a.person.localeCompare(b.person));
+
+      if (!summary.length) {
         body.innerHTML = `<tr><td colspan="4" class="muted">No records for this department under current filters.</td></tr>`;
       } else {
-        body.innerHTML = rows.slice(0, 600).map((r) => `
+        body.innerHTML = summary.slice(0, 600).map((r) => `
           <tr>
             <td>${displayText(r.person)}</td>
             <td>${displayText(r.dept)}</td>
-            <td>${displayText(r.reason)}</td>
-            <td>${displayText(r.hrExcused)}</td>
+            <td>${formatInt(r.absentCount)}</td>
+            <td>${formatInt(r.excusedCount)}</td>
           </tr>
         `).join("");
       }
 
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
     }
 
     function openReasonModal(reasonName) {
@@ -1025,29 +1052,59 @@
       const title = $("deptModalTitle");
       const count = $("deptModalCount");
       const body = $("deptModalBody");
+      const th1 = $("deptModalTh1");
+      const th2 = $("deptModalTh2");
+      const th3 = $("deptModalTh3");
+      const th4 = $("deptModalTh4");
       if (!modal || !title || !count || !body) return;
+
+      if (th1) th1.textContent = "Employee";
+      if (th2) th2.textContent = "Department";
+      if (th3) th3.textContent = "Times Absent";
+      if (th4) th4.textContent = "Excused Rows";
 
       const reason = displayText(reasonName);
       const rows = currentFilteredRows.filter((r) => displayText(r.reason) === reason);
       title.textContent = `Reason: ${reason}`;
-      count.textContent = `Showing ${formatInt(rows.length)} records`;
+      count.textContent = `Showing ${formatInt(rows.length)} absence records`;
 
-      if (!rows.length) {
+      const isExcused = (v) => {
+        const s = String(v || "").trim().toLowerCase();
+        return ["yes", "y", "si", "true", "1", "excused"].includes(s);
+      };
+      const byPerson = new Map();
+      for (const r of rows) {
+        const person = displayText(r.person);
+        if (!byPerson.has(person)) {
+          byPerson.set(person, { person, departments: new Set(), absentCount: 0, excusedCount: 0 });
+        }
+        const agg = byPerson.get(person);
+        agg.departments.add(displayText(r.dept));
+        if (r.absent) agg.absentCount += 1;
+        if (isExcused(r.hrExcused)) agg.excusedCount += 1;
+      }
+      const summary = [...byPerson.values()]
+        .map((x) => ({
+          ...x,
+          departmentLabel: [...x.departments].sort().join(", ")
+        }))
+        .sort((a, b) => (b.absentCount - a.absentCount) || a.person.localeCompare(b.person));
+
+      if (!summary.length) {
         body.innerHTML = `<tr><td colspan="4" class="muted">No records for this reason under current filters.</td></tr>`;
       } else {
-        body.innerHTML = rows.slice(0, 600).map((r) => `
+        body.innerHTML = summary.slice(0, 600).map((r) => `
           <tr>
             <td>${displayText(r.person)}</td>
-            <td>${displayText(r.dept)}</td>
-            <td>${displayText(r.reason)}</td>
-            <td>${displayText(r.hrExcused)}</td>
+            <td>${displayText(r.departmentLabel)}</td>
+            <td>${formatInt(r.absentCount)}</td>
+            <td>${formatInt(r.excusedCount)}</td>
           </tr>
         `).join("");
       }
 
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
     }
 
     function applyFilters(rows) {
