@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HR - Attendances</title>
+  <style>
+    :root {
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1320px;
+      border-radius: 24px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+      display: grid;
+      gap: 12px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .title-block { flex: 1 1 260px; min-width: 0; }
+
+    .title {
+      margin: 0;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #34d399, #22c55e 55%, #16a34a 100%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9), 0 12px 30px rgba(16, 185, 129, 0.6);
+      color: #022c22;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .title-text {
+      font-weight: 620;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title-sub {
+      font-size: 0.8rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+
+    .subtitle {
+      color: var(--sub);
+      font-size: 0.82rem;
+      margin-top: 4px;
+    }
+
+    .header-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--sub);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%);
+      white-space: nowrap;
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.35);
+    }
+
+    .meta {
+      color: inherit;
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+      white-space: inherit;
+    }
+
+    .panel {
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      border-radius: 18px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.99));
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      padding: 12px;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .panel-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #dbeafe;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.9rem;
+      font-weight: 620;
+    }
+    .panel-title-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.24);
+    }
+    .panel-subtitle {
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .filters input,
+    .filters select {
+      width: 100%;
+      border: 1px solid rgba(51, 65, 85, 0.95);
+      background: rgba(2, 6, 23, 0.75);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .kpi {
+      position: relative;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      border-radius: 16px;
+      padding: 10px;
+      background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.85), rgba(15, 23, 42, 0.98));
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+    .kpi-glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background:
+        radial-gradient(circle at 15% 0, rgba(34, 197, 94, 0.4), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.4), transparent 60%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .kpi-value {
+      margin-top: 4px;
+      font-size: 1.32rem;
+      font-weight: 700;
+    }
+
+    .kpi-sub {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      border-radius: 14px;
+      background: radial-gradient(circle at top left, rgba(30, 41, 59, 0.52), rgba(2, 6, 23, 0.68));
+      padding: 10px;
+      min-height: 170px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.36);
+    }
+
+    .card-title {
+      color: var(--muted);
+      font-size: 0.73rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-title::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+    .card-filters {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 0;
+    }
+    .card-filters input {
+      width: 100%;
+      border: 1px solid rgba(51, 65, 85, 0.95);
+      background: rgba(2, 6, 23, 0.75);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 0.78rem;
+    }
+    .period-toggle {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .period-btn {
+      width: 100%;
+      border: 1px solid rgba(51, 65, 85, 0.95);
+      background: rgba(2, 6, 23, 0.75);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .period-btn:hover {
+      border-color: rgba(96, 165, 250, 0.75);
+    }
+    .period-btn.active {
+      background: rgba(21, 128, 61, 0.36);
+      border-color: rgba(34, 197, 94, 0.95);
+      color: #dcfce7;
+      box-shadow:
+        inset 0 0 0 1px rgba(74, 222, 128, 0.55),
+        0 0 0 1px rgba(34, 197, 94, 0.2);
+    }
+    .period-range {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .bars { display: grid; gap: 7px; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 64px;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.78rem;
+    }
+
+    .bar-label {
+      color: #dbe3f0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(to right, #22c55e, #f59e0b, #fb7185);
+    }
+
+    .bar-value {
+      color: #cbd5e1;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini-table-wrap {
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      border-radius: 14px;
+      overflow: auto;
+      background: rgba(2, 6, 23, 0.52);
+    }
+    #mainTableWrap {
+      max-height: 520px;
+      overflow: auto;
+    }
+    .table-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 2px 0 8px;
+      padding-bottom: 2px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.55);
+    }
+    .table-title {
+      color: #e2e8f0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .table-toggle-btn {
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: inherit;
+    }
+    .table-toggle-btn:hover {
+      color: #bbf7d0;
+      border-color: rgba(74, 222, 128, 0.65);
+    }
+    .table-collapsed-note {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(51, 65, 85, 0.95);
+      color: var(--muted);
+      font-size: 0.72rem;
+      background: rgba(2, 6, 23, 0.3);
+    }
+    .spacer-sm { margin-bottom: 10px; }
+    .global-filters-wrap {
+      display: grid;
+      gap: 8px;
+    }
+    .global-filters-wrap .filters {
+      margin-bottom: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 0.8rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(51, 65, 85, 0.75);
+      padding: 8px 9px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      font-size: 0.68rem;
+      text-align: center;
+      background: rgba(2, 6, 23, 0.97);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tbody tr:nth-child(odd) { background: rgba(15, 23, 42, 0.45); }
+    tbody tr:hover { background: rgba(30, 41, 59, 0.5); }
+
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .muted { color: var(--muted); }
+
+    @media (max-width: 1100px) {
+      .filters, .kpis, .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .container { border-radius: 18px; padding: 14px 12px 14px; }
+    }
+
+    @media (max-width: 640px) {
+      .filters, .kpis, .grid-2 { grid-template-columns: minmax(0, 1fr); }
+      .bar-row { grid-template-columns: 120px 1fr 56px; }
+      .period-toggle, .period-range { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="container">
+    <header class="header">
+      <div class="title-block">
+        <h1 class="title">
+          <span class="title-pill">HR</span>
+          <span class="title-text">
+            <span>HR Attendances Dashboard</span>
+            <span class="title-sub">LIVE FROM DATA INPUT</span>
+          </span>
+        </h1>
+        <div class="subtitle">Using only Master Pack fields: HR Persona Ausente, HR Porque Ausente, Dia Ausente.</div>
+      </div>
+      <div class="header-tags">
+        <div class="chip"><span class="chip-dot"></span><span id="chip-loaded">Master Pack loaded</span></div>
+        <div class="chip"><span id="lastUpdated" class="meta">Last updated: -</span></div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title"><span class="panel-title-dot"></span><span>Attendance Intelligence</span></div>
+          <div class="panel-subtitle">Built from Master Pack fields and grouped into HR attendance views.</div>
+        </div>
+      </div>
+
+      <article class="card" style="min-height:unset; margin-bottom:10px;">
+        <div class="table-header-row">
+          <div class="table-title">Global Filters</div>
+          <button class="table-toggle-btn" id="toggleFiltersBtn" type="button" aria-expanded="false">Show filters</button>
+        </div>
+        <div id="filtersCollapsedNote" class="table-collapsed-note">Filters are collapsed by default. Click “Show filters” to edit.</div>
+        <div id="globalFiltersWrap" class="global-filters-wrap" style="display:none;">
+          <div class="filters">
+            <select id="ausenteFilter">
+              <option value="all">Dia Ausente: All</option>
+              <option value="yes">Dia Ausente: With value</option>
+              <option value="no">Dia Ausente: Empty</option>
+            </select>
+            <select id="deptFilter"></select>
+            <select id="reasonFilter"></select>
+            <input id="personFilter" type="text" placeholder="Search person..." />
+          </div>
+          <div class="card-filters">
+            <div class="period-toggle" id="periodToggle">
+              <button class="period-btn" type="button" data-period="lastWeek">Last Week</button>
+              <button class="period-btn" type="button" data-period="last30">Last 30 Days</button>
+              <button class="period-btn" type="button" data-period="quarter">This Quarter</button>
+              <button class="period-btn" type="button" data-period="range">Date Range</button>
+            </div>
+            <div class="period-range" id="periodRangeWrap" style="display:none;">
+              <input id="alwaysAbsentStart" type="date" placeholder="Start date" />
+              <input id="alwaysAbsentEnd" type="date" placeholder="End date" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="kpis">
+        <article class="kpi">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Total Rows</div>
+          <div class="kpi-value" id="kpiRows">0</div>
+          <div class="kpi-sub">Filtered HR rows</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Absent</div>
+          <div class="kpi-value" id="kpiAbsent">0</div>
+          <div class="kpi-sub">Rows where Dia Ausente has value</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Absence Rate</div>
+          <div class="kpi-value" id="kpiRate">0%</div>
+          <div class="kpi-sub" id="kpiRateSub">0 of 0 rows</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label">Departments</div>
+          <div class="kpi-value" id="kpiDepartments">0</div>
+          <div class="kpi-sub">Distinct departments</div>
+        </article>
+      </div>
+
+      <div class="grid-2 spacer-sm">
+        <article class="card">
+          <div class="card-title">Rows by Department</div>
+          <div class="bars" id="deptBars"></div>
+        </article>
+        <article class="card">
+          <div class="card-title">Rows by Reason</div>
+          <div class="bars" id="reasonBars"></div>
+        </article>
+      </div>
+
+      <article class="card" style="min-height:unset; margin-bottom:10px;">
+        <div class="card-title">Top 10 Always Absent</div>
+        <div class="mini-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>HR Persona Ausente</th>
+                <th class="center">Department</th>
+                <th class="center">Absenses</th>
+                <th class="center">Total Absenses</th>
+              </tr>
+            </thead>
+            <tbody id="alwaysAbsentBody"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card" style="min-height:unset; margin-bottom:10px;">
+        <div class="table-header-row">
+          <div class="table-title">HR Attendance Table</div>
+          <button class="table-toggle-btn" id="toggleTableBtn" type="button" aria-expanded="false">Show table</button>
+        </div>
+
+        <div id="tableCollapsedNote" class="table-collapsed-note">Table collapsed by default. Click “Show table” to view rows.</div>
+
+        <div class="mini-table-wrap" id="mainTableWrap" style="margin-bottom:2px; display:none;">
+          <table>
+            <thead>
+              <tr id="mainHeadRow"></tr>
+            </thead>
+            <tbody id="mainBody"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card" style="min-height:unset;">
+        <div class="card-title">Data Health</div>
+        <div class="muted" id="healthText">Waiting for Master Pack...</div>
+      </article>
+    </section>
+    </div>
+  </div>
+
+  <script>
+    const MASTER_PACK_KEY = "campo_master_pack_v1";
+    const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
+    const MASTER_PACK_SHEET = "Master Pack";
+    const TABLE_EXPANDED_KEY = "campo_hr_attendance_table_expanded_v1";
+    const FILTERS_EXPANDED_KEY = "campo_hr_global_filters_expanded_v1";
+
+    const state = {
+      ausente: "all",
+      department: "all",
+      reason: "all",
+      person: "",
+      columnOrder: ["Dia Ausente", "HR Departamento", "HR Persona Ausente", "HR Porque Ausente", "HR Excused"],
+      tableExpanded: false,
+      filtersExpanded: false,
+      alwaysAbsentPeriod: "last30",
+      alwaysAbsentStart: "",
+      alwaysAbsentEnd: ""
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function parseJsonSafe(raw) {
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    function readPayload() {
+      const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+      if (!raw) return null;
+      return parseJsonSafe(raw);
+    }
+
+    function normKey(s) {
+      return String(s ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/gi, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    function canonicalHeader(h) {
+      const k = normKey(h);
+      if (k === "dia ausente" || k === "dia de ausencia" || k === "dia ausencia") return "Dia Ausente";
+      if (k === "ausente" || k === "absent" || k === "hr ausente" || k === "hr absent") return "Dia Ausente";
+      if (k.includes("hr departamento") || k === "departamento" || k === "department" || k === "hr department") return "HR Departamento";
+      if (k.includes("hr persona ausente") || k === "persona ausente" || k === "hr persona" || k === "employee") return "HR Persona Ausente";
+      if (k.includes("hr porque ausente") || k.includes("hr por que ausente") || k === "porque ausente" || k === "reason" || k === "hr reason") return "HR Porque Ausente";
+      if (k === "hr excused" || k === "excused") return "HR Excused";
+      return String(h ?? "").trim();
+    }
+
+    function getMasterPackSheet(payload) {
+      const sheets = payload?.sheets;
+      if (!sheets || typeof sheets !== "object") return null;
+      if (sheets[MASTER_PACK_SHEET]) return sheets[MASTER_PACK_SHEET];
+      const keys = Object.keys(sheets);
+      const exact = keys.find((k) => normKey(k) === "master pack");
+      if (exact) return sheets[exact];
+      const fuzzy = keys.find((k) => normKey(k).includes("master pack"));
+      return fuzzy ? sheets[fuzzy] : null;
+    }
+
+    function sheetToObjects(sheetObj) {
+      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const canonicalHeaders = headers.map(canonicalHeader);
+      const out = [];
+      for (const row of rows) {
+        if (!Array.isArray(row)) continue;
+        const obj = {};
+        for (let i = 0; i < canonicalHeaders.length; i++) {
+          const key = String(canonicalHeaders[i] ?? "").trim();
+          if (!key) continue;
+          obj[key] = i < row.length ? row[i] : "";
+        }
+        out.push(obj);
+      }
+      return out;
+    }
+
+    function field(row, keys, fallback) {
+      for (const k of keys) {
+        if (k in row) {
+          const v = String(row[k] ?? "").trim();
+          if (v) return v;
+        }
+      }
+      return fallback;
+    }
+
+    function isAbsentFlag(v) {
+      const s = String(v ?? "").trim().toLowerCase();
+      if (!s) return false;
+      return ["si", "yes", "y", "true", "1", "ausente", "absent"].includes(s);
+    }
+
+    function parseDateAny(v) {
+      if (v === null || v === undefined || v === "") return null;
+      if (v instanceof Date && !Number.isNaN(v.getTime())) return v;
+      const s = String(v).trim();
+      if (!s) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const d = new Date(`${s}T00:00:00`);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
+        const [mm, dd, yy] = s.split("/").map(Number);
+        const yyyy = yy < 100 ? 2000 + yy : yy;
+        const d = new Date(yyyy, mm - 1, dd);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      const d = new Date(s);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function normalizeRows(rawRows) {
+      return rawRows.map((r) => {
+        const dept = field(r, ["HR Departamento", "HR Department", "Departamento HR", "Departamento"], "");
+        const person = field(r, ["HR Persona Ausente", "HR Persona", "Persona Ausente", "Employee"], "");
+        const reason = field(
+          r,
+          ["HR Porque Ausente", "HR Porqué Ausente", "HR Por Que Ausente", "Porque Ausente", "Reason", "HR Reason"],
+          ""
+        );
+        const hrExcused = field(r, ["HR Excused", "Excused"], "");
+        const diaAusente = field(r, ["Dia Ausente", "Día Ausente", "Dia de Ausencia"], "");
+        const ausenteRaw = field(r, ["Dia Ausente", "Día Ausente", "Dia de Ausencia", "Ausente", "Absent", "HR Ausente", "HR Absent"], "");
+        const dateObj = parseDateAny(diaAusente);
+        const absentByDay = String(diaAusente || "").trim() !== "";
+        return {
+          dept,
+          person,
+          reason,
+          hrExcused,
+          diaAusente,
+          dateObj,
+          ausenteRaw,
+          absent: absentByDay || isAbsentFlag(ausenteRaw)
+        };
+      }).filter((r) => r.dept !== "" || r.person !== "" || r.reason !== "" || r.ausenteRaw !== "" || r.diaAusente !== "" || r.hrExcused !== "");
+    }
+
+    function formatInt(n) {
+      return (Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function fillSelect(selectId, values, selected, allLabel) {
+      const el = $(selectId);
+      const options = ["all", ...values];
+      el.innerHTML = options.map((v) => {
+        const label = v === "all" ? allLabel : v;
+        return `<option value="${v}" ${v === selected ? "selected" : ""}>${label}</option>`;
+      }).join("");
+    }
+
+    function renderBars(targetId, mapData, limit) {
+      const el = $(targetId);
+      const sorted = [...mapData.entries()]
+        .sort((a, b) => {
+          const aUnknown = String(a[0] || "").toLowerCase() === "unknown";
+          const bUnknown = String(b[0] || "").toLowerCase() === "unknown";
+          if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
+          return b[1] - a[1];
+        });
+      const unknownEntry = sorted.find(([k]) => String(k || "").toLowerCase() === "unknown");
+      let entries = sorted.filter(([k]) => String(k || "").toLowerCase() !== "unknown").slice(0, limit);
+      if (unknownEntry) entries = [...entries, unknownEntry];
+      if (!entries.length) {
+        el.innerHTML = `<div class="muted">No data for current filters.</div>`;
+        return;
+      }
+      const max = entries[0][1] || 1;
+      el.innerHTML = entries.map(([label, value]) => {
+        const pct = Math.max(4, Math.round((value / max) * 100));
+        const safeLabel = String(label || "Unknown");
+        return `
+          <div class="bar-row">
+            <div class="bar-label" title="${safeLabel}">${safeLabel}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-value">${formatInt(value)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function applyFilters(rows) {
+      return rows.filter((r) => {
+        if (state.ausente === "yes" && !r.absent) return false;
+        if (state.ausente === "no" && r.absent) return false;
+        if (state.department !== "all" && r.dept !== state.department) return false;
+        if (state.reason !== "all" && r.reason !== state.reason) return false;
+        if (state.person && !r.person.toLowerCase().includes(state.person)) return false;
+        return true;
+      });
+    }
+
+    function fieldValueByCanonical(row, canonicalField) {
+      if (canonicalField === "HR Departamento") return row.dept || "Unknown";
+      if (canonicalField === "HR Persona Ausente") return row.person || "Unknown";
+      if (canonicalField === "HR Porque Ausente") return row.reason || "Unknown";
+      if (canonicalField === "Dia Ausente") return row.diaAusente || "Unknown";
+      if (canonicalField === "HR Excused") return row.hrExcused || "Unknown";
+      return "Unknown";
+    }
+
+    function renderTable(rows, columnOrder) {
+      const headRow = $("mainHeadRow");
+      const tbody = $("mainBody");
+      if (headRow) {
+        headRow.innerHTML = (columnOrder || []).map((c) => {
+          const cls = (c === "HR Excused") ? " class=\"right\"" : "";
+          return `<th${cls}>${c}</th>`;
+        }).join("");
+      }
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="${(columnOrder || []).length || 1}" class="muted">No HR rows for current filters.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.slice(0, 400).map((r) => {
+        const tds = (columnOrder || []).map((c) => {
+          const cls = (c === "HR Excused") ? " class=\"right\"" : "";
+          return `<td${cls}>${fieldValueByCanonical(r, c)}</td>`;
+        }).join("");
+        return `<tr>${tds}</tr>`;
+      }).join("");
+    }
+
+    function renderAlwaysAbsent(rows, allRows) {
+      const tbody = $("alwaysAbsentBody");
+      if (!tbody) return;
+      const byPerson = new Map();
+      const byPersonDept = new Map();
+      const allAbsencesByPerson = new Map();
+
+      for (const r of (allRows || [])) {
+        const key = r.person || "Unknown";
+        if (r.absent) allAbsencesByPerson.set(key, (allAbsencesByPerson.get(key) || 0) + 1);
+      }
+
+      for (const r of rows) {
+        const key = r.person || "Unknown";
+        if (!byPerson.has(key)) byPerson.set(key, { absent: 0, total: 0 });
+        const x = byPerson.get(key);
+        x.total += 1;
+        if (r.absent) x.absent += 1;
+
+        if (!byPersonDept.has(key)) byPersonDept.set(key, new Map());
+        const deptKey = r.dept || "Unknown";
+        const dm = byPersonDept.get(key);
+        dm.set(deptKey, (dm.get(deptKey) || 0) + 1);
+      }
+
+      const top = [...byPerson.entries()]
+        .map(([person, v]) => {
+          const deptMap = byPersonDept.get(person) || new Map();
+          const topDeptEntry = [...deptMap.entries()].sort((a, b) => b[1] - a[1])[0];
+          const department = (person || "").toLowerCase() === "unknown" ? "" : (topDeptEntry?.[0] || "");
+          const totalAbsencesAllData = allAbsencesByPerson.get(person) || 0;
+          return {
+            person,
+            department,
+            absent: v.absent,
+            periodTotal: v.total,
+            total: totalAbsencesAllData
+          };
+        })
+        .filter((x) => x.periodTotal > 0 && x.absent === x.periodTotal)
+        .sort((a, b) => {
+          const aUnknown = String(a.person || "").toLowerCase() === "unknown";
+          const bUnknown = String(b.person || "").toLowerCase() === "unknown";
+          if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
+          return (b.absent - a.absent) || a.person.localeCompare(b.person);
+        });
+      const unknownTop = top.find((r) => String(r.person || "").toLowerCase() === "unknown");
+      const topNonUnknown = top.filter((r) => String(r.person || "").toLowerCase() !== "unknown").slice(0, 10);
+      const topRows = unknownTop ? [...topNonUnknown, unknownTop] : topNonUnknown;
+
+      if (!topRows.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">No always-absent people in current filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = topRows.map((r) => `
+        <tr>
+          <td>${r.person || "Unknown"}</td>
+          <td class="center">${r.department || "-"}</td>
+          <td class="center">${formatInt(r.absent)}</td>
+          <td class="center">${formatInt(r.total)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function filterRowsByPeriod(rows) {
+      const period = state.alwaysAbsentPeriod;
+      if (period === "range") {
+        const start = parseDateAny(state.alwaysAbsentStart);
+        const end = parseDateAny(state.alwaysAbsentEnd);
+        return rows.filter((r) => {
+          if (!(r.dateObj instanceof Date) || Number.isNaN(r.dateObj.getTime())) return false;
+          if (start && r.dateObj < start) return false;
+          if (end && r.dateObj > end) return false;
+          return true;
+        });
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (period === "lastWeek") {
+        const day = today.getDay(); // 0=Sun ... 6=Sat
+        const daysSinceMonday = (day + 6) % 7;
+        const thisWeekStart = new Date(today);
+        thisWeekStart.setDate(today.getDate() - daysSinceMonday);
+        const lastWeekStart = new Date(thisWeekStart);
+        lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+        const lastWeekEnd = new Date(thisWeekStart);
+        lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
+        lastWeekEnd.setHours(23, 59, 59, 999);
+        return rows.filter((r) => (r.dateObj instanceof Date) && !Number.isNaN(r.dateObj.getTime()) && r.dateObj >= lastWeekStart && r.dateObj <= lastWeekEnd);
+      }
+      if (period === "last30") {
+        const start = new Date(today);
+        start.setDate(start.getDate() - 29);
+        return rows.filter((r) => (r.dateObj instanceof Date) && !Number.isNaN(r.dateObj.getTime()) && r.dateObj >= start && r.dateObj <= today);
+      }
+
+      if (period === "quarter") {
+        const month = today.getMonth();
+        const qStartMonth = Math.floor(month / 3) * 3;
+        const start = new Date(today.getFullYear(), qStartMonth, 1);
+        const end = new Date(today.getFullYear(), qStartMonth + 3, 0);
+        end.setHours(23, 59, 59, 999);
+        return rows.filter((r) => (r.dateObj instanceof Date) && !Number.isNaN(r.dateObj.getTime()) && r.dateObj >= start && r.dateObj <= end);
+      }
+
+      return rows;
+    }
+
+    function updateMeta() {
+      const ping = localStorage.getItem(MASTER_PACK_PING_KEY) || "";
+      if (ping && Number.isFinite(Number(ping))) {
+        $("lastUpdated").textContent = `Last updated: ${new Date(Number(ping)).toLocaleString()}`;
+      } else {
+        $("lastUpdated").textContent = "Last updated: -";
+      }
+    }
+
+    function render() {
+      updateMeta();
+      const payload = readPayload();
+      const sheet = getMasterPackSheet(payload);
+      const rowsRaw = sheet ? sheetToObjects(sheet) : [];
+      const allRows = normalizeRows(rowsRaw);
+
+      const health = $("healthText");
+      const chipLoaded = $("chip-loaded");
+      if (!sheet) {
+        health.textContent = "Master Pack sheet not found in localStorage key campo_master_pack_v1.";
+        if (chipLoaded) chipLoaded.textContent = "Master Pack missing";
+      } else {
+        const h = Array.isArray(sheet.headers) ? sheet.headers.map((x) => canonicalHeader(String(x || ""))) : [];
+        const allowedCols = ["Dia Ausente", "HR Departamento", "HR Persona Ausente", "HR Porque Ausente", "HR Excused"];
+        const ordered = [];
+        for (const col of h) {
+          if (allowedCols.includes(col) && !ordered.includes(col)) ordered.push(col);
+        }
+        for (const col of allowedCols) {
+          if (!ordered.includes(col)) ordered.push(col);
+        }
+        state.columnOrder = ordered;
+
+        const groups = [
+          ["HR Persona Ausente"],
+          ["HR Porque Ausente"],
+          ["Dia Ausente"],
+          ["HR Excused"]
+        ];
+        const missing = groups.map((g) => g.find((k) => h.includes(k)) ? "" : g[0]).filter(Boolean);
+        health.textContent = missing.length
+          ? `Missing expected columns: ${missing.join(", ")}`
+          : `Rows loaded: ${formatInt(rowsRaw.length)} • Parsed HR rows: ${formatInt(allRows.length)}. Required HR columns found.`;
+        if (chipLoaded) {
+          chipLoaded.textContent = missing.length
+            ? `Master Pack loaded (${formatInt(rowsRaw.length)} rows) · missing HR fields`
+            : `Master Pack loaded (${formatInt(rowsRaw.length)} rows)`;
+        }
+      }
+
+      const periodRows = filterRowsByPeriod(allRows);
+      const departments = new Set();
+      const reasons = new Set();
+      for (const r of periodRows) {
+        if (r.dept) departments.add(r.dept);
+        if (r.reason) reasons.add(r.reason);
+      }
+
+      fillSelect("deptFilter", [...departments].sort(), state.department, "All Departments");
+      fillSelect("reasonFilter", [...reasons].sort(), state.reason, "All Reasons");
+      $("personFilter").value = state.person;
+      $("ausenteFilter").value = state.ausente;
+
+      const filtered = applyFilters(periodRows);
+      const absentCount = filtered.filter((r) => r.absent).length;
+      const rate = filtered.length > 0 ? (absentCount / filtered.length) * 100 : 0;
+
+      $("kpiRows").textContent = formatInt(filtered.length);
+      $("kpiAbsent").textContent = formatInt(absentCount);
+      $("kpiRate").textContent = `${rate.toFixed(1)}%`;
+      $("kpiRateSub").textContent = `${formatInt(absentCount)} of ${formatInt(filtered.length)} rows`;
+      $("kpiDepartments").textContent = formatInt(new Set(filtered.map((r) => r.dept)).size);
+
+      const deptMap = new Map();
+      const reasonMap = new Map();
+      for (const r of filtered) {
+        deptMap.set(r.dept, (deptMap.get(r.dept) || 0) + 1);
+        const reasonKey = r.reason || "Unknown";
+        reasonMap.set(reasonKey, (reasonMap.get(reasonKey) || 0) + 1);
+      }
+
+      renderBars("deptBars", deptMap, 12);
+      renderBars("reasonBars", reasonMap, 12);
+      renderAlwaysAbsent(filtered, allRows);
+      renderTable(filtered, state.columnOrder);
+      renderTableVisibility();
+      renderFiltersVisibility();
+
+      const startEl = $("alwaysAbsentStart");
+      const endEl = $("alwaysAbsentEnd");
+      const periodBtns = document.querySelectorAll(".period-btn[data-period]");
+      if (startEl) startEl.value = state.alwaysAbsentStart || "";
+      if (endEl) endEl.value = state.alwaysAbsentEnd || "";
+      const showRange = state.alwaysAbsentPeriod === "range";
+      const periodRangeWrap = $("periodRangeWrap");
+      if (periodRangeWrap) periodRangeWrap.style.display = showRange ? "grid" : "none";
+      periodBtns.forEach((btn) => {
+        const val = btn.getAttribute("data-period") || "";
+        btn.classList.toggle("active", val === state.alwaysAbsentPeriod);
+      });
+    }
+
+    function renderTableVisibility() {
+      const wrap = $("mainTableWrap");
+      const note = $("tableCollapsedNote");
+      const btn = $("toggleTableBtn");
+      if (!wrap || !note || !btn) return;
+      const expanded = !!state.tableExpanded;
+      wrap.style.display = expanded ? "block" : "none";
+      note.style.display = expanded ? "none" : "block";
+      btn.textContent = expanded ? "Hide table" : "Show table";
+      btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
+
+    function renderFiltersVisibility() {
+      const wrap = $("globalFiltersWrap");
+      const note = $("filtersCollapsedNote");
+      const btn = $("toggleFiltersBtn");
+      if (!wrap || !note || !btn) return;
+      const expanded = !!state.filtersExpanded;
+      wrap.style.display = expanded ? "grid" : "none";
+      note.style.display = expanded ? "none" : "block";
+      btn.textContent = expanded ? "Hide filters" : "Show filters";
+      btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
+
+    function setupEvents() {
+      const toggleBtn = $("toggleTableBtn");
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+          state.tableExpanded = !state.tableExpanded;
+          try { localStorage.setItem(TABLE_EXPANDED_KEY, state.tableExpanded ? "1" : "0"); } catch {}
+          renderTableVisibility();
+        });
+      }
+      const toggleFiltersBtn = $("toggleFiltersBtn");
+      if (toggleFiltersBtn) {
+        toggleFiltersBtn.addEventListener("click", () => {
+          state.filtersExpanded = !state.filtersExpanded;
+          try { localStorage.setItem(FILTERS_EXPANDED_KEY, state.filtersExpanded ? "1" : "0"); } catch {}
+          renderFiltersVisibility();
+        });
+      }
+
+      $("ausenteFilter").addEventListener("change", (e) => {
+        state.ausente = e.target.value || "all";
+        render();
+      });
+      $("deptFilter").addEventListener("change", (e) => {
+        state.department = e.target.value || "all";
+        render();
+      });
+      $("reasonFilter").addEventListener("change", (e) => {
+        state.reason = e.target.value || "all";
+        render();
+      });
+      $("personFilter").addEventListener("input", (e) => {
+        state.person = String(e.target.value || "").trim().toLowerCase();
+        render();
+      });
+
+      const periodBtns = document.querySelectorAll(".period-btn[data-period]");
+      periodBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.alwaysAbsentPeriod = btn.getAttribute("data-period") || "last30";
+          render();
+        });
+      });
+      $("alwaysAbsentStart").addEventListener("change", (e) => {
+        state.alwaysAbsentStart = e.target.value || "";
+        render();
+      });
+      $("alwaysAbsentEnd").addEventListener("change", (e) => {
+        state.alwaysAbsentEnd = e.target.value || "";
+        render();
+      });
+
+      window.addEventListener("storage", (e) => {
+        if (!e) return;
+        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) render();
+      });
+    }
+
+    try {
+      const saved = localStorage.getItem(TABLE_EXPANDED_KEY);
+      state.tableExpanded = saved === "1";
+    } catch {}
+    try {
+      const savedFilters = localStorage.getItem(FILTERS_EXPANDED_KEY);
+      state.filtersExpanded = savedFilters === "1";
+    } catch {}
+
+    setupEvents();
+    render();
+  </script>
+</body>
+</html>

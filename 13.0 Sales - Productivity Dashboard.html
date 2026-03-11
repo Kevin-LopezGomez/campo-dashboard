@@ -76,6 +76,12 @@
       align-items: center;
       gap: 10px;
     }
+    .title-top-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
 
     .title-icon {
       width: 26px;
@@ -96,6 +102,59 @@
       margin-top: 3px;
       font-size: 0.78rem;
       color: var(--muted);
+    }
+
+    .week-source-toggle-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.75);
+    }
+    .week-source-toggle-header button {
+      border: 1px solid rgba(55, 65, 81, 0.85);
+      background: rgba(15, 23, 42, 0.9);
+      color: #cbd5e1;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .week-source-toggle-header button:hover {
+      border-color: rgba(100, 116, 139, 0.85);
+    }
+    .week-source-toggle-header button.active {
+      border-color: rgba(34, 197, 94, 0.6);
+      color: #dcfce7;
+      background: linear-gradient(180deg, rgba(22, 163, 74, 0.24), rgba(5, 46, 22, 0.45));
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.28), 0 8px 18px rgba(22, 163, 74, 0.18);
+    }
+    .week-source-toggle-header button .mode-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border: 1px solid rgba(71, 85, 105, 0.85);
+      color: #a5b4fc;
+      background: rgba(15, 23, 42, 0.65);
+    }
+    .week-source-toggle-header button.active .mode-tag {
+      border-color: rgba(34, 197, 94, 0.65);
+      color: #4ade80;
+      background: rgba(22, 163, 74, 0.2);
     }
 
     .badge-row {
@@ -797,6 +856,9 @@
         flex-direction: column;
         align-items: flex-start;
       }
+      .title-top-row {
+        width: 100%;
+      }
       .badge-row {
         justify-content: flex-start;
       }
@@ -809,10 +871,16 @@
       <!-- HEADER -->
       <div class="header-row">
         <div class="title-block">
-          <h1>
-            <span class="title-icon">$</span>
-            Sales Productivity Dashboard
-          </h1>
+          <div class="title-top-row">
+            <h1>
+              <span class="title-icon">$</span>
+              Sales Productivity Dashboard
+            </h1>
+            <div class="week-source-toggle-header" id="weekSourceToggle" aria-label="Week source">
+              <button data-week-source="sales" class="active">Sales Week <span class="mode-tag">SLS</span></button>
+              <button data-week-source="ship">Sales Ship Week <span class="mode-tag">SHIP</span></button>
+            </div>
+          </div>
           <div class="title-sub">
             Daily / weekly sales by SKU, customer, and ship method. Toggle between cases and pounds sold.
           </div>
@@ -851,13 +919,6 @@
                 <div class="pill-toggle" id="unitModeToggle">
                   <button data-unit="cases" class="active">Cases</button>
                   <button data-unit="pounds">Pounds</button>
-                </div>
-              </div>
-              <div class="chip">
-                Week source
-                <div class="pill-toggle" id="weekSourceToggle">
-                  <button data-week-source="sales" class="active">Sales Week</button>
-                  <button data-week-source="ship">Sales Ship Week</button>
                 </div>
               </div>
               <button class="chip reset-btn hidden" id="resetFiltersBtn">Reset filters</button>
