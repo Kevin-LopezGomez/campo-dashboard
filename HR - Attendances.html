@@ -6,9 +6,9 @@
   <title>HR - Attendances</title>
   <style>
     :root {
-      --text: #e5e7eb;
-      --sub: #9ca3af;
-      --muted: #94a3b8;
+      --text: #f3f6fb;
+      --sub: #cbd5e1;
+      --muted: #b4c1d8;
       --accent: #22c55e;
       --border: #334155;
     }
@@ -18,6 +18,10 @@
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
       color: var(--text);
       background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
     }
@@ -33,7 +37,7 @@
       width: 100%;
       max-width: 1320px;
       border-radius: 24px;
-      padding: 20px 20px 16px;
+      padding: 24px 24px 20px;
       background:
         radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
         radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
@@ -59,7 +63,7 @@
 
     .title {
       margin: 0;
-      font-size: 1.3rem;
+      font-size: 1.55rem;
       letter-spacing: 0.02em;
       display: flex;
       align-items: center;
@@ -91,16 +95,16 @@
     }
 
     .title-sub {
-      font-size: 0.8rem;
+      font-size: 0.86rem;
       color: var(--sub);
       text-transform: uppercase;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.12em;
     }
 
     .subtitle {
       color: var(--sub);
-      font-size: 0.82rem;
-      margin-top: 4px;
+      font-size: 0.95rem;
+      margin-top: 6px;
     }
 
     .header-tags {
@@ -114,8 +118,8 @@
       align-items: center;
       gap: 6px;
       border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 0.72rem;
+      padding: 6px 11px;
+      font-size: 0.82rem;
       border: 1px solid rgba(148, 163, 184, 0.5);
       color: var(--sub);
       background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%);
@@ -146,7 +150,7 @@
       box-shadow:
         0 18px 40px rgba(0, 0, 0, 0.55),
         0 0 0 1px rgba(15, 23, 42, 0.9);
-      padding: 12px;
+      padding: 18px;
     }
     .panel-header {
       display: flex;
@@ -162,8 +166,8 @@
       gap: 7px;
       color: #dbeafe;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.9rem;
+      letter-spacing: 0.06em;
+      font-size: 1rem;
       font-weight: 620;
     }
     .panel-title-dot {
@@ -175,7 +179,21 @@
     }
     .panel-subtitle {
       color: var(--muted);
-      font-size: 0.76rem;
+      font-size: 0.9rem;
+    }
+    .guide {
+      border: 1px solid rgba(74, 222, 128, 0.45);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #dcfce7;
+      background: linear-gradient(135deg, rgba(21, 128, 61, 0.22), rgba(2, 6, 23, 0.35));
+      margin-bottom: 8px;
+    }
+    .guide strong {
+      color: #bbf7d0;
+      font-weight: 700;
     }
 
     .filters {
@@ -191,10 +209,20 @@
       border: 1px solid rgba(51, 65, 85, 0.95);
       background: rgba(2, 6, 23, 0.75);
       color: var(--text);
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 0.82rem;
+      border-radius: 12px;
+      padding: 11px 13px;
+      font-size: 0.92rem;
+      line-height: 1.3;
     }
+    .filters input:focus,
+    .filters select:focus,
+    .period-btn:focus,
+    .table-toggle-btn:focus {
+      outline: 2px solid rgba(96, 165, 250, 0.9);
+      outline-offset: 1px;
+      border-color: rgba(96, 165, 250, 0.85);
+    }
+    .filters input::placeholder { color: #9fb0ca; }
 
     .kpis {
       display: grid;
@@ -207,7 +235,7 @@
       position: relative;
       border: 1px solid rgba(51, 65, 85, 0.9);
       border-radius: 16px;
-      padding: 10px;
+      padding: 12px;
       background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.85), rgba(15, 23, 42, 0.98));
       box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
       overflow: hidden;
@@ -225,21 +253,21 @@
 
     .kpi-label {
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.78rem;
       text-transform: uppercase;
       letter-spacing: 0.09em;
     }
 
     .kpi-value {
       margin-top: 4px;
-      font-size: 1.32rem;
+      font-size: 1.65rem;
       font-weight: 700;
     }
 
     .kpi-sub {
       margin-top: 3px;
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.82rem;
     }
 
     .grid-2 {
@@ -253,20 +281,27 @@
       border: 1px solid rgba(51, 65, 85, 0.9);
       border-radius: 14px;
       background: radial-gradient(circle at top left, rgba(30, 41, 59, 0.52), rgba(2, 6, 23, 0.68));
-      padding: 10px;
+      padding: 14px;
       min-height: 170px;
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.36);
     }
 
     .card-title {
       color: var(--muted);
-      font-size: 0.73rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
+      font-size: 0.9rem;
+      text-transform: none;
+      letter-spacing: 0.02em;
       margin-bottom: 8px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+    }
+    .card-title.strong {
+      color: #e8eefb;
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      margin-bottom: 10px;
     }
     .card-title::before {
       content: "";
@@ -288,8 +323,8 @@
       background: rgba(2, 6, 23, 0.75);
       color: var(--text);
       border-radius: 10px;
-      padding: 7px 10px;
-      font-size: 0.78rem;
+      padding: 9px 12px;
+      font-size: 0.9rem;
     }
     .period-toggle {
       display: grid;
@@ -301,9 +336,9 @@
       border: 1px solid rgba(51, 65, 85, 0.95);
       background: rgba(2, 6, 23, 0.75);
       color: var(--text);
-      border-radius: 10px;
-      padding: 7px 10px;
-      font-size: 0.8rem;
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 0.88rem;
       font-family: inherit;
       font-weight: 600;
       cursor: pointer;
@@ -333,18 +368,31 @@
       grid-template-columns: 160px 1fr 64px;
       gap: 8px;
       align-items: center;
-      font-size: 0.78rem;
+      font-size: 1rem;
+    }
+    .bar-row.clickable {
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 6px 6px;
+      margin: 0 -6px;
+      transition: background-color 120ms ease;
+    }
+    .bar-row.clickable:hover { background: rgba(51, 65, 85, 0.45); }
+    .bar-row.clickable:focus {
+      outline: 2px solid rgba(96, 165, 250, 0.9);
+      outline-offset: 1px;
     }
 
     .bar-label {
-      color: #dbe3f0;
+      color: #eef4ff;
+      font-weight: 600;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .bar-track {
-      height: 10px;
+      height: 12px;
       border-radius: 999px;
       background: rgba(30, 41, 59, 0.95);
       border: 1px solid rgba(51, 65, 85, 0.8);
@@ -358,7 +406,9 @@
     }
 
     .bar-value {
-      color: #cbd5e1;
+      color: #e2e8f0;
+      font-size: 0.98rem;
+      font-weight: 700;
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
@@ -382,28 +432,50 @@
       padding-bottom: 2px;
       border-bottom: 1px solid rgba(51, 65, 85, 0.55);
     }
+    .table-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
     .table-title {
       color: #e2e8f0;
-      font-size: 0.82rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
+      text-transform: none;
+      letter-spacing: 0.02em;
     }
     .table-toggle-btn {
       border: 1px solid rgba(51, 65, 85, 0.9);
       background: rgba(15, 23, 42, 0.95);
-      color: var(--muted);
-      padding: 4px 10px;
+      color: #dbeafe;
+      padding: 7px 12px;
       border-radius: 999px;
       cursor: pointer;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      text-transform: none;
+      letter-spacing: 0.01em;
       font-family: inherit;
     }
     .table-toggle-btn:hover {
       color: #bbf7d0;
       border-color: rgba(74, 222, 128, 0.65);
+    }
+    .table-rowcount {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .top10-table th {
+      font-size: 0.9rem;
+      color: #dbeafe;
+      font-weight: 700;
+    }
+    .top10-table td {
+      font-size: 0.94rem;
+      color: #eef4ff;
+      font-weight: 500;
     }
     .table-collapsed-note {
       margin: 0 0 10px;
@@ -411,7 +483,7 @@
       border-radius: 10px;
       border: 1px dashed rgba(51, 65, 85, 0.95);
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.82rem;
       background: rgba(2, 6, 23, 0.3);
     }
     .spacer-sm { margin-bottom: 10px; }
@@ -427,92 +499,141 @@
       width: 100%;
       border-collapse: collapse;
       min-width: 760px;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
     }
 
     th, td {
       border-bottom: 1px solid rgba(51, 65, 85, 0.75);
-      padding: 8px 9px;
+      padding: 12px 12px;
       text-align: left;
       vertical-align: middle;
-      white-space: nowrap;
+      line-height: 1.4;
     }
 
     th {
       color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      font-size: 0.68rem;
-      text-align: center;
-      background: rgba(2, 6, 23, 0.97);
+      text-transform: none;
+      letter-spacing: 0.01em;
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-align: left;
+      background: rgba(2, 6, 23, 0.99);
+      box-shadow: 0 1px 0 rgba(148, 163, 184, 0.18);
       position: sticky;
       top: 0;
       z-index: 2;
     }
+    td { white-space: normal; }
 
-    tbody tr:nth-child(odd) { background: rgba(15, 23, 42, 0.45); }
-    tbody tr:hover { background: rgba(30, 41, 59, 0.5); }
+    tbody tr:nth-child(odd) { background: rgba(30, 41, 59, 0.38); }
+    tbody tr:hover { background: rgba(51, 65, 85, 0.52); }
 
     .right { text-align: right; }
     .center { text-align: center; }
     .muted { color: var(--muted); }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(2, 6, 23, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      width: min(920px, 100%);
+      max-height: min(84vh, 980px);
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+      box-shadow: 0 28px 60px rgba(0, 0, 0, 0.55);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.7);
+    }
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .modal-table-wrap {
+      max-height: 62vh;
+      overflow: auto;
+    }
+
     @media (max-width: 1100px) {
       .filters, .kpis, .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .container { border-radius: 18px; padding: 14px 12px 14px; }
+      .title { font-size: 1.35rem; }
     }
 
     @media (max-width: 640px) {
       .filters, .kpis, .grid-2 { grid-template-columns: minmax(0, 1fr); }
       .bar-row { grid-template-columns: 120px 1fr 56px; }
       .period-toggle, .period-range { grid-template-columns: minmax(0, 1fr); }
+      .table-toggle-btn { width: 100%; }
+      .table-actions { width: 100%; }
+      .modal-card { padding: 10px; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="container">
-    <header class="header">
-      <div class="title-block">
-        <h1 class="title">
-          <span class="title-pill">HR</span>
-          <span class="title-text">
-            <span>HR Attendances Dashboard</span>
-            <span class="title-sub">LIVE FROM DATA INPUT</span>
-          </span>
-        </h1>
-        <div class="subtitle">Using only Master Pack fields: HR Persona Ausente, HR Porque Ausente, Dia Ausente.</div>
-      </div>
-      <div class="header-tags">
-        <div class="chip"><span class="chip-dot"></span><span id="chip-loaded">Master Pack loaded</span></div>
-        <div class="chip"><span id="lastUpdated" class="meta">Last updated: -</span></div>
-      </div>
-    </header>
+    <div class="page">
+      <div class="container">
+        <header class="header">
+          <div class="title-block">
+            <h1 class="title">
+              <span class="title-pill">HR</span>
+            <span class="title-text">
+              <span>HR Attendance Dashboard</span>
+              <span class="title-sub">LIVE</span>
+            </span>
+            </h1>
+          </div>
+          <div class="header-tags">
+            <div class="chip"><span class="chip-dot"></span><span id="chip-loaded">Master Pack loaded</span></div>
+            <div class="chip"><span id="lastUpdated" class="meta">Last updated: -</span></div>
+          </div>
+        </header>
 
-    <section class="panel">
+        <section class="panel">
       <div class="panel-header">
         <div>
           <div class="panel-title"><span class="panel-title-dot"></span><span>Attendance Intelligence</span></div>
-          <div class="panel-subtitle">Built from Master Pack fields and grouped into HR attendance views.</div>
         </div>
       </div>
-
       <article class="card" style="min-height:unset; margin-bottom:10px;">
         <div class="table-header-row">
           <div class="table-title">Global Filters</div>
-          <button class="table-toggle-btn" id="toggleFiltersBtn" type="button" aria-expanded="false">Show filters</button>
+          <div class="table-actions">
+            <button class="table-toggle-btn" id="resetFiltersBtn" type="button">Reset filters</button>
+            <button class="table-toggle-btn" id="toggleFiltersBtn" type="button" aria-expanded="false">Show filters</button>
+          </div>
         </div>
         <div id="filtersCollapsedNote" class="table-collapsed-note">Filters are collapsed by default. Click “Show filters” to edit.</div>
         <div id="globalFiltersWrap" class="global-filters-wrap" style="display:none;">
           <div class="filters">
             <select id="ausenteFilter">
-              <option value="all">Dia Ausente: All</option>
-              <option value="yes">Dia Ausente: With value</option>
-              <option value="no">Dia Ausente: Empty</option>
+              <option value="all">Absence: All rows</option>
+              <option value="yes">Absence: Absent only</option>
+              <option value="no">Absence: Not absent</option>
             </select>
             <select id="deptFilter"></select>
             <select id="reasonFilter"></select>
-            <input id="personFilter" type="text" placeholder="Search person..." />
+            <input id="personFilter" type="text" placeholder="Search employee..." />
           </div>
           <div class="card-filters">
             <div class="period-toggle" id="periodToggle">
@@ -532,15 +653,15 @@
       <div class="kpis">
         <article class="kpi">
           <div class="kpi-glow"></div>
-          <div class="kpi-label">Total Rows</div>
+          <div class="kpi-label">Records</div>
           <div class="kpi-value" id="kpiRows">0</div>
-          <div class="kpi-sub">Filtered HR rows</div>
+          <div class="kpi-sub">Filtered attendance rows</div>
         </article>
         <article class="kpi">
           <div class="kpi-glow"></div>
-          <div class="kpi-label">Absent</div>
+          <div class="kpi-label">Absent Records</div>
           <div class="kpi-value" id="kpiAbsent">0</div>
-          <div class="kpi-sub">Rows where Dia Ausente has value</div>
+          <div class="kpi-sub">Rows flagged as absent</div>
         </article>
         <article class="kpi">
           <div class="kpi-glow"></div>
@@ -555,28 +676,29 @@
           <div class="kpi-sub">Distinct departments</div>
         </article>
       </div>
+      <div class="table-rowcount" id="kpiScope">Scope: Last 30 days • Absent only • All departments • All reasons</div>
 
       <div class="grid-2 spacer-sm">
         <article class="card">
-          <div class="card-title">Rows by Department</div>
+          <div class="card-title strong">Rows by Department</div>
           <div class="bars" id="deptBars"></div>
         </article>
         <article class="card">
-          <div class="card-title">Rows by Reason</div>
+          <div class="card-title strong">Rows by Reason</div>
           <div class="bars" id="reasonBars"></div>
         </article>
       </div>
 
       <article class="card" style="min-height:unset; margin-bottom:10px;">
-        <div class="card-title">Top 10 Always Absent</div>
+        <div class="card-title strong">Top 10 Always Absent</div>
         <div class="mini-table-wrap">
-          <table>
+          <table class="top10-table">
             <thead>
               <tr>
-                <th>HR Persona Ausente</th>
+                <th>Employee</th>
                 <th class="center">Department</th>
-                <th class="center">Absenses</th>
-                <th class="center">Total Absenses</th>
+                <th class="center">Absences (Period)</th>
+                <th class="center">Absences (All Data)</th>
               </tr>
             </thead>
             <tbody id="alwaysAbsentBody"></tbody>
@@ -586,9 +708,10 @@
 
       <article class="card" style="min-height:unset; margin-bottom:10px;">
         <div class="table-header-row">
-          <div class="table-title">HR Attendance Table</div>
+          <div class="table-title">Attendance Records</div>
           <button class="table-toggle-btn" id="toggleTableBtn" type="button" aria-expanded="false">Show table</button>
         </div>
+        <div class="table-rowcount" id="tableRowCount">Showing 0 of 0 rows</div>
 
         <div id="tableCollapsedNote" class="table-collapsed-note">Table collapsed by default. Click “Show table” to view rows.</div>
 
@@ -607,7 +730,29 @@
         <div class="muted" id="healthText">Waiting for Master Pack...</div>
       </article>
     </section>
-    </div>
+      <div class="modal-backdrop" id="deptModal" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="deptModalTitle">
+          <div class="modal-head">
+            <div class="modal-title" id="deptModalTitle">Department details</div>
+            <button class="table-toggle-btn" id="deptModalClose" type="button">Close</button>
+          </div>
+          <div class="table-rowcount" id="deptModalCount">Showing 0 records</div>
+          <div class="mini-table-wrap modal-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Department</th>
+                  <th>Why</th>
+                  <th>Excused</th>
+                </tr>
+              </thead>
+              <tbody id="deptModalBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      </div>
   </div>
 
   <script>
@@ -618,7 +763,7 @@
     const FILTERS_EXPANDED_KEY = "campo_hr_global_filters_expanded_v1";
 
     const state = {
-      ausente: "all",
+      ausente: "yes",
       department: "all",
       reason: "all",
       person: "",
@@ -629,6 +774,16 @@
       alwaysAbsentStart: "",
       alwaysAbsentEnd: ""
     };
+    const DEFAULTS = {
+      ausente: "yes",
+      department: "all",
+      reason: "all",
+      person: "",
+      alwaysAbsentPeriod: "last30",
+      alwaysAbsentStart: "",
+      alwaysAbsentEnd: ""
+    };
+    let currentFilteredRows = [];
 
     const $ = (id) => document.getElementById(id);
 
@@ -766,17 +921,34 @@
       }).join("");
     }
 
-    function renderBars(targetId, mapData, limit) {
+    function displayText(v) {
+      const s = String(v ?? "").trim();
+      return s || "Not provided";
+    }
+
+    function periodLabel() {
+      if (state.alwaysAbsentPeriod === "lastWeek") return "Last week";
+      if (state.alwaysAbsentPeriod === "quarter") return "This quarter";
+      if (state.alwaysAbsentPeriod === "range") {
+        const start = state.alwaysAbsentStart || "start";
+        const end = state.alwaysAbsentEnd || "today";
+        return `Date range (${start} to ${end})`;
+      }
+      return "Last 30 days";
+    }
+
+    function renderBars(targetId, mapData, limit, options) {
       const el = $(targetId);
+      const opts = options || {};
       const sorted = [...mapData.entries()]
         .sort((a, b) => {
-          const aUnknown = String(a[0] || "").toLowerCase() === "unknown";
-          const bUnknown = String(b[0] || "").toLowerCase() === "unknown";
+          const aUnknown = String(a[0] || "").toLowerCase() === "not provided";
+          const bUnknown = String(b[0] || "").toLowerCase() === "not provided";
           if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
           return b[1] - a[1];
         });
-      const unknownEntry = sorted.find(([k]) => String(k || "").toLowerCase() === "unknown");
-      let entries = sorted.filter(([k]) => String(k || "").toLowerCase() !== "unknown").slice(0, limit);
+      const unknownEntry = sorted.find(([k]) => String(k || "").toLowerCase() === "not provided");
+      let entries = sorted.filter(([k]) => String(k || "").toLowerCase() !== "not provided").slice(0, limit);
       if (unknownEntry) entries = [...entries, unknownEntry];
       if (!entries.length) {
         el.innerHTML = `<div class="muted">No data for current filters.</div>`;
@@ -785,15 +957,97 @@
       const max = entries[0][1] || 1;
       el.innerHTML = entries.map(([label, value]) => {
         const pct = Math.max(4, Math.round((value / max) * 100));
-        const safeLabel = String(label || "Unknown");
+        const safeLabel = displayText(label);
+        const rowClass = opts.clickable ? "bar-row clickable" : "bar-row";
+        const tabAttr = opts.clickable ? " tabindex=\"0\" role=\"button\"" : "";
         return `
-          <div class="bar-row">
+          <div class="${rowClass}"${tabAttr}>
             <div class="bar-label" title="${safeLabel}">${safeLabel}</div>
             <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
             <div class="bar-value">${formatInt(value)}</div>
           </div>
         `;
       }).join("");
+      if (opts.clickable && typeof opts.onSelect === "function") {
+        const rows = Array.from(el.querySelectorAll(".bar-row.clickable"));
+        rows.forEach((rowEl, idx) => {
+          rowEl.addEventListener("click", () => opts.onSelect(entries[idx][0]));
+          rowEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              opts.onSelect(entries[idx][0]);
+            }
+          });
+        });
+      }
+    }
+
+    function closeDeptModal() {
+      const modal = $("deptModal");
+      if (!modal) return;
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function openDeptModal(departmentName) {
+      const modal = $("deptModal");
+      const title = $("deptModalTitle");
+      const count = $("deptModalCount");
+      const body = $("deptModalBody");
+      if (!modal || !title || !count || !body) return;
+
+      const dep = displayText(departmentName);
+      const rows = currentFilteredRows.filter((r) => displayText(r.dept) === dep);
+      title.textContent = `Department: ${dep}`;
+      count.textContent = `Showing ${formatInt(rows.length)} records`;
+
+      if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="4" class="muted">No records for this department under current filters.</td></tr>`;
+      } else {
+        body.innerHTML = rows.slice(0, 600).map((r) => `
+          <tr>
+            <td>${displayText(r.person)}</td>
+            <td>${displayText(r.dept)}</td>
+            <td>${displayText(r.reason)}</td>
+            <td>${displayText(r.hrExcused)}</td>
+          </tr>
+        `).join("");
+      }
+
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function openReasonModal(reasonName) {
+      const modal = $("deptModal");
+      const title = $("deptModalTitle");
+      const count = $("deptModalCount");
+      const body = $("deptModalBody");
+      if (!modal || !title || !count || !body) return;
+
+      const reason = displayText(reasonName);
+      const rows = currentFilteredRows.filter((r) => displayText(r.reason) === reason);
+      title.textContent = `Reason: ${reason}`;
+      count.textContent = `Showing ${formatInt(rows.length)} records`;
+
+      if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="4" class="muted">No records for this reason under current filters.</td></tr>`;
+      } else {
+        body.innerHTML = rows.slice(0, 600).map((r) => `
+          <tr>
+            <td>${displayText(r.person)}</td>
+            <td>${displayText(r.dept)}</td>
+            <td>${displayText(r.reason)}</td>
+            <td>${displayText(r.hrExcused)}</td>
+          </tr>
+        `).join("");
+      }
+
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
     }
 
     function applyFilters(rows) {
@@ -808,12 +1062,12 @@
     }
 
     function fieldValueByCanonical(row, canonicalField) {
-      if (canonicalField === "HR Departamento") return row.dept || "Unknown";
-      if (canonicalField === "HR Persona Ausente") return row.person || "Unknown";
-      if (canonicalField === "HR Porque Ausente") return row.reason || "Unknown";
-      if (canonicalField === "Dia Ausente") return row.diaAusente || "Unknown";
-      if (canonicalField === "HR Excused") return row.hrExcused || "Unknown";
-      return "Unknown";
+      if (canonicalField === "HR Departamento") return displayText(row.dept);
+      if (canonicalField === "HR Persona Ausente") return displayText(row.person);
+      if (canonicalField === "HR Porque Ausente") return displayText(row.reason);
+      if (canonicalField === "Dia Ausente") return displayText(row.diaAusente);
+      if (canonicalField === "HR Excused") return displayText(row.hrExcused);
+      return "Not provided";
     }
 
     function renderTable(rows, columnOrder) {
@@ -846,19 +1100,19 @@
       const allAbsencesByPerson = new Map();
 
       for (const r of (allRows || [])) {
-        const key = r.person || "Unknown";
+        const key = displayText(r.person);
         if (r.absent) allAbsencesByPerson.set(key, (allAbsencesByPerson.get(key) || 0) + 1);
       }
 
       for (const r of rows) {
-        const key = r.person || "Unknown";
+        const key = displayText(r.person);
         if (!byPerson.has(key)) byPerson.set(key, { absent: 0, total: 0 });
         const x = byPerson.get(key);
         x.total += 1;
         if (r.absent) x.absent += 1;
 
         if (!byPersonDept.has(key)) byPersonDept.set(key, new Map());
-        const deptKey = r.dept || "Unknown";
+        const deptKey = displayText(r.dept);
         const dm = byPersonDept.get(key);
         dm.set(deptKey, (dm.get(deptKey) || 0) + 1);
       }
@@ -867,7 +1121,7 @@
         .map(([person, v]) => {
           const deptMap = byPersonDept.get(person) || new Map();
           const topDeptEntry = [...deptMap.entries()].sort((a, b) => b[1] - a[1])[0];
-          const department = (person || "").toLowerCase() === "unknown" ? "" : (topDeptEntry?.[0] || "");
+          const department = (person || "").toLowerCase() === "not provided" ? "" : (topDeptEntry?.[0] || "");
           const totalAbsencesAllData = allAbsencesByPerson.get(person) || 0;
           return {
             person,
@@ -879,13 +1133,13 @@
         })
         .filter((x) => x.periodTotal > 0 && x.absent === x.periodTotal)
         .sort((a, b) => {
-          const aUnknown = String(a.person || "").toLowerCase() === "unknown";
-          const bUnknown = String(b.person || "").toLowerCase() === "unknown";
+          const aUnknown = String(a.person || "").toLowerCase() === "not provided";
+          const bUnknown = String(b.person || "").toLowerCase() === "not provided";
           if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
           return (b.absent - a.absent) || a.person.localeCompare(b.person);
         });
-      const unknownTop = top.find((r) => String(r.person || "").toLowerCase() === "unknown");
-      const topNonUnknown = top.filter((r) => String(r.person || "").toLowerCase() !== "unknown").slice(0, 10);
+      const unknownTop = top.find((r) => String(r.person || "").toLowerCase() === "not provided");
+      const topNonUnknown = top.filter((r) => String(r.person || "").toLowerCase() !== "not provided").slice(0, 10);
       const topRows = unknownTop ? [...topNonUnknown, unknownTop] : topNonUnknown;
 
       if (!topRows.length) {
@@ -895,8 +1149,8 @@
 
       tbody.innerHTML = topRows.map((r) => `
         <tr>
-          <td>${r.person || "Unknown"}</td>
-          <td class="center">${r.department || "-"}</td>
+          <td>${displayText(r.person)}</td>
+          <td class="center">${displayText(r.department)}</td>
           <td class="center">${formatInt(r.absent)}</td>
           <td class="center">${formatInt(r.total)}</td>
         </tr>
@@ -1012,6 +1266,7 @@
       $("ausenteFilter").value = state.ausente;
 
       const filtered = applyFilters(periodRows);
+      currentFilteredRows = filtered;
       const absentCount = filtered.filter((r) => r.absent).length;
       const rate = filtered.length > 0 ? (absentCount / filtered.length) * 100 : 0;
 
@@ -1019,18 +1274,28 @@
       $("kpiAbsent").textContent = formatInt(absentCount);
       $("kpiRate").textContent = `${rate.toFixed(1)}%`;
       $("kpiRateSub").textContent = `${formatInt(absentCount)} of ${formatInt(filtered.length)} rows`;
-      $("kpiDepartments").textContent = formatInt(new Set(filtered.map((r) => r.dept)).size);
+      $("kpiDepartments").textContent = formatInt(new Set(filtered.map((r) => displayText(r.dept))).size);
+      const scope = $("kpiScope");
+      if (scope) {
+        const absentLabel = state.ausente === "yes" ? "Absent only" : (state.ausente === "no" ? "Not absent" : "All rows");
+        const deptLabel = state.department === "all" ? "All departments" : state.department;
+        const reasonLabel = state.reason === "all" ? "All reasons" : state.reason;
+        scope.textContent = `Scope: ${periodLabel()} • ${absentLabel} • ${deptLabel} • ${reasonLabel}`;
+      }
+      const rowCount = $("tableRowCount");
+      if (rowCount) rowCount.textContent = `Showing ${formatInt(Math.min(filtered.length, 400))} of ${formatInt(filtered.length)} rows`;
 
       const deptMap = new Map();
       const reasonMap = new Map();
       for (const r of filtered) {
-        deptMap.set(r.dept, (deptMap.get(r.dept) || 0) + 1);
-        const reasonKey = r.reason || "Unknown";
+        const deptKey = displayText(r.dept);
+        deptMap.set(deptKey, (deptMap.get(deptKey) || 0) + 1);
+        const reasonKey = displayText(r.reason);
         reasonMap.set(reasonKey, (reasonMap.get(reasonKey) || 0) + 1);
       }
 
-      renderBars("deptBars", deptMap, 12);
-      renderBars("reasonBars", reasonMap, 12);
+      renderBars("deptBars", deptMap, 12, { clickable: true, onSelect: openDeptModal });
+      renderBars("reasonBars", reasonMap, 12, { clickable: true, onSelect: openReasonModal });
       renderAlwaysAbsent(filtered, allRows);
       renderTable(filtered, state.columnOrder);
       renderTableVisibility();
@@ -1108,6 +1373,19 @@
         state.person = String(e.target.value || "").trim().toLowerCase();
         render();
       });
+      const resetBtn = $("resetFiltersBtn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          state.ausente = DEFAULTS.ausente;
+          state.department = DEFAULTS.department;
+          state.reason = DEFAULTS.reason;
+          state.person = DEFAULTS.person;
+          state.alwaysAbsentPeriod = DEFAULTS.alwaysAbsentPeriod;
+          state.alwaysAbsentStart = DEFAULTS.alwaysAbsentStart;
+          state.alwaysAbsentEnd = DEFAULTS.alwaysAbsentEnd;
+          render();
+        });
+      }
 
       const periodBtns = document.querySelectorAll(".period-btn[data-period]");
       periodBtns.forEach((btn) => {
@@ -1115,6 +1393,17 @@
           state.alwaysAbsentPeriod = btn.getAttribute("data-period") || "last30";
           render();
         });
+      });
+      const deptModal = $("deptModal");
+      const deptModalClose = $("deptModalClose");
+      if (deptModalClose) deptModalClose.addEventListener("click", closeDeptModal);
+      if (deptModal) {
+        deptModal.addEventListener("click", (e) => {
+          if (e.target === deptModal) closeDeptModal();
+        });
+      }
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeDeptModal();
       });
       $("alwaysAbsentStart").addEventListener("change", (e) => {
         state.alwaysAbsentStart = e.target.value || "";
