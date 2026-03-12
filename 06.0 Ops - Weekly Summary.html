@@ -563,6 +563,7 @@
       HARV_CUT: "Peso de La Lechuga Cortada",
       HARV_WITH_WASTE: "Peso de La Lechuga con Waste",
       HARV_BROKEN: "Harvest Boards Broken ",
+      HARV_FORECAST_TARGET: "Grow Forecasted Weight Lbs",
 
       SAN_WEEK: "Sanitation Week",
       SAN_DATE: "Date of Sanitation",
@@ -604,6 +605,21 @@
       ["harvest date", H.DATE],
       ["harvest boards broken", H.HARV_BROKEN],
       ["harvest boards broken ", H.HARV_BROKEN],
+      ["grow forecasted weight lbs", H.HARV_FORECAST_TARGET],
+      ["forecasted yld/wk", H.HARV_FORECAST_TARGET],
+      ["forecasted yld/wk (lbs)", H.HARV_FORECAST_TARGET],
+      ["forecasted yld/wk lbs", H.HARV_FORECAST_TARGET],
+      ["forecasted yield/wk", H.HARV_FORECAST_TARGET],
+      ["forecasted yield/wk (lbs)", H.HARV_FORECAST_TARGET],
+      ["forecasted yield/week", H.HARV_FORECAST_TARGET],
+      ["forecasted yield/week (lbs)", H.HARV_FORECAST_TARGET],
+      ["forecasted yld/day", H.HARV_FORECAST_TARGET],
+      ["forecasted yld/day (lbs)", H.HARV_FORECAST_TARGET],
+      ["forecasted yield/day", H.HARV_FORECAST_TARGET],
+      ["forecasted yield/day (lbs)", H.HARV_FORECAST_TARGET],
+      ["harvest forecast", H.HARV_FORECAST_TARGET],
+      ["harvest forecast target", H.HARV_FORECAST_TARGET],
+      ["forecast target", H.HARV_FORECAST_TARGET],
 
       ["sanitation week", H.SAN_WEEK],
       ["semana de sanitation", H.SAN_WEEK],
@@ -1036,6 +1052,7 @@
       const harvRows = growRows.filter(r => isWeek(r[H.HARV_WEEK]));
       const harvestBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BOARDS]),0);
       const harvestTargetBoards = sumTransBoardsForHarvestBatches(harvRows, growRows);
+      const harvestForecastTarget = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_FORECAST_TARGET]),0);
       const harvestCut = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_CUT]),0);
       const harvestWithWaste = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_WITH_WASTE]),0);
 
@@ -1168,6 +1185,7 @@
 
         harvestBoards,
         harvestTargetBoards,
+        harvestForecastTarget,
         harvestCut,
         harvestWithWaste,
 
@@ -1292,6 +1310,7 @@
       const harvRows = (growRows||[]).filter(r => isDate(r[H.DATE]));
       const harvestBoards = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_BOARDS]),0);
       const harvestTargetBoards = sumTransBoardsForHarvestBatches(harvRows, growRows);
+      const harvestForecastTarget = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_FORECAST_TARGET]),0);
       const harvestCut = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_CUT]),0);
       const harvestWithWaste = harvRows.reduce((s,r)=>s+parseNumber(r[H.HARV_WITH_WASTE]),0);
 
@@ -1414,6 +1433,7 @@
 
         harvestBoards,
         harvestTargetBoards,
+        harvestForecastTarget,
         harvestCut,
         harvestWithWaste,
 
@@ -1713,15 +1733,16 @@
         Number.isFinite(summary.harvestTargetBoards) &&
         summary.harvestTargetBoards > 0
       ) ? (harvestLbPerBoard * summary.harvestTargetBoards) : NaN;
+      const harvestForecastTarget = Number.isFinite(summary.harvestForecastTarget) ? summary.harvestForecastTarget : 0;
 
       pushIfMeaningful({
         label:"Harvest - Forecast",
         completed: Number.isFinite(harvestPotentialTarget) ? fmtInt(harvestPotentialTarget) : "—",
-        target:"—",
+        target: harvestForecastTarget > 0 ? fmtInt(harvestForecastTarget) : "—",
         units:"Lbs",
-        pct:`<span class="pill muted">—</span>`,
-        missed:`<span class="pill muted">—</span>`
-      }, (summary.counts.harv > 0) || (Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget !== 0));
+        pct: pctPill(Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0, harvestForecastTarget),
+        missed: missedPill(Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0, harvestForecastTarget)
+      }, (summary.counts.harv > 0) || (Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget !== 0) || harvestForecastTarget !== 0);
 
       pushIfMeaningful({
         label:`<span title="Completed excludes waste; target includes waste.">Harvest - Potential</span>`,
