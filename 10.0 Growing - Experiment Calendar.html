@@ -199,6 +199,35 @@
       justify-content:flex-end;
       margin-left:auto;
     }
+    .ganttScopeRow{ gap:8px; }
+    .scopeGroup{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px;
+      border: 1px solid var(--border2);
+      border-radius: 999px;
+      background: rgba(2,6,23,.45);
+      flex-wrap: wrap;
+    }
+    .scopeBtn{
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--sub);
+      font-weight:900;
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-family: var(--mono);
+      white-space: nowrap;
+    }
+    .scopeBtn.on{
+      color: var(--text);
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.12);
+      box-shadow: 0 0 0 1px rgba(34,197,94,.10) inset;
+    }
     .timelineLabel{
       font-weight:950;
       font-size:12px;
@@ -311,7 +340,7 @@
 
     /* Gantt */
     .ganttWrap{ display:grid; grid-template-columns: 1fr; gap:12px; align-items:start; }
-    .ganttRight,.ganttLeft{ border:1px solid var(--border2); border-radius:18px; overflow:hidden; background: rgba(2,6,23,.35); }
+    .ganttRight{ border:1px solid var(--border2); border-radius:18px; overflow:hidden; background: rgba(2,6,23,.35); }
     .gHdr{
       padding:10px 12px; border-bottom:1px solid var(--border2);
       display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -427,38 +456,12 @@
     .lineTag.holiday{ border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.10); color: #fecaca; }
     .lineTag.harv{ border-color: rgba(167,139,250,.35); background: rgba(167,139,250,.10); color: rgba(229,231,235,.95); }
 
-    .setRowLeft{
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(148,163,184,.08);
-      display:flex; flex-direction:column; gap:8px;
-      cursor:pointer; user-select:none;
-    }
-    .setRowLeft:hover{ background: rgba(255,255,255,.02); }
-    .setRowLeft.selected{ outline: 2px solid rgba(34,197,94,.18); background: rgba(34,197,94,.06); }
-    .setRowLeft.hovered{ outline: 2px solid rgba(148,163,184,.16); background: rgba(148,163,184,.06); }
-    .setRowLeft.selected.hovered{ outline: 2px solid rgba(34,197,94,.22); background: rgba(34,197,94,.08); }
-    .setHeadLine{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .setTitle{ font-weight:950; font-size:12px; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .chevMini{
-      width:26px; height:26px; border-radius:999px;
-      border: 1px solid rgba(148,163,184,.14);
-      display:grid; place-items:center;
-      background: rgba(2,6,23,.35);
-      color: var(--sub);
-      font-weight:950; font-family: var(--mono);
-      transition: transform .15s ease;
-      flex: 0 0 auto;
-    }
-    .setRowLeft.open .chevMini{ transform: rotate(180deg); }
     .setMeta{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
     .miniPill{ border:1px solid rgba(148,163,184,.14); background: rgba(15,23,42,.35); color: var(--sub); font-weight:900; font-size:11px; padding:5px 7px; border-radius:999px; white-space:nowrap; }
     .miniPill.seed{ border-color: rgba(96,165,250,.25); }
     .miniPill.prop{ border-color: rgba(245,158,11,.25); }
     .miniPill.trans{ border-color: rgba(255,62,165,.25); }
     .miniPill.harv{ border-color: rgba(167,139,250,.35); background: rgba(167,139,250,.10); color: rgba(229,231,235,.9); }
-
-    .setDetails{ display:none; margin-top:4px; border-top: 1px solid rgba(148,163,184,.10); padding-top:10px; gap:8px; flex-direction:column; }
-    .setRowLeft.open .setDetails{ display:flex; }
     .detailRow{ border:1px solid rgba(148,163,184,.12); background: rgba(2,6,23,.30); border-radius:14px; padding:8px 9px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
     .detailKey{ font-family: var(--mono); font-size:10px; color: rgba(167,176,190,.75); font-weight:900; padding:4px 7px; border-radius:999px; border:1px solid rgba(148,163,184,.10); background: rgba(15,23,42,.22); }
 
@@ -478,6 +481,14 @@
     .seg.seed{ border-color: rgba(96,165,250,.28); background: rgba(96,165,250,.12); }
     .seg.prop{ border-color: rgba(245,158,11,.28); background: rgba(245,158,11,.12); }
     .seg.trans{ border-color: rgba(255,62,165,.28); background: rgba(255,62,165,.12); }
+    .seg.focused{
+      opacity: 1 !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 0 18px rgba(255,255,255,.10);
+      z-index: 4;
+    }
+    .seg.dimmed{
+      opacity: .22 !important;
+    }
 
     .segLabel{
       position:absolute; top:50%;
@@ -490,6 +501,14 @@
       text-shadow: 0 1px 0 rgba(0,0,0,.35);
       pointer-events:none;
     }
+    .segLabel.focused{
+      color: rgba(255,255,255,.98);
+      text-shadow: 0 0 8px rgba(255,255,255,.28), 0 1px 0 rgba(0,0,0,.45);
+      z-index: 5;
+    }
+    .segLabel.dimmed{
+      opacity: .35;
+    }
 
     /* KEEP HARVEST DIAMONDS */
     .harvMarker{
@@ -501,6 +520,12 @@
       z-index:4;
       pointer-events:none;
       box-shadow: 0 0 0 2px rgba(167,139,250,.18), 0 0 22px rgba(167,139,250,.20);
+    }
+    .harvMarker.focused{
+      box-shadow: 0 0 0 2px rgba(167,139,250,.30), 0 0 28px rgba(167,139,250,.34);
+    }
+    .harvMarker.dimmed{
+      opacity:.28;
     }
 
     .gTip{
@@ -541,6 +566,94 @@
     .modalHdr .t .s{ color: var(--sub); font-size:11px; font-weight:850; line-height:1.25; }
     .modalHdr .x{ width:34px; height:34px; border-radius:999px; border:1px solid var(--border2); background: rgba(2,6,23,.45); color: var(--text); font-weight:950; cursor:pointer; }
     .modalBody{ padding:12px 14px 14px; overflow:auto; }
+    .setModalSection{ margin-bottom:10px; border:1px solid rgba(148,163,184,.12); border-radius:14px; padding:10px; background: rgba(2,6,23,.3); }
+    .setModalSection:last-child{ margin-bottom:0; }
+    .setModalSection .k{ font-family: var(--mono); font-size:11px; color: rgba(167,176,190,.8); font-weight:900; margin-bottom:8px; }
+    .setModalRows{ display:flex; flex-direction:column; gap:8px; }
+    .setRowCard{
+      border:1px solid rgba(148,163,184,.14);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(2,6,23,.34);
+    }
+    .setRowHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:8px;
+      padding-bottom:8px;
+      border-bottom:1px solid rgba(148,163,184,.10);
+    }
+    .setRowTitle{
+      font-weight:950;
+      color: var(--text);
+      font-size:12px;
+      letter-spacing:.2px;
+    }
+    .setRowMeta{
+      font-family: var(--mono);
+      font-size:10px;
+      font-weight:900;
+      color: rgba(167,176,190,.82);
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .setMetaPill{
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(15,23,42,.35);
+      padding:4px 8px;
+      color: rgba(229,231,235,.92);
+    }
+    .setMetaPill.media{ border-color: rgba(56,189,248,.35); background: rgba(56,189,248,.12); }
+    .setMetaPill.prop{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.12); }
+    .setMetaPill.grow{ border-color: rgba(167,139,250,.35); background: rgba(167,139,250,.12); }
+    .setRowGrid{
+      display:grid;
+      grid-template-columns: minmax(240px,300px) minmax(0,1fr);
+      gap:6px 10px;
+      align-items:start;
+    }
+    .setRowField{
+      font-family: var(--mono);
+      font-size:10px;
+      font-weight:900;
+      color: rgba(167,176,190,.86);
+      border:1px solid rgba(148,163,184,.12);
+      background: rgba(15,23,42,.26);
+      border-radius:10px;
+      padding:6px 8px;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      min-width:0;
+    }
+    .setRowField.exp{ border-color: rgba(56,189,248,.32); background: rgba(56,189,248,.14); color:#bae6fd; }
+    .setRowField.grower{ border-color: rgba(34,197,94,.32); background: rgba(34,197,94,.14); color:#bbf7d0; }
+    .setRowField.sales{ border-color: rgba(245,158,11,.32); background: rgba(245,158,11,.14); color:#fde68a; }
+    .setRowField.fs{ border-color: rgba(239,68,68,.32); background: rgba(239,68,68,.14); color:#fecaca; }
+    .setRowValue{
+      font-size:11px;
+      font-weight:800;
+      color: rgba(229,231,235,.92);
+      line-height:1.25;
+      border:1px solid rgba(148,163,184,.12);
+      background: rgba(2,6,23,.24);
+      border-radius:10px;
+      padding:6px 8px;
+      min-height: 28px;
+      min-width:0;
+      overflow-wrap:anywhere;
+    }
+    @media (max-width: 940px){
+      .setRowGrid{ grid-template-columns: 1fr; }
+    }
+    .setRowValue.exp{ border-color: rgba(56,189,248,.24); background: rgba(56,189,248,.08); }
+    .setRowValue.grower{ border-color: rgba(34,197,94,.24); background: rgba(34,197,94,.08); }
+    .setRowValue.sales{ border-color: rgba(245,158,11,.24); background: rgba(245,158,11,.08); }
+    .setRowValue.fs{ border-color: rgba(239,68,68,.24); background: rgba(239,68,68,.08); }
   </style>
 </head>
 
@@ -557,7 +670,6 @@
 
       <div class="chips" id="milestoneChips">
         <div class="chip seed on" data-k="seed"><span class="dot"></span>Seed</div>
-        <div class="chip prop on" data-k="prop"><span class="dot"></span>Propagation Start</div>
         <div class="chip trans on" data-k="trans"><span class="dot"></span>Transplant</div>
         <div class="chip harv on" data-k="harv"><span class="dot"></span>Harvest</div>
       </div>
@@ -651,6 +763,20 @@
           <div class="mainHdrRow">
             <div class="timelineLabel" id="timelineLabel">Timeline —</div>
           </div>
+          <div class="mainHdrRow ganttScopeRow" id="ganttScopeRow">
+            <div class="scopeGroup" id="ganttModeGroup" aria-label="Gantt mode">
+              <button class="scopeBtn" data-mode="all">All</button>
+              <button class="scopeBtn on" data-mode="seed">Seeding</button>
+              <button class="scopeBtn" data-mode="trans">Transplanting</button>
+              <button class="scopeBtn" data-mode="harv">Harvesting</button>
+            </div>
+            <div class="scopeGroup" id="ganttWeekGroup" aria-label="Gantt week">
+              <button class="scopeBtn" data-week="all">All weeks</button>
+              <button class="scopeBtn on" data-week="0">Current week</button>
+              <button class="scopeBtn" data-week="1">Next week</button>
+              <button class="scopeBtn" data-week="2">Following week</button>
+            </div>
+          </div>
           <div class="mainHdrRow center" id="timelineLegend">
             <span class="legItem"><span class="legSwatch today"></span>Today</span>
             <span class="legItem"><span class="legSwatch holiday"></span>Holiday</span>
@@ -695,18 +821,6 @@
                   </div>
                 </div>
               </div>
-
-              <div class="ganttLeft">
-                <div class="gHdr" style="padding-top:10px;">
-                  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <div class="h">Sets (merged)</div>
-                    <div class="s" id="ganttCount">0</div>
-                    <button class="btn" id="collapseSetsBtn" style="padding:6px 10px; font-size:11px; font-weight:900;">Collapse all</button>
-                  </div>
-                  <div class="s" style="color:var(--sub);">Click a set to expand details.</div>
-                </div>
-                <div class="scroll" id="ganttLeftBody" style="overflow:visible;"></div>
-              </div>
             </div>
           </div>
         </div>
@@ -727,6 +841,19 @@
         <button class="x" id="dayModalClose" title="Close">✕</button>
       </div>
       <div class="modalBody" id="dayModalBody"></div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="setModalBack" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modalHdr">
+        <div class="t">
+          <div class="h" id="setModalTitle">—</div>
+          <div class="s" id="setModalSub">—</div>
+        </div>
+        <button class="x" id="setModalClose" title="Close">✕</button>
+      </div>
+      <div class="modalBody" id="setModalBody"></div>
     </div>
   </div>
 
@@ -779,6 +906,15 @@
     function addDaysPR(dateObj, n){
       const s = startOfDayPRFromMs(dateObj.getTime());
       return new Date(s.getTime() + n*MS);
+    }
+
+    function startOfWeekPR(dateObj){
+      const s = startOfDayPRFromMs(dateObj.getTime());
+      const p = partsInPR(s.getTime());
+      const u = new Date(Date.UTC(p.y, p.m-1, p.d));
+      const dow = u.getUTCDay(); // 0=Sun..6=Sat
+      const backToMonday = (dow + 6) % 7;
+      return addDaysPR(s, -backToMonday);
     }
 
     function getTodayPR(){
@@ -870,10 +1006,10 @@
 
       milestoneOn: { seed:true, prop:true, trans:true, harv:true },
       includeHarvested: false,
+      ganttMode: "seed",
+      ganttWeekOffset: 0,
 
       selectedSetKey: null,
-      openSetKeys: new Set(),
-      _ganttDom: null,
       filtersCollapsed: true,
       tsvCollapsed: true,
     };
@@ -898,6 +1034,10 @@
       growPond: ["Pond","Grow Pond","Transplant Pond","Grow Pond #"],
 
       pos: ["Pos","Position","Position ID"],
+      experimentalDescriptionGoal: ["Experimental Description and Goal","Experiment Description and Goal","Description and Goal"],
+      growersNeeds: ["Growers Needs","Grower Needs"],
+      salesSamplesNeeds: ["Sales-Samples Needs","Sales Samples Needs","Sales-Sample Needs"],
+      foodSafetyNeeds: ["Food Safety Needs"],
 
       flats: ["Flats"],
       actualFlats: ["Actual Flats"],
@@ -934,6 +1074,10 @@
         propPond: pick(FIELD_ALIASES.propPond),
         growPond: pick(FIELD_ALIASES.growPond),
         pos: pick(FIELD_ALIASES.pos),
+        experimentalDescriptionGoal: pick(FIELD_ALIASES.experimentalDescriptionGoal),
+        growersNeeds: pick(FIELD_ALIASES.growersNeeds),
+        salesSamplesNeeds: pick(FIELD_ALIASES.salesSamplesNeeds),
+        foodSafetyNeeds: pick(FIELD_ALIASES.foodSafetyNeeds),
 
         flats: pick(FIELD_ALIASES.flats),
         actualFlats: pick(FIELD_ALIASES.actualFlats),
@@ -972,13 +1116,20 @@
         const propPond = get(H.propPond) || "";
         const growPond = get(H.growPond) || "";
         const pos = get(H.pos) || "";
+        const experimentalDescriptionGoal = get(H.experimentalDescriptionGoal) || "";
+        const growersNeeds = get(H.growersNeeds) || "";
+        const salesSamplesNeeds = get(H.salesSamplesNeeds) || "";
+        const foodSafetyNeeds = get(H.foodSafetyNeeds) || "";
 
         const seedD = parseDate(get(H.seedDate));
         const propD = parseDate(get(H.propDate));
         const transD = parseDate(get(H.transDate));
         const harvD = parseDate(get(H.harvestDate));
 
-        const hasAny = experiment || batch || variety || media || propPond || growPond || pos || seedD || propD || transD || harvD;
+        const hasAny =
+          experiment || batch || variety || media || propPond || growPond || pos ||
+          experimentalDescriptionGoal || growersNeeds || salesSamplesNeeds || foodSafetyNeeds ||
+          seedD || propD || transD || harvD;
         if(!hasAny){ skipped++; continue; }
 
         rows.push({
@@ -987,6 +1138,10 @@
           propPond: (propPond||"").trim(),
           growPond: (growPond||"").trim(),
           pos: (pos||"").trim(),
+          experimentalDescriptionGoal: (experimentalDescriptionGoal||"").trim(),
+          growersNeeds: (growersNeeds||"").trim(),
+          salesSamplesNeeds: (salesSamplesNeeds||"").trim(),
+          foodSafetyNeeds: (foodSafetyNeeds||"").trim(),
 
           seedDate: seedD,
           propDate: propD,
@@ -1143,6 +1298,10 @@
       const propPond = firstByHeaders(row, idx, ["Prop Pond"]);
       const growPond = firstByHeaders(row, idx, ["Pond"]);
       const pos = firstByHeaders(row, idx, ["Pos"]);
+      const experimentalDescriptionGoal = firstByHeaders(row, idx, ["Experimental Description and Goal","Experiment Description and Goal","Description and Goal"]);
+      const growersNeeds = firstByHeaders(row, idx, ["Growers Needs","Grower Needs"]);
+      const salesSamplesNeeds = firstByHeaders(row, idx, ["Sales-Samples Needs","Sales Samples Needs","Sales-Sample Needs"]);
+      const foodSafetyNeeds = firstByHeaders(row, idx, ["Food Safety Needs"]);
 
       const germination = parseDate(firstByHeaders(row, idx, ["seed/germ","Seed","Germination Date","Seed Date","Seed/Germ"]));
       const propagation = parseDate(firstByHeaders(row, idx, ["propagation start date","Propagation Start","Prop Start","Propagation Start Date"]));
@@ -1168,6 +1327,10 @@
         propPond: String(propPond || "").trim(),
         growPond: String(growPond || "").trim(),
         pos: String(pos || "").trim(),
+        experimentalDescriptionGoal: String(experimentalDescriptionGoal || "").trim(),
+        growersNeeds: String(growersNeeds || "").trim(),
+        salesSamplesNeeds: String(salesSamplesNeeds || "").trim(),
+        foodSafetyNeeds: String(foodSafetyNeeds || "").trim(),
         dates: { germination, propagation, transplant, harvest },
         meta: { seededPlugs, transplantedPlugs, boards },
         flags,
@@ -1182,6 +1345,20 @@
       const propPond = obj?.propPond ?? obj?.prop_pond ?? "";
       const growPond = obj?.growPond ?? obj?.grow_pond ?? obj?.pond ?? "";
       const pos = obj?.pos ?? "";
+      const experimentalDescriptionGoal =
+        obj?.experimentalDescriptionGoal ??
+        obj?.experimental_description_goal ??
+        obj?.experimental_description_and_goal ??
+        obj?.description_and_goal ??
+        "";
+      const growersNeeds = obj?.growersNeeds ?? obj?.growers_needs ?? obj?.grower_needs ?? "";
+      const salesSamplesNeeds =
+        obj?.salesSamplesNeeds ??
+        obj?.sales_samples_needs ??
+        obj?.sales_samples_need ??
+        obj?.sales_needs ??
+        "";
+      const foodSafetyNeeds = obj?.foodSafetyNeeds ?? obj?.food_safety_needs ?? "";
 
       const datesIn = obj?.dates || {};
       const germination = parseDate(datesIn.germination ?? obj?.germination ?? obj?.germination_date ?? obj?.seedDate);
@@ -1210,6 +1387,10 @@
         propPond: String(propPond || "").trim(),
         growPond: String(growPond || "").trim(),
         pos: String(pos || "").trim(),
+        experimentalDescriptionGoal: String(experimentalDescriptionGoal || "").trim(),
+        growersNeeds: String(growersNeeds || "").trim(),
+        salesSamplesNeeds: String(salesSamplesNeeds || "").trim(),
+        foodSafetyNeeds: String(foodSafetyNeeds || "").trim(),
         dates: { germination, propagation, transplant, harvest },
         meta: { seededPlugs, transplantedPlugs, boards },
         flags,
@@ -1301,6 +1482,10 @@
           propPond: r.propPond || "",
           growPond: r.growPond || "",
           pos: r.pos || "",
+          experimentalDescriptionGoal: r.experimentalDescriptionGoal || "",
+          growersNeeds: r.growersNeeds || "",
+          salesSamplesNeeds: r.salesSamplesNeeds || "",
+          foodSafetyNeeds: r.foodSafetyNeeds || "",
           seededPlugs: r.meta?.seededPlugs ?? null,
           transplantedPlugs: r.meta?.transplantedPlugs ?? null,
           actualBoards: r.meta?.boards ?? null,
@@ -1750,6 +1935,7 @@
       $("monthView").style.display  = (state.view==="month") ? "block" : "none";
       $("ganttView").style.display  = (state.view==="gantt") ? "block" : "none";
       $("timelineLabel").style.display = (state.view==="gantt") ? "block" : "none";
+      $("ganttScopeRow").style.display = (state.view==="gantt") ? "flex" : "none";
 
       if(state.view==="agenda") renderAgenda(start, end);
       if(state.view==="month") renderMonth();
@@ -1809,18 +1995,36 @@
     // Gantt (PR timeline)
     // =========================================================
     function renderGantt(){
-      const setsAll = buildSetsFromRows(state.rows);
-      const sets = setsAll.filter(S => (S.seed || S.prop || S.trans || S.harv));
+      const setsAll = buildSetsFromRows(state.rows).filter(S => (S.seed || S.prop || S.trans || S.harv));
+      const mode = state.ganttMode;
+      const weekOffset = state.ganttWeekOffset;
+      const anchor = state.startDate ? startOfDayPRFromMs(state.startDate.getTime()) : getTodayPR();
+      const hasWeekFilter = weekOffset !== "all";
+      const weekStart = hasWeekFilter ? addDaysPR(startOfWeekPR(anchor), Number(weekOffset) * 7) : null;
+      const weekEnd = hasWeekFilter ? addDaysPR(weekStart, 7) : null;
+      const scopeText = `${ganttModeLabel(mode)} • ${ganttWeekLabel(weekOffset)}`;
+      const focusMode = (mode!=="all") ? mode : null;
+      const inScopeWeek = (d)=>{
+        if(!d) return false;
+        if(!hasWeekFilter) return true;
+        const t = d.getTime();
+        return t >= weekStart.getTime() && t < weekEnd.getTime();
+      };
 
-      $("ganttCount").textContent = `${sets.length} set${sets.length===1?"":"s"}`;
+      const sets = setsAll.filter(S=>{
+        if(mode==="all"){
+          const dates = [S.seed, S.trans, S.harv].filter(Boolean);
+          return dates.some(inScopeWeek);
+        }
+        const d = mode==="seed" ? S.seed : (mode==="trans" ? S.trans : S.harv);
+        return inScopeWeek(d);
+      });
 
-      const leftHost = $("ganttLeftBody");
       const rightScroll = $("ganttRightScroll");
       const rowsHost = $("ganttRows");
       const axis = $("ganttAxis");
       const timeline = $("ganttTimeline");
 
-      leftHost.innerHTML = "";
       rowsHost.innerHTML = "";
       axis.innerHTML = "";
       timeline.querySelectorAll(".holidayBand,.todayLine,.holidayLine,.harvLine").forEach(n=>n.remove());
@@ -1840,9 +2044,8 @@
       })();
 
       if(!sets.length){
-        $("timelineLabel").textContent = "Timeline —";
-        leftHost.innerHTML = `<div class="setRowLeft"><div class="setTitle">No sets match the current filters.</div></div>`;
-        rowsHost.innerHTML = `<div class="setBarRow" style="height:60px;"><div class="segLabel" style="left:50%;top:50%;">No sets</div></div>`;
+        $("timelineLabel").textContent = `${scopeText} • No sets`;
+        rowsHost.innerHTML = `<div class="setBarRow" style="height:60px;"><div class="segLabel" style="left:50%;top:50%;">No sets for ${escapeHtml(ganttModeLabel(mode))}</div></div>`;
         return;
       }
 
@@ -1867,7 +2070,7 @@
       const totalDays = Math.max(1, Math.round((endExclusive.getTime()-start.getTime())/MS));
 
       const spanText = `${toISO_PR(start)} → ${toISO_PR(addDaysPR(endExclusive, -1))}`;
-      $("timelineLabel").textContent = spanText;
+      $("timelineLabel").textContent = `${scopeText} • ${spanText}`;
 
       // Alignment note: LEFT_PAD must stay 0 to keep lines centered on date labels.
       const LEFT_PAD = 0;
@@ -2018,15 +2221,14 @@
       }
 
       function setHovered(key, on){
-        const l = leftHost.querySelector(`.setRowLeft[data-key="${cssEscapeSafe(key)}"]`);
         const r = rowsHost.querySelector(`.setBarRow[data-key="${cssEscapeSafe(key)}"]`);
-        if(l) l.classList.toggle("hovered", on);
         if(r) r.classList.toggle("hovered", on);
       }
 
       function tipHeader(S){
         const seedISO = S.seed ? toISO_PR(S.seed) : "—";
-        const propISO = S.prop ? toISO_PR(S.prop) : "—";
+        const showPropInGantt = !(S.seed && S.prop && toISO_PR(S.seed) === toISO_PR(S.prop));
+        const propISO = (S.prop && showPropInGantt) ? toISO_PR(S.prop) : "—";
         const transISO = S.trans ? toISO_PR(S.trans) : "—";
         const harvDowISO = S.harv ? fmtDowISO_PR(S.harv) : "TBD";
         const title = `Harvest ${S.harv ? toISO_PR(S.harv) : "TBD"} • ${S.rows.length} row${S.rows.length===1?"":"s"}`;
@@ -2034,79 +2236,60 @@
           <div class="k">${escapeHtml(title)}</div>
           <div class="row">
             <span class="tag">S: ${escapeHtml(seedISO)}</span>
-            <span class="tag">P: ${escapeHtml(propISO)}</span>
+            ${showPropInGantt ? `<span class="tag">P: ${escapeHtml(propISO)}</span>` : ``}
             <span class="tag">T: ${escapeHtml(transISO)}</span>
             <span class="tag harv">H: ${escapeHtml(harvDowISO)}</span>
           </div>
         `;
       }
 
-      const dom = { leftByKey:new Map(), rightByKey:new Map() };
-
-      for(const S of sets){
-        const seedISO = S.seed ? toISO_PR(S.seed) : "—";
-        const propISO = S.prop ? toISO_PR(S.prop) : "—";
-        const transISO = S.trans ? toISO_PR(S.trans) : "—";
-        const harvDowISO = S.harv ? fmtDowISO_PR(S.harv) : "TBD";
-        const title = `Harvest ${harvDowISO} • ${S.rows.length} row${S.rows.length===1?"":"s"}`;
-
-        const lrow = document.createElement("div");
-        lrow.className = "setRowLeft";
-        lrow.dataset.key = S.key;
-
-        const isOpen = state.openSetKeys.has(S.key);
-        const isSelected = state.selectedSetKey === S.key;
-        if(isOpen) lrow.classList.add("open");
-        if(isSelected) lrow.classList.add("selected");
-
-        const propPonds = Array.from(S.propPonds).sort().join(",") || "—";
-        const growPonds = Array.from(S.growPonds).sort().join(",") || "—";
-
-        const detailLines = S.rows
+      function detailRowsHtml(S){
+        return S.rows
           .slice()
           .sort((a,b)=> (a.batch||"").localeCompare(b.batch||"") || (a.variety||"").localeCompare(b.variety||""))
-          .map(r=>{
-            const batch = r.batch ? `Batch ${r.batch}` : "Batch —";
-            const variety = r.variety || "Variety —";
-            const media = r.media || "Media —";
-            const pp = r.propPond ? `Prop ${r.propPond}` : "Prop —";
-            const gp = r.growPond ? `Grow ${r.growPond}` : "Grow —";
-            const pos = (r.pos!=="" && r.pos!=null) ? `Pos ${r.pos}` : "Pos —";
+          .map((r, idx)=>{
+            const batch = r.batch ? `Batch ${r.batch}` : `Row ${idx+1}`;
+            const media = r.media || "—";
+            const pp = r.propPond ? String(r.propPond) : "—";
+            const gp = r.growPond ? String(r.growPond) : "—";
+            const expGoal = r.experimentalDescriptionGoal || "—";
+            const growerNeed = r.growersNeeds || "—";
+            const salesNeed = r.salesSamplesNeeds || "—";
+            const fsNeed = r.foodSafetyNeeds || "—";
             return `
-              <div class="detailRow">
-                <span class="detailKey">${escapeHtml(batch)}</span>
-                <span class="detailKey">${escapeHtml(variety)}</span>
-                <span class="detailKey">${escapeHtml(media)}</span>
-                <span class="detailKey">${escapeHtml(pp)}</span>
-                <span class="detailKey">${escapeHtml(gp)}</span>
-                <span class="detailKey">${escapeHtml(pos)}</span>
+              <div class="setRowCard">
+                <div class="setRowHead">
+                  <div class="setRowTitle">${escapeHtml(batch)}</div>
+                  <div class="setRowMeta">
+                    <span class="setMetaPill media">Media: ${escapeHtml(media)}</span>
+                    <span class="setMetaPill prop">Prop: ${escapeHtml(pp)}</span>
+                    <span class="setMetaPill grow">Grow: ${escapeHtml(gp)}</span>
+                  </div>
+                </div>
+                <div class="setRowGrid">
+                  <div class="setRowField exp">Experimental Description and Goal</div>
+                  <div class="setRowValue exp">${escapeHtml(expGoal)}</div>
+                  <div class="setRowField grower">Growers Needs</div>
+                  <div class="setRowValue grower">${escapeHtml(growerNeed)}</div>
+                  <div class="setRowField sales">Sales-Samples Needs</div>
+                  <div class="setRowValue sales">${escapeHtml(salesNeed)}</div>
+                  <div class="setRowField fs">Food Safety Needs</div>
+                  <div class="setRowValue fs">${escapeHtml(fsNeed)}</div>
+                </div>
               </div>
             `;
           }).join("");
+      }
 
-        lrow.innerHTML = `
-          <div class="setHeadLine">
-            <div class="setTitle">${escapeHtml(title)}</div>
-            <div class="chevMini">⌄</div>
-          </div>
-          <div class="setMeta">
-            <span class="miniPill seed">Seed ${escapeHtml(seedISO)}</span>
-            <span class="miniPill prop">Prop ${escapeHtml(propISO)}</span>
-            <span class="miniPill trans">Trans ${escapeHtml(transISO)}</span>
-            <span class="miniPill harv">Harv ${escapeHtml(harvDowISO)}</span>
-            <span class="miniPill">Prop Pond: ${escapeHtml(propPonds)}</span>
-            <span class="miniPill">Grow Pond: ${escapeHtml(growPonds)}</span>
-          </div>
-          <div class="setDetails">
-            ${detailLines || `<div class="detailRow"><span class="detailKey">No row details</span></div>`}
-          </div>
-        `;
+      const dom = { rightByKey:new Map() };
 
-        lrow.addEventListener("mouseenter", ()=> setHovered(S.key, true));
-        lrow.addEventListener("mouseleave", ()=> setHovered(S.key, false));
+      for(const S of sets){
+        const harvDowISO = S.harv ? fmtDowISO_PR(S.harv) : "TBD";
+        const title = `Harvest ${harvDowISO} • ${S.rows.length} row${S.rows.length===1?"":"s"}`;
+        const showPropInGantt = !(S.seed && S.prop && toISO_PR(S.seed) === toISO_PR(S.prop));
+        const propForGantt = showPropInGantt ? S.prop : null;
 
-        leftHost.appendChild(lrow);
-        dom.leftByKey.set(S.key, lrow);
+        const isSelected = state.selectedSetKey === S.key;
 
         const rrow = document.createElement("div");
         rrow.className = "setBarRow";
@@ -2126,6 +2309,9 @@
           seg.style.left = `${Math.min(x1,x2)}px`;
           seg.style.width = `${Math.max(4, Math.abs(x2-x1))}px`;
           if(opacityIfMissingNext) seg.style.opacity = "0.55";
+          if(focusMode){
+            seg.classList.add(kind===focusMode ? "focused" : "dimmed");
+          }
 
           attachTip(seg, ()=> `
             ${tipHeader(S)}
@@ -2139,35 +2325,40 @@
         }
 
         const endFallback = addDaysPR(endExclusive, -1);
-        const end1 = S.prop || S.trans || S.harv || endFallback;
+        const end1 = propForGantt || S.trans || S.harv || endFallback;
         const end2 = S.trans || S.harv || endFallback;
         const end3 = S.harv || endFallback;
 
-        addSeg("seed", S.seed, end1, !S.prop);
-        addSeg("prop", S.prop, end2, !S.trans);
+        addSeg("seed", S.seed, end1, !propForGantt);
+        addSeg("prop", propForGantt, end2, !S.trans);
         addSeg("trans", S.trans, end3, !S.harv);
 
-        function addLabel(dateObj, label){
+        function addLabel(dateObj, label, kind){
           if(!dateObj) return;
           const x = xOf(dateObj);
           const t = document.createElement("div");
           t.className = "segLabel";
+          if(focusMode){
+            t.classList.add(kind===focusMode ? "focused" : "dimmed");
+          }
           t.style.left = `${x}px`;
           t.textContent = label;
           rrow.appendChild(t);
         }
 
-        const seedEqProp = S.seed && S.prop && toISO_PR(S.seed) === toISO_PR(S.prop);
-        if(S.seed && (!S.prop || !seedEqProp)) addLabel(S.seed, "S");
-        if(S.prop) addLabel(S.prop, "P");
-        if(S.trans) addLabel(S.trans, "T");
-        if(S.harv) addLabel(S.harv, "H");
+        if(S.seed) addLabel(S.seed, "S", "seed");
+        if(propForGantt) addLabel(propForGantt, "P", "prop");
+        if(S.trans) addLabel(S.trans, "T", "trans");
+        if(S.harv) addLabel(S.harv, "H", "harv");
 
         // Harvest diamond: SAME xOf math as harvest line (center-of-day)
         if(S.harv){
           const x = Math.round(xOf(S.harv));
           const m = document.createElement("div");
           m.className = "harvMarker";
+          if(focusMode){
+            m.classList.add(focusMode==="harv" ? "focused" : "dimmed");
+          }
           m.style.left = `${x}px`;
           rrow.appendChild(m);
         }
@@ -2177,54 +2368,32 @@
         rowsHost.appendChild(rrow);
         dom.rightByKey.set(S.key, rrow);
 
-        lrow.addEventListener("click", ()=>{
+        const showSetDetails = ()=>{
           const keepRight = rightScroll.scrollLeft;
 
           state.selectedSetKey = S.key;
-          if(state.openSetKeys.has(S.key)) state.openSetKeys.delete(S.key);
-          else state.openSetKeys.add(S.key);
 
-          for(const [k, el] of dom.leftByKey.entries()){
-            el.classList.toggle("open", state.openSetKeys.has(k));
-            el.classList.toggle("selected", state.selectedSetKey === k);
-          }
           for(const [k, el] of dom.rightByKey.entries()){
             el.classList.toggle("selected", state.selectedSetKey === k);
           }
 
+          openSetModal({
+            title,
+            rowsCount: S.rows.length,
+            detailsHtml: detailRowsHtml(S),
+          });
+
           requestAnimationFrame(()=>{
-            syncGanttRowHeights(dom);
             rightScroll.scrollLeft = keepRight;
           });
-        });
+        };
+
+        rrow.addEventListener("click", showSetDetails);
       }
 
-      state._ganttDom = dom;
       requestAnimationFrame(()=>{
         stackHeaderTags(tagLayer);
-        syncGanttRowHeights(dom);
       });
-    }
-
-    function syncGanttRowHeights(dom){
-      if(!dom) return;
-      for(const [key, lrow] of dom.leftByKey.entries()){
-        const rrow = dom.rightByKey.get(key);
-        if(!rrow) continue;
-        const h = Math.max(44, lrow.offsetHeight);
-        rrow.style.height = `${h}px`;
-      }
-    }
-
-    function collapseAllSets(){
-      state.openSetKeys.clear();
-      state.selectedSetKey = null;
-      const dom = state._ganttDom;
-      if(dom){
-        for(const el of dom.leftByKey.values()) el.classList.remove("open","selected");
-        for(const el of dom.rightByKey.values()) el.classList.remove("selected");
-        syncGanttRowHeights(dom);
-      }
     }
 
     // =========================================================
@@ -2293,6 +2462,28 @@
 
     function closeDayModal(){ $("dayModalBack").classList.remove("open"); }
 
+    function openSetModal(data){
+      const { title, rowsCount, detailsHtml } = data;
+
+      $("setModalTitle").textContent = title || "Set details";
+      $("setModalSub").textContent =
+        `${rowsCount} row${rowsCount===1?"":"s"} • ${state.includeHarvested ? "History included" : "Active-only"} • PR time`;
+
+      const body = $("setModalBody");
+      body.innerHTML = `
+        <div class="setModalSection">
+          <div class="k">Rows</div>
+          <div class="setModalRows">
+            ${detailsHtml || `<div class="setRowCard"><div class="setRowTitle">No row details</div></div>`}
+          </div>
+        </div>
+      `;
+
+      $("setModalBack").classList.add("open");
+    }
+
+    function closeSetModal(){ $("setModalBack").classList.remove("open"); }
+
     // =========================================================
     // Build / Refresh
     // =========================================================
@@ -2359,6 +2550,31 @@
     // =========================================================
     // Wiring
     // =========================================================
+    function ganttModeLabel(mode){
+      if(mode==="all") return "All";
+      if(mode==="seed") return "Seeding";
+      if(mode==="trans") return "Transplanting";
+      return "Harvesting";
+    }
+
+    function ganttWeekLabel(offset){
+      if(offset==="all") return "All weeks";
+      if(offset===1) return "Next week";
+      if(offset===2) return "Following week";
+      return "Current week";
+    }
+
+    function syncGanttScopeUI(){
+      const mode = state.ganttMode;
+      const week = String(state.ganttWeekOffset);
+      document.querySelectorAll("#ganttModeGroup .scopeBtn").forEach(btn=>{
+        btn.classList.toggle("on", btn.getAttribute("data-mode") === mode);
+      });
+      document.querySelectorAll("#ganttWeekGroup .scopeBtn").forEach(btn=>{
+        btn.classList.toggle("on", btn.getAttribute("data-week") === week);
+      });
+    }
+
     function setView(v){
       state.view = v;
       $("tabAgenda").classList.toggle("on", v==="agenda");
@@ -2427,6 +2643,7 @@
       $("fPond").innerHTML = `<option>All</option>`;
 
       syncHistoryUI();
+      syncGanttScopeUI();
 
       loadData();
       setView("gantt");
@@ -2437,6 +2654,28 @@
         const k = chip.getAttribute("data-k");
         if(!k) return;
         toggleMilestone(k);
+      });
+
+      $("ganttModeGroup").addEventListener("click", (ev)=>{
+        const btn = ev.target.closest(".scopeBtn[data-mode]");
+        if(!btn) return;
+        const mode = btn.getAttribute("data-mode");
+        if(!mode || mode === state.ganttMode) return;
+        state.ganttMode = mode;
+        syncGanttScopeUI();
+        if(state.view==="gantt") renderGantt();
+      });
+
+      $("ganttWeekGroup").addEventListener("click", (ev)=>{
+        const btn = ev.target.closest(".scopeBtn[data-week]");
+        if(!btn) return;
+        const raw = btn.getAttribute("data-week");
+        const week = (raw === "all") ? "all" : Number(raw);
+        if(week !== "all" && (!Number.isInteger(week) || week < 0 || week > 2)) return;
+        if(week === state.ganttWeekOffset) return;
+        state.ganttWeekOffset = week;
+        syncGanttScopeUI();
+        if(state.view==="gantt") renderGantt();
       });
 
       $("q").addEventListener("input", ()=>{ state.q = $("q").value; render(); });
@@ -2460,7 +2699,7 @@
       document.addEventListener("keydown", (e)=>{
         const isCmd = e.metaKey || e.ctrlKey;
         if(isCmd && e.key === "Enter"){ e.preventDefault(); buildFromTSV(); }
-        if(e.key === "Escape"){ hideTip(); closeDayModal(); }
+        if(e.key === "Escape"){ hideTip(); closeDayModal(); closeSetModal(); }
       });
 
       $("todayBtn").addEventListener("click", ()=>{
@@ -2497,14 +2736,11 @@
 
       $("dayModalClose").addEventListener("click", closeDayModal);
       $("dayModalBack").addEventListener("click", (ev)=>{ if(ev.target === $("dayModalBack")) closeDayModal(); });
+      $("setModalClose").addEventListener("click", closeSetModal);
+      $("setModalBack").addEventListener("click", (ev)=>{ if(ev.target === $("setModalBack")) closeSetModal(); });
 
       $("historyToggle").addEventListener("click", toggleHistory);
       $("metaActiveMode").addEventListener("click", toggleHistory);
-
-      $("collapseSetsBtn").addEventListener("click", ()=>{
-        collapseAllSets();
-        renderGantt();
-      });
 
       $("filtersToggle").addEventListener("click", ()=>{
         setFiltersCollapsed(!state.filtersCollapsed);
