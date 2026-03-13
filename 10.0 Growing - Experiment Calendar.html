@@ -560,100 +560,123 @@
       display:flex; flex-direction:column;
       backdrop-filter: blur(10px);
     }
-    .modalHdr{ padding: 14px; border-bottom: 1px solid var(--border2); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .modalHdr{ padding: 16px 18px; border-bottom: 1px solid var(--border2); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
     .modalHdr .t{ display:flex; flex-direction:column; gap:4px; }
-    .modalHdr .t .h{ font-weight:950; font-size:14px; color: var(--text); }
-    .modalHdr .t .s{ color: var(--sub); font-size:11px; font-weight:850; line-height:1.25; }
+    .modalHdr .t .h{ font-weight:950; font-size:17px; color: var(--text); letter-spacing:.2px; }
+    .modalHdr .t .s{ color: rgba(203,213,225,.92); font-size:12px; font-weight:800; line-height:1.35; }
     .modalHdr .x{ width:34px; height:34px; border-radius:999px; border:1px solid var(--border2); background: rgba(2,6,23,.45); color: var(--text); font-weight:950; cursor:pointer; }
-    .modalBody{ padding:12px 14px 14px; overflow:auto; }
-    .setModalSection{ margin-bottom:10px; border:1px solid rgba(148,163,184,.12); border-radius:14px; padding:10px; background: rgba(2,6,23,.3); }
+    .modalBody{ padding:14px 16px 16px; overflow:auto; }
+    .setModalSection{ margin-bottom:12px; border:1px solid rgba(148,163,184,.18); border-radius:16px; padding:12px; background: rgba(15,23,42,.42); }
     .setModalSection:last-child{ margin-bottom:0; }
-    .setModalSection .k{ font-family: var(--mono); font-size:11px; color: rgba(167,176,190,.8); font-weight:900; margin-bottom:8px; }
-    .setModalRows{ display:flex; flex-direction:column; gap:8px; }
+    .setModalSection .k{ font-family: var(--mono); font-size:12px; color: rgba(203,213,225,.92); font-weight:900; margin-bottom:10px; }
+    .setModalRows{ display:flex; flex-direction:column; gap:12px; }
     .setRowCard{
-      border:1px solid rgba(148,163,184,.14);
-      border-radius:14px;
-      padding:10px;
-      background: rgba(2,6,23,.34);
+      border:1px solid rgba(148,163,184,.22);
+      border-radius:16px;
+      padding:12px;
+      background: rgba(2,6,23,.5);
     }
     .setRowHead{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
+      gap:12px;
       flex-wrap:wrap;
-      margin-bottom:8px;
-      padding-bottom:8px;
-      border-bottom:1px solid rgba(148,163,184,.10);
+      margin-bottom:10px;
+      padding-bottom:10px;
+      border-bottom:1px solid rgba(148,163,184,.16);
     }
     .setRowTitle{
       font-weight:950;
       color: var(--text);
-      font-size:12px;
+      font-size:14px;
       letter-spacing:.2px;
+    }
+    .setRowTitleWrap{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .setRowQtyInline{
+      font-family: var(--mono);
+      font-size:12px;
+      font-weight:900;
+      border-radius:999px;
+      border:1px solid rgba(59,130,246,.52);
+      background: rgba(59,130,246,.2);
+      color:#dbeafe;
+      padding:5px 10px;
+      white-space:nowrap;
     }
     .setRowMeta{
       font-family: var(--mono);
-      font-size:10px;
+      font-size:12px;
       font-weight:900;
-      color: rgba(167,176,190,.82);
+      color: rgba(226,232,240,.9);
       display:flex;
       gap:8px;
       flex-wrap:wrap;
     }
     .setMetaPill{
       border-radius:999px;
-      border:1px solid rgba(148,163,184,.18);
-      background: rgba(15,23,42,.35);
-      padding:4px 8px;
-      color: rgba(229,231,235,.92);
+      border:1px solid rgba(148,163,184,.3);
+      background: rgba(15,23,42,.52);
+      padding:5px 10px;
+      color: rgba(241,245,249,.95);
     }
     .setMetaPill.media{ border-color: rgba(56,189,248,.35); background: rgba(56,189,248,.12); }
     .setMetaPill.prop{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.12); }
     .setMetaPill.grow{ border-color: rgba(167,139,250,.35); background: rgba(167,139,250,.12); }
     .setRowGrid{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .setRowLine{
       display:grid;
-      grid-template-columns: minmax(240px,300px) minmax(0,1fr);
-      gap:6px 10px;
+      grid-template-columns: 240px minmax(0,1fr);
       align-items:start;
-    }
-    .setRowField{
-      font-family: var(--mono);
-      font-size:10px;
-      font-weight:900;
-      color: rgba(167,176,190,.86);
-      border:1px solid rgba(148,163,184,.12);
-      background: rgba(15,23,42,.26);
-      border-radius:10px;
-      padding:6px 8px;
+      gap:10px;
       white-space:normal;
-      overflow-wrap:anywhere;
       min-width:0;
     }
-    .setRowField.exp{ border-color: rgba(56,189,248,.32); background: rgba(56,189,248,.14); color:#bae6fd; }
-    .setRowField.grower{ border-color: rgba(34,197,94,.32); background: rgba(34,197,94,.14); color:#bbf7d0; }
-    .setRowField.sales{ border-color: rgba(245,158,11,.32); background: rgba(245,158,11,.14); color:#fde68a; }
-    .setRowField.fs{ border-color: rgba(239,68,68,.32); background: rgba(239,68,68,.14); color:#fecaca; }
-    .setRowValue{
-      font-size:11px;
-      font-weight:800;
-      color: rgba(229,231,235,.92);
+    .setRowLine .k{
+      min-width:0;
+      color: rgba(241,245,249,.96);
+      font-family: var(--mono);
+      font-size:12px;
+      letter-spacing:.2px;
       line-height:1.25;
-      border:1px solid rgba(148,163,184,.12);
-      background: rgba(2,6,23,.24);
+      font-weight:900;
+      border:1px solid rgba(148,163,184,.36);
+      background: rgba(2,6,23,.62);
       border-radius:10px;
-      padding:6px 8px;
-      min-height: 28px;
-      min-width:0;
+      padding:8px 10px;
       overflow-wrap:anywhere;
     }
-    @media (max-width: 940px){
-      .setRowGrid{ grid-template-columns: 1fr; }
+    .setRowLine .v{
+      min-width:0;
+      overflow-wrap:anywhere;
+      color: rgba(241,245,249,.96);
+      line-height:1.35;
+      font-weight:750;
+      border:1px solid rgba(148,163,184,.3);
+      background: rgba(2,6,23,.42);
+      border-radius:10px;
+      padding:8px 10px;
     }
-    .setRowValue.exp{ border-color: rgba(56,189,248,.24); background: rgba(56,189,248,.08); }
-    .setRowValue.grower{ border-color: rgba(34,197,94,.24); background: rgba(34,197,94,.08); }
-    .setRowValue.sales{ border-color: rgba(245,158,11,.24); background: rgba(245,158,11,.08); }
-    .setRowValue.fs{ border-color: rgba(239,68,68,.24); background: rgba(239,68,68,.08); }
+    .setRowLine.exp .k{ border-color: rgba(56,189,248,.45); color:#d7f0ff; background: rgba(56,189,248,.14); }
+    .setRowLine.grower .k{ border-color: rgba(34,197,94,.45); color:#d5f8e3; background: rgba(34,197,94,.14); }
+    .setRowLine.sales .k{ border-color: rgba(245,158,11,.45); color:#ffefbf; background: rgba(245,158,11,.14); }
+    .setRowLine.fs .k{ border-color: rgba(239,68,68,.45); color:#ffd7d7; background: rgba(239,68,68,.14); }
+    @media (max-width: 900px){
+      .setRowLine{ font-size:12px; }
+      .setRowLine{ grid-template-columns: 1fr; }
+      .setRowLine .k{
+        margin-bottom:2px;
+      }
+    }
   </style>
 </head>
 
@@ -2256,10 +2279,27 @@
             const growerNeed = r.growersNeeds || "—";
             const salesNeed = r.salesSamplesNeeds || "—";
             const fsNeed = r.foodSafetyNeeds || "—";
+            const mode = state.ganttMode;
+            let qtyLabel = "";
+            let qtyValue = "";
+            if(mode === "seed"){
+              qtyLabel = "Flats";
+              const flats = Number.isFinite(r.actualFlats) ? r.actualFlats : r.flats;
+              qtyValue = Number.isFinite(flats) ? String(flats) : (Number.isFinite(r.seededPlugs) ? String(r.seededPlugs) : "—");
+            }else if(mode === "trans" || mode === "harv"){
+              qtyLabel = "Boards";
+              qtyValue = Number.isFinite(r.actualBoards) ? String(r.actualBoards) : "—";
+            }
+            const qtyInlineHtml = qtyLabel
+              ? `<span class="setRowQtyInline">${escapeHtml(qtyLabel)}: ${escapeHtml(qtyValue)}</span>`
+              : "";
             return `
               <div class="setRowCard">
                 <div class="setRowHead">
-                  <div class="setRowTitle">${escapeHtml(batch)}</div>
+                  <div class="setRowTitleWrap">
+                    <div class="setRowTitle">${escapeHtml(batch)}</div>
+                    ${qtyInlineHtml}
+                  </div>
                   <div class="setRowMeta">
                     <span class="setMetaPill media">Media: ${escapeHtml(media)}</span>
                     <span class="setMetaPill prop">Prop: ${escapeHtml(pp)}</span>
@@ -2267,14 +2307,10 @@
                   </div>
                 </div>
                 <div class="setRowGrid">
-                  <div class="setRowField exp">Experimental Description and Goal</div>
-                  <div class="setRowValue exp">${escapeHtml(expGoal)}</div>
-                  <div class="setRowField grower">Growers Needs</div>
-                  <div class="setRowValue grower">${escapeHtml(growerNeed)}</div>
-                  <div class="setRowField sales">Sales-Samples Needs</div>
-                  <div class="setRowValue sales">${escapeHtml(salesNeed)}</div>
-                  <div class="setRowField fs">Food Safety Needs</div>
-                  <div class="setRowValue fs">${escapeHtml(fsNeed)}</div>
+                  <div class="setRowLine exp"><span class="k">Experimental Description and Goal:</span><span class="v">${escapeHtml(expGoal)}</span></div>
+                  <div class="setRowLine grower"><span class="k">Growers Needs:</span><span class="v">${escapeHtml(growerNeed)}</span></div>
+                  <div class="setRowLine sales"><span class="k">Sales-Samples Needs:</span><span class="v">${escapeHtml(salesNeed)}</span></div>
+                  <div class="setRowLine fs"><span class="k">Food Safety Needs:</span><span class="v">${escapeHtml(fsNeed)}</span></div>
                 </div>
               </div>
             `;

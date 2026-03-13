@@ -540,6 +540,46 @@
     const RECEIVED_LOCATION = "WAREHOUSE";
     const WASTE_LOCATION = "BASURA";
 
+    function normalizeLocationKey(v){
+      return String(v ?? "")
+        .trim()
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function classifyShippedLocation(v){
+      const locRaw = String(v ?? "").trim();
+      // Only explicit exclusions should be removed from shipped sales.
+      if (!locRaw) return "sales";
+
+      const locUpper = String(v ?? "").trim().toUpperCase();
+      const locNorm = normalizeLocationKey(v);
+
+      if (locNorm.includes(normalizeLocationKey(WASTE_LOCATION))) return "waste";
+      if (locNorm.includes(normalizeLocationKey(RECEIVED_LOCATION))) return "received";
+      if (
+        DONATION_LOCATIONS.has(locUpper) ||
+        locNorm.includes("DONACION") ||
+        locNorm.includes("DONATION")
+      ) return "donation";
+      return "sales";
+    }
+
+    function getShippingDateValue(row){
+      if (!row || typeof row !== "object") return "";
+      const direct = row["Ship Date"] ?? row["Shipping Date"] ?? row["Sales Invoice Date"];
+      if (direct !== undefined && direct !== null && String(direct).trim() !== "") return direct;
+
+      for (const [k, v] of Object.entries(row)){
+        const key = normHeader(k);
+        if (!key) continue;
+        if (key.includes("shipping date")) return v;
+        if (key.includes("ship date")) return v;
+      }
+      return "";
+    }
+
     // =========================================================
     // HEADERS
     // =========================================================
@@ -633,6 +673,7 @@
       ["pack date", "Pack Date"],
       ["packing date", "Pack Date"],
       ["ship date", "Ship Date"],
+      ["shipping date", "Ship Date"],
       ["sales invoice date", "Sales Invoice Date"],
       ["sales week", "Sales Week"],
       ["sales ship week", "Sales Ship Week"],
@@ -1142,19 +1183,23 @@
         if (t === "3LB"){ cases3 += cases; units3 += units; lbs3 += lbs; }
       }
 
-      // ---- SHIPPING (Pack) ----
+      // ---- SHIPPING (Pack # Lbs Shipped) ----
+      const shipRowsW = (packRows||[]).filter(r => {
+        if (parseNumber(r[H.LBS_SHIPPED]) === 0) return false;
+        const byPackWeek = weekNumFromCell(r[H.PACK_WEEK]) === wkNum;
+        if (byPackWeek) return true;
+        const shipDate = parseAnyDate(getShippingDateValue(r));
+        return shipDate ? (getISOWeekFromDate(shipDate) === wkNum) : false;
+      });
       let shipReceived=0, shipDonation=0, shipWaste=0, shipSales=0;
-      for (const r of packRowsW){
+      for (const r of shipRowsW){
         const lbs = parseNumber(r[H.LBS_SHIPPED]);
         if (!lbs) continue;
-        const loc = String(r[H.LOC_SHIPPED] ?? "").trim();
-        const locU = loc.toUpperCase();
-
-        if (!locU) continue;
-        if (locU === RECEIVED_LOCATION) shipReceived += lbs;
-        else if (locU === WASTE_LOCATION) shipWaste += lbs;
-        else if (DONATION_LOCATIONS.has(locU)) shipDonation += lbs;
-        else shipSales += lbs;
+        const bucket = classifyShippedLocation(r[H.LOC_SHIPPED]);
+        if (bucket === "received") shipReceived += lbs;
+        else if (bucket === "waste") shipWaste += lbs;
+        else if (bucket === "donation") shipDonation += lbs;
+        else if (bucket === "sales") shipSales += lbs;
       }
 
       // ---- SALES SHIP (Sales Productivity source: Master Pack sales columns) ----
@@ -1226,7 +1271,8 @@
           transRowsCount: transRows.length,
           packRowsCount: packRowsW.length,
           packLbsConfirmed: lbsAll,
-          salesRowsByShipWeekCount: salesRowsW.length
+          salesRowsByShipWeekCount: salesRowsW.length,
+          shipRowsByGrowWeekCount: shipRowsW.length
         }
       };
     }
@@ -1388,19 +1434,25 @@
         if (t === "3LB"){ cases3 += cases; units3 += units; lbs3 += lbs; }
       }
 
-      // ---- SHIPPING (Pack) ----
+      // ---- SHIPPING (Pack # Lbs Shipped by Shipping Date) ----
+      const shipRowsByDate = (packRows||[]).filter(r =>
+        parseNumber(r[H.LBS_SHIPPED]) !== 0 &&
+        isDate(getShippingDateValue(r))
+      );
+      const shipRowsByWeek = (packRows||[]).filter(r =>
+        parseNumber(r[H.LBS_SHIPPED]) !== 0 &&
+        weekNumFromCell(r[H.PACK_WEEK]) === wkNum
+      );
+      const shipRowsD = shipRowsByDate.length ? shipRowsByDate : shipRowsByWeek;
       let shipReceived=0, shipDonation=0, shipWaste=0, shipSales=0;
-      for (const r of packRowsD){
+      for (const r of shipRowsD){
         const lbs = parseNumber(r[H.LBS_SHIPPED]);
         if (!lbs) continue;
-        const loc = String(r[H.LOC_SHIPPED] ?? "").trim();
-        const locU = loc.toUpperCase();
-
-        if (!locU) continue;
-        if (locU === RECEIVED_LOCATION) shipReceived += lbs;
-        else if (locU === WASTE_LOCATION) shipWaste += lbs;
-        else if (DONATION_LOCATIONS.has(locU)) shipDonation += lbs;
-        else shipSales += lbs;
+        const bucket = classifyShippedLocation(r[H.LOC_SHIPPED]);
+        if (bucket === "received") shipReceived += lbs;
+        else if (bucket === "waste") shipWaste += lbs;
+        else if (bucket === "donation") shipDonation += lbs;
+        else if (bucket === "sales") shipSales += lbs;
       }
 
       // ---- SALES SHIP (Sales Productivity source: Master Pack sales columns) ----
@@ -1477,6 +1529,10 @@
           packRowsSelectedCount: packRowsD.length,
           packSource: packRowsByDate.length ? "date" : "week-fallback",
           packLbsConfirmed: lbsAll,
+          shipRowsByDateCount: shipRowsByDate.length,
+          shipRowsByWeekCount: shipRowsByWeek.length,
+          shipRowsSelectedCount: shipRowsD.length,
+          shipSource: shipRowsByDate.length ? "date" : "week-fallback",
           salesRowsByDateCount: salesRowsByDate.length,
           salesRowsByWeekCount: salesRowsByWeek.length,
           salesRowsSelectedCount: salesRowsD.length,
@@ -1850,12 +1906,12 @@
 
       pushIfMeaningful({
         label:"Shipped",
-        completed: "—",
+        completed: fmtInt(summary.ship?.sales ?? 0),
         target: fmtInt(summary.salesShipLbs),
         units:"Lbs",
-        pct:`<span class="pill muted">—</span>`,
-        missed:`<span class="pill muted">—</span>`
-      }, summary.salesShipLbs !== 0 || ((summary.aux?.salesRowsSelectedCount ?? summary.aux?.salesRowsByShipWeekCount ?? 0) > 0));
+        pct:pctPill(summary.ship?.sales ?? 0, summary.salesShipLbs),
+        missed:missedPill(summary.ship?.sales ?? 0, summary.salesShipLbs)
+      }, (summary.ship?.sales ?? 0) !== 0 || summary.salesShipLbs !== 0 || ((summary.aux?.shipRowsSelectedCount ?? summary.aux?.shipRowsByGrowWeekCount ?? 0) > 0) || ((summary.aux?.salesRowsSelectedCount ?? summary.aux?.salesRowsByShipWeekCount ?? 0) > 0));
 
       if (!rows.length){
         const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : `Week ${summary.wkNum}`;
@@ -2050,6 +2106,7 @@
           setDebug(
             `Transplant: rows ${summary.aux.transRowsCount.toLocaleString()} • boards ${summary.aux.boardsTrans.toLocaleString()} • expected ${summary.aux.boardsExpected.toLocaleString()} • avg workers ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"} • hours ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
             `Pack: source ${summary.aux.packSource || "date"} • date rows ${(summary.aux.packRowsByDateCount ?? 0).toLocaleString()} • week rows ${(summary.aux.packRowsByWeekCount ?? 0).toLocaleString()} • used ${(summary.aux.packRowsSelectedCount ?? 0).toLocaleString()} • lbs ${(summary.aux.packLbsConfirmed ?? 0).toLocaleString()}\n` +
+            `Shipped: source ${summary.aux.shipSource || "date"} • date rows ${(summary.aux.shipRowsByDateCount ?? 0).toLocaleString()} • week rows ${(summary.aux.shipRowsByWeekCount ?? 0).toLocaleString()} • used ${(summary.aux.shipRowsSelectedCount ?? 0).toLocaleString()} • sales ${(summary.ship?.sales ?? 0).toLocaleString()} • wh ${(summary.ship?.received ?? 0).toLocaleString()} • donations ${(summary.ship?.donation ?? 0).toLocaleString()} • basura ${(summary.ship?.waste ?? 0).toLocaleString()}\n` +
             `Sales ship: source ${summary.aux.salesSource || "date"} • date rows ${(summary.aux.salesRowsByDateCount ?? 0).toLocaleString()} • ship-week rows ${(summary.aux.salesRowsByWeekCount ?? 0).toLocaleString()} • used ${(summary.aux.salesRowsSelectedCount ?? 0).toLocaleString()} • lbs ${(summary.salesShipLbs ?? 0).toLocaleString()}\n` +
             `Note: If transplant date is missing, time collapses into one bucket for the day.`
           );
@@ -2080,6 +2137,7 @@
         setDebug(
           `Transplant: rows ${summary.aux.transRowsCount.toLocaleString()} • boards ${summary.aux.boardsTrans.toLocaleString()} • expected ${summary.aux.boardsExpected.toLocaleString()} • avg workers ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"} • hours ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
           `Pack: week rows ${(summary.aux.packRowsCount ?? 0).toLocaleString()} • confirmed lbs ${(summary.aux.packLbsConfirmed ?? 0).toLocaleString()}\n` +
+          `Shipped: week rows ${(summary.aux.shipRowsByGrowWeekCount ?? 0).toLocaleString()} • sales ${(summary.ship?.sales ?? 0).toLocaleString()} • wh ${(summary.ship?.received ?? 0).toLocaleString()} • donations ${(summary.ship?.donation ?? 0).toLocaleString()} • basura ${(summary.ship?.waste ?? 0).toLocaleString()}\n` +
           `Sales ship: ship-week rows ${(summary.aux.salesRowsByShipWeekCount ?? 0).toLocaleString()} • lbs ${(summary.salesShipLbs ?? 0).toLocaleString()}\n` +
           `Note: If transplant date is missing, time collapses into one bucket for the week.`
         );
