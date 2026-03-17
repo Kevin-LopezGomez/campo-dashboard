@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Production Frontier - Packing Model</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; line-height: 1.35; background: #f8fafc; }
+  h1, h2, h3 { margin: 0 0 10px 0; }
+  .muted { color: #6b7280; margin-bottom: 18px; }
+  .grid { display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 20px; align-items: start; }
+  .card { border: 1px solid #d1d5db; border-radius: 12px; padding: 16px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
+  .section-card { margin-top: 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  th, td { border: 1px solid #e5e7eb; padding: 9px; text-align: center; }
+  th { background: #f9fafb; position: sticky; top: 0; font-size: 13px; font-weight: 700; }
+  td { font-size: 13px; }
+  input { width: 92px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+  .btns { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    border: 0; border-radius: 8px; padding: 10px 14px; cursor: pointer;
+    background: #2563eb; color: white; font-weight: 600; transition: filter 0.15s ease;
+  }
+  button:hover { filter: brightness(0.96); }
+  button.secondary { background: #475569; }
+  .toggle-btn { background: #e5e7eb; color: #111827; padding: 6px 10px; border-radius: 6px; }
+  .toggle-btn:hover { background: #d1d5db; }
+  .collapsed { display: none; }
+  .warning { margin-top: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid #fca5a5; background: #fef2f2; color: #991b1b; font-size: 13px; }
+  .hidden { display: none; }
+  .input-error { border-color: #dc2626; background: #fff1f2; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  .kpi { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fafafa; }
+  .kpi .label { color: #6b7280; font-size: 12px; }
+  .kpi .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .kpi .subvalue { color: #4b5563; font-size: 13px; margin-top: 4px; }
+  .improvements { margin-top: 12px; }
+  .improvements h3 { margin: 0 0 8px 0; font-size: 16px; }
+  .improvements table { margin-top: 0; }
+  #chart { height: 640px; }
+  .small { font-size: 12px; color: #6b7280; margin-top: 8px; line-height: 1.45; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>Production Frontier - Packing Model</h1>
+  <div class="muted">Edit labor and rate inputs, then the chart and summaries update automatically.</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-header">
+        <h2>Inputs</h2>
+        <button id="inputsToggle" class="toggle-btn" onclick="toggleInputsCard()" aria-expanded="false">Expand</button>
+      </div>
+      <div id="inputsContent" class="collapsed">
+        <div class="small">Total Labor Cost/hr = (# Employees × $/hr Normal) + (# Supervisors × $/hr Supervisor)</div>
+        <div id="validationWarning" class="warning hidden"></div>
+
+      <table id="inputTable">
+        <thead>
+          <tr>
+            <th>System</th>
+            <th># Employees</th>
+            <th># Supervisors</th>
+            <th>$/hr Normal</th>
+            <th>$/hr Supervisor</th>
+            <th>Total $/hr</th>
+            <th>05OZ Rate (Cs/Hour)</th>
+            <th>10OZ Rate (Cs/Hour)</th>
+            <th>16OZ Rate (Cs/Hour)</th>
+            <th>1LB Rate (Bags/Hour)</th>
+            <th>3LB Rate (Bags/Hour)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="btns">
+        <button onclick="renderAll()">Update Model</button>
+        <button class="secondary" onclick="resetDefaults()">Reset Defaults</button>
+        <button class="secondary" id="saveDefaultsBtn" onclick="saveCurrentAsDefaults()">Save As Defaults</button>
+      </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card section-card">
+    <h2>KPIs</h2>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">Lowest Cost/Unit System</div>
+        <div class="value" id="lowestCostSystem">—</div>
+        <div class="subvalue" id="lowestCostValue">—</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Highest Throughput System</div>
+        <div class="value" id="highestThroughputSystem">—</div>
+        <div class="subvalue" id="highestThroughputValue">—</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Automation Improvement</div>
+        <div class="value" id="automationSummary">—</div>
+        <div class="subvalue" id="automationDetail">—</div>
+      </div>
+    </div>
+
+    <div class="improvements">
+      <h3>Automation Improvement</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Comparison</th>
+            <th>Rate Change</th>
+            <th>Cost Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Now → Semi</td>
+            <td id="impRateNowSemi">—</td>
+            <td id="impCostNowSemi">—</td>
+          </tr>
+          <tr>
+            <td>Semi → Fully</td>
+            <td id="impRateSemiFully">—</td>
+            <td id="impCostSemiFully">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card section-card">
+    <h2>Combined Frontier Chart</h2>
+    <div id="chart"></div>
+    <div class="small">
+      X-axis = Production Rate. Y-axis = Labor Cost per Unit. Better region = lower-right.
+      Dotted extensions continue along the same segment slope from Now→Semi-Auto and Semi-Auto→Fully Semi-Auto.
+    </div>
+    <div class="improvements">
+      <h3>SKU Performance Summary</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Best System</th>
+            <th>Best Rate</th>
+            <th>Lowest $/Unit</th>
+            <th>Automation Improvement (%)</th>
+          </tr>
+        </thead>
+        <tbody id="skuSummaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+const BUILTIN_DEFAULTS = [
+  {name:"Now", emp:15, sup:1, normal:10.5, supervisor:14, rates:{oz05:691, oz10:304, oz16:297, lb1:15, lb3:90}},
+  {name:"Semi-Auto", emp:17, sup:1, normal:10.5, supervisor:22, rates:{oz05:1500, oz10:1080, oz16:840, lb1:840, lb3:180}},
+  {name:"Fully Semi-Auto", emp:20, sup:1, normal:10.5, supervisor:22, rates:{oz05:3000, oz10:2160, oz16:1680, lb1:1680, lb3:360}}
+];
+const DEFAULTS_STORAGE_KEY = "packingModelDefaultsV1";
+
+const skuMeta = [
+  {key:"oz05", label:"05OZ", rateUnit:"Cs/Hour"},
+  {key:"oz10", label:"10OZ", rateUnit:"Cs/Hour"},
+  {key:"oz16", label:"16OZ", rateUnit:"Cs/Hour"},
+  {key:"lb1", label:"1LB", rateUnit:"Bags/Hour"},
+  {key:"lb3", label:"3LB", rateUnit:"Bags/Hour"}
+];
+
+const colors = ["#2563eb","#dc2626","#9333ea","#0891b2","#16a34a"];
+
+function deepClone(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function isValidDefaults(candidate) {
+  return Array.isArray(candidate)
+    && candidate.length === BUILTIN_DEFAULTS.length
+    && candidate.every((row, i) => {
+      if (!row || row.name !== BUILTIN_DEFAULTS[i].name || !row.rates) return false;
+      const laborOk = ["emp", "sup", "normal", "supervisor"].every(k => Number.isFinite(Number(row[k])) && Number(row[k]) >= 0);
+      const ratesOk = skuMeta.every(sku => Number.isFinite(Number(row.rates[sku.key])) && Number(row.rates[sku.key]) > 0);
+      return laborOk && ratesOk;
+    });
+}
+
+function loadDefaults() {
+  try {
+    const saved = localStorage.getItem(DEFAULTS_STORAGE_KEY);
+    if (!saved) return deepClone(BUILTIN_DEFAULTS);
+    const parsed = JSON.parse(saved);
+    if (isValidDefaults(parsed)) return deepClone(parsed);
+  } catch (err) {}
+  return deepClone(BUILTIN_DEFAULTS);
+}
+
+function persistDefaults() {
+  try {
+    localStorage.setItem(DEFAULTS_STORAGE_KEY, JSON.stringify(defaults));
+  } catch (err) {}
+}
+
+let defaults = loadDefaults();
+function cloneDefaults() {
+  return deepClone(defaults);
+}
+
+let model = cloneDefaults();
+
+function toggleInputsCard(forceExpanded) {
+  const content = document.getElementById("inputsContent");
+  const toggle = document.getElementById("inputsToggle");
+  const expand = typeof forceExpanded === "boolean" ? forceExpanded : content.classList.contains("collapsed");
+  content.classList.toggle("collapsed", !expand);
+  toggle.textContent = expand ? "Collapse" : "Expand";
+  toggle.setAttribute("aria-expanded", expand ? "true" : "false");
+}
+
+function totalCost(row) {
+  return row.emp * row.normal + row.sup * row.supervisor;
+}
+
+function tbody() {
+  return document.querySelector("#inputTable tbody");
+}
+
+function buildInputs() {
+  tbody().innerHTML = "";
+  model.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${row.name}</b></td>
+      <td><input type="number" step="0.01" id="emp_${i}" value="${row.emp}"></td>
+      <td><input type="number" step="0.01" id="sup_${i}" value="${row.sup}"></td>
+      <td><input type="number" step="0.01" id="normal_${i}" value="${row.normal}"></td>
+      <td><input type="number" step="0.01" id="supervisor_${i}" value="${row.supervisor}"></td>
+      <td id="total_${i}">${totalCost(row).toFixed(2)}</td>
+      <td><input type="number" step="0.01" id="oz05_${i}" value="${row.rates.oz05}"></td>
+      <td><input type="number" step="0.01" id="oz10_${i}" value="${row.rates.oz10}"></td>
+      <td><input type="number" step="0.01" id="oz16_${i}" value="${row.rates.oz16}"></td>
+      <td><input type="number" step="0.01" id="lb1_${i}" value="${row.rates.lb1}"></td>
+      <td><input type="number" step="0.01" id="lb3_${i}" value="${row.rates.lb3}"></td>
+    `;
+    tbody().appendChild(tr);
+  });
+
+  document.querySelectorAll("input").forEach(el => {
+    el.addEventListener("input", () => {
+      readInputs();
+      updateTotals();
+      renderAll();
+    });
+  });
+}
+
+function num(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) ? v : 0;
+}
+
+function readInputs() {
+  model = model.map((row, i) => ({
+    name: row.name,
+    emp: num(`emp_${i}`),
+    sup: num(`sup_${i}`),
+    normal: num(`normal_${i}`),
+    supervisor: num(`supervisor_${i}`),
+    rates: {
+      oz05: num(`oz05_${i}`),
+      oz10: num(`oz10_${i}`),
+      oz16: num(`oz16_${i}`),
+      lb1: num(`lb1_${i}`),
+      lb3: num(`lb3_${i}`)
+    }
+  }));
+}
+
+function updateTotals() {
+  model.forEach((row, i) => {
+    document.getElementById(`total_${i}`).textContent = totalCost(row).toFixed(2);
+  });
+}
+
+function getChartLayout(extra = {}) {
+  return {
+    title: "Production Frontier - Packing Model",
+    xaxis: {title: "Production Rate: (Units/Hour)"},
+    yaxis: {title: "Labor Cost Per Unit ($/Unit)"},
+    hovermode: "closest",
+    legend: {
+      orientation: "v",
+      y: 0.98,
+      x: 0.98,
+      yanchor: "top",
+      xanchor: "right",
+      groupclick: "togglegroup",
+      font: {size: 26},
+      bgcolor: "rgba(255,255,255,0.75)"
+    },
+    margin: {l: 60, r: 20, t: 50, b: 80},
+    ...extra
+  };
+}
+
+function validateInputs() {
+  const invalidIds = [];
+  const issues = [];
+  model.forEach((row, i) => {
+    if (row.emp < 0) invalidIds.push(`emp_${i}`);
+    if (row.sup < 0) invalidIds.push(`sup_${i}`);
+    if (row.normal < 0) invalidIds.push(`normal_${i}`);
+    if (row.supervisor < 0) invalidIds.push(`supervisor_${i}`);
+    if (row.emp < 0 || row.sup < 0) issues.push(`${row.name}: employees/supervisors must be >= 0`);
+    if (row.normal < 0 || row.supervisor < 0) issues.push(`${row.name}: wages must be >= 0`);
+
+    skuMeta.forEach((sku) => {
+      if (row.rates[sku.key] <= 0) {
+        invalidIds.push(`${sku.key}_${i}`);
+        issues.push(`${row.name} ${sku.label} rate must be > 0`);
+      }
+    });
+  });
+
+  return {
+    valid: issues.length === 0,
+    invalidIds: [...new Set(invalidIds)],
+    issues: [...new Set(issues)]
+  };
+}
+
+function applyValidationStyles(invalidIds) {
+  document.querySelectorAll("#inputTable input").forEach((el) => el.classList.remove("input-error"));
+  invalidIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("input-error");
+  });
+}
+
+function showValidationWarning(issues) {
+  const box = document.getElementById("validationWarning");
+  if (!issues.length) {
+    box.classList.add("hidden");
+    box.textContent = "";
+    return;
+  }
+  const maxLines = 4;
+  const lines = issues.slice(0, maxLines).join(" | ");
+  const more = issues.length > maxLines ? ` | +${issues.length - maxLines} more` : "";
+  box.textContent = "Invalid input: rates must be > 0, employees/supervisors >= 0, and wages >= 0. " + lines + more;
+  box.classList.remove("hidden");
+}
+
+function renderInvalidState() {
+  document.getElementById("lowestCostSystem").textContent = "—";
+  document.getElementById("lowestCostValue").textContent = "—";
+  document.getElementById("highestThroughputSystem").textContent = "—";
+  document.getElementById("highestThroughputValue").textContent = "—";
+  document.getElementById("automationSummary").textContent = "—";
+  document.getElementById("automationDetail").textContent = "—";
+  document.getElementById("impRateNowSemi").textContent = "—";
+  document.getElementById("impCostNowSemi").textContent = "—";
+  document.getElementById("impRateSemiFully").textContent = "—";
+  document.getElementById("impCostSemiFully").textContent = "—";
+  renderSkuSummaryTable(false);
+  Plotly.newPlot("chart", [], getChartLayout({
+    annotations: [{
+      text: "Fix invalid inputs to render the frontier.",
+      xref: "paper",
+      yref: "paper",
+      x: 0.5,
+      y: 0.5,
+      showarrow: false,
+      font: {size: 18, color: "#991b1b"}
+    }]
+  }), {responsive: true, displaylogo: false});
+}
+
+function saveCurrentAsDefaults() {
+  readInputs();
+  const validation = validateInputs();
+  applyValidationStyles(validation.invalidIds);
+  showValidationWarning(validation.issues);
+  if (!validation.valid) return;
+  defaults = deepClone(model);
+  persistDefaults();
+  const btn = document.getElementById("saveDefaultsBtn");
+  const original = "Save As Defaults";
+  btn.textContent = "Defaults Saved";
+  setTimeout(() => { btn.textContent = original; }, 1200);
+}
+
+function piecewiseExtensions(x, y) {
+  if (x.length < 3) return {lowX:[], lowY:[], highX:[], highY:[]};
+  const slope1 = (y[1] - y[0]) / (x[1] - x[0]);
+  const slope2 = (y[2] - y[1]) / (x[2] - x[1]);
+  const xLow = Math.max(0.0001, x[0] * 0.65);
+  const yLow = y[0] + slope1 * (xLow - x[0]);
+  const xHigh = x[2] * 1.18;
+  const yHigh = y[2] + slope2 * (xHigh - x[2]);
+  return {lowX:[xLow, x[0]], lowY:[yLow, y[0]], highX:[x[2], xHigh], highY:[y[2], yHigh]};
+}
+
+function densifyLine(x, y, pointsPerSegment = 25) {
+  if (x.length < 2 || x.length !== y.length) return {x, y, anchorIndices: [0]};
+  const denseX = [];
+  const denseY = [];
+  const anchorIndices = [0];
+
+  for (let seg = 0; seg < x.length - 1; seg++) {
+    for (let i = 0; i < pointsPerSegment; i++) {
+      if (seg > 0 && i === 0) continue; // avoid duplicate join point
+      const t = i / (pointsPerSegment - 1);
+      denseX.push(x[seg] + (x[seg + 1] - x[seg]) * t);
+      denseY.push(y[seg] + (y[seg + 1] - y[seg]) * t);
+    }
+    anchorIndices.push(denseX.length - 1);
+  }
+
+  return {x: denseX, y: denseY, anchorIndices};
+}
+
+function renderChart() {
+  const traces = [];
+  skuMeta.forEach((sku, idx) => {
+    const nowRate = model.find((r) => r.name === "Now").rates[sku.key];
+    const rows = model.map(r => ({
+      process: r.name,
+      rate: r.rates[sku.key],
+      cpu: totalCost(r) / Math.max(r.rates[sku.key], 0.0001)
+    })).sort((a,b) => a.rate - b.rate);
+
+    const x = rows.map(r => r.rate);
+    const y = rows.map(r => r.cpu);
+    const dense = densifyLine(x, y, 25);
+    const densePctFromNow = dense.x.map((rate) => {
+      const pct = ((rate - nowRate) / Math.max(nowRate, 0.0001)) * 100;
+      return Math.round(pct);
+    });
+    const ext = piecewiseExtensions(x, y);
+    const markerSizes = dense.x.map(() => 0);
+    const labels = dense.x.map(() => "");
+    dense.anchorIndices.forEach((pointIdx, rowIdx) => {
+      markerSizes[pointIdx] = 9;
+      labels[pointIdx] = rows[rowIdx].process;
+    });
+
+    traces.push({
+      x: dense.x, y: dense.y,
+      mode: "lines+markers+text",
+      name: "☑ " + sku.label,
+      legendgroup: sku.label,
+      text: labels,
+      textposition: "top center",
+      hovertemplate: "<b>"+sku.label+" (Automation Improvement %{customdata:+d}%)</b><br>(X, Y): (%{x:,.2f}, %{y:,.4f})<br>Rate Unit: "+sku.rateUnit+"<extra></extra>",
+      customdata: densePctFromNow,
+      hoverlabel: {bgcolor: colors[idx], bordercolor: colors[idx], font: {color: "#ffffff"}},
+      line: {width: 3, color: colors[idx]},
+      marker: {size: markerSizes, color: colors[idx]}
+    });
+
+    traces.push({
+      x: ext.lowX, y: ext.lowY, mode: "lines", showlegend: false, hoverinfo: "skip", legendgroup: sku.label,
+      line: {width: 2, dash: "dot", color: colors[idx]}
+    });
+
+    traces.push({
+      x: ext.highX, y: ext.highY, mode: "lines", showlegend: false, hoverinfo: "skip", legendgroup: sku.label,
+      line: {width: 2, dash: "dot", color: colors[idx]}
+    });
+  });
+
+  Plotly.newPlot("chart", traces, getChartLayout(), {responsive: true, displaylogo: false});
+}
+
+function renderKPIs() {
+  const summaries = model.map(r => {
+    const cost = totalCost(r);
+    const cpuAvg = skuMeta.reduce((s, sku) => s + cost / Math.max(r.rates[sku.key], 0.0001), 0) / skuMeta.length;
+    const throughput = skuMeta.reduce((s, sku) => s + r.rates[sku.key], 0);
+    return {name: r.name, cpuAvg, throughput};
+  });
+
+  const lowestCost = [...summaries].sort((a,b) => a.cpuAvg - b.cpuAvg)[0];
+  const highestThroughput = [...summaries].sort((a,b) => b.throughput - a.throughput)[0];
+  const byName = Object.fromEntries(summaries.map(s => [s.name, s]));
+  const now = byName["Now"];
+  const semi = byName["Semi-Auto"];
+  const fully = byName["Fully Semi-Auto"];
+
+  const pct = (from, to) => ((to - from) / Math.max(from, 0.0001)) * 100;
+  const fmtPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}%`;
+
+  const nowSemiRate = pct(now.throughput, semi.throughput);
+  const nowSemiCost = pct(now.cpuAvg, semi.cpuAvg);
+  const semiFullyRate = pct(semi.throughput, fully.throughput);
+  const semiFullyCost = pct(semi.cpuAvg, fully.cpuAvg);
+
+  document.getElementById("lowestCostSystem").textContent = lowestCost.name;
+  document.getElementById("lowestCostValue").textContent = `${lowestCost.cpuAvg.toFixed(3)} $/Unit`;
+  document.getElementById("highestThroughputSystem").textContent = highestThroughput.name;
+  document.getElementById("highestThroughputValue").textContent = `${highestThroughput.throughput.toFixed(0)} Units/Hour`;
+  document.getElementById("automationSummary").textContent = `${fmtPct(nowSemiRate)} / ${fmtPct(semiFullyRate)}`;
+  document.getElementById("automationDetail").textContent = "Rate uplift: Now→Semi / Semi→Fully";
+  document.getElementById("impRateNowSemi").textContent = fmtPct(nowSemiRate);
+  document.getElementById("impCostNowSemi").textContent = fmtPct(nowSemiCost);
+  document.getElementById("impRateSemiFully").textContent = fmtPct(semiFullyRate);
+  document.getElementById("impCostSemiFully").textContent = fmtPct(semiFullyCost);
+}
+
+function renderSkuSummaryTable(valid = true) {
+  const body = document.getElementById("skuSummaryBody");
+  body.innerHTML = "";
+  skuMeta.forEach((sku) => {
+    const tr = document.createElement("tr");
+    if (!valid) {
+      tr.innerHTML = `<td>${sku.label}</td><td>—</td><td>—</td><td>—</td><td>—</td>`;
+      body.appendChild(tr);
+      return;
+    }
+
+    const candidates = model.map((row) => {
+      const rate = row.rates[sku.key];
+      return {
+        name: row.name,
+        rate,
+        cpu: totalCost(row) / Math.max(rate, 0.0001)
+      };
+    });
+
+    const lowestCost = [...candidates].sort((a, b) => (a.cpu - b.cpu) || (b.rate - a.rate))[0];
+    const bestRate = [...candidates].sort((a, b) => (b.rate - a.rate) || (a.cpu - b.cpu))[0];
+    const nowRow = candidates.find((c) => c.name === "Now");
+    const fullyRow = candidates.find((c) => c.name === "Fully Semi-Auto");
+    const autoImprovement = ((fullyRow.rate - nowRow.rate) / Math.max(nowRow.rate, 0.0001)) * 100;
+    tr.innerHTML = `
+      <td>${sku.label}</td>
+      <td>${lowestCost.name}</td>
+      <td>${bestRate.rate.toFixed(2)} ${sku.rateUnit}</td>
+      <td>${lowestCost.cpu.toFixed(4)}</td>
+      <td>${autoImprovement >= 0 ? "+" : ""}${autoImprovement.toFixed(0)}%</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderAll() {
+  const validation = validateInputs();
+  applyValidationStyles(validation.invalidIds);
+  showValidationWarning(validation.issues);
+  if (!validation.valid) {
+    renderInvalidState();
+    return;
+  }
+  renderChart();
+  renderKPIs();
+  renderSkuSummaryTable(true);
+}
+
+function resetDefaults() {
+  model = cloneDefaults();
+  buildInputs();
+  updateTotals();
+  renderAll();
+}
+
+buildInputs();
+updateTotals();
+renderAll();
+toggleInputsCard(false);
+</script>
+</body>
+</html>

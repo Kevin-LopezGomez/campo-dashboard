@@ -846,6 +846,7 @@
     <div class="tabs" id="tabsTeam" aria-label="Team Tools">
       <button class="tab" data-target="p-board-inventory">🧮 <span data-i18n="tab.board-inventory">Board Inventory</span></button>
       <button class="tab" data-target="p-pack-team-performance">📦 <span data-i18n="tab.pack-team-performance">Pack Team Performance</span></button>
+      <button class="tab" data-target="p-facility-ramp">🏗️ <span data-i18n="tab.facility-ramp">Facility Ramp Tracker</span></button>
     </div>
     <div class="tabs" id="tabsGrowing" aria-label="Growing Dashboards">
       <button class="tab" data-target="p-expcal">🌿 <span data-i18n="tab.expcal">Experiment Calendar</span></button>
@@ -950,6 +951,7 @@
                 <div class="cat-grid" id="homeTeam" style="display:none;">
                   <button class="tile" data-home-go="p-board-inventory"><div class="ico">🧮</div><div class="name" data-i18n="tile.board-inventory.name">Board Inventory</div><div class="meta" data-i18n="tile.board-inventory.meta">Current board counts</div></button>
                   <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
+                  <button class="tile" data-home-go="p-facility-ramp"><div class="ico">🏗️</div><div class="name" data-i18n="tile.facility-ramp.name">Facility Ramp Tracker</div><div class="meta" data-i18n="tile.facility-ramp.meta">Facility ramp milestones and readiness</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeGrowing" style="display:none;">
@@ -1158,6 +1160,18 @@
         </div>
       </section>
 
+      <section class="panel" id="p-facility-ramp" data-team="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Facility Ramp Tracker</h2>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="facility-ramp"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-facility-ramp" data-file-key="facility-ramp"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-mulders" data-growing="true">
         <div class="section-head">
           <div class="head-left">
@@ -1287,6 +1301,7 @@
       <div class="launcher-grid" id="cat-team" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-board-inventory"><div class="app-ico">🧮</div><div class="app-name" data-i18n="tile.board-inventory.name">Board Inventory</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-pack-team-performance"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-facility-ramp"><div class="app-ico">🏗️</div><div class="app-name" data-i18n="tile.facility-ramp.name">Facility Ramp Tracker</div></button>
       </div>
 
       <div class="launcher-grid" id="cat-growing" style="display:none;">
@@ -1357,6 +1372,7 @@
         "tab.board-inventory":"Board Inventory",
         "tab.proc-open-orders":"Open Orders",
         "tab.pack-team-performance":"Pack Team Performance",
+        "tab.facility-ramp":"Facility Ramp Tracker",
         "tab.expcal":"Experiment Calendar",
         "tab.mulders":"Mulders Chart",
         "tab.foodsafety":"Food Safety",
@@ -1377,6 +1393,8 @@
           "tile.proc-open-orders.meta":"Purchasing workflow",
           "tile.pack-team-performance.name":"Pack Team Performance",
           "tile.pack-team-performance.meta":"Employee performance",
+          "tile.facility-ramp.name":"Facility Ramp Tracker",
+          "tile.facility-ramp.meta":"Facility ramp milestones and readiness",
           "tile.mulders.name":"Mulders Chart",
           "tile.mulders.meta":"Growing performance chart",
           "tile.foodsafety.name":"Batch Traceability",
@@ -1472,6 +1490,7 @@
         "tab.board-inventory":"Inventario de tablas",
         "tab.proc-open-orders":"Órdenes abiertas",
         "tab.pack-team-performance":"Rendimiento del equipo de empaque",
+        "tab.facility-ramp":"Seguimiento de rampa de facilidades",
         "tab.expcal":"Calendario de experimentos",
         "tab.mulders":"Gráfico Mulders",
         "tab.foodsafety":"Inocuidad alimentaria",
@@ -1492,6 +1511,8 @@
           "tile.proc-open-orders.meta":"Flujo de compras",
           "tile.pack-team-performance.name":"Rendimiento del equipo de empaque",
           "tile.pack-team-performance.meta":"Rendimiento de empleados",
+          "tile.facility-ramp.name":"Seguimiento de rampa de facilidades",
+          "tile.facility-ramp.meta":"Hitos de rampa de facilidades y preparación",
           "tile.mulders.name":"Grafico Mulders",
           "tile.mulders.meta":"Grafico de rendimiento de cultivo",
           "tile.foodsafety.name":"Trazabilidad de lotes",
@@ -1560,6 +1581,7 @@
         mulders: "04.3 Team - Mulders Chart.html",
         "board-inventory": "04.2 Team - Board Inventory.html",
         "pack-team-performance": "03.1 Leadership - Pack Team Employee Performance.html",
+        "facility-ramp": "3.2 Facility Ramp Tracker.html",
         "hr-attendances": "HR - Attendances.html"
       };
 
@@ -1714,7 +1736,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-proc-open-orders",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-open-orders",
         "ifr-sales-tracking","ifr-store-visits","ifr-hr-attendances"
       ];
 

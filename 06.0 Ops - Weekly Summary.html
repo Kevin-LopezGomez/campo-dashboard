@@ -311,6 +311,8 @@
     tbody tr:nth-child(odd) td{ background: rgba(15,23,42,.78); }
     tbody tr:nth-child(even) td{ background: rgba(17,24,39,.92); }
     tbody tr:hover td{ background: rgba(30,41,59,.95); }
+    tbody tr.metric-row{ cursor:pointer; }
+    tbody tr.metric-row:hover td{ background: rgba(37,99,235,.18); }
     tr.system-output-row td{
       background: var(--system-output-row-bg, rgba(17,24,39,.92)) !important;
     }
@@ -334,6 +336,15 @@
     .pill.warn{ border-color: rgba(251,146,60,.7); color:#fed7aa; background: rgba(251,146,60,.12); }
     .pill.bad{ border-color: rgba(248,113,113,.75); color:#fecaca; background: rgba(239,68,68,.12); }
     .pill.muted{ border-color: rgba(148,163,184,.35); color: rgba(209,213,219,.9); background: rgba(148,163,184,.06); }
+    .missed-count{
+      font-weight:900;
+      letter-spacing:.01em;
+      opacity:1;
+      text-shadow: 0 0 0 transparent;
+    }
+    .missed-count.pos{ color:#22c55e; }
+    .missed-count.neg{ color:#ef4444; }
+    .missed-count.zero{ color:#f8fafc; }
 
     .hint{
       margin-top:10px;
@@ -352,6 +363,118 @@
       color:var(--sub);
       display:none;
       white-space:pre-wrap;
+    }
+
+    .trend-modal-back{
+      position:fixed;
+      inset:0;
+      background: rgba(2,6,23,.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:90;
+      padding:16px;
+    }
+    .trend-modal-back.open{ display:flex; }
+    .trend-modal{
+      width:min(920px, 96vw);
+      border-radius:16px;
+      border:1px solid rgba(71,85,105,.85);
+      background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(2,6,23,.98));
+      box-shadow: 0 24px 60px rgba(0,0,0,.65);
+      overflow:hidden;
+    }
+    .trend-modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(71,85,105,.65);
+    }
+    .trend-modal-title{
+      font-size:1rem;
+      font-weight:700;
+      color:#f8fafc;
+      margin:0;
+    }
+    .trend-modal-sub{
+      margin-top:4px;
+      font-size:.82rem;
+      color:#94a3b8;
+    }
+    .trend-close{
+      width:30px;
+      height:30px;
+      border-radius:999px;
+      border:1px solid rgba(100,116,139,.75);
+      background: rgba(2,6,23,.45);
+      color:#e2e8f0;
+      cursor:pointer;
+      font-size:1rem;
+      line-height:1;
+    }
+    .trend-nav{
+      width:30px;
+      height:30px;
+      border-radius:999px;
+      border:1px solid rgba(100,116,139,.75);
+      background: rgba(2,6,23,.45);
+      color:#e2e8f0;
+      cursor:pointer;
+      font-size:1rem;
+      line-height:1;
+    }
+    .trend-nav:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+    .trend-modal-body{ padding:12px 14px 14px; }
+    .trend-chart-host{
+      border:1px solid rgba(71,85,105,.6);
+      border-radius:12px;
+      background: rgba(2,6,23,.5);
+      padding:10px;
+      min-height:320px;
+      position:relative;
+    }
+    .trend-chart-title{
+      margin: 2px 0 8px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .trend-point-tip{
+      position:absolute;
+      display:none;
+      pointer-events:none;
+      z-index:2;
+      transform: translate(-50%, calc(-100% - 10px));
+      border:1px solid rgba(100,116,139,.75);
+      background: rgba(2,6,23,.95);
+      color:#e2e8f0;
+      border-radius:8px;
+      padding:6px 8px;
+      font-size:.76rem;
+      white-space:nowrap;
+      box-shadow: 0 10px 26px rgba(0,0,0,.45);
+    }
+    .trend-dot{ cursor:pointer; }
+    .trend-empty{
+      min-height:290px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#94a3b8;
+      font-size:.9rem;
+    }
+    .trend-note{
+      margin-top:8px;
+      font-size:.78rem;
+      color:#94a3b8;
     }
   </style>
 </head>
@@ -462,6 +585,7 @@
                   <th>TARGET</th>
                   <th>% Completed</th>
                   <th>% Missed</th>
+                  <th># Missed</th>
                 </tr>
               </thead>
               <tbody id="tbody"></tbody>
@@ -472,6 +596,19 @@
         <div id="hint" class="hint"></div>
         <div id="debug" class="debug"></div>
       </section>
+    </div>
+  </div>
+
+  <div class="trend-modal-back" id="trendModalBack" aria-hidden="true">
+    <div class="trend-modal" role="dialog" aria-modal="true" aria-label="Missed trend chart">
+      <div class="trend-modal-head">
+        <button class="trend-nav" id="trendPrev" type="button" aria-label="Previous chart">←</button>
+        <button class="trend-nav" id="trendNext" type="button" aria-label="Next chart">→</button>
+        <button class="trend-close" id="trendModalClose" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="trend-modal-body">
+        <div class="trend-chart-host" id="trendChartHost"></div>
+      </div>
     </div>
   </div>
 
@@ -797,6 +934,14 @@
       return String(weekNum);
     }
 
+    function getISOWeekYearFromDate(date){
+      if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      return d.getUTCFullYear();
+    }
+
     function getCurrentISOWeek(){
       return getISOWeekFromDate(new Date());
     }
@@ -1017,6 +1162,59 @@
       const arr = Array.from(weeks);
       arr.sort((a,b) => (parseFloat(a) - parseFloat(b)));
       return arr;
+    }
+
+    function collectWeekYears(growRows, packRows){
+      const scores = new Map(); // week -> (year -> count)
+      const add = (weekVal, dateVal) => {
+        const week = weekNumFromCell(weekVal);
+        const d = parseAnyDate(dateVal);
+        const year = getISOWeekYearFromDate(d);
+        if (!week || !Number.isFinite(year)) return;
+        if (!scores.has(week)) scores.set(week, new Map());
+        const bucket = scores.get(week);
+        bucket.set(year, (bucket.get(year) || 0) + 1);
+      };
+
+      for (const r of (growRows||[])){
+        add(r[H.SEED_WEEK], r[H.SEED_DATE]);
+        add(r[H.TRANS_WEEK], r[H.TRANS_DATE] ?? r[H.DATE]);
+        add(r[H.HARV_WEEK], r[H.DATE]);
+        add(r[H.SAN_WEEK], r[H.SAN_DATE]);
+      }
+      for (const r of (packRows||[])){
+        add(r[H.PACK_WEEK], r[H.DATE] ?? r["Date"] ?? r["Pack Date"] ?? r["Ship Date"] ?? getShippingDateValue(r));
+      }
+
+      const out = {};
+      for (const [week, years] of scores.entries()){
+        let bestYear = null;
+        let bestCount = -1;
+        for (const [year, count] of years.entries()){
+          if (count > bestCount){
+            bestYear = year;
+            bestCount = count;
+          }
+        }
+        if (Number.isFinite(bestYear)) out[week] = bestYear;
+      }
+      return normalizeWeekYearRollover(out);
+    }
+
+    function normalizeWeekYearRollover(weekYears){
+      const out = { ...(weekYears || {}) };
+      for (let wk = 53; wk <= 60; wk++){
+        const curKey = String(wk);
+        const prevKey = String(wk - 1);
+        const curYear = Number(out[curKey]);
+        const prevYear = Number(out[prevKey]);
+        // Business-week rollover rule:
+        // if late-week bucket (53+) is inferred into next year, keep it with prior week's year.
+        if (Number.isFinite(curYear) && Number.isFinite(prevYear) && curYear > prevYear){
+          out[curKey] = prevYear;
+        }
+      }
+      return out;
     }
 
     // =========================================================
@@ -1548,6 +1746,13 @@
 
     function fmtInt(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:0}); }
     function fmt1(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:1}); }
+    function escapeAttr(s){
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
 
     function pctClass(p){
       if (!Number.isFinite(p)) return "muted";
@@ -1568,6 +1773,28 @@
       const missed = Math.max(0, 100 - p);
       const cls = missed === 0 ? "good" : (missed <= 10 ? "warn" : "bad");
       return `<span class="pill ${cls}">${missed.toFixed(0)}%</span>`;
+    }
+
+    function parseDisplayNumber(v){
+      const s = String(v ?? "").trim();
+      if (!s || s === "—") return NaN;
+      const cleaned = s.replaceAll(",", "").replace(/%$/, "");
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function missedCountDisplay(completed, target){
+      const cs = String(completed ?? "").trim();
+      const ts = String(target ?? "").trim();
+      const c = parseDisplayNumber(cs);
+      const t = parseDisplayNumber(ts);
+      if (!Number.isFinite(c) || !Number.isFinite(t)) return "—";
+      const diff = c - t;
+      const isPct = cs.includes("%") || ts.includes("%");
+      const cls = diff > 0 ? "pos" : (diff < 0 ? "neg" : "zero");
+      const sign = diff > 0 ? "+" : "";
+      const txt = isPct ? `${sign}${diff.toFixed(1)}%` : `${sign}${Math.round(diff).toLocaleString()}`;
+      return `<span class="missed-count ${cls}">${txt}</span>`;
     }
 
     function pctValue(completed, target){
@@ -1613,7 +1840,7 @@
         return;
       }
 
-      safeText("hi-week", (viewMode === "day") ? dayPill : `Week ${summary.wkNum}`);
+      safeText("hi-week", (viewMode === "day") ? dayPill : weekDisplay(summary.wkNum));
       safeText(
         "hi-range",
         `Hours: ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0.00"} • Avg workers: ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0.00"}`
@@ -1621,8 +1848,8 @@
 
       const candidates = [
         { label:"Seeding", pct: pctValue(summary.seeding.completed, summary.seeding.target) },
-        { label:"Transplant (Plugs)", pct: pctValue(summary.transplant.completed, summary.transplant.target) },
-        { label:"Transplant Rate", pct: pctValue(summary.transplantRate.completed, summary.transplantRate.target) },
+        { label:"Transplanted (Plugs)", pct: pctValue(summary.transplant.completed, summary.transplant.target) },
+        { label:"Transplanted Rate", pct: pctValue(summary.transplantRate.completed, summary.transplantRate.target) },
       ].filter(x => Number.isFinite(x.pct));
 
       let best = null, worst = null;
@@ -1724,6 +1951,7 @@
     function renderTable(summary){
       const tbody = $("tbody");
       if (!tbody) return;
+      lastRenderedSummary = summary || null;
       const tableScroll = $("tableScroll");
       if (tableScroll) tableScroll.classList.toggle("expand-for-pack", !!packExpanded);
 
@@ -1733,11 +1961,11 @@
       }
 
       if (summary.empty){
-        const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : `Week ${summary.wkNum}`;
+        const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : weekDisplay(summary.wkNum);
         tbody.innerHTML = `
           <tr>
             <td class="row-label">No data for ${periodLabel}</td>
-            <td>—</td><td>—</td><td>—</td><td><span class="pill muted">—</span></td><td><span class="pill muted">—</span></td>
+            <td>—</td><td>—</td><td>—</td><td><span class="pill muted">—</span></td><td><span class="pill muted">—</span></td><td>—</td>
           </tr>
         `;
         return;
@@ -1748,6 +1976,8 @@
 
       pushIfMeaningful({
         label:"Seeding",
+        metricLabel:"Seeding",
+        metricKey:"seeding",
         completed: fmtInt(summary.seeding.completed),
         target: fmtInt(summary.seeding.target),
         units: summary.seeding.unit,
@@ -1756,7 +1986,9 @@
       }, (summary.counts.seed > 0) || (summary.seeding.completed !== 0) || (summary.seeding.target !== 0));
 
       pushIfMeaningful({
-        label:"Transplant - Boards",
+        label:"Transplanted - Boards",
+        metricLabel:"Transplanted - Boards",
+        metricKey:"transplant_boards",
         completed: fmtInt(summary.aux?.boardsTrans ?? 0),
         target: fmtInt(summary.aux?.boardsExpected ?? 0),
         units: "Boards",
@@ -1765,7 +1997,9 @@
       }, (summary.counts.trans > 0) || ((summary.aux?.boardsTrans ?? 0) !== 0) || ((summary.aux?.boardsExpected ?? 0) !== 0));
 
       pushIfMeaningful({
-        label:"Transplant - Plugs",
+        label:"Transplanted - Plugs",
+        metricLabel:"Transplanted - Plugs",
+        metricKey:"transplant_plugs",
         completed: fmtInt(summary.transplant.completed),
         target: fmtInt(summary.transplant.target),
         units: summary.transplant.unit,
@@ -1775,7 +2009,9 @@
 
       const harvestTarget = Number.isFinite(summary.harvestTargetBoards) ? summary.harvestTargetBoards : 0;
       pushIfMeaningful({
-        label:"Harvest",
+        label:"Harvested",
+        metricLabel:"Harvested",
+        metricKey:"harvest",
         completed: fmtInt(summary.harvestBoards),
         target: Number.isFinite(summary.harvestTargetBoards) ? fmtInt(summary.harvestTargetBoards) : "—",
         units:"Boards",
@@ -1792,7 +2028,9 @@
       const harvestForecastTarget = Number.isFinite(summary.harvestForecastTarget) ? summary.harvestForecastTarget : 0;
 
       pushIfMeaningful({
-        label:"Harvest - Forecast",
+        label:"Harvested - Forecast",
+        metricLabel:"Harvested - Forecast",
+        metricKey:"harvest_forecast",
         completed: Number.isFinite(harvestPotentialTarget) ? fmtInt(harvestPotentialTarget) : "—",
         target: harvestForecastTarget > 0 ? fmtInt(harvestForecastTarget) : "—",
         units:"Lbs",
@@ -1801,7 +2039,9 @@
       }, (summary.counts.harv > 0) || (Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget !== 0) || harvestForecastTarget !== 0);
 
       pushIfMeaningful({
-        label:`<span title="Completed excludes waste; target includes waste.">Harvest - Potential</span>`,
+        label:`<span title="Completed excludes waste; target includes waste.">Harvested - Potential</span>`,
+        metricLabel:"Harvested - Potential",
+        metricKey:"harvest_potential",
         completed: fmtInt(summary.harvestCut),
         target: Number.isFinite(harvestPotentialTarget) ? fmtInt(harvestPotentialTarget) : "—",
         units:"Lbs",
@@ -1809,11 +2049,19 @@
         missed: missedPill(summary.harvestCut, Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0)
       }, (summary.counts.harv > 0) || summary.harvestCut !== 0 || (Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget !== 0));
 
-      pushIfMeaningful({ label:"Pack - Potential", completed: fmtInt(summary.packAllLbs), target:fmtInt(summary.harvestWithWaste), units:"Lbs", pct:pctPill(summary.packAllLbs, summary.harvestWithWaste), missed:missedPill(summary.packAllLbs, summary.harvestWithWaste) },
-        (summary.counts.harv > 0) || summary.packAllLbs !== 0);
+      pushIfMeaningful({
+        label:"Pack Potential After QC",
+        completed: "—",
+        target: fmtInt(summary.harvestCut),
+        units:"Lbs",
+        pct: `<span class="pill muted">—</span>`,
+        missed: `<span class="pill muted">—</span>`
+      }, (summary.counts.pack > 0) || summary.packAllLbs !== 0);
 
       pushIfMeaningful({
         label:`<button type="button" class="pill muted" onclick="togglePackExpanded()" aria-expanded="${packExpanded ? "true" : "false"}">${packExpanded ? "▾" : "▸"} Pack - All</button>`,
+        metricLabel:"Pack - All",
+        metricKey:"pack_all",
         completed: fmtInt(summary.packAllLbs),
         target:fmtInt(summary.harvestCut),
         units:"Lbs",
@@ -1876,17 +2124,17 @@
       const harvestPotentialPct = Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget > 0
         ? (summary.harvestCut / harvestPotentialTarget)
         : NaN;
-      const packPotentialPct = (summary.harvestWithWaste > 0)
-        ? (summary.packAllLbs / summary.harvestWithWaste)
+      const packAllPct = (summary.harvestCut > 0)
+        ? (summary.packAllLbs / summary.harvestCut)
         : NaN;
-      // Multiply all % Completed rows through Pack - Potential,
-      // explicitly excluding Transplant - Plugs and rows with no target.
+      // Multiply all % Completed rows through Pack - All,
+      // explicitly excluding Transplanted - Plugs and rows with no target.
       const chainParts = [
         seedPct,
         transBoardsPct,
         harvestPct,
         harvestPotentialPct,
-        packPotentialPct
+        packAllPct
       ].filter(Number.isFinite);
       const systemOutputRatio = chainParts.length
         ? chainParts.reduce((acc, v) => acc * v, 1)
@@ -1894,7 +2142,9 @@
       const systemOutputPct = Number.isFinite(systemOutputRatio) ? (systemOutputRatio * 100) : NaN;
 
       pushIfMeaningful({
-        label:`<span title="Formula: Seeding % × Transplant-Boards % × Harvest % × Harvest-Potential % × Pack-Potential % (excludes Transplant-Plugs and Pack-All)">System Output (Seed → Pack)</span>`,
+        label:`<span title="Formula: Seeding % × Transplanted-Boards % × Harvested % × Harvested-Potential % × Pack-All % (excludes Transplanted-Plugs)">System Output (Seed → Pack)</span>`,
+        metricLabel:"System Output (Seed → Pack)",
+        metricKey:"system_output",
         completed: Number.isFinite(systemOutputPct) ? `${systemOutputPct.toFixed(1)}%` : "—",
         target:"100%",
         units:"%",
@@ -1906,6 +2156,8 @@
 
       pushIfMeaningful({
         label:"Shipped",
+        metricLabel:"Shipped",
+        metricKey:"shipped",
         completed: fmtInt(summary.ship?.sales ?? 0),
         target: fmtInt(summary.salesShipLbs),
         units:"Lbs",
@@ -1914,25 +2166,33 @@
       }, (summary.ship?.sales ?? 0) !== 0 || summary.salesShipLbs !== 0 || ((summary.aux?.shipRowsSelectedCount ?? summary.aux?.shipRowsByGrowWeekCount ?? 0) > 0) || ((summary.aux?.salesRowsSelectedCount ?? summary.aux?.salesRowsByShipWeekCount ?? 0) > 0));
 
       if (!rows.length){
-        const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : `Week ${summary.wkNum}`;
+        const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : weekDisplay(summary.wkNum);
         rows.push({
           label:periodLabel,
           completed:"—",
           target:"—",
           units:"—",
           pct:`<span class="pill muted">—</span>`,
-          missed:`<span class="pill muted">—</span>`
+          missed:`<span class="pill muted">—</span>`,
+          missedCount:"—"
         });
       }
 
+      for (const r of rows){
+        if (r.missedCount === undefined){
+          r.missedCount = missedCountDisplay(r.completed, r.target);
+        }
+      }
+
       tbody.innerHTML = rows.map(r => `
-        <tr class="${r.rowClass || ""}" style="${r.rowStyle || ""}">
+        <tr class="${r.rowClass || ""} ${r.metricKey ? "metric-row" : ""}" style="${r.rowStyle || ""}" ${r.metricKey ? `data-metric-key="${escapeAttr(r.metricKey)}" data-metric-label="${escapeAttr(r.metricLabel || "")}"` : ""}>
           <td class="row-label">${r.label}</td>
           <td>${r.units}</td>
           <td>${r.completed}</td>
           <td>${r.target}</td>
           <td>${r.pct}</td>
           <td>${r.missed}</td>
+          <td>${r.missedCount}</td>
         </tr>
       `).join("");
     }
@@ -1960,10 +2220,346 @@
     let GROW_ROWS = [];
     let PACK_ROWS = [];
     let WEEKS = [];
+    let WEEK_YEARS = {};
+    let DEFAULT_WEEK_YEAR = new Date().getFullYear();
     let selectedWeek = "";
     let viewMode = "week";
     let selectedDateISO = "";
     let packExpanded = false;
+    let lastRenderedSummary = null;
+    let activeTrendMetricKey = "";
+    let activeTrendMetricLabel = "";
+
+    function missedValue(completed, target){
+      if (!(target > 0)) return NaN;
+      const p = (completed / target) * 100;
+      return Math.max(0, 100 - p);
+    }
+
+    function computeHarvestPotentialTarget(summary){
+      const harvestLbPerBoard = (summary.harvestBoards > 0) ? (summary.harvestWithWaste / summary.harvestBoards) : NaN;
+      if (!(Number.isFinite(harvestLbPerBoard) && Number.isFinite(summary.harvestTargetBoards) && summary.harvestTargetBoards > 0)) return NaN;
+      return harvestLbPerBoard * summary.harvestTargetBoards;
+    }
+
+    function computeSystemOutputPercent(summary){
+      const harvestPotentialTarget = computeHarvestPotentialTarget(summary);
+      const seedPct = (summary.seeding?.target > 0) ? (summary.seeding.completed / summary.seeding.target) : NaN;
+      const transBoardsPct = ((summary.aux?.boardsExpected ?? 0) > 0)
+        ? ((summary.aux?.boardsTrans ?? 0) / (summary.aux?.boardsExpected ?? 0))
+        : NaN;
+      const harvestPct = (summary.harvestTargetBoards > 0) ? (summary.harvestBoards / summary.harvestTargetBoards) : NaN;
+      const harvestPotentialPct = Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget > 0
+        ? (summary.harvestCut / harvestPotentialTarget)
+        : NaN;
+      const packAllPct = (summary.harvestCut > 0) ? (summary.packAllLbs / summary.harvestCut) : NaN;
+      const chainParts = [seedPct, transBoardsPct, harvestPct, harvestPotentialPct, packAllPct].filter(Number.isFinite);
+      if (!chainParts.length) return NaN;
+      return chainParts.reduce((acc, v) => acc * v, 1) * 100;
+    }
+
+    function metricMissedPercent(metricKey, summary){
+      const harvestPotentialTarget = computeHarvestPotentialTarget(summary);
+      const harvestForecastTarget = Number.isFinite(summary.harvestForecastTarget) ? summary.harvestForecastTarget : 0;
+      switch (metricKey){
+        case "seeding": return missedValue(summary.seeding.completed, summary.seeding.target);
+        case "transplant_boards": return missedValue(summary.aux?.boardsTrans ?? 0, summary.aux?.boardsExpected ?? 0);
+        case "transplant_plugs": return missedValue(summary.transplant.completed, summary.transplant.target);
+        case "harvest": return missedValue(summary.harvestBoards, Number.isFinite(summary.harvestTargetBoards) ? summary.harvestTargetBoards : 0);
+        case "harvest_forecast": return missedValue(Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0, harvestForecastTarget);
+        case "harvest_potential": return missedValue(summary.harvestCut, Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0);
+        case "pack_all": return missedValue(summary.packAllLbs, summary.harvestCut);
+        case "pack_potential_after_qc": return missedValue(summary.packAllLbs, summary.harvestCut);
+        case "system_output": return missedValue(computeSystemOutputPercent(summary), 100);
+        case "shipped": return missedValue(summary.ship?.sales ?? 0, summary.salesShipLbs);
+        default: return NaN;
+      }
+    }
+
+    function buildMissedSeries(metricKey, uptoWeek){
+      const wLimitRaw = weekNumFromCell(uptoWeek);
+      const wLimit = Number(wLimitRaw);
+      if (!Number.isFinite(wLimit)) return [];
+      const limitKey = weekOrderKey(wLimitRaw);
+      const weeks = getWeekOptions()
+        .map(w => weekNumFromCell(w))
+        .filter(Boolean)
+        .filter(w => weekOrderKey(w) <= limitKey)
+        .sort((a,b) => weekOrderKey(a) - weekOrderKey(b))
+        .map(w => Number(w))
+        .filter(Number.isFinite);
+      const points = [];
+      for (const wk of weeks){
+        const s = computeWeekSummary(String(wk), GROW_ROWS, PACK_ROWS);
+        if (!s || !s.wkNum || s.empty) continue;
+        const missed = metricMissedPercent(metricKey, s);
+        if (!Number.isFinite(missed)) continue;
+        points.push({
+          week: wk,
+          year: Number(weekYearOf(String(wk))),
+          xLabel: `W${wk}`,
+          infoLabel: weekDisplay(String(wk)),
+          missed: Math.max(0, Math.min(100, missed)),
+          sortKey: weekOrderKey(String(wk))
+        });
+      }
+      points.sort((a,b) => a.sortKey - b.sortKey);
+      points.forEach((p, i) => { p.seq = i + 1; });
+      return points;
+    }
+
+    function collectTrendDateISOs(growRows, packRows){
+      const out = new Set();
+      const add = (v) => {
+        const d = parseAnyDate(v);
+        const iso = d ? toISODateStr(d) : "";
+        if (iso) out.add(iso);
+      };
+
+      for (const r of (growRows || [])){
+        add(r[H.DATE]);
+        add(r[H.TRANS_DATE]);
+        add(r[H.SAN_DATE]);
+        add(r[H.SEED_DATE]);
+      }
+      for (const r of (packRows || [])){
+        add(r[H.DATE]);
+        add(r["Date"]);
+        add(r["Pack Date"]);
+        add(r["Ship Date"]);
+        add(getShippingDateValue(r));
+      }
+
+      return Array.from(out).sort();
+    }
+
+    function buildMissedSeriesDaily(metricKey, uptoISO){
+      const limitISO = normalizeDateISO(uptoISO);
+      if (!limitISO) return [];
+      const dayList = collectTrendDateISOs(GROW_ROWS, PACK_ROWS)
+        .filter(iso => iso <= limitISO)
+        .sort();
+
+      const points = [];
+      for (const iso of dayList){
+        const s = computeDaySummary(iso, GROW_ROWS, PACK_ROWS);
+        if (!s || !s.wkNum || s.empty) continue;
+        const missed = metricMissedPercent(metricKey, s);
+        if (!Number.isFinite(missed)) continue;
+        const d = parseISODateLocal(iso);
+        if (!d || isNaN(d.getTime())) continue;
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        points.push({
+          dayISO: iso,
+          year: d.getFullYear(),
+          xLabel: `${mm}/${dd}`,
+          infoLabel: formatDayPill(d),
+          missed: Math.max(0, Math.min(100, missed)),
+        });
+      }
+      points.forEach((p, i) => { p.seq = i + 1; });
+      return points;
+    }
+
+    function renderMissedTrendChart(points, metricLabel){
+      const host = $("trendChartHost");
+      if (!host) return;
+      if (!points.length){
+        host.innerHTML = `
+          <div class="trend-chart-title">${escapeAttr(metricLabel || "Metric")}</div>
+          <div class="trend-empty">No valid history for this metric up to the selected week.</div>
+        `;
+        return;
+      }
+
+      const W = 860, H = 340;
+      const M = { l:84, r:18, t:14, b:82 };
+      const innerW = W - M.l - M.r;
+      const innerH = H - M.t - M.b;
+      const minSeq = Math.min(...points.map(p => p.seq));
+      const maxSeq = Math.max(...points.map(p => p.seq));
+      const minV = Math.min(...points.map(p => p.missed));
+      const maxV = Math.max(...points.map(p => p.missed));
+
+      const boundedPad = (value, pct, zeroPad, minPad, maxPad) => {
+        if (value === 0) return zeroPad;
+        const raw = Math.abs(value) * pct;
+        return Math.max(minPad, Math.min(maxPad, raw));
+      };
+
+      // X-axis (week): keep padding visible but prevent huge blank regions on larger week numbers.
+      const minWPad = boundedPad(minSeq, 0.10, 5, 0.5, 3);
+      const maxWPad = boundedPad(maxSeq, 0.10, 5, 0.5, 3);
+      const xMin = minSeq - minWPad;
+      const xMax = maxSeq + maxWPad;
+
+      // Y-axis (% missed): preserve your +/-10% rule, with limits for readability.
+      const minVPad = boundedPad(minV, 0.10, 5, 2, 15);
+      const maxVPad = boundedPad(maxV, 0.10, 5, 2, 15);
+      const yMin = minV - minVPad;
+      const yMax = maxV + maxVPad;
+
+      const xOf = (seq) => M.l + (((seq - xMin) / Math.max(1e-9, xMax - xMin)) * innerW);
+      const yOf = (v) => M.t + ((yMax - v) / Math.max(1e-9, yMax - yMin)) * innerH;
+      const pts = points.map(p => ({ ...p, x: xOf(p.seq), y: yOf(p.missed) }));
+      const pathD = pts.map((p, i) => `${i ? "L" : "M"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+
+      const yTicks = Array.from({ length: 5 }, (_, i) => yMin + ((yMax - yMin) * (i / 4)));
+      const yGrid = yTicks.map(v => {
+        const y = yOf(v).toFixed(2);
+        return `<line x1="${M.l}" y1="${y}" x2="${W-M.r}" y2="${y}" stroke="rgba(56,189,248,.25)" stroke-width="1"/><text x="${M.l-12}" y="${Number(y)+5}" text-anchor="end" font-size="13" font-weight="700" fill="#a7f3d0">${v.toFixed(1)}%</text>`;
+      }).join("");
+
+      const tickStep = Math.max(1, Math.ceil(points.length / 7));
+      const tickIdx = new Set();
+      points.forEach((p, i) => {
+        if (i % tickStep === 0 || i === points.length - 1) tickIdx.add(i);
+        if (viewMode === "week" && (i === 0 || p.year !== points[i - 1].year)) tickIdx.add(i);
+      });
+      const xTicks = Array.from(tickIdx)
+        .sort((a, b) => a - b)
+        .map(i => {
+          const p = points[i];
+          return `<text x="${xOf(p.seq).toFixed(2)}" y="${H-42}" text-anchor="middle" font-size="13" font-weight="700" fill="#a7f3d0">${escapeAttr(p.xLabel || "")}</text>`;
+        })
+        .join("");
+
+      let yearLabels = "";
+      if (viewMode === "week"){
+        const yearRanges = [];
+        for (const p of points){
+          if (!Number.isFinite(p.year)) continue;
+          const prev = yearRanges[yearRanges.length - 1];
+          if (!prev || prev.year !== p.year){
+            yearRanges.push({ year: p.year, seqMin: p.seq, seqMax: p.seq });
+          }else{
+            prev.seqMax = p.seq;
+          }
+        }
+        yearLabels = yearRanges
+          .map(r => {
+            const midSeq = (r.seqMin + r.seqMax) / 2;
+            return `<text x="${xOf(midSeq).toFixed(2)}" y="${H-10}" text-anchor="middle" font-size="13" font-weight="700" fill="#a7f3d0">${r.year}</text>`;
+          })
+          .join("");
+      }
+
+      const circles = pts.map(p => `
+        <circle class="trend-dot" data-info-label="${escapeAttr(String(p.infoLabel || p.xLabel || ""))}" data-missed="${escapeAttr(p.missed.toFixed(1))}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="6" fill="#22c55e" stroke="#0b1220" stroke-width="2.2">
+          <title>${escapeAttr(String(p.infoLabel || p.xLabel || ""))}: ${p.missed.toFixed(1)}% missed</title>
+        </circle>
+      `).join("");
+
+      host.innerHTML = `
+        <div class="trend-chart-title">${escapeAttr(metricLabel || "Metric")}</div>
+        <svg viewBox="0 0 ${W} ${H}" width="100%" height="330" role="img" aria-label="Missed percent trend">
+          <rect x="${M.l}" y="${M.t}" width="${innerW}" height="${innerH}" fill="rgba(2,6,23,.45)" stroke="rgba(100,116,139,.35)" />
+          ${yGrid}
+          <path d="${pathD}" fill="none" stroke="#22c55e" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"></path>
+          ${circles}
+          ${xTicks}
+          ${yearLabels}
+          <text x="${W / 2}" y="${H - 10}" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff">${viewMode === "day" ? "DAY" : "WEEK"}</text>
+          <text x="14" y="${M.t + (innerH/2)}" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff" transform="rotate(-90 14 ${M.t + (innerH/2)})">% MISSED</text>
+        </svg>
+        <div class="trend-point-tip" id="trendPointTip"></div>
+      `;
+
+      const tip = $("trendPointTip");
+      const dots = host.querySelectorAll(".trend-dot");
+      const placeTip = (ev, dot) => {
+        if (!tip) return;
+        const info = dot.getAttribute("data-info-label") || "";
+        const missed = dot.getAttribute("data-missed") || "—";
+        tip.textContent = `${info} • ${missed}% missed`;
+        const rect = host.getBoundingClientRect();
+        tip.style.left = `${ev.clientX - rect.left}px`;
+        tip.style.top = `${ev.clientY - rect.top}px`;
+        tip.style.display = "block";
+      };
+      dots.forEach(dot => {
+        dot.addEventListener("mouseenter", (ev) => placeTip(ev, dot));
+        dot.addEventListener("mousemove", (ev) => placeTip(ev, dot));
+        dot.addEventListener("mouseleave", () => {
+          if (tip) tip.style.display = "none";
+        });
+      });
+    }
+
+    function closeTrendModal(){
+      $("trendModalBack")?.classList.remove("open");
+    }
+
+    function currentTrendMetricRows(){
+      const tbody = $("tbody");
+      if (!tbody) return [];
+      return Array.from(tbody.querySelectorAll("tr.metric-row"))
+        .map(tr => ({ key: tr.dataset.metricKey || "", label: tr.dataset.metricLabel || "" }))
+        .filter(x => x.key);
+    }
+
+    function updateTrendNavButtons(){
+      const items = currentTrendMetricRows();
+      const disabled = items.length <= 1;
+      const prev = $("trendPrev");
+      const next = $("trendNext");
+      if (prev) prev.disabled = disabled;
+      if (next) next.disabled = disabled;
+    }
+
+    function showTrendMetric(metricKey, metricLabel){
+      if (!metricKey) return;
+      activeTrendMetricKey = metricKey;
+      activeTrendMetricLabel = metricLabel || "Metric";
+      let series = [];
+      if (viewMode === "day"){
+        const uptoISO = normalizeDateISO(selectedDateISO);
+        if (!uptoISO) return;
+        series = buildMissedSeriesDaily(metricKey, uptoISO);
+      }else{
+        const wk = weekNumFromCell(lastRenderedSummary?.wkNum || selectedWeek);
+        if (!wk) return;
+        series = buildMissedSeries(metricKey, wk);
+      }
+      renderMissedTrendChart(series, activeTrendMetricLabel);
+      updateTrendNavButtons();
+    }
+
+    function stepTrendMetric(dir){
+      const items = currentTrendMetricRows();
+      if (!items.length) return;
+      let idx = items.findIndex(x => x.key === activeTrendMetricKey);
+      if (idx < 0) idx = 0;
+      idx = (idx + dir + items.length) % items.length;
+      const item = items[idx];
+      showTrendMetric(item.key, item.label);
+    }
+
+    function openTrendModal(metricKey, metricLabel){
+      showTrendMetric(metricKey, metricLabel || "Metric");
+      $("trendModalBack")?.classList.add("open");
+    }
+
+    function weekDisplay(wk){
+      const w = weekNumFromCell(wk);
+      if (!w) return "Week —";
+      const year = WEEK_YEARS[w] || DEFAULT_WEEK_YEAR;
+      return Number.isFinite(year) ? `Week ${w} (${year})` : `Week ${w}`;
+    }
+
+    function weekYearOf(wk){
+      const w = weekNumFromCell(wk);
+      if (!w) return DEFAULT_WEEK_YEAR;
+      return WEEK_YEARS[w] || DEFAULT_WEEK_YEAR;
+    }
+
+    function weekOrderKey(wk){
+      const w = Number(weekNumFromCell(wk));
+      const y = Number(weekYearOf(wk));
+      if (!Number.isFinite(y) || !Number.isFinite(w)) return Number.POSITIVE_INFINITY;
+      return (y * 100) + w;
+    }
 
     function togglePackExpanded(){
       packExpanded = !packExpanded;
@@ -1997,6 +2593,11 @@
       }
 
       WEEKS = collectWeeks(GROW_ROWS, PACK_ROWS);
+      WEEK_YEARS = collectWeekYears(GROW_ROWS, PACK_ROWS);
+      const mostRecentISO = getMostRecentDataDateISO(GROW_ROWS, PACK_ROWS);
+      const mostRecentDate = parseISODateLocal(mostRecentISO);
+      const inferredDefaultYear = getISOWeekYearFromDate(mostRecentDate);
+      DEFAULT_WEEK_YEAR = Number.isFinite(inferredDefaultYear) ? inferredDefaultYear : new Date().getFullYear();
 
       if (selectedWeek && !weekNumFromCell(selectedWeek)) selectedWeek = "";
 
@@ -2017,7 +2618,7 @@
       const current = weekNumFromCell(selectedWeek);
       const currentValid = !!(current && weekOptions.includes(current));
 
-      sel.innerHTML = weekOptions.map(w => `<option value="${String(w)}">Week ${String(w)}</option>`).join("");
+      sel.innerHTML = weekOptions.map(w => `<option value="${String(w)}">${weekDisplay(w)}</option>`).join("");
 
       if (currentValid) {
         selectedWeek = current;
@@ -2049,7 +2650,7 @@
       const weeks = [...WEEKS];
       const defaultWeek = getPreviousISOWeek();
       if (defaultWeek && !weeks.includes(defaultWeek)) weeks.push(defaultWeek);
-      return weeks.sort((a,b) => Number(a) - Number(b));
+      return weeks.sort((a,b) => weekOrderKey(a) - weekOrderKey(b));
     }
 
     function getDefaultWeekSelection(){
@@ -2128,7 +2729,7 @@
 
       const summary = computeWeekSummary(wk, GROW_ROWS, PACK_ROWS);
 
-      if (title) title.textContent = "Week " + wk;
+      if (title) title.textContent = weekDisplay(wk);
 
       renderHighlights(summary);
       renderTable(summary);
@@ -2250,6 +2851,24 @@
         updateViewControls();
         setDefaultDateSelection();
         render();
+      });
+
+      $("tbody")?.addEventListener("click", (ev) => {
+        if (ev.target.closest("button")) return;
+        const tr = ev.target.closest("tr.metric-row");
+        if (!tr) return;
+        openTrendModal(tr.dataset.metricKey || "", tr.dataset.metricLabel || "");
+      });
+      $("trendModalClose")?.addEventListener("click", closeTrendModal);
+      $("trendPrev")?.addEventListener("click", () => stepTrendMetric(-1));
+      $("trendNext")?.addEventListener("click", () => stepTrendMetric(1));
+      $("trendModalBack")?.addEventListener("click", (ev) => {
+        if (ev.target === $("trendModalBack")) closeTrendModal();
+      });
+      document.addEventListener("keydown", (ev) => {
+        if ($("trendModalBack")?.classList.contains("open") && ev.key === "ArrowLeft") stepTrendMetric(-1);
+        if ($("trendModalBack")?.classList.contains("open") && ev.key === "ArrowRight") stepTrendMetric(1);
+        if (ev.key === "Escape") closeTrendModal();
       });
 
       reloadAll();
