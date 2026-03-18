@@ -191,10 +191,14 @@
 
     .labor-availability-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
       margin-top: 8px;
       align-items: start;
+    }
+
+    .labor-availability-group.ops-group {
+      grid-column: 1 / -1;
     }
 
     .labor-availability-group {
@@ -533,6 +537,17 @@
       color: #bbf7d0;
     }
 
+    @media (max-width: 1320px) {
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .production-unified-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .production-unified-grid .stat.stat-labor-wide,
+      .production-unified-grid .stat.stat-compact { min-width: 0; }
+      .labor-availability-group { grid-template-columns: 110px minmax(0, 1fr); }
+      .labor-availability-group .group-fields { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+      #addEditTaskCard .form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      #addEditTaskCard .add-edit-layout { grid-template-columns: minmax(0, 1fr) 200px; }
+    }
+
     @media (max-width: 1100px) {
       .grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -614,7 +629,7 @@
           <div class="collapse-body">
             <div class="small" style="margin: 4px 0 6px;">Set available labor by production subdepartment.</div>
             <div class="labor-availability-grid">
-              <div class="labor-availability-group">
+              <div class="labor-availability-group ops-group">
                 <h4>Operations</h4>
                 <div class="group-fields">
                   <div class="labor-field">
