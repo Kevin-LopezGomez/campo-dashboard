@@ -846,6 +846,8 @@
     <div class="tabs" id="tabsTeam" aria-label="Team Tools">
       <button class="tab" data-target="p-board-inventory">🧮 <span data-i18n="tab.board-inventory">Board Inventory</span></button>
       <button class="tab" data-target="p-pack-team-performance">📦 <span data-i18n="tab.pack-team-performance">Pack Team Performance</span></button>
+    </div>
+    <div class="tabs" id="tabsScheduling" aria-label="Scheduling Dashboards">
       <button class="tab" data-target="p-facility-ramp">🏗️ <span data-i18n="tab.facility-ramp">Facility Ramp Tracker</span></button>
     </div>
     <div class="tabs" id="tabsGrowing" aria-label="Growing Dashboards">
@@ -875,6 +877,11 @@
           <div class="home-body">
             <div class="home-stage">
               <div class="home-grid" id="homeLevel1">
+                <button class="big-card" data-home-open="growing">
+                  <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
+                  <div class="meta" data-i18n="card.growing.meta">Experiment calendar, cultivation timelines, and crop scheduling</div>
+                </button>
+
                 <button class="big-card" data-home-open="ops">
                   <div class="row"><div class="ico">⚙️</div><div class="name" data-i18n="card.ops.title">Operations</div></div>
                   <div class="meta" data-i18n="card.ops.meta">End-to-end operational planning and execution across production, inventory, and fulfillment</div>
@@ -885,19 +892,24 @@
                   <div class="meta" data-i18n="card.sales.meta">Coming soon: Sales performance, forecasting, and customer demand insights</div>
                 </button>
 
-                <button class="big-card" data-home-open="team">
-                  <div class="row"><div class="ico">👥</div><div class="name" data-i18n="card.team.title">Team Tools</div></div>
-                  <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
-                </button>
-
-                <button class="big-card" data-home-open="growing">
-                  <div class="row"><div class="ico">🌿</div><div class="name" data-i18n="card.growing.title">Growing</div></div>
-                  <div class="meta" data-i18n="card.growing.meta">Experiment calendar, cultivation timelines, and crop scheduling</div>
-                </button>
-
                 <button class="big-card" data-home-open="foodsafety">
-                  <div class="row"><div class="ico">🛡️</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
+                  <div class="row"><div class="ico">🛡️ 🧬</div><div class="name" data-i18n="card.foodsafety.title">Food Safety</div></div>
                   <div class="meta" data-i18n="card.foodsafety.meta">Batch traceability across Grow and Pack data</div>
+                </button>
+
+                <button class="big-card" data-home-open="hr">
+                  <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
+                  <div class="meta" data-i18n="card.hr.meta">Attendance tracking, staffing visibility, and people operations tools</div>
+                </button>
+
+                <button class="big-card" data-home-open="procurement">
+                  <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
+                  <div class="meta" data-i18n="card.procurement.meta">Open orders and inventory visibility for purchasing</div>
+                </button>
+
+                <button class="big-card" data-home-open="scheduling">
+                  <div class="row"><div class="ico">🗓️</div><div class="name" data-i18n="card.scheduling.title">Scheduling</div></div>
+                  <div class="meta" data-i18n="card.scheduling.meta">Schedule planning, sequencing, and timeline coordination tools</div>
                 </button>
 
                 <button class="big-card" data-home-open="maintenance" aria-disabled="true">
@@ -910,14 +922,9 @@
                   <div class="meta" data-i18n="card.finances.meta">Coming soon: Financial performance, costs, budgeting, and operational profitability</div>
                 </button>
 
-                <button class="big-card" data-home-open="hr">
-                  <div class="row"><div class="ico">🧑‍🤝‍🧑</div><div class="name" data-i18n="card.hr.title">HR</div></div>
-                  <div class="meta" data-i18n="card.hr.meta">Attendance tracking, staffing visibility, and people operations tools</div>
-                </button>
-
-                <button class="big-card" data-home-open="procurement">
-                  <div class="row"><div class="ico">📦</div><div class="name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div></div>
-                  <div class="meta" data-i18n="card.procurement.meta">Open orders and inventory visibility for purchasing</div>
+                <button class="big-card" data-home-open="team">
+                  <div class="row"><div class="ico">👥</div><div class="name" data-i18n="card.team.title">Team Tools</div></div>
+                  <div class="meta" data-i18n="card.team.meta">Internal tools for scheduling, coordination, and team workflows</div>
                 </button>
 
                 <button class="big-card danger" data-home-go="p-data">
@@ -951,6 +958,9 @@
                 <div class="cat-grid" id="homeTeam" style="display:none;">
                   <button class="tile" data-home-go="p-board-inventory"><div class="ico">🧮</div><div class="name" data-i18n="tile.board-inventory.name">Board Inventory</div><div class="meta" data-i18n="tile.board-inventory.meta">Current board counts</div></button>
                   <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
+                </div>
+
+                <div class="cat-grid" id="homeScheduling" style="display:none;">
                   <button class="tile" data-home-go="p-facility-ramp"><div class="ico">🏗️</div><div class="name" data-i18n="tile.facility-ramp.name">Facility Ramp Tracker</div><div class="meta" data-i18n="tile.facility-ramp.meta">Facility ramp milestones and readiness</div></button>
                 </div>
 
@@ -1160,7 +1170,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-facility-ramp" data-team="true">
+      <section class="panel" id="p-facility-ramp" data-scheduling="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Facility Ramp Tracker</h2>
@@ -1237,6 +1247,10 @@
 
     <div class="screen active" id="screen-home">
       <div class="launcher-grid">
+        <button class="launch-app" data-action="open-category" data-category="growing">
+          <div class="app-ico">🌿</div>
+          <div class="app-name" data-i18n="card.growing.title">Growing</div>
+        </button>
         <button class="launch-app" data-action="open-category" data-category="ops">
           <div class="app-ico">⚙️</div>
           <div class="app-name" data-i18n="card.ops.title">Operations</div>
@@ -1245,30 +1259,21 @@
           <div class="app-ico">📈</div>
           <div class="app-name" data-i18n="card.sales.title">Sales &amp; Marketing</div>
         </button>
-        <button class="launch-app" data-action="open-category" data-category="team">
-          <div class="app-ico">👥</div>
-          <div class="app-name" data-i18n="card.team.title">Team Tools</div>
-        </button>
-        <button class="launch-app" data-action="open-category" data-category="growing">
-          <div class="app-ico">🌿</div>
-          <div class="app-name" data-i18n="card.growing.title">Growing</div>
-        </button>
-        <button class="launch-app" data-action="open-category" data-category="procurement">
-          <div class="app-ico">📦</div>
-          <div class="app-name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div>
+        <button class="launch-app" data-action="go-panel" data-target="p-foodsafety">
+          <div class="app-ico">🧬</div>
+          <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
         </button>
         <button class="launch-app" data-action="open-category" data-category="hr">
           <div class="app-ico">🧑‍🤝‍🧑</div>
           <div class="app-name" data-i18n="card.hr.title">HR</div>
         </button>
-        <button class="launch-app danger" data-action="go-panel" data-target="p-data">
-          <div class="app-ico">📥</div>
-          <div class="app-name" data-i18n="card.data.title">Data Input</div>
+        <button class="launch-app" data-action="open-category" data-category="procurement">
+          <div class="app-ico">📦</div>
+          <div class="app-name" data-i18n="card.procurement.title">Procurement &amp; Inventory</div>
         </button>
-
-        <button class="launch-app" data-action="go-panel" data-target="p-foodsafety">
-          <div class="app-ico">🧬</div>
-          <div class="app-name" data-i18n="card.foodsafety.title">Food Safety</div>
+        <button class="launch-app" data-action="open-category" data-category="scheduling">
+          <div class="app-ico">🗓️</div>
+          <div class="app-name" data-i18n="card.scheduling.title">Scheduling</div>
         </button>
         <button class="launch-app" aria-disabled="true" disabled>
           <div class="app-ico">🛠️</div>
@@ -1277,6 +1282,14 @@
         <button class="launch-app" aria-disabled="true" disabled>
           <div class="app-ico">💰</div>
           <div class="app-name" data-i18n="card.finances.title">Finances</div>
+        </button>
+        <button class="launch-app" data-action="open-category" data-category="team">
+          <div class="app-ico">👥</div>
+          <div class="app-name" data-i18n="card.team.title">Team Tools</div>
+        </button>
+        <button class="launch-app danger" data-action="go-panel" data-target="p-data">
+          <div class="app-ico">📥</div>
+          <div class="app-name" data-i18n="card.data.title">Data Input</div>
         </button>
       </div>
     </div>
@@ -1301,6 +1314,8 @@
       <div class="launcher-grid" id="cat-team" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-board-inventory"><div class="app-ico">🧮</div><div class="app-name" data-i18n="tile.board-inventory.name">Board Inventory</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-pack-team-performance"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div></button>
+      </div>
+      <div class="launcher-grid" id="cat-scheduling" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-facility-ramp"><div class="app-ico">🏗️</div><div class="app-name" data-i18n="tile.facility-ramp.name">Facility Ramp Tracker</div></button>
       </div>
 
@@ -1335,6 +1350,7 @@
           "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
           "crumb.sales":"<strong>Sales &amp; Marketing</strong> — sales dashboards",
           "crumb.team":"<strong>Team Tools</strong> — internal utilities",
+          "crumb.scheduling":"<strong>Scheduling</strong> — planning and timeline tools",
           "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
           "crumb.foodsafety":"<strong>Food Safety</strong> — batch traceability",
           "crumb.hr":"<strong>HR</strong> — people operations dashboards",
@@ -1345,6 +1361,8 @@
           "card.sales.meta":"Sales performance, customers, and demand insights",
           "card.team.title":"Team Tools",
           "card.team.meta":"Internal tools for scheduling, coordination, and team workflows",
+          "card.scheduling.title":"Scheduling",
+          "card.scheduling.meta":"Schedule planning, sequencing, and timeline coordination tools",
           "card.data.title":"Data Input",
           "card.data.meta":"Authoritative data uploads for company dashboards",
           "card.growing.title":"Growing",
@@ -1453,6 +1471,7 @@
           "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
           "crumb.sales":"<strong>Ventas y marketing</strong> — paneles de ventas",
           "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
+          "crumb.scheduling":"<strong>Programación</strong> — herramientas de planificación y cronograma",
           "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
           "crumb.foodsafety":"<strong>Inocuidad</strong> — trazabilidad de lotes",
           "crumb.hr":"<strong>Recursos Humanos</strong> — paneles de operaciones de personal",
@@ -1463,6 +1482,8 @@
           "card.sales.meta":"Rendimiento de ventas, clientes y demanda",
           "card.team.title":"Herramientas de equipo",
           "card.team.meta":"Herramientas internas para programación, coordinación y flujos de trabajo del equipo",
+          "card.scheduling.title":"Programación",
+          "card.scheduling.meta":"Herramientas para planificación de cronogramas y coordinación de tiempos",
           "card.data.title":"Carga de datos",
           "card.data.meta":"Cargas de datos autorizadas para los paneles de la empresa",
           "card.growing.title":"Crecimiento",
@@ -1655,12 +1676,14 @@
       const tabsWrap = document.getElementById("tabs");
       const tabsSalesWrap = document.getElementById("tabsSales");
       const tabsTeamWrap = document.getElementById("tabsTeam");
+      const tabsSchedulingWrap = document.getElementById("tabsScheduling");
       const tabsGrowingWrap = document.getElementById("tabsGrowing");
       const tabsFoodSafetyWrap = document.getElementById("tabsFoodSafety");
       const tabsHrWrap = document.getElementById("tabsHr");
       const tabButtons = Array.from(document.querySelectorAll("#tabs .tab"));
       const tabSalesButtons = Array.from(document.querySelectorAll("#tabsSales .tab"));
       const tabTeamButtons = Array.from(document.querySelectorAll("#tabsTeam .tab"));
+      const tabSchedulingButtons = Array.from(document.querySelectorAll("#tabsScheduling .tab"));
       const tabGrowingButtons = Array.from(document.querySelectorAll("#tabsGrowing .tab"));
       const tabFoodSafetyButtons = Array.from(document.querySelectorAll("#tabsFoodSafety .tab"));
       const tabHrButtons = Array.from(document.querySelectorAll("#tabsHr .tab"));
@@ -1684,6 +1707,7 @@
       const catOps = document.getElementById("cat-ops");
       const catSales = document.getElementById("cat-sales");
       const catTeam = document.getElementById("cat-team");
+      const catScheduling = document.getElementById("cat-scheduling");
       const catGrowing = document.getElementById("cat-growing");
       const catProcurement = document.getElementById("cat-procurement");
       const catHr = document.getElementById("cat-hr");
@@ -1693,6 +1717,7 @@
       const homeOps = document.getElementById("homeOps");
       const homeSales = document.getElementById("homeSales");
       const homeTeam = document.getElementById("homeTeam");
+      const homeScheduling = document.getElementById("homeScheduling");
       const homeGrowing = document.getElementById("homeGrowing");
       const homeFoodSafety = document.getElementById("homeFoodSafety");
       const homeProcurement = document.getElementById("homeProcurement");
@@ -1941,6 +1966,10 @@
         if (tabsTeamWrap) tabsTeamWrap.classList.toggle("show", !!visible);
       }
 
+      function setSchedulingTabsVisible(visible){
+        if (tabsSchedulingWrap) tabsSchedulingWrap.classList.toggle("show", !!visible);
+      }
+
       function setGrowingTabsVisible(visible){
         if (tabsGrowingWrap) tabsGrowingWrap.classList.toggle("show", !!visible);
       }
@@ -1963,6 +1992,10 @@
 
       function setActiveTeamTabByPanel(panelId){
         tabTeamButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
+      }
+
+      function setActiveSchedulingTabByPanel(panelId){
+        tabSchedulingButtons.forEach(b => b.classList.toggle("active", b.dataset.target === panelId));
       }
 
       function setActiveGrowingTabByPanel(panelId){
@@ -1989,18 +2022,21 @@
         const isOps = panel.getAttribute("data-ops") === "true";
         const isSales = panel.getAttribute("data-sales") === "true";
         const isTeam = panel.getAttribute("data-team") === "true";
+        const isScheduling = panel.getAttribute("data-scheduling") === "true";
         const isGrowing = panel.getAttribute("data-growing") === "true";
         const isFoodSafety = panel.getAttribute("data-foodsafety") === "true";
         const isHr = panel.getAttribute("data-hr") === "true";
         setTabsVisible(isOps);
         setSalesTabsVisible(isSales);
         setTeamTabsVisible(isTeam);
+        setSchedulingTabsVisible(isScheduling);
         setGrowingTabsVisible(isGrowing);
         setFoodSafetyTabsVisible(isFoodSafety);
         setHrTabsVisible(isHr);
         if (isOps) setActiveTabByPanel(panelId);
         if (isSales) setActiveSalesTabByPanel(panelId);
         if (isTeam) setActiveTeamTabByPanel(panelId);
+        if (isScheduling) setActiveSchedulingTabByPanel(panelId);
         if (isGrowing) setActiveGrowingTabByPanel(panelId);
         if (isFoodSafety) setActiveFoodSafetyTabByPanel(panelId);
         if (isHr) setActiveHrTabByPanel(panelId);
@@ -2030,6 +2066,14 @@
       }
       if (tabsTeamWrap){
         tabsTeamWrap.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          const target = btn.getAttribute("data-target");
+          if (target) activate(target);
+        });
+      }
+      if (tabsSchedulingWrap){
+        tabsSchedulingWrap.addEventListener("click", (e) => {
           const btn = e.target.closest(".tab");
           if (!btn) return;
           const target = btn.getAttribute("data-target");
@@ -2071,6 +2115,7 @@
         homeOps.style.display = "none";
         homeSales.style.display = "none";
         homeTeam.style.display = "none";
+        if(homeScheduling) homeScheduling.style.display = "none";
         if(homeGrowing) homeGrowing.style.display = "none";
         if(homeFoodSafety) homeFoodSafety.style.display = "none";
         if(homeProcurement) homeProcurement.style.display = "none";
@@ -2085,6 +2130,9 @@
         } else if (cat === "team"){
           homeCrumb.innerHTML = t("crumb.team", currentLang);
           homeTeam.style.display = "grid";
+        } else if (cat === "scheduling" && homeScheduling){
+          homeCrumb.innerHTML = t("crumb.scheduling", currentLang);
+          homeScheduling.style.display = "grid";
         } else if (cat === "growing" && homeGrowing){
           homeCrumb.innerHTML = t("crumb.growing", currentLang);
           homeGrowing.style.display = "grid";
@@ -2142,6 +2190,7 @@
         catOps.style.display = "none";
         catSales.style.display = "none";
         catTeam.style.display = "none";
+        if(catScheduling) catScheduling.style.display = "none";
         if(catGrowing) catGrowing.style.display = "none";
         if(catProcurement) catProcurement.style.display = "none";
         if(catHr) catHr.style.display = "none";
@@ -2155,6 +2204,9 @@
         } else if (cat === "team"){
           catTeam.style.display = "grid";
           if (launcherTitle) launcherTitle.textContent = t("card.team.title", currentLang);
+        } else if (cat === "scheduling" && catScheduling){
+          catScheduling.style.display = "grid";
+          if (launcherTitle) launcherTitle.textContent = t("card.scheduling.title", currentLang);
         } else if (cat === "growing" && catGrowing){
           catGrowing.style.display = "grid";
           if (launcherTitle) launcherTitle.textContent = t("card.growing.title", currentLang);

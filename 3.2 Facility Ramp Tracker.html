@@ -21,6 +21,11 @@
       --red: #dc2626;
       --purple: #7c3aed;
       --teal: #0f766e;
+      --cyan: #0891b2;
+      --slate: #475569;
+      --lime: #65a30d;
+      --rose: #e11d48;
+      --orange: #f97316;
     }
 
     * { box-sizing: border-box; }
@@ -54,7 +59,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 1fr;
       gap: 18px;
     }
 
@@ -70,42 +75,175 @@
       padding: 16px;
     }
 
+    .collapsible-card {
+      padding: 0;
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+    .collapsible-card > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .collapsible-card > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .collapsible-card > summary::after {
+      content: '▾';
+      font-size: 14px;
+      color: var(--muted);
+      transition: transform 0.16s ease;
+    }
+
+    .collapsible-card[open] > summary::after {
+      transform: rotate(180deg);
+    }
+
+    .collapsible-card[open] > summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .collapsible-card .collapse-body {
+      padding: 16px;
+    }
+
+    #addEditTaskCard > summary {
+      padding: 12px 14px;
+      font-size: 18px;
+      letter-spacing: 0.01em;
+    }
+
+    #addEditTaskCard .collapse-body {
+      padding: 12px 14px;
+    }
+
+    #addEditTaskCard .add-edit-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    #addEditTaskCard .form-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px 10px;
+    }
+
+    #addEditTaskCard .span-2 {
+      grid-column: span 2;
+    }
+
+    #addEditTaskCard label {
+      font-size: 10px;
+      margin-bottom: 3px;
+      color: #9fb1ca;
+    }
+
+    #addEditTaskCard input,
+    #addEditTaskCard select,
+    #addEditTaskCard textarea,
+    #addEditTaskCard button {
+      padding: 7px 10px;
+      font-size: 13px;
+      border-radius: 8px;
+    }
+
+    #addEditTaskCard textarea {
+      min-height: 38px;
+      line-height: 1.25;
+    }
+
+    #addEditTaskCard .button-row {
+      margin-top: 8px;
+    }
+
+    #addEditTaskCard .task-actions {
+      display: grid;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(2, 6, 23, 0.38);
+      align-self: stretch;
+    }
+
+    #addEditTaskCard .task-actions button {
+      margin: 0;
+      width: 100%;
+      font-weight: 700;
+    }
+
+    #addEditTaskCard #cloudStatus {
+      margin-top: 8px !important;
+      font-size: 11px;
+      opacity: 0.95;
+    }
+
     .production-card {
       width: 100%;
       min-width: 0;
+      padding: 12px 14px;
     }
 
     .prod-context-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(150px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .production-unified-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(170px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+      align-items: stretch;
     }
 
     .prod-metric {
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 10px;
+      padding: 8px;
       background: rgba(15, 23, 42, 0.72);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      min-width: 0;
     }
 
     .prod-metric label {
-      margin-bottom: 4px;
+      margin-bottom: 0;
       font-size: 11px;
     }
 
     .prod-metric input {
-      padding: 8px 10px;
+      width: 100%;
+      min-width: 0;
+      padding: 7px 9px;
     }
 
     .prod-metric .small {
-      margin-top: 6px;
+      margin-top: 0;
       font-weight: 700;
       color: #cbd5e1;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .production-note {
-      margin-top: 8px;
+      margin-top: 6px;
+      margin-bottom: 0;
     }
 
     .form-grid {
@@ -179,6 +317,16 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
       margin-bottom: 18px;
+    }
+
+    .production-card .stats {
+      margin-top: 10px;
+      margin-bottom: 0;
+      gap: 8px;
+    }
+
+    .production-card .stat {
+      padding: 10px;
     }
 
     .stat {
@@ -281,9 +429,12 @@
 
     .l-prod::before { background: var(--green); }
     .l-clean::before { background: var(--teal); }
-    .l-repair::before { background: var(--amber); }
     .l-project::before { background: var(--purple); }
-    .l-hold::before { background: var(--red); }
+    .l-foodsafety::before { background: var(--cyan); }
+    .l-maintenance::before { background: var(--slate); }
+    .l-grow::before { background: var(--lime); }
+    .l-hr::before { background: var(--rose); }
+    .l-procurement::before { background: var(--orange); }
 
     .small {
       font-size: 12px;
@@ -306,11 +457,28 @@
       .toolbar { grid-template-columns: 1fr 1fr; }
       .production-card { min-width: 0; }
       .prod-context-grid { grid-template-columns: 1fr 1fr; }
+      .production-unified-grid { grid-template-columns: repeat(4, minmax(170px, 1fr)); }
+      #addEditTaskCard .form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      #addEditTaskCard .add-edit-layout { grid-template-columns: minmax(0, 1fr) 200px; }
     }
 
     @media (max-width: 700px) {
       .form-grid, .toolbar, .stats { grid-template-columns: 1fr; }
+      .prod-context-grid { grid-template-columns: 1fr 1fr; }
+      .production-unified-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+      #addEditTaskCard .form-grid { grid-template-columns: 1fr 1fr; }
+      #addEditTaskCard .add-edit-layout { grid-template-columns: 1fr; }
+      #addEditTaskCard .task-actions { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 560px) {
       .prod-context-grid { grid-template-columns: 1fr; }
+      .production-unified-grid { grid-template-columns: 1fr; }
+      .prod-metric { grid-template-columns: 1fr; }
+      .prod-metric input { width: 100%; }
+      #addEditTaskCard .form-grid { grid-template-columns: 1fr; }
+      #addEditTaskCard .span-2 { grid-column: auto; }
+      #addEditTaskCard .task-actions { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -319,7 +487,7 @@
     <div class="header">
       <div class="card production-card">
         <h3>Production Context</h3>
-        <div class="prod-context-grid">
+        <div class="production-unified-grid">
           <div class="prod-metric">
             <label for="throughputBoards">Current Throughput</label>
             <input id="throughputBoards" type="number" min="0" step="1" value="1080" />
@@ -340,106 +508,116 @@
             <input id="rampUpTargetPonds" type="number" min="0" step="1" value="0" />
             <div class="small"><strong id="rampUpTargetPondsDisplay">0 ponds/day</strong></div>
           </div>
+
+          <div class="stat"><div class="label">Total Tasks</div><div class="value" id="statTotal">0</div></div>
+          <div class="stat"><div class="label">Active Labor Assigned</div><div class="value" id="statLabor">0</div></div>
+          <div class="stat"><div class="label">In Progress</div><div class="value" id="statProgress">0</div></div>
+          <div class="stat"><div class="label">This Week</div><div class="value" id="statWeek">0</div></div>
         </div>
         <div class="small production-note">Schedule preloaded below.</div>
       </div>
     </div>
 
-    <div class="stats">
-      <div class="stat"><div class="label">Total Tasks</div><div class="value" id="statTotal">0</div></div>
-      <div class="stat"><div class="label">Active Labor Assigned</div><div class="value" id="statLabor">0</div></div>
-      <div class="stat"><div class="label">In Progress</div><div class="value" id="statProgress">0</div></div>
-      <div class="stat"><div class="label">This Week</div><div class="value" id="statWeek">0</div></div>
-    </div>
-
     <div class="grid">
-      <div class="card">
-        <h2>Add / Edit Task</h2>
-        <div class="small" style="margin: 6px 0 14px;">Use this to add production milestones, cleaning blocks, repairs, and other projects.</div>
-        <form id="taskForm" class="form-grid">
-          <div class="full">
-            <label for="title">Task Title</label>
-            <input id="title" required placeholder="Example: Zone 3 deep cleaning" />
-          </div>
-
-          <div>
-            <label for="category">Category</label>
-            <select id="category">
-              <option>Production</option>
-              <option>Cleaning</option>
-              <option>Repair</option>
-              <option>Project</option>
-              <option>Hold</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="phase">Phase</label>
-            <select id="phase">
-              <option>Ramp Down</option>
-              <option>Steady State</option>
-              <option>Ramp Up</option>
-              <option>Support</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="start">Start Date</label>
-            <input id="start" type="date" required />
-          </div>
-
-          <div>
-            <label for="end">End Date</label>
-            <input id="end" type="date" required />
-          </div>
-
-          <div>
-            <label for="labor">Labor Needed</label>
-            <input id="labor" type="number" min="0" step="1" value="1" />
-          </div>
-
-          <div>
-            <label for="status">Status</label>
-            <select id="status">
-              <option>Planned</option>
-              <option>In Progress</option>
-              <option>Complete</option>
-              <option>On Hold</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="taskColor">Task Color</label>
-            <input id="taskColor" type="color" value="#16a34a" />
-          </div>
-
-          <div class="full">
-            <label for="owner">Owner / Team</label>
-            <input id="owner" placeholder="Example: Maintenance / Growing / Ops" />
-          </div>
-
-          <div class="full">
-            <label for="notes">Notes</label>
-            <textarea id="notes" placeholder="Add scope, walkthrough notes, constraints, materials needed, etc."></textarea>
-          </div>
-
-          <input type="hidden" id="editId" />
-
-          <div class="button-row full">
-            <button type="submit">Save Task</button>
-            <button type="button" class="secondary" id="resetBtn">Clear</button>
-          </div>
-        </form>
-
-        <div class="button-row">
-          <button type="button" id="saveBtn">Save Ramp Tracker</button>
-          <button type="button" class="secondary" id="exportBtn">Export JSON</button>
-          <button type="button" class="secondary" id="loadSampleBtn">Reload Default Plan</button>
-        </div>
-        <div class="small" id="cloudStatus" style="margin-top: 8px;">Cloud sync: local only</div>
-      </div>
-
       <div>
+        <details class="card collapsible-card" id="addEditTaskCard">
+          <summary>Add / Edit Task</summary>
+          <div class="collapse-body">
+            <div class="small" style="margin: 4px 0 10px;">Use this to add production milestones, cleaning blocks, repairs, and other projects.</div>
+            <div class="add-edit-layout">
+              <form id="taskForm" class="form-grid">
+                <div class="span-2">
+                  <label for="title">Task Title</label>
+                  <input id="title" required placeholder="Example: Zone 3 deep cleaning" />
+                </div>
+
+                <div>
+                  <label for="category">Category</label>
+                  <select id="category">
+                    <option>Operations</option>
+                    <option>Cleaning</option>
+                    <option>Food Safety</option>
+                    <option>Maintenance</option>
+                    <option>Grow</option>
+                    <option>HR</option>
+                    <option>Procurement</option>
+                    <option>Project</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="phase">Phase</label>
+                  <select id="phase">
+                    <option>Ramp Down</option>
+                    <option>Steady State</option>
+                    <option>Ramp Up</option>
+                    <option>Support</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="start">Start Date</label>
+                  <input id="start" type="date" required />
+                </div>
+
+                <div>
+                  <label for="end">End Date</label>
+                  <input id="end" type="date" required />
+                </div>
+
+                <div class="span-2">
+                  <label for="owner">Owner / Team</label>
+                  <input id="owner" placeholder="Example: Maintenance / Growing / Ops" />
+                </div>
+
+                <div>
+                  <label for="labor">Labor Needed</label>
+                  <input id="labor" type="number" min="0" step="1" value="1" />
+                </div>
+
+                <div>
+                  <label for="status">Status</label>
+                  <select id="status">
+                    <option>Planned</option>
+                    <option>In Progress</option>
+                    <option>Complete</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="taskColor">Task Color</label>
+                  <input id="taskColor" type="color" value="#16a34a" />
+                </div>
+
+                <div>
+                  <label for="taskLineStyle">Gantt Line Style</label>
+                  <select id="taskLineStyle">
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed Vertical</option>
+                  </select>
+                </div>
+
+                <div class="full">
+                  <label for="notes">Notes</label>
+                  <textarea id="notes" placeholder="Add scope, walkthrough notes, constraints, materials needed, etc."></textarea>
+                </div>
+
+                <input type="hidden" id="editId" />
+              </form>
+
+              <div class="task-actions">
+                <button type="submit" form="taskForm">Save Task</button>
+                <button type="button" class="secondary" id="resetBtn">Clear</button>
+                <button type="button" id="saveBtn">Save Ramp Tracker</button>
+                <button type="button" class="secondary" id="exportBtn">Export JSON</button>
+                <button type="button" class="secondary" id="loadSampleBtn">Reload Default Plan</button>
+              </div>
+            </div>
+            <div class="small" id="cloudStatus" style="margin-top: 8px;">Cloud sync: local only</div>
+          </div>
+        </details>
+
         <div class="card" style="margin-bottom: 18px;">
           <h2>Timeline View</h2>
           <div class="small" style="margin: 6px 0 10px;">Gantt-style chart of all production and support tasks.</div>
@@ -447,11 +625,14 @@
             <input id="searchBox" placeholder="Search title, owner, notes..." />
             <select id="filterCategory">
               <option value="All">All Categories</option>
-              <option value="Production">Production</option>
+              <option value="Operations">Operations</option>
               <option value="Cleaning">Cleaning</option>
-              <option value="Repair">Repair</option>
+              <option value="Food Safety">Food Safety</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Grow">Grow</option>
+              <option value="HR">HR</option>
+              <option value="Procurement">Procurement</option>
               <option value="Project">Project</option>
-              <option value="Hold">Hold</option>
             </select>
             <select id="filterPhase">
               <option value="All">All Phases</option>
@@ -468,11 +649,14 @@
           </div>
           <div class="chart-wrap"><canvas id="ganttChart"></canvas></div>
           <div class="legend">
-            <span class="l-prod">Production</span>
+            <span class="l-prod">Operations</span>
             <span class="l-clean">Cleaning</span>
-            <span class="l-repair">Repair</span>
+            <span class="l-foodsafety">Food Safety</span>
+            <span class="l-maintenance">Maintenance</span>
+            <span class="l-grow">Grow</span>
+            <span class="l-hr">HR</span>
+            <span class="l-procurement">Procurement</span>
             <span class="l-project">Project</span>
-            <span class="l-hold">Hold</span>
           </div>
         </div>
 
@@ -503,23 +687,26 @@
 
   <script>
     const DEFAULT_TASKS = [
-      { id: crypto.randomUUID(), title: 'Ramp Down - Seeding Start', category: 'Production', phase: 'Ramp Down', start: '2026-03-23', end: '2026-04-06', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily seeding runs through Ramp Down transplant start.' },
-      { id: crypto.randomUUID(), title: 'Ramp Down - Transplant Start', category: 'Production', phase: 'Ramp Down', start: '2026-04-06', end: '2026-04-27', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily transplant runs through Ramp Down harvest start.' },
-      { id: crypto.randomUUID(), title: 'Ramp Down - Harvest Start', category: 'Production', phase: 'Ramp Down', start: '2026-04-27', end: '2026-05-08', labor: 6, status: 'Planned', owner: 'Harvest', notes: 'Daily harvest runs through Ramp Up seeding start.' },
-      { id: crypto.randomUUID(), title: 'Ramp Up - Seeding Start', category: 'Production', phase: 'Ramp Up', start: '2026-05-08', end: '2026-06-01', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily seeding runs through Ramp Up transplant start.' },
-      { id: crypto.randomUUID(), title: 'Ramp Up - Transplant Start', category: 'Production', phase: 'Ramp Up', start: '2026-06-01', end: '2026-06-22', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily transplant runs through Ramp Up harvest start.' },
-      { id: crypto.randomUUID(), title: 'Ramp Up - Harvest Start', category: 'Production', phase: 'Ramp Up', start: '2026-06-22', end: '2026-06-24', labor: 6, status: 'Planned', owner: 'Harvest', notes: 'Harvest begins reflecting ramp-up schedule and continues for a few days.' },
+      { id: crypto.randomUUID(), title: 'Ramp Down - Seeding Start', category: 'Operations', phase: 'Ramp Down', start: '2026-03-23', end: '2026-04-06', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily seeding runs through Ramp Down transplant start.' },
+      { id: crypto.randomUUID(), title: 'Ramp Down - Transplant Start', category: 'Operations', phase: 'Ramp Down', start: '2026-04-06', end: '2026-04-27', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily transplant runs through Ramp Down harvest start.' },
+      { id: crypto.randomUUID(), title: 'Ramp Down - Harvest Start', category: 'Operations', phase: 'Ramp Down', start: '2026-04-27', end: '2026-05-08', labor: 6, status: 'Planned', owner: 'Harvest', notes: 'Daily harvest runs through Ramp Up seeding start.' },
+      { id: crypto.randomUUID(), title: 'Ramp Up - Seeding Start', category: 'Operations', phase: 'Ramp Up', start: '2026-05-08', end: '2026-06-01', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily seeding runs through Ramp Up transplant start.' },
+      { id: crypto.randomUUID(), title: 'Ramp Up - Transplant Start', category: 'Operations', phase: 'Ramp Up', start: '2026-06-01', end: '2026-06-22', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily transplant runs through Ramp Up harvest start.' },
+      { id: crypto.randomUUID(), title: 'Ramp Up - Harvest Start', category: 'Operations', phase: 'Ramp Up', start: '2026-06-22', end: '2026-06-24', labor: 6, status: 'Planned', owner: 'Harvest', notes: 'Harvest begins reflecting ramp-up schedule and continues for a few days.' },
       { id: crypto.randomUUID(), title: 'Facility Deep Cleaning Window', category: 'Cleaning', phase: 'Support', start: '2026-04-10', end: '2026-05-15', labor: 5, status: 'Planned', owner: 'Sanitation', notes: 'Use lower-throughput period for cleaning blocks.' },
-      { id: crypto.randomUUID(), title: 'Irrigation Repairs', category: 'Repair', phase: 'Support', start: '2026-04-14', end: '2026-04-25', labor: 3, status: 'Planned', owner: 'Maintenance', notes: 'Priority repair work during ramp-down transition.' },
+      { id: crypto.randomUUID(), title: 'Irrigation Repairs', category: 'Maintenance', phase: 'Support', start: '2026-04-14', end: '2026-04-25', labor: 3, status: 'Planned', owner: 'Maintenance', notes: 'Priority repair work during ramp-down transition.' },
       { id: crypto.randomUUID(), title: 'Walkthrough Action List', category: 'Project', phase: 'Support', start: '2026-03-19', end: '2026-03-28', labor: 2, status: 'In Progress', owner: 'Ops Leadership', notes: 'Capture observations and convert them into assigned projects.' }
     ];
 
     const colors = {
-      Production: '#16a34a',
+      Operations: '#16a34a',
       Cleaning: '#0f766e',
-      Repair: '#d97706',
-      Project: '#7c3aed',
-      Hold: '#dc2626'
+      'Food Safety': '#0891b2',
+      Maintenance: '#475569',
+      Grow: '#65a30d',
+      HR: '#e11d48',
+      Procurement: '#f97316',
+      Project: '#7c3aed'
     };
 
     const RAMP_MILESTONE_ORDER = [
@@ -543,7 +730,6 @@
     const HARVEST_ARROW_TASK = 'Ramp Up - Harvest Start';
     const WORKER_BASE = 'https://campo-publisher.kevin-lopezgomez.workers.dev';
     const WORKER_RAMP_URL = `${WORKER_BASE}/data/master/ramp_storage.json`;
-    const SUPABASE_RAMP_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/ramp_storage.json';
     const RAMP_CLOUD_PAYLOAD_VERSION = 1;
 
     let tasks = loadTasks();
@@ -562,6 +748,8 @@
     const sortBy = document.getElementById('sortBy');
     const categorySelect = document.getElementById('category');
     const taskColorInput = document.getElementById('taskColor');
+    const taskLineStyleInput = document.getElementById('taskLineStyle');
+    const addEditTaskCard = document.getElementById('addEditTaskCard');
     const throughputBoards = document.getElementById('throughputBoards');
     const rampTargetBoards = document.getElementById('rampTargetBoards');
     const rampTargetPonds = document.getElementById('rampTargetPonds');
@@ -628,8 +816,10 @@
 
       tasks = incomingTasks.map(task => {
         const rampEnd = RAMP_MILESTONE_END_DATES[task.title];
-        if (!rampEnd || task.start !== task.end) return task;
-        return { ...task, end: rampEnd };
+        const lineStyle = getTaskLineStyle(task);
+        const category = normalizeTaskCategory(task.category);
+        if (!rampEnd || task.start !== task.end) return { ...task, category, lineStyle };
+        return { ...task, category, end: rampEnd, lineStyle };
       });
 
       const context = payload?.productionContext || {};
@@ -650,23 +840,9 @@
     }
 
     async function fetchRampFromCloud() {
-      const urls = [SUPABASE_RAMP_URL, WORKER_RAMP_URL];
-      let lastError = null;
-
-      for (const url of urls) {
-        try {
-          const response = await fetch(url, { cache: 'no-store' });
-          if (!response.ok) {
-            lastError = new Error(`HTTP ${response.status}`);
-            continue;
-          }
-          return await response.json();
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      throw lastError || new Error('Unable to fetch ramp_storage.json.');
+      const response = await fetch(WORKER_RAMP_URL, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
     }
 
     async function loadRampFromCloud(showStatus = true) {
@@ -674,7 +850,7 @@
       try {
         const payload = await fetchRampFromCloud();
         applyRampPayload(payload);
-        setCloudStatus('loaded from Supabase');
+        setCloudStatus('loaded from Worker');
         return true;
       } catch (err) {
         if (showStatus) setCloudStatus(`load failed (${err.message || err})`, true);
@@ -692,8 +868,10 @@
           body: JSON.stringify(payload, null, 2)
         });
         const text = await response.text().catch(() => '');
-        if (!response.ok) throw new Error(`HTTP ${response.status}${text ? `: ${text}` : ''}`);
-        setCloudStatus('saved to Supabase');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}${text ? `: ${text}` : ''}`);
+        }
+        setCloudStatus('saved via Worker');
         return true;
       } catch (err) {
         if (showStatus) setCloudStatus(`save failed (${err.message || err})`, true);
@@ -722,13 +900,25 @@
       return colors[category] || '#64748b';
     }
 
+    function normalizeTaskCategory(category) {
+      return category === 'Production' ? 'Operations' : category;
+    }
+
+    function getTaskLineStyle(task) {
+      if ((task?.lineStyle || '').toLowerCase() === 'dashed') return 'dashed';
+      if (task?.dashed === true) return 'dashed';
+      return 'solid';
+    }
+
     function loadTasks() {
       const saved = localStorage.getItem('campoCaribeRampTracker');
       const loaded = saved ? JSON.parse(saved) : [...DEFAULT_TASKS];
       return loaded.map(task => {
         const rampEnd = RAMP_MILESTONE_END_DATES[task.title];
-        if (!rampEnd || task.start !== task.end) return task;
-        return { ...task, end: rampEnd };
+        const lineStyle = getTaskLineStyle(task);
+        const category = normalizeTaskCategory(task.category);
+        if (!rampEnd || task.start !== task.end) return { ...task, category, lineStyle };
+        return { ...task, category, end: rampEnd, lineStyle };
       });
     }
 
@@ -833,9 +1023,11 @@
         else endMs = endMs + 24 * 60 * 60 * 1000;
 
         return {
+          taskId: task.id,
           x: [startMs, endMs],
           y: task.title,
           color: task.color || getDefaultTaskColor(task.category),
+          lineStyle: getTaskLineStyle(task),
           category: task.category,
           labor: task.labor,
           status: task.status,
@@ -941,9 +1133,93 @@
         }
       };
 
+      const dashedTaskPlugin = {
+        id: 'dashedTaskPlugin',
+        afterDatasetsDraw(chartInstance) {
+          const chartDataset = chartInstance.data.datasets?.[0];
+          const meta = chartInstance.getDatasetMeta(0);
+          const chartArea = chartInstance.chartArea;
+          if (!chartDataset || !meta?.data?.length || !chartArea) return;
+
+          const ctx = chartInstance.ctx;
+          ctx.save();
+          ctx.lineWidth = 3;
+          ctx.setLineDash([8, 6]);
+
+          meta.data.forEach((bar, index) => {
+            const item = chartDataset.data[index];
+            if (!item || item.lineStyle !== 'dashed') return;
+
+            const { x, base } = bar.getProps(['x', 'base'], true);
+            const lineX = Math.min(x, base);
+            if (!Number.isFinite(lineX)) return;
+
+            ctx.strokeStyle = item.color || '#16a34a';
+            ctx.beginPath();
+            ctx.moveTo(lineX, chartArea.top);
+            ctx.lineTo(lineX, chartArea.bottom);
+            ctx.stroke();
+          });
+
+          ctx.restore();
+        },
+        afterEvent(chartInstance, args) {
+          const event = args?.event;
+          if (!event || (event.type !== 'mousemove' && event.type !== 'mouseout')) return;
+
+          const chartDataset = chartInstance.data.datasets?.[0];
+          const meta = chartInstance.getDatasetMeta(0);
+          const chartArea = chartInstance.chartArea;
+          if (!chartDataset || !meta?.data?.length || !chartArea) return;
+
+          if (event.type === 'mouseout') {
+            chartInstance.setActiveElements([]);
+            chartInstance.tooltip?.setActiveElements([], { x: 0, y: 0 });
+            args.changed = true;
+            return;
+          }
+
+          const isInsideChart =
+            event.x >= chartArea.left &&
+            event.x <= chartArea.right &&
+            event.y >= chartArea.top &&
+            event.y <= chartArea.bottom;
+
+          if (!isInsideChart) return;
+
+          const thresholdPx = 6;
+          let bestIndex = -1;
+          let bestDistance = Infinity;
+
+          meta.data.forEach((bar, index) => {
+            const item = chartDataset.data[index];
+            if (!item || item.lineStyle !== 'dashed') return;
+
+            const { x, base } = bar.getProps(['x', 'base'], true);
+            const lineX = Math.min(x, base);
+            const distance = Math.abs(event.x - lineX);
+            if (distance <= thresholdPx && distance < bestDistance) {
+              bestDistance = distance;
+              bestIndex = index;
+            }
+          });
+
+          if (bestIndex === -1) return;
+
+          const active = [{ datasetIndex: 0, index: bestIndex }];
+          const bar = meta.data[bestIndex];
+          const { x, base } = bar.getProps(['x', 'base'], true);
+          const lineX = Math.min(x, base);
+
+          chartInstance.setActiveElements(active);
+          chartInstance.tooltip?.setActiveElements(active, { x: lineX, y: event.y });
+          args.changed = true;
+        }
+      };
+
       chart = new Chart(ctx, {
         type: 'bar',
-        plugins: [todayLinePlugin, rampArrowPlugin],
+        plugins: [todayLinePlugin, rampArrowPlugin, dashedTaskPlugin],
         data: {
           datasets: [{
             label: 'Tasks',
@@ -959,6 +1235,17 @@
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
+          onHover: (event, elements, chartInstance) => {
+            const canvas = chartInstance?.canvas;
+            if (!canvas) return;
+            canvas.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          onClick: (event, elements) => {
+            if (!elements || !elements.length) return;
+            const point = elements[0];
+            const clicked = dataset[point.index];
+            if (clicked?.taskId) window.editTask(clicked.taskId, { scrollToForm: false });
+          },
           parsing: {
             xAxisKey: 'x',
             yAxisKey: 'y'
@@ -980,6 +1267,7 @@
                   return [
                     ` ${formatDate(raw.startLabel)} to ${formatDate(raw.endLabel)}`,
                     ` Days Between: ${daysBetween}`,
+                    ` Style: ${raw.lineStyle === 'dashed' ? 'Dashed Vertical' : 'Solid'}`,
                     ` Phase: ${raw.phase}`,
                     ` Status: ${raw.status}`,
                     ` Labor: ${raw.labor}`,
@@ -1027,11 +1315,13 @@
       document.getElementById('labor').value = 1;
       document.getElementById('editId').value = '';
       taskColorInput.value = getDefaultTaskColor(categorySelect.value);
+      taskLineStyleInput.value = 'solid';
     }
 
-    window.editTask = function(id) {
+    window.editTask = function(id, options = {}) {
       const task = tasks.find(t => t.id === id);
       if (!task) return;
+      if (addEditTaskCard && !addEditTaskCard.open) addEditTaskCard.open = true;
       document.getElementById('title').value = task.title;
       document.getElementById('category').value = task.category;
       document.getElementById('phase').value = task.phase;
@@ -1040,19 +1330,24 @@
       document.getElementById('labor').value = task.labor;
       document.getElementById('status').value = task.status;
       taskColorInput.value = task.color || getDefaultTaskColor(task.category);
+      taskLineStyleInput.value = getTaskLineStyle(task);
       document.getElementById('owner').value = task.owner;
       document.getElementById('notes').value = task.notes;
       document.getElementById('editId').value = task.id;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const shouldScroll = options.scrollToForm !== false;
+      if (shouldScroll) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
-    window.deleteTask = function(id) {
+    window.deleteTask = async function(id) {
       tasks = tasks.filter(t => t.id !== id);
-      saveTasks();
+      saveTasks(false);
       renderAll();
+      await saveRampToCloud(true);
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const task = {
         id: document.getElementById('editId').value || crypto.randomUUID(),
@@ -1064,6 +1359,7 @@
         labor: Number(document.getElementById('labor').value || 0),
         status: document.getElementById('status').value,
         color: taskColorInput.value,
+        lineStyle: taskLineStyleInput.value === 'dashed' ? 'dashed' : 'solid',
         owner: document.getElementById('owner').value.trim(),
         notes: document.getElementById('notes').value.trim()
       };
@@ -1077,9 +1373,10 @@
       if (existingIndex >= 0) tasks[existingIndex] = task;
       else tasks.push(task);
 
-      saveTasks();
+      saveTasks(false);
       resetForm();
       renderAll();
+      await saveRampToCloud(true);
     });
 
     resetBtn.addEventListener('click', resetForm);
@@ -1129,9 +1426,8 @@
       rampTargetPonds.value = productionContext.rampTargetPonds;
       rampUpTargetPonds.value = productionContext.rampUpTargetPonds;
       updateProductionContextDisplay();
-
-      const loadedFromCloud = await loadRampFromCloud(false);
-      if (!loadedFromCloud) renderAll();
+      renderAll();
+      void loadRampFromCloud(false);
     }
 
     void initializeTracker();
