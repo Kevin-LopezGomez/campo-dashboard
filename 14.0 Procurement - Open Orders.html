@@ -1460,6 +1460,15 @@ function parseDateLoose(v){
   return null;
 }
 
+function parseOrderNumber(v){
+  const s = safeStr(v).trim();
+  if(!s) return null;
+  const digits = s.replace(/\D+/g, "");
+  if(!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
 function toISODate(dt){
   if(!dt) return "";
   const tzOff = dt.getTimezoneOffset() * 60000;
@@ -2067,7 +2076,14 @@ function renderTable(rows){
         sortDir = (sortDir==="asc") ? "desc" : "asc";
       }else{
         sortKey = c;
-        sortDir = (c==="Order Date" || c==="Next Follow-Up" || c==="Amount" || c==="Total Amount/Cost") ? "desc" : "asc";
+        sortDir = (
+          c==="Order Date" ||
+          c==="Next Follow-Up" ||
+          c==="Amount" ||
+          c==="Total Amount/Cost" ||
+          c==="PO #" ||
+          c==="Order No./PO Number"
+        ) ? "desc" : "asc";
       }
       refresh();
     });
@@ -2286,9 +2302,6 @@ function sortRows(rows){
 
   const copy = rows.slice();
   copy.sort((a,b) => {
-    const priority = compareClosedThenDeliveryDesc(a, b);
-    if(priority !== 0) return priority;
-
     const av = getCellValueByColumn(a, k), bv = getCellValueByColumn(b, k);
 
     if(k === "Amount" || k === "Total Amount/Cost"){
@@ -2298,6 +2311,21 @@ function sortRows(rows){
       if(bn===null) return -1;
       return (an - bn) * dir;
     }
+
+    if(k === "PO #" || k === "Order No./PO Number"){
+      const an = parseOrderNumber(av), bn = parseOrderNumber(bv);
+      if(an!==null || bn!==null){
+        if(an===null && bn===null) return 0;
+        if(an===null) return 1;
+        if(bn===null) return -1;
+        return (an - bn) * dir;
+      }
+      const nat = safeStr(av).localeCompare(safeStr(bv), undefined, { numeric: true, sensitivity: "base" });
+      return nat * dir;
+    }
+
+    const priority = compareClosedThenDeliveryDesc(a, b);
+    if(priority !== 0) return priority;
 
     if(k === "Order Date" || k === "Promised Date" || k === "Delivery Date" || k === "Next Follow-Up"){
       const ad = parseDateLoose(av), bd = parseDateLoose(bv);
