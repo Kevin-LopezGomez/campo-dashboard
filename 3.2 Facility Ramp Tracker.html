@@ -189,6 +189,68 @@
       opacity: 0.95;
     }
 
+    .labor-availability-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: start;
+    }
+
+    .labor-availability-group {
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 7px;
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+    }
+
+    .labor-availability-group h4 {
+      margin: 2px 0 0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #e2e8f0;
+      font-weight: 800;
+    }
+
+    .labor-availability-group .group-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px 8px;
+      min-width: 0;
+    }
+
+    .labor-availability-grid .labor-field {
+      min-width: 0;
+    }
+
+    #laborAvailabilityCard label {
+      font-size: 10px;
+      margin-bottom: 3px;
+      color: #cbd5e1;
+      font-weight: 700;
+    }
+
+    #laborAvailabilityCard input {
+      padding: 6px 9px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(2, 6, 23, 0.88);
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .labor-availability-total {
+      margin-top: 8px;
+      font-weight: 800;
+      color: #e2e8f0;
+    }
+
     .production-card {
       width: 100%;
       min-width: 0;
@@ -204,10 +266,25 @@
 
     .production-unified-grid {
       display: grid;
-      grid-template-columns: repeat(8, minmax(170px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
       gap: 8px;
       margin-top: 8px;
       align-items: stretch;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .production-unified-grid > * {
+      min-width: 0;
+    }
+
+    .production-unified-grid .stat.stat-labor-wide {
+      grid-column: span 1;
+      min-width: 136px;
+    }
+
+    .production-unified-grid .stat.stat-compact {
+      min-width: 110px;
     }
 
     .prod-metric {
@@ -326,7 +403,7 @@
     }
 
     .production-card .stat {
-      padding: 10px;
+      padding: 9px;
     }
 
     .stat {
@@ -341,12 +418,16 @@
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.03em;
+      text-align: center;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
     }
 
     .stat .value {
       font-size: 28px;
       font-weight: 800;
       margin-top: 8px;
+      text-align: center;
     }
 
     .toolbar {
@@ -435,6 +516,7 @@
     .l-grow::before { background: var(--lime); }
     .l-hr::before { background: var(--rose); }
     .l-procurement::before { background: var(--orange); }
+    .l-salesmarketing::before { background: #2563eb; }
 
     .small {
       font-size: 12px;
@@ -466,6 +548,10 @@
       .form-grid, .toolbar, .stats { grid-template-columns: 1fr; }
       .prod-context-grid { grid-template-columns: 1fr 1fr; }
       .production-unified-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+      .labor-availability-group { grid-template-columns: 110px minmax(0, 1fr); }
+      .labor-availability-group .group-fields { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .production-unified-grid .stat.stat-labor-wide,
+      .production-unified-grid .stat.stat-compact { min-width: 0; }
       #addEditTaskCard .form-grid { grid-template-columns: 1fr 1fr; }
       #addEditTaskCard .add-edit-layout { grid-template-columns: 1fr; }
       #addEditTaskCard .task-actions { grid-template-columns: 1fr 1fr; }
@@ -474,6 +560,9 @@
     @media (max-width: 560px) {
       .prod-context-grid { grid-template-columns: 1fr; }
       .production-unified-grid { grid-template-columns: 1fr; }
+      .labor-availability-group { grid-template-columns: 1fr; }
+      .labor-availability-group h4 { margin: 0 0 4px; }
+      .labor-availability-group .group-fields { grid-template-columns: 1fr; }
       .prod-metric { grid-template-columns: 1fr; }
       .prod-metric input { width: 100%; }
       #addEditTaskCard .form-grid { grid-template-columns: 1fr; }
@@ -509,10 +598,10 @@
             <div class="small"><strong id="rampUpTargetPondsDisplay">0 ponds/day</strong></div>
           </div>
 
-          <div class="stat"><div class="label">Total Tasks</div><div class="value" id="statTotal">0</div></div>
-          <div class="stat"><div class="label">Active Labor Assigned</div><div class="value" id="statLabor">0</div></div>
-          <div class="stat"><div class="label">In Progress</div><div class="value" id="statProgress">0</div></div>
-          <div class="stat"><div class="label">This Week</div><div class="value" id="statWeek">0</div></div>
+          <div class="stat stat-compact"><div class="label">Total Tasks</div><div class="value" id="statTotal">0</div></div>
+          <div class="stat stat-labor-wide"><div class="label">Active Labor Assigned</div><div class="value" id="statLabor">0</div></div>
+          <div class="stat stat-compact"><div class="label">In Progress</div><div class="value" id="statProgress">0</div></div>
+          <div class="stat stat-compact"><div class="label">This Week</div><div class="value" id="statWeek">0</div></div>
         </div>
         <div class="small production-note">Schedule preloaded below.</div>
       </div>
@@ -520,6 +609,63 @@
 
     <div class="grid">
       <div>
+        <details class="card collapsible-card" id="laborAvailabilityCard">
+          <summary>Labor Availability</summary>
+          <div class="collapse-body">
+            <div class="small" style="margin: 4px 0 6px;">Set available labor by production subdepartment.</div>
+            <div class="labor-availability-grid">
+              <div class="labor-availability-group">
+                <h4>Operations</h4>
+                <div class="group-fields">
+                  <div class="labor-field">
+                    <label for="laborAvailSeeding">Seeding</label>
+                    <input id="laborAvailSeeding" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div class="labor-field">
+                    <label for="laborAvailTransplant">Transplant</label>
+                    <input id="laborAvailTransplant" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div class="labor-field">
+                    <label for="laborAvailHarvest">Harvest</label>
+                    <input id="laborAvailHarvest" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div class="labor-field">
+                    <label for="laborAvailPack">Pack</label>
+                    <input id="laborAvailPack" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div class="labor-field">
+                    <label for="laborAvailShipping">Shipping &amp; Receiving</label>
+                    <input id="laborAvailShipping" type="number" min="0" step="1" value="0" />
+                  </div>
+                </div>
+              </div>
+              <div class="labor-availability-group">
+                <h4>Grow</h4>
+                <div class="group-fields">
+                  <div class="labor-field">
+                    <label for="laborAvailGrow">Grow</label>
+                    <input id="laborAvailGrow" type="number" min="0" step="1" value="0" />
+                  </div>
+                </div>
+              </div>
+              <div class="labor-availability-group">
+                <h4>Maintenance</h4>
+                <div class="group-fields">
+                  <div class="labor-field">
+                    <label for="laborAvailFacilities">Facilities</label>
+                    <input id="laborAvailFacilities" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div class="labor-field">
+                    <label for="laborAvailMaintenance">Maintenance</label>
+                    <input id="laborAvailMaintenance" type="number" min="0" step="1" value="0" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="small labor-availability-total">Total Available Labor: <strong id="laborAvailTotal">0</strong></div>
+          </div>
+        </details>
+
         <details class="card collapsible-card" id="addEditTaskCard">
           <summary>Add / Edit Task</summary>
           <div class="collapse-body">
@@ -535,12 +681,13 @@
                   <label for="category">Category</label>
                   <select id="category">
                     <option>Operations</option>
+                    <option>Grow</option>
                     <option>Cleaning</option>
                     <option>Food Safety</option>
                     <option>Maintenance</option>
-                    <option>Grow</option>
                     <option>HR</option>
                     <option>Procurement</option>
+                    <option>Sales &amp; Marketing</option>
                     <option>Project</option>
                   </select>
                 </div>
@@ -626,12 +773,13 @@
             <select id="filterCategory">
               <option value="All">All Categories</option>
               <option value="Operations">Operations</option>
+              <option value="Grow">Grow</option>
               <option value="Cleaning">Cleaning</option>
               <option value="Food Safety">Food Safety</option>
               <option value="Maintenance">Maintenance</option>
-              <option value="Grow">Grow</option>
               <option value="HR">HR</option>
               <option value="Procurement">Procurement</option>
+              <option value="Sales &amp; Marketing">Sales &amp; Marketing</option>
               <option value="Project">Project</option>
             </select>
             <select id="filterPhase">
@@ -650,12 +798,13 @@
           <div class="chart-wrap"><canvas id="ganttChart"></canvas></div>
           <div class="legend">
             <span class="l-prod">Operations</span>
+            <span class="l-grow">Grow</span>
             <span class="l-clean">Cleaning</span>
             <span class="l-foodsafety">Food Safety</span>
             <span class="l-maintenance">Maintenance</span>
-            <span class="l-grow">Grow</span>
             <span class="l-hr">HR</span>
             <span class="l-procurement">Procurement</span>
+            <span class="l-salesmarketing">Sales &amp; Marketing</span>
             <span class="l-project">Project</span>
           </div>
         </div>
@@ -706,6 +855,7 @@
       Grow: '#65a30d',
       HR: '#e11d48',
       Procurement: '#f97316',
+      'Sales & Marketing': '#2563eb',
       Project: '#7c3aed'
     };
 
@@ -731,6 +881,7 @@
     const WORKER_BASE = 'https://campo-publisher.kevin-lopezgomez.workers.dev';
     const WORKER_RAMP_URL = `${WORKER_BASE}/data/master/ramp_storage.json`;
     const RAMP_CLOUD_PAYLOAD_VERSION = 1;
+    const LABOR_AVAILABILITY_STORAGE_KEY = 'campoCaribeProductionLaborAvailability';
 
     let tasks = loadTasks();
     let chart;
@@ -758,6 +909,15 @@
     const rampTargetBoardsDisplay = document.getElementById('rampTargetBoardsDisplay');
     const rampTargetPondsDisplay = document.getElementById('rampTargetPondsDisplay');
     const rampUpTargetPondsDisplay = document.getElementById('rampUpTargetPondsDisplay');
+    const laborAvailSeeding = document.getElementById('laborAvailSeeding');
+    const laborAvailTransplant = document.getElementById('laborAvailTransplant');
+    const laborAvailHarvest = document.getElementById('laborAvailHarvest');
+    const laborAvailPack = document.getElementById('laborAvailPack');
+    const laborAvailShipping = document.getElementById('laborAvailShipping');
+    const laborAvailGrow = document.getElementById('laborAvailGrow');
+    const laborAvailFacilities = document.getElementById('laborAvailFacilities');
+    const laborAvailMaintenance = document.getElementById('laborAvailMaintenance');
+    const laborAvailTotal = document.getElementById('laborAvailTotal');
 
     function loadProductionContext() {
       const defaults = { throughput: 1080, rampTargetBoards: 800, rampTargetPonds: 0, rampUpTargetPonds: 0 };
@@ -790,6 +950,87 @@
       localStorage.setItem('campoCaribeProductionContext', JSON.stringify(context));
     }
 
+    function getDefaultLaborAvailability() {
+      return {
+        seeding: 0,
+        transplant: 0,
+        harvest: 0,
+        pack: 0,
+        shippingReceiving: 0,
+        grow: 0,
+        facilities: 0,
+        maintenance: 0
+      };
+    }
+
+    function loadLaborAvailability() {
+      const defaults = getDefaultLaborAvailability();
+      const saved = localStorage.getItem(LABOR_AVAILABILITY_STORAGE_KEY);
+      if (!saved) return defaults;
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          seeding: Number.isFinite(Number(parsed.seeding)) ? Number(parsed.seeding) : defaults.seeding,
+          transplant: Number.isFinite(Number(parsed.transplant)) ? Number(parsed.transplant) : defaults.transplant,
+          harvest: Number.isFinite(Number(parsed.harvest)) ? Number(parsed.harvest) : defaults.harvest,
+          pack: Number.isFinite(Number(parsed.pack)) ? Number(parsed.pack) : defaults.pack,
+          shippingReceiving: Number.isFinite(Number(parsed.shippingReceiving))
+            ? Number(parsed.shippingReceiving)
+            : Number.isFinite(Number(parsed.shipping))
+              ? Number(parsed.shipping)
+              : defaults.shippingReceiving,
+          grow: Number.isFinite(Number(parsed.grow)) ? Number(parsed.grow) : defaults.grow,
+          facilities: Number.isFinite(Number(parsed.facilities)) ? Number(parsed.facilities) : defaults.facilities,
+          maintenance: Number.isFinite(Number(parsed.maintenance)) ? Number(parsed.maintenance) : defaults.maintenance
+        };
+      } catch {
+        return defaults;
+      }
+    }
+
+    function saveLaborAvailability(laborAvailability) {
+      localStorage.setItem(LABOR_AVAILABILITY_STORAGE_KEY, JSON.stringify(laborAvailability));
+    }
+
+    function getLaborAvailabilityFromInputs() {
+      return {
+        seeding: Math.max(0, Number(laborAvailSeeding.value || 0)),
+        transplant: Math.max(0, Number(laborAvailTransplant.value || 0)),
+        harvest: Math.max(0, Number(laborAvailHarvest.value || 0)),
+        pack: Math.max(0, Number(laborAvailPack.value || 0)),
+        shippingReceiving: Math.max(0, Number(laborAvailShipping.value || 0)),
+        grow: Math.max(0, Number(laborAvailGrow.value || 0)),
+        facilities: Math.max(0, Number(laborAvailFacilities.value || 0)),
+        maintenance: Math.max(0, Number(laborAvailMaintenance.value || 0))
+      };
+    }
+
+    function applyLaborAvailabilityToInputs(laborAvailability) {
+      laborAvailSeeding.value = Math.max(0, Number(laborAvailability.seeding || 0));
+      laborAvailTransplant.value = Math.max(0, Number(laborAvailability.transplant || 0));
+      laborAvailHarvest.value = Math.max(0, Number(laborAvailability.harvest || 0));
+      laborAvailPack.value = Math.max(0, Number(laborAvailability.pack || 0));
+      laborAvailShipping.value = Math.max(0, Number(laborAvailability.shippingReceiving || 0));
+      laborAvailGrow.value = Math.max(0, Number(laborAvailability.grow || 0));
+      laborAvailFacilities.value = Math.max(0, Number(laborAvailability.facilities || 0));
+      laborAvailMaintenance.value = Math.max(0, Number(laborAvailability.maintenance || 0));
+    }
+
+    function updateLaborAvailabilityDisplay() {
+      const laborAvailability = getLaborAvailabilityFromInputs();
+      const total =
+        laborAvailability.seeding +
+        laborAvailability.transplant +
+        laborAvailability.harvest +
+        laborAvailability.pack +
+        laborAvailability.shippingReceiving +
+        laborAvailability.grow +
+        laborAvailability.facilities +
+        laborAvailability.maintenance;
+      laborAvailTotal.textContent = total.toLocaleString('en-US');
+      saveLaborAvailability(laborAvailability);
+    }
+
     function setCloudStatus(message, isError = false) {
       if (!cloudStatus) return;
       cloudStatus.textContent = `Cloud sync: ${message}`;
@@ -806,6 +1047,7 @@
           rampTargetPonds: Math.max(0, Number(rampTargetPonds.value || 0)),
           rampUpTargetPonds: Math.max(0, Number(rampUpTargetPonds.value || 0))
         },
+        laborAvailability: getLaborAvailabilityFromInputs(),
         tasks
       };
     }
@@ -823,6 +1065,7 @@
       });
 
       const context = payload?.productionContext || {};
+      const laborAvailability = payload?.laborAvailability || context?.laborAvailability || getDefaultLaborAvailability();
       const contextToApply = {
         throughput: Number.isFinite(Number(context.throughput)) ? Number(context.throughput) : Number(throughputBoards.value || 0),
         rampTargetBoards: Number.isFinite(Number(context.rampTargetBoards)) ? Number(context.rampTargetBoards) : Number(rampTargetBoards.value || 0),
@@ -834,6 +1077,8 @@
       rampTargetBoards.value = contextToApply.rampTargetBoards;
       rampTargetPonds.value = contextToApply.rampTargetPonds;
       rampUpTargetPonds.value = contextToApply.rampUpTargetPonds;
+      applyLaborAvailabilityToInputs(laborAvailability);
+      updateLaborAvailabilityDisplay();
       updateProductionContextDisplay();
       saveTasks(false);
       renderAll();
@@ -1412,6 +1657,8 @@
     [searchBox, filterCategory, filterPhase, sortBy].forEach(el => el.addEventListener('change', renderAll));
     [throughputBoards, rampTargetBoards, rampTargetPonds, rampUpTargetPonds].forEach(el => el.addEventListener('input', updateProductionContextDisplay));
     [throughputBoards, rampTargetBoards, rampTargetPonds, rampUpTargetPonds].forEach(el => el.addEventListener('change', updateProductionContextDisplay));
+    [laborAvailSeeding, laborAvailTransplant, laborAvailHarvest, laborAvailPack, laborAvailShipping, laborAvailGrow, laborAvailFacilities, laborAvailMaintenance].forEach(el => el.addEventListener('input', updateLaborAvailabilityDisplay));
+    [laborAvailSeeding, laborAvailTransplant, laborAvailHarvest, laborAvailPack, laborAvailShipping, laborAvailGrow, laborAvailFacilities, laborAvailMaintenance].forEach(el => el.addEventListener('change', updateLaborAvailabilityDisplay));
 
     function renderAll() {
       renderTable();
@@ -1425,6 +1672,8 @@
       rampTargetBoards.value = productionContext.rampTargetBoards;
       rampTargetPonds.value = productionContext.rampTargetPonds;
       rampUpTargetPonds.value = productionContext.rampUpTargetPonds;
+      applyLaborAvailabilityToInputs(loadLaborAvailability());
+      updateLaborAvailabilityDisplay();
       updateProductionContextDisplay();
       renderAll();
       void loadRampFromCloud(false);
