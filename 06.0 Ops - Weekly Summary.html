@@ -585,7 +585,7 @@
                   <th>TARGET</th>
                   <th>% Completed</th>
                   <th>% Missed</th>
-                  <th># Missed</th>
+                  <th>Lbs. Missed</th>
                 </tr>
               </thead>
               <tbody id="tbody"></tbody>
@@ -1783,17 +1783,31 @@
       return Number.isFinite(n) ? n : NaN;
     }
 
-    function missedCountDisplay(completed, target){
+    function missedCountMultiplier(metricKey){
+      switch (metricKey){
+        case "seeding":
+          return (6/127) * 200;
+        case "transplant_boards":
+          return 6;
+        case "transplant_plugs":
+          return (6/127);
+        default:
+          return 1;
+      }
+    }
+
+    function missedCountDisplay(completed, target, metricKey){
       const cs = String(completed ?? "").trim();
       const ts = String(target ?? "").trim();
       const c = parseDisplayNumber(cs);
       const t = parseDisplayNumber(ts);
       if (!Number.isFinite(c) || !Number.isFinite(t)) return "—";
-      const diff = c - t;
+      const diff = (t - c) * missedCountMultiplier(metricKey);
       const isPct = cs.includes("%") || ts.includes("%");
-      const cls = diff > 0 ? "pos" : (diff < 0 ? "neg" : "zero");
-      const sign = diff > 0 ? "+" : "";
-      const txt = isPct ? `${sign}${diff.toFixed(1)}%` : `${sign}${Math.round(diff).toLocaleString()}`;
+      const cls = diff > 0 ? "neg" : (diff < 0 ? "pos" : "zero");
+      const sign = diff > 0 ? "-" : (diff < 0 ? "+" : "");
+      const absDiff = Math.abs(diff);
+      const txt = isPct ? `${sign}${absDiff.toFixed(1)}%` : `${sign}${Math.round(absDiff).toLocaleString()}`;
       return `<span class="missed-count ${cls}">${txt}</span>`;
     }
 
@@ -2163,7 +2177,7 @@
         units:"Lbs",
         pct:pctPill(summary.ship?.sales ?? 0, summary.salesShipLbs),
         missed:missedPill(summary.ship?.sales ?? 0, summary.salesShipLbs)
-      }, (summary.ship?.sales ?? 0) !== 0 || summary.salesShipLbs !== 0 || ((summary.aux?.shipRowsSelectedCount ?? summary.aux?.shipRowsByGrowWeekCount ?? 0) > 0) || ((summary.aux?.salesRowsSelectedCount ?? summary.aux?.salesRowsByShipWeekCount ?? 0) > 0));
+      }, true);
 
       if (!rows.length){
         const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : weekDisplay(summary.wkNum);
@@ -2180,7 +2194,7 @@
 
       for (const r of rows){
         if (r.missedCount === undefined){
-          r.missedCount = missedCountDisplay(r.completed, r.target);
+          r.missedCount = missedCountDisplay(r.completed, r.target, r.metricKey);
         }
       }
 
