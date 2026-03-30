@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Facility Ramp Tracker</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <style>
     :root {
       --bg: #020617;
@@ -436,7 +434,7 @@
 
     .toolbar {
       display: grid;
-      grid-template-columns: 1.3fr 1fr 1fr 1fr;
+      grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr;
       gap: 10px;
       margin-bottom: 14px;
     }
@@ -502,6 +500,44 @@
       font-size: 12px;
     }
 
+    .task-register-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .task-register-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(2, 6, 23, 0.72);
+    }
+
+    .task-register-toggle button {
+      width: auto;
+      min-width: 0;
+      margin: 0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .task-register-toggle button.active {
+      color: #f8fafc;
+      border-color: var(--line);
+      background: rgba(30, 41, 59, 0.86);
+    }
+
     .legend span::before {
       content: '';
       display: inline-block;
@@ -535,6 +571,21 @@
     .success {
       background: rgba(20, 83, 45, 0.45);
       color: #bbf7d0;
+    }
+
+    .complete-cell {
+      text-align: center;
+      vertical-align: middle;
+      width: 84px;
+      white-space: nowrap;
+    }
+
+    .complete-cell input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
     }
 
     @media (max-width: 1320px) {
@@ -782,7 +833,7 @@
 
         <div class="card" style="margin-bottom: 18px;">
           <h2>Timeline View</h2>
-          <div class="small" style="margin: 6px 0 10px;">Gantt-style chart of all production and support tasks.</div>
+          <div class="small" style="margin: 6px 0 10px;">Gantt-style chart of all production and support tasks. Drag task titles up or down to reorder; bars will follow.</div>
           <div class="toolbar">
             <input id="searchBox" placeholder="Search title, owner, notes..." />
             <select id="filterCategory">
@@ -808,6 +859,14 @@
               <option value="start">Sort: Start Date</option>
               <option value="labor">Sort: Labor</option>
               <option value="category">Sort: Category</option>
+              <option value="manual">Sort: Manual Order</option>
+            </select>
+            <select id="timelineWindow" aria-label="Timeline Window">
+              <option value="auto">Window: Auto</option>
+              <option value="14">Window: 14 Days</option>
+              <option value="35">Window: 35 Days</option>
+              <option value="60">Window: 60 Days</option>
+              <option value="90">Window: 90 Days</option>
             </select>
           </div>
           <div class="chart-wrap"><canvas id="ganttChart"></canvas></div>
@@ -825,8 +884,14 @@
         </div>
 
         <div class="card">
-          <h2>Task Register</h2>
-          <div class="small" style="margin: 6px 0 10px;">Click Edit to bring a task back into the input form.</div>
+          <div class="task-register-header">
+            <h2>Task Register</h2>
+            <div class="task-register-toggle" role="tablist" aria-label="Task Register View">
+              <button type="button" class="active" data-task-register-view="current">Current</button>
+              <button type="button" data-task-register-view="past">Past</button>
+            </div>
+          </div>
+          <div class="small" id="taskRegisterHint" style="margin: 6px 0 10px;">Showing current and upcoming tasks. Click Edit to bring a task back into the input form.</div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -837,6 +902,7 @@
                   <th>Dates</th>
                   <th>Labor</th>
                   <th>Status</th>
+                  <th class="complete-cell">Completed</th>
                   <th>Owner</th>
                   <th>Actions</th>
                 </tr>
@@ -849,6 +915,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <script>
     const DEFAULT_TASKS = [
       { id: crypto.randomUUID(), title: 'Ramp Down - Seeding Start', category: 'Operations', phase: 'Ramp Down', start: '2026-03-23', end: '2026-04-06', labor: 4, status: 'Planned', owner: 'Growing', notes: 'Daily seeding runs through Ramp Down transplant start.' },
@@ -897,6 +965,7 @@
     const WORKER_RAMP_URL = `${WORKER_BASE}/data/master/ramp_storage.json`;
     const RAMP_CLOUD_PAYLOAD_VERSION = 1;
     const LABOR_AVAILABILITY_STORAGE_KEY = 'campoCaribeProductionLaborAvailability';
+    const TIMELINE_WINDOW_STORAGE_KEY = 'campoCaribeRampTimelineWindow';
 
     let tasks = loadTasks();
     let chart;
@@ -912,6 +981,9 @@
     const filterCategory = document.getElementById('filterCategory');
     const filterPhase = document.getElementById('filterPhase');
     const sortBy = document.getElementById('sortBy');
+    const timelineWindow = document.getElementById('timelineWindow');
+    const taskRegisterHint = document.getElementById('taskRegisterHint');
+    const taskRegisterToggleButtons = Array.from(document.querySelectorAll('[data-task-register-view]'));
     const categorySelect = document.getElementById('category');
     const taskColorInput = document.getElementById('taskColor');
     const taskLineStyleInput = document.getElementById('taskLineStyle');
@@ -933,6 +1005,20 @@
     const laborAvailFacilities = document.getElementById('laborAvailFacilities');
     const laborAvailMaintenance = document.getElementById('laborAvailMaintenance');
     const laborAvailTotal = document.getElementById('laborAvailTotal');
+    let taskRegisterView = 'current';
+    let timelineDragState = null;
+    let timelineHoverIndex = -1;
+    let suppressTimelineClickOnce = false;
+
+    function loadTimelineWindowSetting() {
+      const allowed = new Set(['auto', '14', '35', '60', '90']);
+      const saved = localStorage.getItem(TIMELINE_WINDOW_STORAGE_KEY);
+      return allowed.has(saved) ? saved : 'auto';
+    }
+
+    function saveTimelineWindowSetting(value) {
+      localStorage.setItem(TIMELINE_WINDOW_STORAGE_KEY, value);
+    }
 
     function loadProductionContext() {
       const defaults = { throughput: 1080, rampTargetBoards: 800, rampTargetPonds: 0, rampUpTargetPonds: 0 };
@@ -1071,13 +1157,7 @@
       const incomingTasks = Array.isArray(payload) ? payload : payload?.tasks;
       if (!Array.isArray(incomingTasks)) throw new Error('Invalid ramp_storage.json format (missing tasks array).');
 
-      tasks = incomingTasks.map(task => {
-        const rampEnd = RAMP_MILESTONE_END_DATES[task.title];
-        const lineStyle = getTaskLineStyle(task);
-        const category = normalizeTaskCategory(task.category);
-        if (!rampEnd || task.start !== task.end) return { ...task, category, lineStyle };
-        return { ...task, category, end: rampEnd, lineStyle };
-      });
+      tasks = incomingTasks.map((task, index) => normalizeTask(task, index));
 
       const context = payload?.productionContext || {};
       const laborAvailability = payload?.laborAvailability || context?.laborAvailability || getDefaultLaborAvailability();
@@ -1170,21 +1250,24 @@
       return 'solid';
     }
 
+    function normalizeTask(task, fallbackOrder = 0) {
+      const rampEnd = RAMP_MILESTONE_END_DATES[task.title];
+      const lineStyle = getTaskLineStyle(task);
+      const category = normalizeTaskCategory(task.category);
+      const order = Number.isFinite(Number(task.order)) ? Number(task.order) : fallbackOrder;
+      if (!rampEnd || task.start !== task.end) return { ...task, category, lineStyle, order };
+      return { ...task, category, end: rampEnd, lineStyle, order };
+    }
+
     function loadTasks() {
       const saved = localStorage.getItem('campoCaribeRampTracker');
       const loaded = saved ? JSON.parse(saved) : [...DEFAULT_TASKS];
-      return loaded.map(task => {
-        const rampEnd = RAMP_MILESTONE_END_DATES[task.title];
-        const lineStyle = getTaskLineStyle(task);
-        const category = normalizeTaskCategory(task.category);
-        if (!rampEnd || task.start !== task.end) return { ...task, category, lineStyle };
-        return { ...task, category, end: rampEnd, lineStyle };
-      });
+      return loaded.map((task, index) => normalizeTask(task, index));
     }
 
-    function saveTasks(syncCloud = true) {
+    function saveTasks(syncCloud = true, showCloudStatus = false) {
       localStorage.setItem('campoCaribeRampTracker', JSON.stringify(tasks));
-      if (syncCloud) void saveRampToCloud(false);
+      if (syncCloud) void saveRampToCloud(showCloudStatus);
     }
 
     function getFilteredTasks() {
@@ -1200,12 +1283,20 @@
       });
 
       const sorter = {
+        manual: (a, b) => {
+          const aOrder = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+          const bOrder = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return new Date(a.start) - new Date(b.start);
+        },
         start: (a, b) => new Date(a.start) - new Date(b.start),
         labor: (a, b) => b.labor - a.labor,
         category: (a, b) => a.category.localeCompare(b.category)
       };
 
       filtered.sort((a, b) => {
+        if (sortBy.value === 'manual') return sorter.manual(a, b);
+
         const aRank = RAMP_MILESTONE_ORDER.indexOf(a.title);
         const bRank = RAMP_MILESTONE_ORDER.indexOf(b.title);
         const aPinned = aRank !== -1;
@@ -1218,6 +1309,67 @@
         return sorter[sortBy.value](a, b);
       });
       return filtered;
+    }
+
+    function getTaskRegisterTasks(baseFilteredTasks = getFilteredTasks()) {
+      const now = new Date();
+      const todayStartMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      return baseFilteredTasks.filter(task => {
+        const endMs = new Date(`${task.end}T23:59:59`).getTime();
+        const isPastTask = Number.isFinite(endMs) && endMs < todayStartMs;
+        return taskRegisterView === 'past' ? isPastTask : !isPastTask;
+      });
+    }
+
+    function updateTaskRegisterViewUI() {
+      taskRegisterToggleButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.taskRegisterView === taskRegisterView);
+      });
+      if (taskRegisterHint) {
+        taskRegisterHint.textContent = taskRegisterView === 'past'
+          ? 'Showing tasks whose end date is before today. Click Edit to bring a task back into the input form.'
+          : 'Showing current and upcoming tasks. Click Edit to bring a task back into the input form.';
+      }
+    }
+
+    function reorderTasksByTimeline(sourceTaskId, beforeTaskId = null, afterTaskId = null) {
+      if (!sourceTaskId) return false;
+
+      const ordered = [...tasks].sort((a, b) => {
+        const aOrder = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+        const bOrder = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+        return aOrder - bOrder;
+      });
+      const originalOrderIds = ordered.map(task => task.id);
+
+      const sourceIndex = ordered.findIndex(task => task.id === sourceTaskId);
+      if (sourceIndex === -1) return false;
+
+      const [movedTask] = ordered.splice(sourceIndex, 1);
+      let insertIndex = ordered.length;
+
+      if (beforeTaskId) {
+        const beforeIndex = ordered.findIndex(task => task.id === beforeTaskId);
+        if (beforeIndex !== -1) insertIndex = beforeIndex;
+      } else if (afterTaskId) {
+        const afterIndex = ordered.findIndex(task => task.id === afterTaskId);
+        if (afterIndex !== -1) insertIndex = afterIndex + 1;
+      }
+
+      ordered.splice(insertIndex, 0, movedTask);
+      const nextOrderIds = ordered.map(task => task.id);
+      if (nextOrderIds.every((id, index) => id === originalOrderIds[index])) return false;
+
+      ordered.forEach((task, index) => {
+        task.order = index;
+      });
+
+      tasks = ordered;
+      sortBy.value = 'manual';
+      saveTasks(true, true);
+      renderTable();
+      refreshTimelineChart(true);
+      return true;
     }
 
     function daysThisWeek(task) {
@@ -1249,8 +1401,9 @@
     function renderTable() {
       const filtered = getFilteredTasks();
       updateStats(filtered);
+      const registerTasks = getTaskRegisterTasks(filtered);
 
-      tableBody.innerHTML = filtered.map(task => `
+      tableBody.innerHTML = registerTasks.length ? registerTasks.map(task => `
         <tr>
           <td>
             <strong>${escapeHtml(task.title)}</strong><br>
@@ -1261,20 +1414,29 @@
           <td>${formatDate(task.start)}<br>to<br>${formatDate(task.end)}</td>
           <td>${task.labor}</td>
           <td><span class="pill ${task.status === 'Complete' ? 'success' : task.status === 'On Hold' ? 'danger' : ''}">${escapeHtml(task.status)}</span></td>
+          <td class="complete-cell">
+            <input
+              type="checkbox"
+              aria-label="Mark ${escapeHtml(task.title)} as completed"
+              ${task.status === 'Complete' ? 'checked' : ''}
+              onchange="setTaskCompleted('${task.id}', this.checked)"
+            />
+          </td>
           <td>${escapeHtml(task.owner || '')}</td>
           <td>
             <button type="button" class="secondary" onclick="editTask('${task.id}')">Edit</button>
             <button type="button" class="secondary" onclick="deleteTask('${task.id}')" style="margin-top:6px;">Delete</button>
           </td>
         </tr>
-      `).join('');
+      `).join('') : `
+        <tr>
+          <td colspan="9" class="small">No ${taskRegisterView === 'past' ? 'past' : 'current/upcoming'} tasks match the selected filters.</td>
+        </tr>
+      `;
     }
 
-    function renderChart() {
-      const filtered = getFilteredTasks();
-      const ctx = document.getElementById('ganttChart');
-
-      const dataset = filtered.map(task => {
+    function buildTimelineDataset(filteredTasks) {
+      return filteredTasks.map(task => {
         const startMs = new Date(task.start + 'T00:00:00').getTime();
         let endMs = new Date(task.end + 'T00:00:00').getTime();
 
@@ -1298,11 +1460,119 @@
           endLabel: task.end
         };
       });
+    }
 
-      const startValues = dataset.map(d => d.x[0]);
-      const endValues = dataset.map(d => d.x[1]);
-      const minX = startValues.length ? Math.min(...startValues) - 3 * 24 * 60 * 60 * 1000 : undefined;
-      const maxX = endValues.length ? Math.max(...endValues) + 3 * 24 * 60 * 60 * 1000 : undefined;
+    function getTimelineBounds(dataset) {
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      const LOOKBACK_DAYS = 2;
+      const FORWARD_WINDOW_DAYS = 35;
+      const now = new Date();
+      const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const endValues = dataset.map(d => Number(d?.x?.[1])).filter(Number.isFinite);
+      const minX = todayMs - LOOKBACK_DAYS * DAY_MS;
+      const selectedWindow = timelineWindow?.value || 'auto';
+      const selectedDays = Number(selectedWindow);
+      const minForwardDays = Number.isFinite(selectedDays) && selectedDays > 0 ? selectedDays : FORWARD_WINDOW_DAYS;
+      const minWindowMax = todayMs + minForwardDays * DAY_MS;
+      const maxTaskX = endValues.length ? Math.max(...endValues) + 3 * DAY_MS : todayMs;
+      const maxX = selectedWindow === 'auto' ? Math.max(maxTaskX, minWindowMax) : minWindowMax;
+      return { minX, maxX };
+    }
+
+    function filterTimelineDatasetToWindow(dataset, minX, maxX) {
+      return dataset.filter(item => {
+        const startMs = Number(item?.x?.[0]);
+        const endMs = Number(item?.x?.[1]);
+        if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return false;
+        return endMs > minX && startMs < maxX;
+      });
+    }
+
+    function refreshTimelineChart(animated = true) {
+      if (!chart) {
+        renderChart();
+        return;
+      }
+      const filtered = getFilteredTasks();
+      const dataset = buildTimelineDataset(filtered);
+      const { minX, maxX } = getTimelineBounds(dataset);
+      const visibleDataset = filterTimelineDatasetToWindow(dataset, minX, maxX);
+      const timelineDataset = chart.data.datasets?.[0];
+      if (!timelineDataset) {
+        renderChart();
+        return;
+      }
+      timelineDataset.data = visibleDataset;
+      timelineDataset.backgroundColor = visibleDataset.map(d => d.color);
+      if (chart.options?.scales?.x) {
+        chart.options.scales.x.min = minX;
+        chart.options.scales.x.max = maxX;
+      }
+      chart.update(animated ? undefined : 'none');
+    }
+
+    function getTimelineRowIndex(chartInstance, event) {
+      const yScale = chartInstance?.scales?.y;
+      const chartDataset = chartInstance?.data?.datasets?.[0];
+      const totalRows = chartDataset?.data?.length || 0;
+      if (!yScale || !totalRows || !Number.isFinite(event?.y)) return -1;
+
+      const rawIndex = yScale.getValueForPixel(event.y);
+      const nearestIndex = Math.round(rawIndex);
+      if (!Number.isFinite(nearestIndex)) return -1;
+      if (nearestIndex < 0 || nearestIndex >= totalRows) return -1;
+      return nearestIndex;
+    }
+
+    function getTimelineDropIndex(chartInstance, pointerY) {
+      const yScale = chartInstance?.scales?.y;
+      const chartDataset = chartInstance?.data?.datasets?.[0];
+      const totalRows = chartDataset?.data?.length || 0;
+      if (!yScale || !totalRows || !Number.isFinite(pointerY)) return -1;
+
+      const centers = Array.from({ length: totalRows }, (_, i) => yScale.getPixelForTick(i)).filter(Number.isFinite);
+      if (!centers.length) return -1;
+      if (centers.length === 1) return pointerY < centers[0] ? 0 : 1;
+
+      const firstBoundary = (centers[0] + centers[1]) / 2;
+      if (pointerY < firstBoundary) return 0;
+
+      for (let i = 1; i < centers.length; i++) {
+        const boundary = (centers[i - 1] + centers[i]) / 2;
+        if (pointerY < boundary) return i;
+      }
+
+      return centers.length;
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+      const value = String(hex || '').trim();
+      const short = /^#([0-9a-fA-F]{3})$/;
+      const long = /^#([0-9a-fA-F]{6})$/;
+      if (short.test(value)) {
+        const [, raw] = value.match(short);
+        const r = parseInt(raw[0] + raw[0], 16);
+        const g = parseInt(raw[1] + raw[1], 16);
+        const b = parseInt(raw[2] + raw[2], 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+      if (long.test(value)) {
+        const [, raw] = value.match(long);
+        const r = parseInt(raw.slice(0, 2), 16);
+        const g = parseInt(raw.slice(2, 4), 16);
+        const b = parseInt(raw.slice(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+      return value || `rgba(100, 116, 139, ${alpha})`;
+    }
+
+    function renderChart() {
+      const filtered = getFilteredTasks();
+      const ctx = document.getElementById('ganttChart');
+
+      const dataset = buildTimelineDataset(filtered);
+      const { minX, maxX } = getTimelineBounds(dataset);
+      const visibleDataset = filterTimelineDatasetToWindow(dataset, minX, maxX);
 
       if (chart) chart.destroy();
 
@@ -1477,14 +1747,256 @@
         }
       };
 
+      const timelineReorderPlugin = {
+        id: 'timelineReorderPlugin',
+        afterEvent(chartInstance, args) {
+          const event = args?.event;
+          if (!event) return;
+
+          const chartArea = chartInstance.chartArea;
+          const chartDataset = chartInstance.data.datasets?.[0];
+          const canvas = chartInstance.canvas;
+          if (!chartArea || !chartDataset || !canvas) return;
+
+          const isInsideChart =
+            event.x >= chartArea.left &&
+            event.x <= chartArea.right &&
+            event.y >= chartArea.top &&
+            event.y <= chartArea.bottom;
+          const isInsideCanvas =
+            event.x >= 0 &&
+            event.x <= canvas.width &&
+            event.y >= 0 &&
+            event.y <= canvas.height;
+
+          const yScale = chartInstance.scales?.y;
+          const isInsideTaskTitleArea =
+            !!yScale &&
+            isInsideCanvas &&
+            event.x >= yScale.left &&
+            event.x <= yScale.right &&
+            event.y >= chartArea.top &&
+            event.y <= chartArea.bottom;
+
+          const nextHoverIndex = isInsideTaskTitleArea ? getTimelineRowIndex(chartInstance, event) : -1;
+          if (!timelineDragState && timelineHoverIndex !== nextHoverIndex) {
+            timelineHoverIndex = nextHoverIndex;
+            args.changed = true;
+          }
+
+          if ((event.type === 'mousedown' || event.type === 'touchstart') && isInsideTaskTitleArea) {
+            const startIndex = getTimelineRowIndex(chartInstance, event);
+            if (startIndex < 0) return;
+            timelineDragState = {
+              sourceIndex: startIndex,
+              dropIndex: startIndex + 1,
+              sourceTaskId: chartDataset.data[startIndex]?.taskId,
+              pointerY: event.y
+            };
+            canvas.style.cursor = 'grabbing';
+            args.changed = true;
+            return;
+          }
+
+          if (!timelineDragState) return;
+
+          if (event.type === 'mousemove' || event.type === 'touchmove') {
+            if (!isInsideCanvas) return;
+            const dropIndex = getTimelineDropIndex(chartInstance, event.y);
+            if (dropIndex < 0) return;
+            timelineDragState.dropIndex = dropIndex;
+            timelineDragState.pointerY = Math.max(chartArea.top, Math.min(chartArea.bottom, event.y));
+            args.changed = true;
+            return;
+          }
+
+          if (event.type === 'mouseup' || event.type === 'touchend' || event.type === 'mouseout') {
+            const sourceIndex = timelineDragState.sourceIndex;
+            const dropIndex = timelineDragState.dropIndex;
+            const sourceTaskId = timelineDragState.sourceTaskId;
+            const beforeTaskId = chartDataset.data[dropIndex]?.taskId || null;
+            const afterTaskId = dropIndex > 0 ? (chartDataset.data[dropIndex - 1]?.taskId || null) : null;
+            const didReorder =
+              reorderTasksByTimeline(sourceTaskId, beforeTaskId, afterTaskId);
+            if (didReorder) suppressTimelineClickOnce = true;
+            timelineDragState = null;
+            timelineHoverIndex = nextHoverIndex;
+            canvas.style.cursor = 'default';
+            args.changed = true;
+          }
+        }
+      };
+
+      const taskTitleBubblePlugin = {
+        id: 'taskTitleBubblePlugin',
+        afterDraw(chartInstance) {
+          const yScale = chartInstance.scales?.y;
+          const ticks = yScale?.ticks;
+          if (!yScale || !Array.isArray(ticks) || !ticks.length) return;
+
+          const ctx = chartInstance.ctx;
+          const left = yScale.left + 6;
+          const right = yScale.right - 6;
+          const availableWidth = right - left;
+          if (!Number.isFinite(availableWidth) || availableWidth <= 10) return;
+
+          const rowStep = ticks.length > 1
+            ? Math.abs(yScale.getPixelForTick(1) - yScale.getPixelForTick(0))
+            : 30;
+          const bubbleHeight = Math.max(20, Math.min(28, rowStep * 0.72));
+          const radius = Math.max(8, Math.min(12, bubbleHeight / 2));
+
+          ctx.save();
+          ctx.font = '700 12px Inter, Arial, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          const drawBubble = (label, y, style = {}) => {
+            const x = left;
+            const w = availableWidth;
+            const h = bubbleHeight;
+            const yTop = y - h / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x + radius, yTop);
+            ctx.lineTo(x + w - radius, yTop);
+            ctx.quadraticCurveTo(x + w, yTop, x + w, yTop + radius);
+            ctx.lineTo(x + w, yTop + h - radius);
+            ctx.quadraticCurveTo(x + w, yTop + h, x + w - radius, yTop + h);
+            ctx.lineTo(x + radius, yTop + h);
+            ctx.quadraticCurveTo(x, yTop + h, x, yTop + h - radius);
+            ctx.lineTo(x, yTop + radius);
+            ctx.quadraticCurveTo(x, yTop, x + radius, yTop);
+            ctx.closePath();
+
+            if (style.shadow) {
+              ctx.shadowColor = style.shadow;
+              ctx.shadowBlur = 14;
+              ctx.shadowOffsetY = 5;
+            } else {
+              ctx.shadowColor = 'transparent';
+              ctx.shadowBlur = 0;
+              ctx.shadowOffsetY = 0;
+            }
+
+            ctx.fillStyle = style.fill || 'rgba(15, 23, 42, 0.96)';
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            ctx.strokeStyle = style.stroke || 'rgba(148, 163, 184, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            if (style.dashedStroke) {
+              ctx.save();
+              ctx.setLineDash([5, 4]);
+              ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
+              ctx.stroke();
+              ctx.restore();
+            }
+
+            ctx.fillStyle = style.text || '#e5e7eb';
+            ctx.fillText(label, x + 10, y);
+          };
+
+          ticks.forEach((tick, index) => {
+            const label = String(tick?.label || '').trim();
+            if (!label) return;
+            const y = yScale.getPixelForTick(index);
+            if (!Number.isFinite(y)) return;
+
+            const row = chartInstance.data?.datasets?.[0]?.data?.[index] || {};
+            const categoryColor = row.color || getDefaultTaskColor(row.category);
+            const isHover = timelineHoverIndex === index;
+            const isDragSource = timelineDragState?.sourceIndex === index;
+
+            if (isDragSource) {
+              drawBubble(label, y, {
+                fill: hexToRgba(categoryColor, 0.2),
+                stroke: hexToRgba(categoryColor, 0.35),
+                text: 'rgba(229, 231, 235, 0.55)',
+                dashedStroke: true
+              });
+              return;
+            }
+
+            drawBubble(label, y, {
+              fill: isHover
+                  ? hexToRgba(categoryColor, 0.32)
+                  : hexToRgba(categoryColor, 0.24),
+              stroke: isHover
+                  ? hexToRgba(categoryColor, 0.82)
+                  : hexToRgba(categoryColor, 0.58)
+            });
+
+            if (isHover && !timelineDragState) {
+              ctx.fillStyle = 'rgba(148, 163, 184, 0.95)';
+              ctx.font = '700 10px Inter, Arial, sans-serif';
+              const cueText = 'drag';
+              const cueWidth = ctx.measureText(cueText).width;
+              ctx.fillText(cueText, right - cueWidth - 10, y);
+              ctx.font = '700 12px Inter, Arial, sans-serif';
+            }
+          });
+
+          if (timelineDragState) {
+            const sourceTick = ticks[timelineDragState.sourceIndex];
+            const sourceLabel = String(sourceTick?.label || '').trim();
+            if (sourceLabel) {
+              const dragY = Number.isFinite(timelineDragState.pointerY)
+                ? Math.max(yScale.top + bubbleHeight / 2, Math.min(yScale.bottom - bubbleHeight / 2, timelineDragState.pointerY))
+                : yScale.getPixelForTick(timelineDragState.sourceIndex);
+              const sourceRow = chartInstance.data?.datasets?.[0]?.data?.[timelineDragState.sourceIndex] || {};
+              const sourceColor = sourceRow.color || getDefaultTaskColor(sourceRow.category);
+              drawBubble(sourceLabel, dragY, {
+                fill: hexToRgba(sourceColor, 0.72),
+                stroke: hexToRgba(sourceColor, 1),
+                shadow: 'rgba(0, 0, 0, 0.5)'
+              });
+            }
+          }
+
+          if (timelineDragState) {
+            const dropIndex = timelineDragState.dropIndex;
+            const centers = Array.from({ length: ticks.length }, (_, i) => yScale.getPixelForTick(i));
+            let insertionY = null;
+            if (centers.length === 1) {
+              insertionY = dropIndex <= 0 ? centers[0] - bubbleHeight / 2 : centers[0] + bubbleHeight / 2;
+            } else if (dropIndex <= 0) {
+              insertionY = centers[0] - Math.abs(centers[1] - centers[0]) / 2;
+            } else if (dropIndex >= centers.length) {
+              insertionY = centers[centers.length - 1] + Math.abs(centers[centers.length - 1] - centers[centers.length - 2]) / 2;
+            } else {
+              insertionY = (centers[dropIndex - 1] + centers[dropIndex]) / 2;
+            }
+
+            if (Number.isFinite(insertionY)) {
+              const lineY = Math.max(yScale.top + 4, Math.min(yScale.bottom - 4, insertionY));
+              ctx.save();
+              ctx.strokeStyle = 'rgba(148, 163, 184, 0.95)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(left + 4, lineY);
+              ctx.lineTo(right - 4, lineY);
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+
+          ctx.restore();
+        }
+      };
+
       chart = new Chart(ctx, {
         type: 'bar',
-        plugins: [todayLinePlugin, rampArrowPlugin, dashedTaskPlugin],
+        plugins: [todayLinePlugin, rampArrowPlugin, dashedTaskPlugin, timelineReorderPlugin, taskTitleBubblePlugin],
         data: {
           datasets: [{
             label: 'Tasks',
-            data: dataset,
-            backgroundColor: dataset.map(d => d.color),
+            data: visibleDataset,
+            backgroundColor: visibleDataset.map(d => d.color),
             borderRadius: 8,
             borderSkipped: false,
             barPercentage: 0.7,
@@ -1492,18 +2004,44 @@
           }]
         },
         options: {
+          events: ['mousedown', 'mousemove', 'mouseup', 'mouseout', 'click', 'touchstart', 'touchmove', 'touchend'],
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
+          animation: {
+            duration: 260,
+            easing: 'easeOutCubic'
+          },
           onHover: (event, elements, chartInstance) => {
             const canvas = chartInstance?.canvas;
             if (!canvas) return;
+            if (timelineDragState) {
+              canvas.style.cursor = 'grabbing';
+              return;
+            }
+            const chartArea = chartInstance.chartArea;
+            const yScale = chartInstance.scales?.y;
+            const inTaskTitleArea =
+              !!chartArea &&
+              !!yScale &&
+              event.x >= yScale.left &&
+              event.x <= yScale.right &&
+              event.y >= chartArea.top &&
+              event.y <= chartArea.bottom;
+            if (inTaskTitleArea) {
+              canvas.style.cursor = 'grab';
+              return;
+            }
             canvas.style.cursor = elements.length ? 'pointer' : 'default';
           },
           onClick: (event, elements) => {
+            if (suppressTimelineClickOnce) {
+              suppressTimelineClickOnce = false;
+              return;
+            }
             if (!elements || !elements.length) return;
             const point = elements[0];
-            const clicked = dataset[point.index];
+            const clicked = chart?.data?.datasets?.[0]?.data?.[point.index];
             if (clicked?.taskId) window.editTask(clicked.taskId, { scrollToForm: false });
           },
           parsing: {
@@ -1549,7 +2087,11 @@
               grid: { color: 'rgba(148, 163, 184, 0.22)' }
             },
             y: {
-              ticks: { color: '#cbd5e1' },
+              ticks: {
+                color: 'rgba(0, 0, 0, 0)',
+                font: { size: 12, weight: '700' },
+                padding: 8
+              },
               grid: { display: false }
             }
           }
@@ -1607,6 +2149,28 @@
       await saveRampToCloud(true);
     }
 
+    window.setTaskCompleted = async function(id, completed) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      if (completed) {
+        if (task.status !== 'Complete') {
+          task.previousStatus = task.status;
+          task.status = 'Complete';
+        }
+      } else if (task.status === 'Complete') {
+        const fallbackStatus = task.previousStatus && task.previousStatus !== 'Complete'
+          ? task.previousStatus
+          : 'Planned';
+        task.status = fallbackStatus;
+        delete task.previousStatus;
+      }
+
+      saveTasks(false);
+      renderAll();
+      await saveRampToCloud(true);
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const task = {
@@ -1630,8 +2194,17 @@
       }
 
       const existingIndex = tasks.findIndex(t => t.id === task.id);
-      if (existingIndex >= 0) tasks[existingIndex] = task;
-      else tasks.push(task);
+      if (existingIndex >= 0) {
+        const current = tasks[existingIndex];
+        const currentOrder = Number.isFinite(Number(current.order)) ? Number(current.order) : existingIndex;
+        tasks[existingIndex] = { ...current, ...task, order: currentOrder };
+      } else {
+        const maxOrder = tasks.reduce((max, item) => {
+          const itemOrder = Number.isFinite(Number(item.order)) ? Number(item.order) : -1;
+          return Math.max(max, itemOrder);
+        }, -1);
+        tasks.push({ ...task, order: maxOrder + 1 });
+      }
 
       saveTasks(false);
       resetForm();
@@ -1662,14 +2235,24 @@
     });
 
     loadSampleBtn.addEventListener('click', () => {
-      tasks = [...DEFAULT_TASKS];
+      tasks = DEFAULT_TASKS.map((task, index) => normalizeTask(task, index));
       saveTasks();
       renderAll();
       resetForm();
     });
 
-    [searchBox, filterCategory, filterPhase, sortBy].forEach(el => el.addEventListener('input', renderAll));
-    [searchBox, filterCategory, filterPhase, sortBy].forEach(el => el.addEventListener('change', renderAll));
+    [searchBox, filterCategory, filterPhase, sortBy, timelineWindow].forEach(el => el.addEventListener('input', renderAll));
+    [searchBox, filterCategory, filterPhase, sortBy, timelineWindow].forEach(el => el.addEventListener('change', () => {
+      if (el === timelineWindow) saveTimelineWindowSetting(timelineWindow.value);
+      renderAll();
+    }));
+    taskRegisterToggleButtons.forEach(btn => btn.addEventListener('click', () => {
+      const nextView = btn.dataset.taskRegisterView;
+      if (!nextView || nextView === taskRegisterView) return;
+      taskRegisterView = nextView;
+      updateTaskRegisterViewUI();
+      renderTable();
+    }));
     [throughputBoards, rampTargetBoards, rampTargetPonds, rampUpTargetPonds].forEach(el => el.addEventListener('input', updateProductionContextDisplay));
     [throughputBoards, rampTargetBoards, rampTargetPonds, rampUpTargetPonds].forEach(el => el.addEventListener('change', updateProductionContextDisplay));
     [laborAvailSeeding, laborAvailTransplant, laborAvailHarvest, laborAvailPack, laborAvailShipping, laborAvailGrow, laborAvailFacilities, laborAvailMaintenance].forEach(el => el.addEventListener('input', updateLaborAvailabilityDisplay));
@@ -1690,6 +2273,8 @@
       applyLaborAvailabilityToInputs(loadLaborAvailability());
       updateLaborAvailabilityDisplay();
       updateProductionContextDisplay();
+      timelineWindow.value = loadTimelineWindowSetting();
+      updateTaskRegisterViewUI();
       renderAll();
       void loadRampFromCloud(false);
     }
