@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seed Inventory</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      --bg:#020617;
+      --panel:#0b1222;
+      --panel2:#0f172a;
+      --card: rgba(2,6,23,.72);
+      --card2: rgba(15,23,42,.70);
+      --line: rgba(148,163,184,.18);
+      --line2: rgba(148,163,184,.12);
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --sub:#cbd5e1;
+      --green:#22c55e;
+      --blue:#38bdf8;
+      --orange:#f59e0b;
+      --radius: 18px;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 600px at 18% -8%, rgba(34,197,94,.16), transparent 55%),
+        radial-gradient(900px 500px at 105% 10%, rgba(56,189,248,.14), transparent 60%),
+        var(--bg);
+    }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 12px 16px 32px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(11,18,34,.72), rgba(2,6,23,.55));
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    h1 { margin: 0 0 6px; font-size: 24px; font-family: Poppins, Inter, system-ui; font-weight: 800; }
+    .sub { color: var(--sub); font-size: 14px; }
+    .pill {
+      border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; color: var(--sub); font-size: 12px;
+      background: rgba(2,6,23,.35);
+      white-space: nowrap;
+    }
+
+    .controls { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .controls:empty { display: none; margin-top: 0; }
+    .viewPills { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .viewPill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(2,6,23,.40);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      cursor: pointer;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+    }
+    .viewPill:hover{ border-color: rgba(56,189,248,.45); transform: translateY(-1px); }
+    .viewPill:active{ transform: translateY(0px); }
+    .viewPill.active {
+      color: var(--text);
+      border-color: rgba(34,197,94,.45);
+      background: rgba(34,197,94,.10);
+    }
+    .control {
+      border: 1px solid var(--line); border-radius: 12px; background: rgba(2,6,23,.35);
+      padding: 10px; display: flex; gap: 8px; align-items: center;
+    }
+    label { font-size: 12px; color: var(--muted); font-weight: 700; }
+    input, select {
+      border: 1px solid rgba(148,163,184,.24); border-radius: 10px; background: rgba(2,6,23,.55); color: var(--text);
+      padding: 8px 9px; font-size: 14px;
+    }
+
+    .grid4 { margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--line2); border-radius: 16px; background: rgba(2,6,23,.40); padding: 12px; }
+    .kpi .t { font-size: 12px; color: var(--muted); font-weight: 700; }
+    .kpi .v { margin-top: 6px; font-size: 26px; font-weight: 900; font-family: Poppins, Inter, system-ui; }
+
+    .grid2 { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+    .card { border: 1px solid var(--line); border-radius: 16px; background: rgba(2,6,23,.40); padding: 12px; }
+    .grid2 > .card { min-width: 0; }
+    .card h3 { margin: 0 0 8px; font-size: 15px; font-family: Poppins, Inter, system-ui; }
+    .chartWrap { height: 290px; }
+    .chartWrap canvas { max-width: 100%; }
+
+    .section { margin-top: 10px; }
+    .tableGroup {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.02);
+    }
+    .tableGroup:first-of-type { margin-top: 0; }
+    .tableGroupHead {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    .tableGroup.prod { border-color: rgba(54,213,141,.45); background: rgba(54,213,141,.06); }
+    .tableGroup.prod .tableGroupHead { border-color: rgba(54,213,141,.55); color: #9ff0c9; }
+    .tableGroup.exp { border-color: rgba(107,180,255,.45); background: rgba(107,180,255,.06); }
+    .tableGroup.exp .tableGroupHead { border-color: rgba(107,180,255,.55); color: #b9dcff; }
+    .tableGroup.mix { border-color: rgba(255,179,95,.45); background: rgba(255,179,95,.06); }
+    .tableGroup.mix .tableGroupHead { border-color: rgba(255,179,95,.55); color: #ffd8aa; }
+    .sectionTag {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .tableWrap { overflow: auto; border: 1px solid var(--line2); border-radius: 14px; background: rgba(2,6,23,.32); }
+    table { width: 100%; border-collapse: collapse; min-width: 980px; }
+    th, td { padding: 10px 9px; border-bottom: 1px solid var(--line2); font-size: 13px; }
+    th {
+      text-align: left;
+      color: var(--sub);
+      background: rgba(11,18,34,.92);
+      font-weight: 800;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th.r, td.r { text-align: right; }
+    tbody tr:nth-child(even){ background: rgba(2,6,23,.20); }
+    tbody tr:hover{ background: rgba(56,189,248,.08); }
+    .tableKpiRow {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,.02);
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .tableKpiVal {
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .topVarietyTable { min-width: 0; table-layout: fixed; }
+    .topVarietyTable th:nth-child(1), .topVarietyTable td:nth-child(1) { width: 44%; }
+    .topVarietyTable th:nth-child(2), .topVarietyTable td:nth-child(2) { width: 30%; }
+    .topVarietyTable th:nth-child(3), .topVarietyTable td:nth-child(3) { width: 26%; white-space: nowrap; }
+    .status { margin-top: 10px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line2); padding-top: 10px; }
+
+    @media (max-width: 1100px) {
+      .grid4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 650px) {
+      .grid4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="top">
+        <div>
+          <h1>Seed Inventory</h1>
+          <div class="sub">Inventory is organized in 3 datasets: Production Seeds, Experiment Seeds, and Mixed Seeds.</div>
+        </div>
+        <div class="pill" id="meta">Rows: —</div>
+      </div>
+
+      <div class="viewPills">
+        <button class="viewPill active" id="pillDashboard" type="button">Dashboard</button>
+        <button class="viewPill" id="pillTable" type="button">Seed Inventory Table</button>
+      </div>
+
+      <div id="dashboardView">
+      <div class="controls">
+      </div>
+
+      <div class="grid4">
+        <div class="kpi"><div class="t">Production Seeds Remaining</div><div class="v" id="kProdRem">—</div></div>
+        <div class="kpi"><div class="t">Experiment Seeds Remaining</div><div class="v" id="kExpRem">—</div></div>
+        <div class="kpi"><div class="t">Mixed Seeds Remaining</div><div class="v" id="kMixRem">—</div></div>
+        <div class="kpi"><div class="t">Total Active Lots</div><div class="v" id="kLots">—</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Seeds Remaining for Production</h3>
+          <div class="tableWrap" id="topProductionWrap">
+            <table class="topVarietyTable">
+              <thead>
+                <tr><th>Variety</th><th>Type</th><th class="r">Quantity Remaining</th></tr>
+              </thead>
+              <tbody id="tbTopProduction"></tbody>
+            </table>
+          </div>
+          <div class="tableKpiRow"><span>Total Seeds Remaining</span><span class="tableKpiVal" id="kTopProdTotal">—</span></div>
+        </div>
+        <div class="card">
+          <h3>Seeds Remaining for Expermients</h3>
+          <div class="tableWrap" id="topExperimentWrap">
+            <table class="topVarietyTable">
+              <thead>
+                <tr><th>Variety</th><th>Type</th><th class="r">Quantity Remaining</th></tr>
+              </thead>
+              <tbody id="tbTopExperiment"></tbody>
+            </table>
+          </div>
+          <div class="tableKpiRow"><span>Total Seeds Remaining</span><span class="tableKpiVal" id="kTopExpTotal">—</span></div>
+        </div>
+        <div class="card">
+          <h3>Seeds Remaining for Mixed Seeds</h3>
+          <div class="tableWrap" id="topMixedWrap">
+            <table class="topVarietyTable">
+              <thead>
+                <tr><th>Variety</th><th>Purpose</th><th class="r">Quantity Remaining</th></tr>
+              </thead>
+              <tbody id="tbTopMixed"></tbody>
+            </table>
+          </div>
+          <div class="tableKpiRow"><span>Total Seeds Remaining</span><span class="tableKpiVal" id="kTopMixTotal">—</span></div>
+        </div>
+      </div>
+      </div>
+
+      <div class="card section" id="seedInventoryTables" style="display:none;">
+
+        <div class="section tableGroup prod" id="secProduction">
+          <div class="tableGroupHead">Production Seeds</div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Variety</th><th>Type</th><th>Provider</th><th>Lot</th><th>Date Received</th>
+                  <th class="r">Total Received</th><th class="r">Total Remaining</th><th>Last Inventory</th>
+                </tr>
+              </thead>
+              <tbody id="tbProduction"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section tableGroup exp" id="secExperiment">
+          <div class="tableGroupHead">Experiment Seeds</div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Variety</th><th>Type</th><th>Provider</th><th>Lot</th><th>Date Received</th>
+                  <th class="r">Total Received</th><th class="r">Total Remaining</th><th>Last Inventory</th>
+                </tr>
+              </thead>
+              <tbody id="tbExperiment"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section tableGroup mix" id="secMixed">
+          <div class="tableGroupHead">Mixed Seeds (Production + Experiment)</div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mix Variety</th><th>Purpose</th><th>Seed Varieties In Mix</th><th>Date Mixed</th>
+                  <th class="r">Total Remaining</th><th>Last Inventory</th>
+                </tr>
+              </thead>
+              <tbody id="tbMixed"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" id="status">Ready</div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const MASTER_SEED_KEY = "campo_master_seed_inventory_v1";
+    const PUBLIC_SEED_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Seed%20Inventory.json";
+    let dataRows = [];
+    let dataSource = "none";
+
+    function normalizeKey(s) {
+      return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+    function getNestedRow(rowLike) {
+      if (!rowLike || typeof rowLike !== "object") return null;
+      if (rowLike.production || rowLike.experiment || rowLike.mixed) {
+        return {
+          production: rowLike.production || {},
+          experiment: rowLike.experiment || {},
+          mixed: rowLike.mixed || {}
+        };
+      }
+      return null;
+    }
+    function parseSheetRowsToNested(headers, rows) {
+      const keyToIdx = new Map();
+      headers.forEach((h, i) => keyToIdx.set(normalizeKey(h), i));
+      const pick = (arr, keys) => {
+        for (const k of keys) {
+          const i = keyToIdx.get(k);
+          if (i !== undefined) return arr[i];
+        }
+        return "";
+      };
+      const out = [];
+      for (const raw of rows || []) {
+        const row = Array.isArray(raw) ? raw : [];
+        const nested = {
+          production: {
+            variety: pick(row, ["productionvariety", "prodvariety", "pvariety"]),
+            type: pick(row, ["productiontype", "prodtype", "ptype"]),
+            provider: pick(row, ["productionprovider", "prodprovider", "pprovider"]),
+            lot: pick(row, ["productionlot", "prodlot", "plot"]),
+            date_received: pick(row, ["productiondatereceived", "productiondaterecieved", "proddatereceived", "proddaterecieved", "pdatereceived", "pdaterecieved"]),
+            total_received: pick(row, ["productiontotalreceived", "productiontotalseedsreceived", "productiontotalseedsrecieved", "prodtotalreceived", "prodtotalseedsreceived", "prodtotalseedsrecieved", "ptotalreceived"]),
+            total_remaining: pick(row, ["productiontotalremaining", "productiontotalseedsremaining", "prodtotalremaining", "prodtotalseedsremaining", "ptotalremaining"]),
+            last_inventory: pick(row, ["productionlastinventory", "productiondatelastinventoried", "prodlastinventory", "proddatelastinventoried", "plastinventory"])
+          },
+          experiment: {
+            variety: pick(row, ["experimentvariety", "expvariety", "evariety"]),
+            type: pick(row, ["experimenttype", "exptype", "etype"]),
+            provider: pick(row, ["experimentprovider", "expprovider", "eprovider"]),
+            lot: pick(row, ["experimentlot", "explot", "elot"]),
+            date_received: pick(row, ["experimentdatereceived", "experimentdaterecieved", "expdatereceived", "expdaterecieved", "edatereceived", "edaterecieved"]),
+            total_received: pick(row, ["experimenttotalreceived", "experimenttotalseedsreceived", "experimenttotalseedsrecieved", "exptotalreceived", "exptotalseedsreceived", "exptotalseedsrecieved", "etotalreceived"]),
+            total_remaining: pick(row, ["experimenttotalremaining", "experimenttotalseedsremaining", "exptotalremaining", "exptotalseedsremaining", "etotalremaining"]),
+            last_inventory: pick(row, ["experimentlastinventory", "experimentdatelastinventoried", "explastinventory", "expdatelastinventoried", "elastinventory"])
+          },
+          mixed: {
+            variety: pick(row, ["mixedvariety", "mixvariety", "mvariety"]),
+            purpose: pick(row, ["mixedpurpose", "mixpurpose", "mpurpose"]),
+            seed_varieties: pick(row, ["mixedseedvarieties", "mixseedvarieties", "mseedvarieties", "seedvarietiesinmix", "seedvarieties"]),
+            date_mixed: pick(row, ["mixeddatemixed", "mixdatemixed", "mdatemixed", "datemixed"]),
+            total_remaining: pick(row, ["mixedtotalseedsremaining", "mixedtotalremaining", "mixtotalseedsremaining", "mixtotalremaining", "mtotalremaining", "totalseedsremaining"]),
+            last_inventory: pick(row, ["mixedseedslastinventoried", "mixedlastinventory", "mixlastinventory", "mlastinventory"])
+          }
+        };
+        out.push(nested);
+      }
+      return out;
+    }
+    function parseSeedPayload(payload) {
+      if (!payload) return [];
+      if (Array.isArray(payload)) {
+        return payload.map(getNestedRow).filter(Boolean);
+      }
+      const direct = getNestedRow(payload);
+      if (direct) return [direct];
+      const sheet = payload?.sheets?.["Seed Inventory"];
+      if (Array.isArray(sheet)) return sheet.map(getNestedRow).filter(Boolean);
+      if (sheet?.headers && sheet?.rows) return parseSheetRowsToNested(sheet.headers, sheet.rows);
+      return [];
+    }
+    async function loadDataRows() {
+      try {
+        const raw = localStorage.getItem(MASTER_SEED_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const fromLocal = parseSeedPayload(parsed);
+          if (fromLocal.length) {
+            dataSource = "localStorage";
+            return fromLocal;
+          }
+        }
+      } catch (_e) {}
+      try {
+        const res = await fetch(`${PUBLIC_SEED_URL}?ts=${Date.now()}`, { cache: "no-store" });
+        if (res.ok) {
+          const parsed = await res.json();
+          const fromPublic = parseSeedPayload(parsed);
+          if (fromPublic.length) {
+            dataSource = "supabase";
+            return fromPublic;
+          }
+        }
+      } catch (_e) {}
+      dataSource = "none";
+      return [];
+    }
+
+    function fmtInt(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.round(n).toLocaleString() : "0";
+    }
+    function num(v) {
+      const n = Number(String(v ?? "").replace(/,/g, "").trim());
+      return Number.isFinite(n) ? n : 0;
+    }
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>\"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;' }[c]));
+    }
+    function normalizeTypeKey(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        // Canonical typo fixes before stripping separators
+        .replace(/grean/g, "green")
+        .replace(/romanie/g, "romaine")
+        .replace(/[^a-z0-9]/g, "")
+        .trim();
+    }
+    function normalizeVarietyKey(s) {
+      return String(s || "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function hasProd(p) {
+      return !!(p.variety || p.lot || num(p.total_received) || num(p.total_remaining));
+    }
+    function hasExp(e) {
+      return !!(e.variety || e.lot || num(e.total_received) || num(e.total_remaining));
+    }
+    function hasMix(m) {
+      return !!(m.variety || m.purpose || num(m.total_remaining));
+    }
+
+    function flatten() {
+      const production = [];
+      const experiment = [];
+      const mixed = [];
+
+      for (const r of dataRows) {
+        const p = r.production || {};
+        const e = r.experiment || {};
+        const m = r.mixed || {};
+        if (hasProd(p)) production.push(p);
+        if (hasExp(e)) experiment.push(e);
+        if (hasMix(m)) mixed.push(m);
+      }
+
+      return { production, experiment, mixed };
+    }
+
+    function applyFilters(grouped) {
+      return grouped;
+    }
+
+    let currentView = "dashboard";
+
+    function applyView() {
+      const showDashboard = currentView === "dashboard";
+      $("dashboardView").style.display = showDashboard ? "block" : "none";
+      $("seedInventoryTables").style.display = showDashboard ? "none" : "block";
+      if (showDashboard) {
+        $("secProduction").style.display = "none";
+        $("secExperiment").style.display = "none";
+        $("secMixed").style.display = "none";
+      } else {
+        $("secProduction").style.display = "block";
+        $("secExperiment").style.display = "block";
+        $("secMixed").style.display = "block";
+      }
+      $("pillDashboard").classList.toggle("active", showDashboard);
+      $("pillTable").classList.toggle("active", !showDashboard);
+    }
+
+    function renderTableRows(rows, cols, tbodyId) {
+      const body = $(tbodyId);
+      body.innerHTML = rows.map((r) => {
+        const tds = cols.map((c) => {
+          const v = r[c.key];
+          const content = c.num ? fmtInt(v) : esc(v || "");
+          return `<td class="${c.num ? 'r' : ''}">${content}</td>`;
+        }).join("");
+        return `<tr>${tds}</tr>`;
+      }).join("");
+      if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="${cols.length}" style="color:#9eb3c4;">No records for current filters.</td></tr>`;
+      }
+    }
+
+    function render() {
+      const grouped = flatten();
+      const filtered = applyFilters(grouped);
+
+      const prodRem = filtered.production.reduce((a, r) => a + num(r.total_remaining), 0);
+      const expRem = filtered.experiment.reduce((a, r) => a + num(r.total_remaining), 0);
+      const mixRem = filtered.mixed.reduce((a, r) => a + num(r.total_remaining), 0);
+
+      $("kProdRem").textContent = fmtInt(prodRem);
+      $("kExpRem").textContent = fmtInt(expRem);
+      $("kMixRem").textContent = fmtInt(mixRem);
+      $("kLots").textContent = fmtInt(filtered.production.length + filtered.experiment.length + filtered.mixed.length);
+      const sourceLabel = dataSource === "localStorage" ? "localStorage (campo_master_seed_inventory_v1)" : (dataSource === "supabase" ? "Supabase public JSON" : "No Seed Inventory data found");
+      $("meta").textContent = `Rows: ${fmtInt(dataRows.length)} | Source: ${sourceLabel}`;
+
+      const byVariety = new Map();
+      for (const r of filtered.production) {
+        const variety = (r.variety || "Unknown").trim() || "Unknown";
+        const type = (r.type || "").trim() || "Unknown";
+        const varietyKey = normalizeVarietyKey(variety) || "unknown";
+        const typeKey = normalizeTypeKey(type) || "unknown";
+        const key = `${varietyKey}|||${typeKey}`;
+        const prev = byVariety.get(key);
+        if (!prev) {
+          byVariety.set(key, { variety, type, remaining: num(r.total_remaining) });
+        } else {
+          prev.remaining += num(r.total_remaining);
+        }
+      }
+      const topProd = Array.from(byVariety.entries())
+        .map(([, v]) => v)
+        .sort((a, b) => b.remaining - a.remaining);
+      $("tbTopProduction").innerHTML = topProd.map((x) => (
+        `<tr><td>${esc(x.variety)}</td><td>${esc(x.type)}</td><td class="r">${fmtInt(x.remaining)}</td></tr>`
+      )).join("");
+      if (!topProd.length) {
+        $("tbTopProduction").innerHTML = '<tr><td colspan="3" style="color:#9eb3c4;">No records for current filters.</td></tr>';
+      }
+      $("kTopProdTotal").textContent = fmtInt(topProd.reduce((a, x) => a + num(x.remaining), 0));
+      const byVarietyExp = new Map();
+      for (const r of filtered.experiment) {
+        const variety = (r.variety || "Unknown").trim() || "Unknown";
+        const type = (r.type || "").trim() || "Unknown";
+        const varietyKey = normalizeVarietyKey(variety) || "unknown";
+        const typeKey = normalizeTypeKey(type) || "unknown";
+        const key = `${varietyKey}|||${typeKey}`;
+        const prev = byVarietyExp.get(key);
+        if (!prev) {
+          byVarietyExp.set(key, { variety, type, remaining: num(r.total_remaining) });
+        } else {
+          prev.remaining += num(r.total_remaining);
+        }
+      }
+      const expAll = Array.from(byVarietyExp.entries())
+        .map(([, v]) => v)
+        .sort((a, b) => b.remaining - a.remaining);
+      $("tbTopExperiment").innerHTML = expAll.map((x) => (
+        `<tr><td>${esc(x.variety)}</td><td>${esc(x.type)}</td><td class="r">${fmtInt(x.remaining)}</td></tr>`
+      )).join("");
+      if (!expAll.length) {
+        $("tbTopExperiment").innerHTML = '<tr><td colspan="3" style="color:#9eb3c4;">No records for current filters.</td></tr>';
+      }
+      $("kTopExpTotal").textContent = fmtInt(expAll.reduce((a, x) => a + num(x.remaining), 0));
+      const byVarietyMix = new Map();
+      for (const r of filtered.mixed) {
+        const variety = (r.variety || "Unknown").trim() || "Unknown";
+        const purpose = (r.purpose || "").trim() || "Unknown";
+        const varietyKey = normalizeVarietyKey(variety) || "unknown";
+        const purposeKey = normalizeTypeKey(purpose) || "unknown";
+        const key = `${varietyKey}|||${purposeKey}`;
+        const prev = byVarietyMix.get(key);
+        if (!prev) {
+          byVarietyMix.set(key, { variety, purpose, remaining: num(r.total_remaining) });
+        } else {
+          prev.remaining += num(r.total_remaining);
+        }
+      }
+      const mixAll = Array.from(byVarietyMix.entries())
+        .map(([, v]) => v)
+        .sort((a, b) => b.remaining - a.remaining);
+      $("tbTopMixed").innerHTML = mixAll.map((x) => (
+        `<tr><td>${esc(x.variety)}</td><td>${esc(x.purpose)}</td><td class="r">${fmtInt(x.remaining)}</td></tr>`
+      )).join("");
+      if (!mixAll.length) {
+        $("tbTopMixed").innerHTML = '<tr><td colspan="3" style="color:#9eb3c4;">No records for current filters.</td></tr>';
+      }
+      $("kTopMixTotal").textContent = fmtInt(mixAll.reduce((a, x) => a + num(x.remaining), 0));
+      const rowsCap = Math.max(1, topProd.length || 1);
+      const rowPx = 37;
+      $("topExperimentWrap").style.maxHeight = `${rowsCap * rowPx}px`;
+      $("topExperimentWrap").style.overflowY = "auto";
+      $("topMixedWrap").style.maxHeight = `${rowsCap * rowPx}px`;
+      $("topMixedWrap").style.overflowY = "auto";
+
+      renderTableRows(filtered.production, [
+        { key: "variety" }, { key: "type" }, { key: "provider" }, { key: "lot" }, { key: "date_received" },
+        { key: "total_received", num: true }, { key: "total_remaining", num: true }, { key: "last_inventory" }
+      ], "tbProduction");
+
+      renderTableRows(filtered.experiment, [
+        { key: "variety" }, { key: "type" }, { key: "provider" }, { key: "lot" }, { key: "date_received" },
+        { key: "total_received", num: true }, { key: "total_remaining", num: true }, { key: "last_inventory" }
+      ], "tbExperiment");
+
+      renderTableRows(filtered.mixed, [
+        { key: "variety" }, { key: "purpose" }, { key: "seed_varieties" }, { key: "date_mixed" },
+        { key: "total_remaining", num: true }, { key: "last_inventory" }
+      ], "tbMixed");
+
+      if (currentView === "dashboard") {
+        $("secProduction").style.display = "none";
+        $("secExperiment").style.display = "none";
+        $("secMixed").style.display = "none";
+      }
+
+      $("status").textContent = `Filtered rows -> Production: ${filtered.production.length}, Experiment: ${filtered.experiment.length}, Mixed: ${filtered.mixed.length}`;
+    }
+
+    $("pillDashboard").addEventListener("click", () => {
+      currentView = "dashboard";
+      applyView();
+    });
+    $("pillTable").addEventListener("click", () => {
+      currentView = "table";
+      applyView();
+    });
+
+    async function reloadAndRender() {
+      dataRows = await loadDataRows();
+      render();
+    }
+
+    window.addEventListener("error", (e) => {
+      $("status").textContent = `Runtime error: ${e?.message || 'unknown error'}`;
+    });
+    window.addEventListener("storage", (e) => {
+      if (e?.key === MASTER_SEED_KEY) reloadAndRender();
+    });
+    window.addEventListener("message", (e) => {
+      const type = e?.data?.type;
+      if (type === "SEED_INVENTORY_UPDATED") reloadAndRender();
+    });
+
+    applyView();
+    reloadAndRender();
+  </script>
+</body>
+</html>

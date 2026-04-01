@@ -977,6 +977,7 @@
                 </div>
                 <div class="cat-grid" id="homeProcurement" style="display:none;">
                   <button class="tile" data-home-go="p-proc-open-orders"><div class="ico">🧾</div><div class="name" data-i18n="tile.proc-open-orders.name">Open Orders</div><div class="meta" data-i18n="tile.proc-open-orders.meta">Purchasing workflow</div></button>
+                  <button class="tile" data-home-go="p-seed-inventory"><div class="ico">🌱</div><div class="name" data-i18n="tile.seed-inventory.name">Seed Inventory</div><div class="meta" data-i18n="tile.seed-inventory.meta">Production, experiment, and mixed seed stock</div></button>
                 </div>
               </div>
 
@@ -1099,6 +1100,19 @@
         </div>
         <div class="iframe-wrap">
           <iframe id="ifr-proc-open-orders" data-file-key="proc-open-orders"></iframe>
+        </div>
+      </section>
+
+      <section class="panel" id="p-seed-inventory">
+        <div class="section-head">
+          <div class="head-left">
+            <h2 data-i18n="panel.seed-inventory.title">Seed Inventory</h2>
+            <p data-i18n="panel.seed-inventory.desc">Inventory dashboard for Production, Experiment, and Mixed seeds.</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="seed-inventory"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-seed-inventory" data-file-key="seed-inventory"></iframe>
         </div>
       </section>
 
@@ -1325,6 +1339,7 @@
       </div>
       <div class="launcher-grid" id="cat-procurement" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-proc-open-orders"><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.proc-open-orders.name">Open Orders</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-seed-inventory"><div class="app-ico">🌱</div><div class="app-name" data-i18n="tile.seed-inventory.name">Seed Inventory</div></button>
       </div>
       <div class="launcher-grid" id="cat-hr" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-hr-attendances"><div class="app-ico">🗓️</div><div class="app-name" data-i18n="tile.hr-attendances.name">Attendances</div></button>
@@ -1409,6 +1424,8 @@
           "tile.board-inventory.meta":"Current board counts",
           "tile.proc-open-orders.name":"Open Orders",
           "tile.proc-open-orders.meta":"Purchasing workflow",
+          "tile.seed-inventory.name":"Seed Inventory",
+          "tile.seed-inventory.meta":"Production, experiment, and mixed seed stock",
           "tile.pack-team-performance.name":"Pack Team Performance",
           "tile.pack-team-performance.meta":"Employee performance",
           "tile.facility-ramp.name":"Facility Ramp Tracker",
@@ -1457,6 +1474,8 @@
           "panel.inventory.desc":"Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
           "panel.proc-open-orders.title":"Open Orders Tracker",
           "panel.proc-open-orders.desc":"Procurement view for open orders, vendor follow-ups, and department status.",
+          "panel.seed-inventory.title":"Seed Inventory",
+          "panel.seed-inventory.desc":"Inventory dashboard for Production, Experiment, and Mixed seeds.",
           "panel.hr-attendances.title":"HR Attendances",
           "panel.hr-attendances.desc":"Attendance dashboard for shift presence, punctuality, and daily HR follow-up.",
           "panel.file.prefix":"📄 file:"
@@ -1530,6 +1549,8 @@
           "tile.board-inventory.meta":"Conteos actuales de tablas",
           "tile.proc-open-orders.name":"Órdenes abiertas",
           "tile.proc-open-orders.meta":"Flujo de compras",
+          "tile.seed-inventory.name":"Inventario de semillas",
+          "tile.seed-inventory.meta":"Existencias de semillas de producción, experimento y mixtas",
           "tile.pack-team-performance.name":"Rendimiento del equipo de empaque",
           "tile.pack-team-performance.meta":"Rendimiento de empleados",
           "tile.facility-ramp.name":"Seguimiento de rampa de facilidades",
@@ -1578,6 +1599,8 @@
           "panel.inventory.desc":"Lee Master Pack (preferido) + Master Grow (alterno) de <code>localStorage</code> claves <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
           "panel.proc-open-orders.title":"Seguimiento de órdenes abiertas",
           "panel.proc-open-orders.desc":"Vista de compras para órdenes abiertas, seguimientos de proveedores y estado por departamento.",
+          "panel.seed-inventory.title":"Inventario de semillas",
+          "panel.seed-inventory.desc":"Panel de inventario para semillas de producción, experimento y mixtas.",
           "panel.hr-attendances.title":"Asistencias de RR. HH.",
           "panel.hr-attendances.desc":"Panel de asistencia para presencia por turno, puntualidad y seguimiento diario de RR. HH.",
           "panel.file.prefix":"📄 archivo:"
@@ -1595,6 +1618,7 @@
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
         "proc-open-orders": "14.0 Procurement - Open Orders.html",
+        "seed-inventory": "Inventory - seed inventory Dashboard.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
         "sales-tracking": "13.0 Sales - Productivity Dashboard.html",
         "store-visits": "12.0 Sales - Store Visit.html",
@@ -1761,7 +1785,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-open-orders",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-open-orders","ifr-seed-inventory",
         "ifr-sales-tracking","ifr-store-visits","ifr-hr-attendances"
       ];
 
