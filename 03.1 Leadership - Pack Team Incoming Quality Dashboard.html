@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pack Team Incoming Quality Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #06111a;
+      --panel: #0a1c2b;
+      --card: #0e2538;
+      --line: #1e3c55;
+      --text: #e6f0f7;
+      --muted: #a7bfd0;
+      --accent: #37d67a;
+      --blue: #4ea3ff;
+      --orange: #ffb65c;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(900px 460px at 10% 0%, rgba(78,163,255,.18), transparent 60%),
+        radial-gradient(760px 420px at 90% 8%, rgba(55,214,122,.14), transparent 58%),
+        var(--bg);
+      font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 18px; }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0 0 6px 0; font-size: 24px; }
+    .sub { color: var(--muted); font-size: 14px; max-width: 860px; }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .control {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
+    label { font-size: 13px; color: var(--muted); font-weight: 700; }
+    select, input {
+      border: 1px solid #355470;
+      border-radius: 10px;
+      background: #081624;
+      color: var(--text);
+      padding: 8px 9px;
+      font-size: 14px;
+    }
+    input[type="search"] { min-width: 220px; }
+    .scaleBox {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
+    .scaleItem {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .scaleItem input {
+      width: 72px;
+      padding: 7px 8px;
+    }
+
+    .grid4 {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--card);
+      padding: 12px;
+    }
+    .kpi .t { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .kpi .v { margin-top: 6px; font-size: 28px; font-weight: 900; }
+
+    .grid2 {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--card);
+      padding: 12px;
+    }
+    .card h3 {
+      margin: 0 0 8px 0;
+      font-size: 15px;
+    }
+    .chartWrap { height: 280px; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+    th { color: var(--muted); text-align: left; }
+    td.r, th.r { text-align: right; }
+
+    .tableWrap { overflow: auto; }
+    .status { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+    @media (max-width: 1050px) {
+      .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .grid4 { grid-template-columns: 1fr; }
+      input[type="search"] { min-width: 170px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="top">
+        <div>
+          <h1>Pack Team Incoming Quality Dashboard</h1>
+          <div class="sub">
+            This view only uses employee, date, and hourly columns (`Incoming Quality H1-H8` plus `H1-H8` windows).
+            It does not use `Incoming Quality Total`, `Pack Hr`, or rate fields.
+          </div>
+        </div>
+        <div class="pill" id="metaRange">Range: —</div>
+      </div>
+
+      <div class="controls">
+        <div class="control">
+          <label for="rangeSel">Date range</label>
+          <select id="rangeSel">
+            <option value="all">All time</option>
+            <option value="90">Last 90 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="7">Last 7 days</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="empSel">Employee</label>
+          <select id="empSel"><option value="__all__">All employees</option></select>
+        </div>
+        <div class="control">
+          <label for="q">Search</label>
+          <input id="q" type="search" placeholder="Type employee name" />
+        </div>
+        <div class="control">
+          <label for="summaryQualityFilter">Summary Quality</label>
+          <select id="summaryQualityFilter">
+            <option value="all">All</option>
+            <option value="average">Average</option>
+            <option value="excellent">Excellent</option>
+            <option value="good">Good</option>
+            <option value="bad">Bad</option>
+            <option value="very_bad">Very Bad</option>
+          </select>
+        </div>
+        <div class="scaleBox">
+          <div class="scaleItem"><label for="sExcellent">Excellent</label><input id="sExcellent" type="number" value="12" step="0.1" /></div>
+          <div class="scaleItem"><label for="sGood">Good</label><input id="sGood" type="number" value="10" step="0.1" /></div>
+          <div class="scaleItem"><label for="sBad">Bad</label><input id="sBad" type="number" value="6" step="0.1" /></div>
+          <div class="scaleItem"><label for="sVeryBad">Very Bad</label><input id="sVeryBad" type="number" value="4" step="0.1" /></div>
+        </div>
+      </div>
+
+      <div class="grid4">
+        <div class="kpi"><div class="t">Total Incoming Quality</div><div class="v" id="kIq">—</div></div>
+        <div class="kpi"><div class="t">Total Hours Worked</div><div class="v" id="kH">—</div></div>
+        <div class="kpi"><div class="t">Active Days</div><div class="v" id="kDays">—</div></div>
+        <div class="kpi"><div class="t">Employees</div><div class="v" id="kEmp">—</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Daily Trend (Average Canastas/Hour)</h3>
+          <div class="chartWrap"><canvas id="chartDaily"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Average Canastas by Hour Slot</h3>
+          <div class="chartWrap"><canvas id="chartHourly"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <h3>Employee Summary</h3>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th class="r">Days</th>
+                <th class="r">Avg Incoming Quality</th>
+                <th class="r">Total Hours Worked</th>
+                <th class="r">Total Canastas</th>
+                <th class="r">Canastas/Hour</th>
+              </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+        <div class="status" id="status">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+    const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
+    const MASTER_PACK_SHEET_NAME = "Master Pack";
+    const MSG_PACK = "MASTER_PACK_UPDATED";
+
+    const COL = Object.freeze({
+      EMPLOYEE: "Pack Nombre del Empleado",
+      DATE: "Pack Fecha Performance",
+      IQ_H1: "Incoming Quality H1",
+      SLOT_H1: "H1 7:30-8:30",
+      IQ_H2: "Incoming Quality H2",
+      SLOT_H2: "H2 8:30-9:30",
+      IQ_H3: "Incoming Quality H3",
+      SLOT_H3: "H3 9:30-10:30",
+      IQ_H4: "Incoming Quality H4",
+      SLOT_H4: "H4 10:30-11:00",
+      IQ_H5: "Incoming Quality H5",
+      SLOT_H5: "H5 11:30-12:00",
+      IQ_H6: "Incoming Quality H6",
+      SLOT_H6: "H6 12:30-1:30",
+      IQ_H7: "Incoming Quality H7",
+      SLOT_H7: "H7 1:30-2:30",
+      IQ_H8: "Incoming Quality 8",
+      SLOT_H8: "H8 2:30-3:30"
+    });
+
+    const IQ_KEYS = ["IQ_H1","IQ_H2","IQ_H3","IQ_H4","IQ_H5","IQ_H6","IQ_H7","IQ_H8"];
+    const SLOT_KEYS = ["SLOT_H1","SLOT_H2","SLOT_H3","SLOT_H4","SLOT_H5","SLOT_H6","SLOT_H7","SLOT_H8"];
+    const HOUR_LABELS = ["H1","H2","H3","H4","H5","H6","H7","H8"];
+
+    function parseNumber(v) {
+      if (v === null || v === undefined) return NaN;
+      const s = String(v).trim().replace(/,/g, "");
+      if (!s || s === "#DIV/0!" || s === "N/A") return NaN;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function parseDate(v) {
+      if (v instanceof Date && !Number.isNaN(v.getTime())) return new Date(v);
+      if (typeof v === "number" && Number.isFinite(v)) {
+        const epoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(epoch.getTime() + v * 86400000);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      if (typeof v === "string") {
+        const s = v.trim();
+        if (!s) return null;
+        const d = new Date(s);
+        if (!Number.isNaN(d.getTime())) return d;
+      }
+      return null;
+    }
+
+    function fmtInt(v) { return Number.isFinite(v) ? Math.round(v).toLocaleString() : "0"; }
+    function fmt1(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "0.0"; }
+    function toISO(d) { return d.toISOString().slice(0, 10); }
+    function readNum(id, fallback) {
+      const n = Number($(id).value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+    function getQualityScale() {
+      return {
+        excellent: readNum("sExcellent", 12),
+        good: readNum("sGood", 10),
+        bad: readNum("sBad", 6),
+        veryBad: readNum("sVeryBad", 4)
+      };
+    }
+    function parseQualityNumber(v, scale) {
+      const n = parseNumber(v);
+      if (Number.isFinite(n)) return n;
+      const s = String(v ?? "").trim().toLowerCase();
+      if (!s) return NaN;
+      if (s.includes("excellent")) return scale.excellent;
+      if (s.includes("very bad") || s.includes("verybad") || s === "vb" || s === "vbad") return scale.veryBad;
+      if (s.includes("good")) return scale.good;
+      if (s.includes("bad")) return scale.bad;
+      return NaN;
+    }
+    function classifyQuality(value, scale) {
+      if (value >= scale.excellent) return { label: "Excellent", score: scale.excellent };
+      if (value >= scale.good) return { label: "Good", score: scale.good };
+      if (value >= scale.bad) return { label: "Bad", score: scale.bad };
+      return { label: "Very Bad", score: scale.veryBad };
+    }
+    function summaryQualityBucket(value, scale) {
+      const midpoint = (scale.good + scale.bad) / 2;
+      if (value >= scale.excellent) return "excellent";
+      if (value >= scale.good) return "good";
+      if (value >= midpoint) return "average";
+      if (value >= scale.bad) return "bad";
+      return "very_bad";
+    }
+    function filterSummaryRows(empRows, scale, qualityFilter) {
+      if (!qualityFilter || qualityFilter === "all") return empRows;
+      return empRows.filter((r) => summaryQualityBucket(r.avgIq, scale) === qualityFilter);
+    }
+    function filterRowsBySummaryQuality(rows, scale, qualityFilter) {
+      if (!qualityFilter || qualityFilter === "all") return rows;
+      const agg = aggregate(rows, scale);
+      const kept = filterSummaryRows(agg.empRows, scale, qualityFilter);
+      const keepNames = new Set(kept.map((r) => r.name));
+      return rows.filter((r) => keepNames.has(r.name));
+    }
+
+    async function fetchPayload() {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(WORKER_PACK_URL, { cache: "no-store", signal: controller.signal });
+      clearTimeout(t);
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      return res.json();
+    }
+
+    function headerMap(headers) {
+      const m = new Map();
+      headers.forEach((h) => {
+        const raw = String(h ?? "");
+        const k = raw.trim().toLowerCase();
+        if (k && !m.has(k)) m.set(k, raw);
+      });
+      return m;
+    }
+
+    function pick(map, expected) {
+      return map.get(String(expected).trim().toLowerCase()) || null;
+    }
+
+    function sheetRows(sheet) {
+      const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
+      const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
+      return rows.map((r) => {
+        const out = {};
+        headers.forEach((h, i) => {
+          const k = String(h ?? "").trim();
+          if (!k) return;
+          out[k] = i < r.length ? r[i] : "";
+        });
+        return out;
+      });
+    }
+
+    function parseData(payload) {
+      const sheet = payload?.sheets?.[MASTER_PACK_SHEET_NAME];
+      if (!sheet) return { rows: [], missing: ["Master Pack sheet missing"] };
+
+      const headers = Array.isArray(sheet.headers) ? sheet.headers : [];
+      const map = headerMap(headers);
+
+      const H = {
+        EMPLOYEE: pick(map, COL.EMPLOYEE),
+        DATE: pick(map, COL.DATE)
+      };
+      IQ_KEYS.forEach((k) => { H[k] = pick(map, COL[k]); });
+      SLOT_KEYS.forEach((k) => { H[k] = pick(map, COL[k]); });
+
+      const missing = [];
+      if (!H.EMPLOYEE) missing.push(COL.EMPLOYEE);
+      if (!H.DATE) missing.push(COL.DATE);
+      IQ_KEYS.forEach((k) => { if (!H[k]) missing.push(COL[k]); });
+      SLOT_KEYS.forEach((k) => { if (!H[k]) missing.push(COL[k]); });
+      if (missing.length) return { rows: [], missing };
+
+      const rows = [];
+      for (const r of sheetRows(sheet)) {
+        const name = String(r[H.EMPLOYEE] ?? "").trim();
+        const date = parseDate(r[H.DATE]);
+        if (!name || !date) continue;
+
+        const iq = IQ_KEYS.map((k) => r[H[k]]);
+        const slots = SLOT_KEYS.map((k) => parseNumber(r[H[k]]));
+
+        rows.push({ name, date, dateISO: toISO(date), iq, slots });
+      }
+
+      return { rows, missing: [] };
+    }
+
+    function normalizeHardcodedRows(rawRows) {
+      if (!Array.isArray(rawRows)) return [];
+      const out = [];
+      for (const r of rawRows) {
+        if (!r || typeof r !== "object") continue;
+        const name = String(r.name ?? "").trim();
+        const date = parseDate(r.date);
+        if (!name || !date) continue;
+        const iq = Array.isArray(r.iq) ? r.iq.slice(0, 8) : [];
+        const slots = Array.isArray(r.slots) ? r.slots.slice(0, 8).map((v) => parseNumber(v)) : [];
+        while (iq.length < 8) iq.push("");
+        while (slots.length < 8) slots.push(NaN);
+        out.push({ name, date, dateISO: toISO(date), iq, slots });
+      }
+      return out;
+    }
+
+    function applyFilters(allRows) {
+      let rows = allRows.slice();
+      const emp = $("empSel").value;
+      const q = $("q").value.trim().toLowerCase();
+      const range = $("rangeSel").value;
+
+      if (emp && emp !== "__all__") rows = rows.filter((r) => r.name === emp);
+      if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q));
+
+      if (range !== "all" && rows.length) {
+        const days = Number(range);
+        const maxT = Math.max(...rows.map((r) => r.date.getTime()));
+        const minT = maxT - (days - 1) * 86400000;
+        rows = rows.filter((r) => r.date.getTime() >= minT && r.date.getTime() <= maxT);
+      }
+
+      return rows;
+    }
+
+    function sum(arr) {
+      return arr.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+    }
+
+    function aggregate(rows, scale) {
+      const byDate = new Map();
+      const byEmp = new Map();
+      const hourlyIQ = Array(8).fill(0);
+      const hourlyCount = Array(8).fill(0);
+      const hourlyCanastas = Array(8).fill(0);
+      const hourlyCanastasCount = Array(8).fill(0);
+      const activeDateSet = new Set();
+
+      for (const r of rows) {
+        const iqVals = r.iq.map((v) => parseQualityNumber(v, scale));
+        const iqTotal = sum(iqVals);
+        const slotHours = r.slots.map((v, i) => {
+          const qualityPresent = String(r.iq[i] ?? "").trim() !== "";
+          return (qualityPresent && Number.isFinite(v) && v > 0) ? 1 : 0;
+        });
+        const slotCanastas = r.slots.map((v, i) => {
+          const qualityPresent = String(r.iq[i] ?? "").trim() !== "";
+          return (qualityPresent && Number.isFinite(v) && v > 0) ? v : 0;
+        });
+        const slotTotal = sum(slotHours);
+        const canastasTotal = sum(slotCanastas);
+        const hasOutput = (iqTotal + slotTotal) > 0;
+
+        if (!byDate.has(r.dateISO)) byDate.set(r.dateISO, { iq: 0, slot: 0, canastas: 0 });
+        const d = byDate.get(r.dateISO);
+        d.iq += iqTotal;
+        d.slot += slotTotal;
+        d.canastas += canastasTotal;
+
+        if (!byEmp.has(r.name)) byEmp.set(r.name, { days: new Set(), iq: 0, iqCount: 0, slot: 0, canastas: 0, dayIQ: new Map() });
+        const e = byEmp.get(r.name);
+        if (hasOutput) e.days.add(r.dateISO);
+        e.iq += iqTotal;
+        e.iqCount += iqVals.filter((v) => Number.isFinite(v)).length;
+        e.slot += slotTotal;
+        e.canastas += canastasTotal;
+        if (hasOutput) activeDateSet.add(r.dateISO);
+        if (!e.dayIQ.has(r.dateISO)) e.dayIQ.set(r.dateISO, { sum: 0, count: 0 });
+        const dayQ = e.dayIQ.get(r.dateISO);
+        for (const v of iqVals) {
+          if (Number.isFinite(v)) {
+            dayQ.sum += v;
+            dayQ.count += 1;
+          }
+        }
+
+        for (let i = 0; i < 8; i++) {
+          if (Number.isFinite(iqVals[i])) {
+            hourlyIQ[i] += iqVals[i];
+            hourlyCount[i] += 1;
+          }
+          const qualityPresent = String(r.iq[i] ?? "").trim() !== "";
+          const slotV = r.slots[i];
+          if (qualityPresent && Number.isFinite(slotV) && slotV > 0) {
+            hourlyCanastas[i] += slotV;
+            hourlyCanastasCount[i] += 1;
+          }
+        }
+      }
+
+      const daily = Array.from(byDate.entries())
+        .map(([dateISO, v]) => ({ dateISO, iq: v.iq, slot: v.slot, canastas: v.canastas }))
+        .sort((a, b) => a.dateISO.localeCompare(b.dateISO));
+
+      const empRows = Array.from(byEmp.entries())
+        .map(([name, v]) => {
+          const days = v.days.size || 1;
+          const dayMeans = Array.from(v.dayIQ.values())
+            .filter((d) => d.count > 0)
+            .map((d) => d.sum / d.count);
+          const avgIqDay = dayMeans.length ? (dayMeans.reduce((a, b) => a + b, 0) / dayMeans.length) : 0;
+          return {
+            name,
+            days: v.days.size,
+            iq: v.iq,
+            slot: v.slot,
+            canastas: v.canastas,
+            avgIq: v.iqCount ? (v.iq / v.iqCount) : 0,
+            avgIqDay,
+            canastasPerHour: v.slot > 0 ? (v.canastas / v.slot) : 0,
+            avgSlot: v.slot / days
+          };
+        })
+        .sort((a, b) => b.iq - a.iq);
+
+      const hourAvgIQ = hourlyIQ.map((v, i) => hourlyCount[i] ? v / hourlyCount[i] : 0);
+      const hourAvgCanastas = hourlyCanastas.map((v, i) => hourlyCanastasCount[i] ? v / hourlyCanastasCount[i] : 0);
+
+      return {
+        daily,
+        empRows,
+        totalIQ: daily.reduce((a, d) => a + d.iq, 0),
+        totalH: daily.reduce((a, d) => a + d.slot, 0),
+        activeDays: activeDateSet.size,
+        employees: empRows.length,
+        hourAvgIQ,
+        hourAvgCanastas
+      };
+    }
+
+    const chartDaily = (typeof Chart !== "undefined") ? new Chart($("chartDaily"), {
+      type: "line",
+      data: { labels: [], datasets: [
+        { label: "Average Canastas/Hour", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.2)", tension: .25 }
+      ] },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false } }
+    }) : null;
+
+    const chartHourly = (typeof Chart !== "undefined") ? new Chart($("chartHourly"), {
+      type: "bar",
+      data: { labels: HOUR_LABELS, datasets: [{ label: "Avg Canastas", data: [], backgroundColor: "#ffb65c" }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    }) : null;
+
+    function renderTable(empRows, scale) {
+      $("tb").innerHTML = empRows.map((r) => `
+        <tr>
+          <td>${escapeHtml(r.name)}</td>
+          <td class="r">${fmtInt(r.days)}</td>
+          <td class="r">${fmt1(r.avgIq)}</td>
+          <td class="r">${fmtInt(r.slot)}</td>
+          <td class="r">${fmtInt(r.canastas)}</td>
+          <td class="r">${fmt1(r.canastasPerHour)}</td>
+        </tr>
+      `).join("");
+      if (!empRows.length) {
+        $("tb").innerHTML = '<tr><td colspan="6" style="color:#a7bfd0;">No rows for current filters.</td></tr>';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+    }
+
+    function updateMeta(rows) {
+      if (!rows.length) { $("metaRange").textContent = "Range: —"; return; }
+      const ts = rows.map((r) => r.date.getTime());
+      const min = new Date(Math.min(...ts)).toISOString().slice(0,10);
+      const max = new Date(Math.max(...ts)).toISOString().slice(0,10);
+      $("metaRange").textContent = `Range: ${min} to ${max}`;
+    }
+
+    function render(allRows) {
+      const rowsBase = applyFilters(allRows);
+      const scale = getQualityScale();
+      const qualityFilter = $("summaryQualityFilter").value;
+      const rows = filterRowsBySummaryQuality(rowsBase, scale, qualityFilter);
+      const a2 = aggregate(rows, scale);
+
+      $("kIq").textContent = fmtInt(a2.totalIQ);
+      $("kH").textContent = fmtInt(a2.totalH);
+      $("kDays").textContent = fmtInt(a2.activeDays);
+      $("kEmp").textContent = fmtInt(a2.employees);
+
+      if (chartDaily) {
+        const dailyTrend = a2.daily
+          .map((d) => ({ dateISO: d.dateISO, rate: d.slot > 0 ? (d.canastas / d.slot) : NaN }))
+          .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
+        chartDaily.data.labels = dailyTrend.map((d) => d.dateISO);
+        chartDaily.data.datasets[0].data = dailyTrend.map((d) => Number(d.rate.toFixed(2)));
+        chartDaily.update();
+      }
+
+      if (chartHourly) {
+        chartHourly.data.datasets[0].data = a2.hourAvgCanastas.map((v) => Number(v.toFixed(2)));
+        chartHourly.update();
+      }
+
+      renderTable(a2.empRows, scale);
+      updateMeta(rows);
+      $("status").textContent = `Rows in filter: ${rows.length.toLocaleString()}`;
+    }
+
+    function fillEmployees(rows) {
+      const names = Array.from(new Set(rows.map((r) => r.name))).sort((a,b) => a.localeCompare(b));
+      const opts = ['<option value="__all__">All employees</option>'];
+      names.forEach((n) => opts.push(`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`));
+      $("empSel").innerHTML = opts.join("");
+    }
+
+    let ALL_ROWS = [];
+
+    async function loadFromMasterPack() {
+      try {
+        $("status").textContent = "Loading Master Pack…";
+        const payload = await fetchPayload();
+        const parsed = parseData(payload);
+        if (parsed.missing.length) {
+          ALL_ROWS = [];
+          $("status").textContent = `Missing required columns: ${parsed.missing.join(", ")}`;
+          fillEmployees([]);
+          render([]);
+          return;
+        }
+        ALL_ROWS = parsed.rows;
+
+        fillEmployees(ALL_ROWS);
+
+        ["rangeSel", "empSel", "q", "summaryQualityFilter", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
+          if (!$(id).dataset.bound) {
+            $(id).addEventListener("input", () => render(ALL_ROWS));
+            $(id).addEventListener("change", () => render(ALL_ROWS));
+            $(id).dataset.bound = "1";
+          }
+        });
+
+        render(ALL_ROWS);
+        if (typeof Chart === "undefined") {
+          $("status").textContent = `Rows in filter: ${ALL_ROWS.length.toLocaleString()} | Charts unavailable (Chart.js failed to load).`;
+        }
+      } catch (err) {
+        const msg = (err && err.name === "AbortError")
+          ? "Load error: request timed out after 15s."
+          : `Load error: ${err?.message || String(err)}`;
+        $("status").textContent = msg;
+      }
+    }
+
+    window.addEventListener("error", (e) => {
+      const el = $("status");
+      if (el) el.textContent = `Runtime error: ${e?.message || "unknown error"}`;
+    });
+
+    window.addEventListener("message", (e) => {
+      const type = e?.data?.type;
+      if (type === MSG_PACK || type === "MASTER_PACK_UPDATED") {
+        loadFromMasterPack();
+      }
+    });
+
+    loadFromMasterPack();
+  </script>
+</body>
+</html>

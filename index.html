@@ -845,7 +845,6 @@
     </div>
     <div class="tabs" id="tabsTeam" aria-label="Team Tools">
       <button class="tab" data-target="p-board-inventory">🧮 <span data-i18n="tab.board-inventory">Board Inventory</span></button>
-      <button class="tab" data-target="p-pack-team-performance">📦 <span data-i18n="tab.pack-team-performance">Pack Team Performance</span></button>
     </div>
     <div class="tabs" id="tabsScheduling" aria-label="Scheduling Dashboards">
       <button class="tab" data-target="p-facility-ramp">🏗️ <span data-i18n="tab.facility-ramp">Facility Ramp Tracker</span></button>
@@ -859,6 +858,7 @@
     </div>
     <div class="tabs" id="tabsHr" aria-label="HR Dashboards">
       <button class="tab" data-target="p-hr-attendances">🗓️ <span data-i18n="tab.hr-attendances">Attendances</span></button>
+      <button class="tab" data-target="p-pack-team-performance">📦 <span data-i18n="tab.pack-team-performance">Pack Team Performance</span></button>
     </div>
 
     <div class="main">
@@ -957,7 +957,6 @@
 
                 <div class="cat-grid" id="homeTeam" style="display:none;">
                   <button class="tile" data-home-go="p-board-inventory"><div class="ico">🧮</div><div class="name" data-i18n="tile.board-inventory.name">Board Inventory</div><div class="meta" data-i18n="tile.board-inventory.meta">Current board counts</div></button>
-                  <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeScheduling" style="display:none;">
@@ -974,6 +973,7 @@
                 </div>
                 <div class="cat-grid" id="homeHr" style="display:none;">
                   <button class="tile" data-home-go="p-hr-attendances"><div class="ico">🗓️</div><div class="name" data-i18n="tile.hr-attendances.name">Attendances</div><div class="meta" data-i18n="tile.hr-attendances.meta">Daily attendance and punctuality tracking</div></button>
+                  <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
                 </div>
                 <div class="cat-grid" id="homeProcurement" style="display:none;">
                   <button class="tile" data-home-go="p-proc-open-orders"><div class="ico">🧾</div><div class="name" data-i18n="tile.proc-open-orders.name">Open Orders</div><div class="meta" data-i18n="tile.proc-open-orders.meta">Purchasing workflow</div></button>
@@ -1171,7 +1171,7 @@
         </div>
       </section>
 
-      <section class="panel" id="p-pack-team-performance" data-team="true">
+      <section class="panel" id="p-pack-team-performance" data-hr="true">
         <div class="section-head">
           <div class="head-left">
             <h2>Pack Team Employee Performance</h2>
@@ -1327,7 +1327,6 @@
 
       <div class="launcher-grid" id="cat-team" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-board-inventory"><div class="app-ico">🧮</div><div class="app-name" data-i18n="tile.board-inventory.name">Board Inventory</div></button>
-        <button class="launch-app" data-action="go-panel" data-target="p-pack-team-performance"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div></button>
       </div>
       <div class="launcher-grid" id="cat-scheduling" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-facility-ramp"><div class="app-ico">🏗️</div><div class="app-name" data-i18n="tile.facility-ramp.name">Facility Ramp Tracker</div></button>
@@ -1343,6 +1342,7 @@
       </div>
       <div class="launcher-grid" id="cat-hr" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-hr-attendances"><div class="app-ico">🗓️</div><div class="app-name" data-i18n="tile.hr-attendances.name">Attendances</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-pack-team-performance"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div></button>
       </div>
     </div>
   </div>
@@ -1625,7 +1625,7 @@
         foodsafety: "11.0 Food Safety - Traceibility.html",
         mulders: "04.3 Team - Mulders Chart.html",
         "board-inventory": "04.2 Team - Board Inventory.html",
-        "pack-team-performance": "03.1 Leadership - Pack Team Employee Performance.html",
+        "pack-team-performance": "03.1 Leadership - Pack Team Incoming Quality Dashboard.html",
         "facility-ramp": "3.2 Facility Ramp Tracker.html",
         "hr-attendances": "HR - Attendances.html"
       };
