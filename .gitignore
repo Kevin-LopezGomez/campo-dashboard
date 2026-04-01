@@ -3,3 +3,4 @@
 .env
 node_modules/
 
+inventory_seed_sample_data.js
