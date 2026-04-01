@@ -94,6 +94,34 @@
     .card { border: 1px solid var(--line); border-radius: 16px; background: rgba(2,6,23,.40); padding: 12px; }
     .grid2 > .card { min-width: 0; }
     .card h3 { margin: 0 0 8px; font-size: 15px; font-family: Poppins, Inter, system-ui; }
+    .tableHeadRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .tableHeadRow h3 { margin: 0; }
+    .tableHeadActions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .miniBtn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(2,6,23,.42);
+      color: var(--sub);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .miniBtn:hover { border-color: rgba(107,180,255,.45); }
     .chartWrap { height: 290px; }
     .chartWrap canvas { max-width: 100%; }
 
@@ -151,6 +179,11 @@
       z-index: 1;
     }
     th.r, td.r { text-align: right; }
+    .cellInput {
+      width: 130px;
+      max-width: 100%;
+      text-align: right;
+    }
     tbody tr:nth-child(even){ background: rgba(2,6,23,.20); }
     tbody tr:hover{ background: rgba(56,189,248,.08); }
     .tableKpiRow {
@@ -175,6 +208,21 @@
     .topVarietyTable th:nth-child(1), .topVarietyTable td:nth-child(1) { width: 44%; }
     .topVarietyTable th:nth-child(2), .topVarietyTable td:nth-child(2) { width: 30%; }
     .topVarietyTable th:nth-child(3), .topVarietyTable td:nth-child(3) { width: 26%; white-space: nowrap; }
+    .topProductionTable th:nth-child(1), .topProductionTable td:nth-child(1) { width: 36%; }
+    .topProductionTable th:nth-child(2), .topProductionTable td:nth-child(2) { width: 22%; }
+    .topProductionTable th:nth-child(3), .topProductionTable td:nth-child(3) { width: 24%; white-space: nowrap; }
+    .topProductionTable th:nth-child(4), .topProductionTable td:nth-child(4) { width: 18%; white-space: nowrap; }
+    .topProductionTable.minColHidden th:nth-child(1), .topProductionTable.minColHidden td:nth-child(1) { width: 44%; }
+    .topProductionTable.minColHidden th:nth-child(2), .topProductionTable.minColHidden td:nth-child(2) { width: 30%; }
+    .topProductionTable.minColHidden th:nth-child(3), .topProductionTable.minColHidden td:nth-child(3) { width: 26%; white-space: nowrap; }
+    .topProductionTable.minColHidden th:nth-child(4), .topProductionTable.minColHidden td:nth-child(4) { display: none; }
+    .topProductionTable tbody tr.lowStock td {
+      background: rgba(220,38,38,.18) !important;
+      border-bottom-color: rgba(248,113,113,.45);
+    }
+    .topProductionTable tbody tr.lowStock:hover td {
+      background: rgba(220,38,38,.24) !important;
+    }
     .status { margin-top: 10px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line2); padding-top: 10px; }
 
     @media (max-width: 1100px) {
@@ -215,11 +263,17 @@
 
       <div class="grid2">
         <div class="card">
-          <h3>Seeds Remaining for Production</h3>
+          <div class="tableHeadRow">
+            <h3>Seeds Remaining for Production</h3>
+            <div class="tableHeadActions">
+              <button class="miniBtn" id="saveSeedBtn" type="button">Save to Supabase</button>
+              <button class="miniBtn" id="toggleMinQtyCol" type="button">Hide Min Qty</button>
+            </div>
+          </div>
           <div class="tableWrap" id="topProductionWrap">
-            <table class="topVarietyTable">
+            <table class="topVarietyTable topProductionTable" id="topProductionTable">
               <thead>
-                <tr><th>Variety</th><th>Type</th><th class="r">Quantity Remaining</th></tr>
+                <tr><th>Variety</th><th>Type</th><th class="r">Quantity Remaining</th><th class="r">Min Qty</th></tr>
               </thead>
               <tbody id="tbTopProduction"></tbody>
             </table>
@@ -308,9 +362,18 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const MASTER_SEED_KEY = "campo_master_seed_inventory_v1";
+    const PROD_MINIMUMS_KEY = "campo_seed_inventory_prod_minimums_v1";
+    const MIN_QTY_COL_VISIBLE_KEY = "campo_seed_inventory_min_qty_column_visible_v1";
+    const MASTER_SEED_PING = "campo_master_seed_inventory_push_ping_v1";
+    const MSG_SEED = "SEED_INVENTORY_UPDATED";
+    const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+    const WORKER_SEED_URL = `${WORKER_BASE}/data/master/Seed%20Inventory.json`;
     const PUBLIC_SEED_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Seed%20Inventory.json";
     let dataRows = [];
     let dataSource = "none";
+    let productionMinimums = loadProductionMinimums();
+    let showMinQtyColumn = loadMinQtyColumnVisible();
+    let sourceSeedPayload = null;
 
     function normalizeKey(s) {
       return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -348,6 +411,7 @@
             date_received: pick(row, ["productiondatereceived", "productiondaterecieved", "proddatereceived", "proddaterecieved", "pdatereceived", "pdaterecieved"]),
             total_received: pick(row, ["productiontotalreceived", "productiontotalseedsreceived", "productiontotalseedsrecieved", "prodtotalreceived", "prodtotalseedsreceived", "prodtotalseedsrecieved", "ptotalreceived"]),
             total_remaining: pick(row, ["productiontotalremaining", "productiontotalseedsremaining", "prodtotalremaining", "prodtotalseedsremaining", "ptotalremaining"]),
+            minimum_qty_for_production: pick(row, ["productionminimumqtyforproduction", "productionminimumquantityforproduction", "productionminimumquantity", "prodminimumqtyforproduction", "prodminimumquantityforproduction", "prodminimumquantity", "minimumqtyforproduction"]),
             last_inventory: pick(row, ["productionlastinventory", "productiondatelastinventoried", "prodlastinventory", "proddatelastinventoried", "plastinventory"])
           },
           experiment: {
@@ -393,6 +457,7 @@
           const fromLocal = parseSeedPayload(parsed);
           if (fromLocal.length) {
             dataSource = "localStorage";
+            sourceSeedPayload = parsed;
             return fromLocal;
           }
         }
@@ -404,12 +469,27 @@
           const fromPublic = parseSeedPayload(parsed);
           if (fromPublic.length) {
             dataSource = "supabase";
+            sourceSeedPayload = parsed;
             return fromPublic;
           }
         }
       } catch (_e) {}
       dataSource = "none";
+      sourceSeedPayload = null;
       return [];
+    }
+    function emitSeedUpdated() {
+      const payload = { type: MSG_SEED, key: MASTER_SEED_KEY, ts: Date.now() };
+      try { window.parent?.postMessage?.(payload, "*"); } catch (_e) {}
+      try {
+        if ("BroadcastChannel" in window) {
+          const bc = new BroadcastChannel("campo_updates_v1");
+          bc.postMessage(payload);
+          bc.close();
+        }
+      } catch (_e) {}
+      try { window.dispatchEvent(new CustomEvent(MSG_SEED, { detail: payload })); } catch (_e) {}
+      try { document.dispatchEvent(new CustomEvent(MSG_SEED, { detail: payload })); } catch (_e) {}
     }
 
     function fmtInt(v) {
@@ -449,6 +529,145 @@
     }
     function hasMix(m) {
       return !!(m.variety || m.purpose || num(m.total_remaining));
+    }
+    function loadProductionMinimums() {
+      try {
+        const raw = localStorage.getItem(PROD_MINIMUMS_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (_e) {
+        return {};
+      }
+    }
+    function saveProductionMinimums() {
+      try {
+        localStorage.setItem(PROD_MINIMUMS_KEY, JSON.stringify(productionMinimums));
+      } catch (_e) {}
+    }
+    function loadMinQtyColumnVisible() {
+      try {
+        const raw = localStorage.getItem(MIN_QTY_COL_VISIBLE_KEY);
+        if (raw === null) return true;
+        return raw !== "0";
+      } catch (_e) {
+        return true;
+      }
+    }
+    function saveMinQtyColumnVisible() {
+      try {
+        localStorage.setItem(MIN_QTY_COL_VISIBLE_KEY, showMinQtyColumn ? "1" : "0");
+      } catch (_e) {}
+    }
+    function applyMinQtyColumnVisibility() {
+      const table = $("topProductionTable");
+      const btn = $("toggleMinQtyCol");
+      if (!table || !btn) return;
+      table.classList.toggle("minColHidden", !showMinQtyColumn);
+      btn.textContent = showMinQtyColumn ? "Hide Min Qty" : "Show Min Qty";
+    }
+    function getProductionRowKey(p) {
+      return [
+        normalizeVarietyKey(p?.variety || ""),
+        normalizeTypeKey(p?.type || ""),
+        String(p?.provider || "").trim().toLowerCase(),
+        String(p?.lot || "").trim().toLowerCase()
+      ].join("||");
+    }
+    function getTopProductionRowKey(variety, type) {
+      return `topprod||${normalizeVarietyKey(variety || "")}||${normalizeTypeKey(type || "")}`;
+    }
+    function sanitizeMinimumValue(v) {
+      const n = Number(String(v ?? "").replace(/,/g, "").trim());
+      if (!Number.isFinite(n) || n < 0) return "";
+      return String(Math.round(n));
+    }
+    function getProductionMinimumValue(p) {
+      const key = getProductionRowKey(p);
+      if (key && Object.prototype.hasOwnProperty.call(productionMinimums, key)) {
+        return sanitizeMinimumValue(productionMinimums[key]);
+      }
+      return sanitizeMinimumValue(
+        p?.minimum_qty_for_production ??
+        p?.minimum_quantity_for_production ??
+        p?.minimum_quantity ??
+        p?.minimum_qty ??
+        p?.min_quantity ??
+        p?.min_qty
+      );
+    }
+    function getEffectiveMinimumForProductionRow(p) {
+      const directKey = getProductionRowKey(p);
+      if (directKey && Object.prototype.hasOwnProperty.call(productionMinimums, directKey)) {
+        return sanitizeMinimumValue(productionMinimums[directKey]);
+      }
+      const topKey = getTopProductionRowKey(p?.variety || "", p?.type || "");
+      if (topKey && Object.prototype.hasOwnProperty.call(productionMinimums, topKey)) {
+        return sanitizeMinimumValue(productionMinimums[topKey]);
+      }
+      return getProductionMinimumValue(p);
+    }
+    function buildSeedRowsWithMinimums() {
+      return (dataRows || []).map((r) => {
+        const production = { ...(r?.production || {}) };
+        const minVal = getEffectiveMinimumForProductionRow(production);
+        if (minVal === "") {
+          delete production.minimum_qty_for_production;
+        } else {
+          production.minimum_qty_for_production = Number(minVal);
+        }
+        return {
+          production,
+          experiment: { ...(r?.experiment || {}) },
+          mixed: { ...(r?.mixed || {}) }
+        };
+      });
+    }
+    function buildSeedPayloadForPublish() {
+      const rowsWithMinimums = buildSeedRowsWithMinimums();
+      let base = {};
+      if (sourceSeedPayload && typeof sourceSeedPayload === "object" && !Array.isArray(sourceSeedPayload)) {
+        try {
+          base = JSON.parse(JSON.stringify(sourceSeedPayload));
+        } catch (_e) {
+          base = {};
+        }
+      }
+      if (!base || typeof base !== "object" || Array.isArray(base)) base = {};
+      if (!base.sheets || typeof base.sheets !== "object" || Array.isArray(base.sheets)) base.sheets = {};
+      base.sheets["Seed Inventory"] = rowsWithMinimums;
+      base.version = base.version || "v1";
+      base.kind = base.kind || "seed";
+      base.updatedAt = new Date().toISOString();
+      base.sourceLabel = "Seed Inventory Dashboard Save";
+      return base;
+    }
+    async function saveSeedInventoryToSupabase() {
+      const btn = $("saveSeedBtn");
+      if (btn) btn.disabled = true;
+      try {
+        const payload = buildSeedPayloadForPublish();
+        localStorage.setItem(MASTER_SEED_KEY, JSON.stringify(payload));
+        localStorage.setItem(MASTER_SEED_PING, String(Date.now()));
+        emitSeedUpdated();
+
+        $("status").textContent = "Saving Seed Inventory to Supabase...";
+        const res = await fetch(WORKER_SEED_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text().catch(() => "");
+        if (!res.ok) throw new Error(`Save failed (${res.status})${text ? `: ${text}` : ""}`);
+
+        sourceSeedPayload = payload;
+        dataSource = "localStorage";
+        $("status").textContent = "Seed Inventory saved to Supabase and localStorage.";
+      } catch (err) {
+        $("status").textContent = `Failed to save Seed Inventory: ${err?.message || err}`;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     function flatten() {
@@ -495,9 +714,14 @@
       const body = $(tbodyId);
       body.innerHTML = rows.map((r) => {
         const tds = cols.map((c) => {
+          const tdClass = c.tdClass || (c.num ? "r" : "");
+          if (c.inputNum) {
+            const v = sanitizeMinimumValue(r[c.key]);
+            return `<td class="${tdClass}"><input class="cellInput" type="number" min="0" step="1" value="${esc(v)}" data-min-row-key="${esc(r.__rowKey || "")}" data-min-key="${esc(c.key)}" /></td>`;
+          }
           const v = r[c.key];
           const content = c.num ? fmtInt(v) : esc(v || "");
-          return `<td class="${c.num ? 'r' : ''}">${content}</td>`;
+          return `<td class="${tdClass}">${content}</td>`;
         }).join("");
         return `<tr>${tds}</tr>`;
       }).join("");
@@ -538,12 +762,17 @@
       const topProd = Array.from(byVariety.entries())
         .map(([, v]) => v)
         .sort((a, b) => b.remaining - a.remaining);
-      $("tbTopProduction").innerHTML = topProd.map((x) => (
-        `<tr><td>${esc(x.variety)}</td><td>${esc(x.type)}</td><td class="r">${fmtInt(x.remaining)}</td></tr>`
-      )).join("");
+      $("tbTopProduction").innerHTML = topProd.map((x) => {
+        const rowKey = getTopProductionRowKey(x.variety, x.type);
+        const minQtyRaw = sanitizeMinimumValue(productionMinimums[rowKey]);
+        const minQty = Number(minQtyRaw || 0);
+        const lowStockClass = minQty > 0 && num(x.remaining) < minQty ? " class=\"lowStock\"" : "";
+        return `<tr${lowStockClass}><td>${esc(x.variety)}</td><td>${esc(x.type)}</td><td class="r">${fmtInt(x.remaining)}</td><td class="r"><input class="cellInput" type="number" min="0" step="1" value="${esc(minQtyRaw)}" data-min-row-key="${esc(rowKey)}" /></td></tr>`;
+      }).join("");
       if (!topProd.length) {
-        $("tbTopProduction").innerHTML = '<tr><td colspan="3" style="color:#9eb3c4;">No records for current filters.</td></tr>';
+        $("tbTopProduction").innerHTML = `<tr><td colspan="${showMinQtyColumn ? 4 : 3}" style="color:#9eb3c4;">No records for current filters.</td></tr>`;
       }
+      applyMinQtyColumnVisibility();
       $("kTopProdTotal").textContent = fmtInt(topProd.reduce((a, x) => a + num(x.remaining), 0));
       const byVarietyExp = new Map();
       for (const r of filtered.experiment) {
@@ -632,8 +861,33 @@
       currentView = "table";
       applyView();
     });
+    $("saveSeedBtn").addEventListener("click", () => {
+      void saveSeedInventoryToSupabase();
+    });
+    $("toggleMinQtyCol").addEventListener("click", () => {
+      showMinQtyColumn = !showMinQtyColumn;
+      saveMinQtyColumnVisible();
+      applyMinQtyColumnVisibility();
+    });
+    $("tbTopProduction").addEventListener("change", (e) => {
+      const input = e.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      const rowKey = input.dataset.minRowKey || "";
+      if (!rowKey) return;
+      const clean = sanitizeMinimumValue(input.value);
+      if (clean === "") {
+        delete productionMinimums[rowKey];
+      } else {
+        productionMinimums[rowKey] = Number(clean);
+      }
+      saveProductionMinimums();
+      input.value = clean;
+      render();
+    });
 
     async function reloadAndRender() {
+      productionMinimums = loadProductionMinimums();
+      showMinQtyColumn = loadMinQtyColumnVisible();
       dataRows = await loadDataRows();
       render();
     }
@@ -642,7 +896,7 @@
       $("status").textContent = `Runtime error: ${e?.message || 'unknown error'}`;
     });
     window.addEventListener("storage", (e) => {
-      if (e?.key === MASTER_SEED_KEY) reloadAndRender();
+      if (e?.key === MASTER_SEED_KEY || e?.key === PROD_MINIMUMS_KEY || e?.key === MIN_QTY_COL_VISIBLE_KEY) reloadAndRender();
     });
     window.addEventListener("message", (e) => {
       const type = e?.data?.type;
