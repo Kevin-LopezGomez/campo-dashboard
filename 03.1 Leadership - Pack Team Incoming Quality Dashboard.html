@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pack Team Incoming Quality Dashboard</title>
+  <title>Pack Team Performance</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -20,6 +20,10 @@
     }
 
     * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
     body {
       margin: 0;
       color: var(--text);
@@ -30,12 +34,18 @@
       font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
 
-    .wrap { max-width: 1320px; margin: 0 auto; padding: 18px; }
+    .wrap {
+      width: 100%;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 18px;
+    }
     .panel {
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       border: 1px solid var(--line);
       border-radius: var(--radius);
       padding: 14px;
+      min-width: 0;
     }
 
     .top {
@@ -45,7 +55,52 @@
       justify-content: space-between;
       flex-wrap: wrap;
     }
-    h1 { margin: 0 0 6px 0; font-size: 24px; }
+    .topRight {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .titleRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 0 0 6px 0;
+    }
+    .titleHintWrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .titleHint {
+      position: absolute;
+      left: 0;
+      top: calc(100% + 8px);
+      width: min(560px, 86vw);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #0d2a3f;
+      color: #dbe8f4;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.35;
+      box-shadow: 0 16px 34px rgba(0,0,0,.35);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(2px);
+      transition: opacity .14s ease, transform .14s ease;
+      z-index: 20;
+    }
+    .titleHintWrap:hover .titleHint,
+    .titleHintWrap:focus-within .titleHint {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    h1 { margin: 0; font-size: 24px; }
     .sub { color: var(--muted); font-size: 14px; max-width: 860px; }
     .pill {
       border: 1px solid var(--line);
@@ -55,19 +110,109 @@
       font-size: 12px;
       white-space: nowrap;
     }
+    .actionBtn {
+      appearance: none;
+      cursor: pointer;
+      border: 1px solid rgba(55,214,122,.45);
+      border-radius: 999px;
+      background: rgba(55,214,122,.12);
+      color: #d8ffe9;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .actionBtn:hover { background: rgba(55,214,122,.2); }
+    .actionBtn:disabled {
+      cursor: default;
+      opacity: .6;
+    }
+    .pillTabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pillBtn {
+      appearance: none;
+      cursor: pointer;
+      background: rgba(255,255,255,.02);
+      transition: background .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .pillBtn.active {
+      color: #082131;
+      border-color: rgba(55,214,122,.35);
+      background: linear-gradient(180deg, rgba(55,214,122,.95), rgba(55,214,122,.8));
+    }
+    .view {
+      margin-top: 10px;
+    }
+    .hidden { display: none !important; }
+    .qualityRow {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .qualityLabel {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .qualityPill {
+      appearance: none;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      transition: background .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .qualityPill.active {
+      color: #082131;
+      border-color: rgba(78,163,255,.35);
+      background: linear-gradient(180deg, rgba(78,163,255,.95), rgba(78,163,255,.8));
+    }
 
     .controls {
       margin-top: 12px;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       align-items: center;
     }
+    .controlsCollapse {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.015);
+      padding: 8px 10px 10px;
+    }
+    .controlsCollapse > summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+      user-select: none;
+      list-style: none;
+    }
+    .controlsCollapse > summary::-webkit-details-marker { display: none; }
+    .controlsCollapse > summary::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 8px;
+      transition: transform .18s ease;
+    }
+    .controlsCollapse[open] > summary::before { transform: rotate(90deg); }
     .control {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
-      padding: 10px;
+      padding: 8px 10px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: rgba(255,255,255,.02);
@@ -81,13 +226,12 @@
       padding: 8px 9px;
       font-size: 14px;
     }
-    input[type="search"] { min-width: 220px; }
     .scaleBox {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
       align-items: center;
-      padding: 10px;
+      padding: 8px 10px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: rgba(255,255,255,.02);
@@ -95,14 +239,60 @@
     .scaleItem {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
     }
     .scaleItem input {
-      width: 72px;
-      padding: 7px 8px;
+      width: 56px;
+      min-width: 56px;
+      text-align: right;
+      padding: 6px 8px;
+    }
+    .control input[type="number"] {
+      width: 88px;
+      min-width: 88px;
+      text-align: right;
+      padding: 6px 8px;
+    }
+    #rangeSel { min-width: 140px; }
+    #empSel { min-width: 220px; }
+    #avgCanastaWeight { width: 76px; min-width: 76px; }
+    #shiftLength { width: 76px; min-width: 76px; }
+    #daysPerWeek { width: 76px; min-width: 76px; }
+    .projectionToggle {
+      margin-top: 6px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .projectionCard { position: relative; }
+    .projectionCard .projectionToggle {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      margin-top: 0;
+      justify-content: flex-end;
+      z-index: 2;
+    }
+    .projectionBtn {
+      appearance: none;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      transition: background .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .projectionBtn.active {
+      color: #082131;
+      border-color: rgba(55,214,122,.35);
+      background: linear-gradient(180deg, rgba(55,214,122,.95), rgba(55,214,122,.8));
     }
 
     .grid4 {
@@ -116,6 +306,7 @@
       border-radius: 12px;
       background: var(--card);
       padding: 12px;
+      min-width: 0;
     }
     .kpi .t { color: var(--muted); font-size: 12px; font-weight: 700; }
     .kpi .v { margin-top: 6px; font-size: 28px; font-weight: 900; }
@@ -131,11 +322,20 @@
       border-radius: 12px;
       background: var(--card);
       padding: 12px;
+      min-width: 0;
     }
     .card h3 {
       margin: 0 0 8px 0;
       font-size: 15px;
     }
+    .cardHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .cardHead h3 { margin: 0; }
     .chartWrap { height: 280px; }
 
     table { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -143,8 +343,88 @@
     th { color: var(--muted); text-align: left; }
     td.r, th.r { text-align: right; }
 
-    .tableWrap { overflow: auto; }
+    .tableWrap {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    #rawQualityView table {
+      min-width: 1760px;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    #rawQualityView th, #rawQualityView td { white-space: nowrap; }
+    #rawQualityView tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
+    #rawQualityView tbody tr:hover { background: rgba(78,163,255,.12); }
+    #rawQualityView .metricHead,
+    #rawQualityView .metricCell {
+      background: linear-gradient(180deg, rgba(78,163,255,.16), rgba(78,163,255,.09));
+      color: #e9f4ff;
+      font-weight: 800;
+    }
+    #rawQualityView .metricStart {
+      border-left: 2px solid rgba(78,163,255,.45);
+    }
     .status { margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .empLink {
+      border: 0;
+      background: transparent;
+      color: #9bd0ff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .empLink:hover { color: #c3e3ff; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3,12,20,.72);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 30;
+    }
+    .modalCard {
+      width: min(980px, 96vw);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #0c2234;
+      box-shadow: 0 20px 50px rgba(0,0,0,.45);
+      padding: 12px;
+    }
+    .modalTitle {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .performanceTitle { text-align: center; width: 100%; }
+    .modalHead {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+    .modalSpacer { width: 1px; }
+    .modalHead .closeBtn { justify-self: end; }
+    .closeBtn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .closeBtn:hover { background: rgba(255,255,255,.08); }
 
     @media (max-width: 1050px) {
       .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -152,7 +432,6 @@
     }
     @media (max-width: 600px) {
       .grid4 { grid-template-columns: 1fr; }
-      input[type="search"] { min-width: 170px; }
     }
   </style>
 </head>
@@ -161,90 +440,196 @@
     <div class="panel">
       <div class="top">
         <div>
-          <h1>Pack Team Incoming Quality Dashboard</h1>
-          <div class="sub">
-            This view only uses employee, date, and hourly columns (`Incoming Quality H1-H8` plus `H1-H8` windows).
-            It does not use `Incoming Quality Total`, `Pack Hr`, or rate fields.
+          <div class="titleRow">
+            <div class="titleHintWrap">
+              <h1 tabindex="0">Pack Team Performance</h1>
+              <span class="titleHint" role="tooltip">This view only uses employee, date, and hourly columns (`Incoming Quality H1-H8` plus `H1-H8` windows). It does not use `Incoming Quality Total`, `Pack Hr`, or rate fields.</span>
+            </div>
           </div>
         </div>
-        <div class="pill" id="metaRange">Range: —</div>
-      </div>
-
-      <div class="controls">
-        <div class="control">
-          <label for="rangeSel">Date range</label>
-          <select id="rangeSel">
-            <option value="all">All time</option>
-            <option value="90">Last 90 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="14">Last 14 days</option>
-            <option value="7">Last 7 days</option>
-          </select>
-        </div>
-        <div class="control">
-          <label for="empSel">Employee</label>
-          <select id="empSel"><option value="__all__">All employees</option></select>
-        </div>
-        <div class="control">
-          <label for="q">Search</label>
-          <input id="q" type="search" placeholder="Type employee name" />
-        </div>
-        <div class="control">
-          <label for="summaryQualityFilter">Summary Quality</label>
-          <select id="summaryQualityFilter">
-            <option value="all">All</option>
-            <option value="average">Average</option>
-            <option value="excellent">Excellent</option>
-            <option value="good">Good</option>
-            <option value="bad">Bad</option>
-            <option value="very_bad">Very Bad</option>
-          </select>
-        </div>
-        <div class="scaleBox">
-          <div class="scaleItem"><label for="sExcellent">Excellent</label><input id="sExcellent" type="number" value="12" step="0.1" /></div>
-          <div class="scaleItem"><label for="sGood">Good</label><input id="sGood" type="number" value="10" step="0.1" /></div>
-          <div class="scaleItem"><label for="sBad">Bad</label><input id="sBad" type="number" value="6" step="0.1" /></div>
-          <div class="scaleItem"><label for="sVeryBad">Very Bad</label><input id="sVeryBad" type="number" value="4" step="0.1" /></div>
+        <button class="actionBtn" id="saveSupabaseBtn" type="button">Save to Supabase</button>
+        <div class="topRight">
+          <div class="pill" id="metaRange">Range: —</div>
+          <div class="pillTabs" role="tablist" aria-label="Dashboard Views">
+            <button class="pill pillBtn active" id="tabDashboard" type="button" role="tab" aria-selected="true" aria-controls="dashboardView">Pack Quality Dashbaord</button>
+            <button class="pill pillBtn" id="tabRawQuality" type="button" role="tab" aria-selected="false" aria-controls="rawQualityView">Raw Quality Data Table</button>
+            <button class="pill pillBtn" id="tabQCPotential" type="button" role="tab" aria-selected="false" aria-controls="qcPotentialView">QC Potential</button>
+          </div>
         </div>
       </div>
 
-      <div class="grid4">
-        <div class="kpi"><div class="t">Total Incoming Quality</div><div class="v" id="kIq">—</div></div>
-        <div class="kpi"><div class="t">Total Hours Worked</div><div class="v" id="kH">—</div></div>
-        <div class="kpi"><div class="t">Active Days</div><div class="v" id="kDays">—</div></div>
-        <div class="kpi"><div class="t">Employees</div><div class="v" id="kEmp">—</div></div>
+      <details class="controlsCollapse">
+        <summary>Filters and Inputs</summary>
+        <div class="controls">
+          <div class="control">
+            <label for="rangeSel">Date range</label>
+            <select id="rangeSel">
+              <option value="all">All time</option>
+              <option value="90">Last 90 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="7">Last 7 days</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="empSel">Employee</label>
+            <select id="empSel"><option value="__all__">All employees</option></select>
+          </div>
+          <div class="control">
+            <label for="avgCanastaWeight">Average Canasta Weight</label>
+            <input id="avgCanastaWeight" type="number" value="1" step="0.1" min="0" />
+          </div>
+          <div class="control">
+            <label for="shiftLength">Shift Length</label>
+            <input id="shiftLength" type="number" value="8" step="0.5" min="0" />
+          </div>
+          <div class="control">
+            <label for="daysPerWeek">Days/Week</label>
+            <input id="daysPerWeek" type="number" value="5" step="1" min="0" />
+          </div>
+          <div class="scaleBox">
+            <div class="scaleItem"><label for="sExcellent">Excellent</label><input id="sExcellent" type="number" value="12" step="0.1" /></div>
+            <div class="scaleItem"><label for="sGood">Good</label><input id="sGood" type="number" value="10" step="0.1" /></div>
+            <div class="scaleItem"><label for="sBad">Bad</label><input id="sBad" type="number" value="6" step="0.1" /></div>
+            <div class="scaleItem"><label for="sVeryBad">Very Bad</label><input id="sVeryBad" type="number" value="4" step="0.1" /></div>
+          </div>
+        </div>
+      </details>
+
+      <div class="qualityRow" role="group" aria-label="Summary Quality">
+        <span class="qualityLabel">Summary Quality</span>
+        <button class="qualityPill active" type="button" data-quality="all">All</button>
+        <button class="qualityPill" type="button" data-quality="excellent">Excellent</button>
+        <button class="qualityPill" type="button" data-quality="good">Good</button>
+        <button class="qualityPill" type="button" data-quality="bad">Bad</button>
+        <button class="qualityPill" type="button" data-quality="very_bad">Very Bad</button>
       </div>
 
-      <div class="grid2">
-        <div class="card">
-          <h3>Daily Trend (Average Canastas/Hour)</h3>
-          <div class="chartWrap"><canvas id="chartDaily"></canvas></div>
+      <div class="view" id="dashboardView" role="tabpanel" aria-labelledby="tabDashboard">
+        <div class="grid4">
+          <div class="kpi"><div class="t">Total Incoming Quality</div><div class="v" id="kIq">—</div></div>
+          <div class="kpi"><div class="t">Total Hours Worked</div><div class="v" id="kH">—</div></div>
+          <div class="kpi"><div class="t">Active Days</div><div class="v" id="kDays">—</div></div>
+          <div class="kpi"><div class="t">Employees</div><div class="v" id="kEmp">—</div></div>
         </div>
-        <div class="card">
-          <h3>Average Canastas by Hour Slot</h3>
-          <div class="chartWrap"><canvas id="chartHourly"></canvas></div>
+
+        <div class="grid2">
+          <div class="card">
+            <h3 class="performanceTitle">Team Performance</h3>
+            <div class="chartWrap"><canvas id="chartDaily"></canvas></div>
+          </div>
+          <div class="card">
+            <h3 class="performanceTitle">Team Performance by Hour</h3>
+            <div class="chartWrap"><canvas id="chartHourly"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:10px;">
+          <h3>Employee Summary Table</h3>
+          <div class="tableWrap" id="empSummaryWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th class="r">Canastas/Hour</th>
+                  <th class="r">Total Canastas</th>
+                  <th class="r">Total Hours Worked</th>
+                  <th class="r">Avg Incoming Quality</th>
+                </tr>
+              </thead>
+              <tbody id="tb"></tbody>
+            </table>
+          </div>
+          <div class="status" id="status">Loading…</div>
         </div>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <h3>Employee Summary</h3>
-        <div class="tableWrap">
+      <div class="card view hidden" id="rawQualityView" role="tabpanel" aria-labelledby="tabRawQuality">
+        <div class="cardHead">
+          <h3>Raw Quality Data Table</h3>
+        </div>
+        <div class="tableWrap" id="rawTableWrap">
           <table>
             <thead>
               <tr>
+                <th class="r metricHead metricStart">Total Quality Points</th>
+                <th class="r metricHead">Total Canst</th>
+                <th class="r metricHead">Pack Hr</th>
+                <th class="r metricHead">Pack Canst/Hr</th>
+                <th class="r metricHead">Quality Points/Hour</th>
                 <th>Employee</th>
-                <th class="r">Days</th>
-                <th class="r">Avg Incoming Quality</th>
-                <th class="r">Total Hours Worked</th>
-                <th class="r">Total Canastas</th>
-                <th class="r">Canastas/Hour</th>
+                <th>Date</th>
+                <th class="r">IQ H1</th>
+                <th class="r">H1 7:30-8:30</th>
+                <th class="r">IQ H2</th>
+                <th class="r">H2 8:30-9:30</th>
+                <th class="r">IQ H3</th>
+                <th class="r">H3 9:30-10:30</th>
+                <th class="r">IQ H4</th>
+                <th class="r">H4 10:30-11:00</th>
+                <th class="r">IQ H5</th>
+                <th class="r">H5 11:30-12:00</th>
+                <th class="r">IQ H6</th>
+                <th class="r">H6 12:30-1:30</th>
+                <th class="r">IQ H7</th>
+                <th class="r">H7 1:30-2:30</th>
+                <th class="r">IQ H8</th>
+                <th class="r">H8 2:30-3:30</th>
               </tr>
             </thead>
-            <tbody id="tb"></tbody>
+            <tbody id="qualityTb"></tbody>
           </table>
         </div>
-        <div class="status" id="status">Loading…</div>
+        <div class="status" id="qualityStatus">Rows shown: 0</div>
       </div>
+
+      <div class="card view hidden" id="qcPotentialView" role="tabpanel" aria-labelledby="tabQCPotential">
+        <div class="grid2">
+          <div class="card">
+            <h3 class="performanceTitle">Team Performance</h3>
+            <div class="chartWrap"><canvas id="chartDailyQc"></canvas></div>
+          </div>
+          <div class="card projectionCard">
+            <h3 class="performanceTitle" id="qcProjectionTitle">Projected Lbs/Shift</h3>
+            <div class="projectionToggle" role="group" aria-label="Projection mode">
+              <button class="projectionBtn active" id="projModeShift" type="button">Shift</button>
+              <button class="projectionBtn" id="projModeWeek" type="button">Week</button>
+            </div>
+            <div class="chartWrap"><canvas id="chartHourlyQc"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:10px;">
+          <h3>Employee Summary Table</h3>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th class="r">Lbs/Hour</th>
+                  <th class="r">Total Lbs</th>
+                  <th class="r">Total Hours Worked</th>
+                  <th class="r">Avg Incoming Quality</th>
+                </tr>
+              </thead>
+              <tbody id="tbQc"></tbody>
+            </table>
+          </div>
+          <div class="status" id="statusQc">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="empTrendModal" aria-hidden="true">
+    <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="empTrendTitle">
+      <div class="cardHead modalHead">
+        <span class="modalSpacer" aria-hidden="true"></span>
+        <h3 class="modalTitle performanceTitle" id="empTrendTitle">Employee Daily Trend</h3>
+        <button class="closeBtn" id="empTrendClose" type="button">Close</button>
+      </div>
+      <div class="chartWrap"><canvas id="chartEmpDaily"></canvas></div>
+      <div class="status" id="empTrendStatus">Select an employee from the summary table.</div>
     </div>
   </div>
 
@@ -255,6 +640,7 @@
     const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
     const MASTER_PACK_SHEET_NAME = "Master Pack";
     const MSG_PACK = "MASTER_PACK_UPDATED";
+    const UI_STATE_KEY = "pack_quality_dashboard_ui_state_v1";
 
     const COL = Object.freeze({
       EMPLOYEE: "Pack Nombre del Empleado",
@@ -274,17 +660,23 @@
       IQ_H7: "Incoming Quality H7",
       SLOT_H7: "H7 1:30-2:30",
       IQ_H8: "Incoming Quality 8",
-      SLOT_H8: "H8 2:30-3:30"
+      SLOT_H8: "H8 2:30-3:30",
+      IQ_TOTAL: "Incoming Quality Total",
+      PACK_HR: "Pack Hr",
+      PACK_CANASTAS_HR: "Pack Canst/Hr"
     });
 
     const IQ_KEYS = ["IQ_H1","IQ_H2","IQ_H3","IQ_H4","IQ_H5","IQ_H6","IQ_H7","IQ_H8"];
     const SLOT_KEYS = ["SLOT_H1","SLOT_H2","SLOT_H3","SLOT_H4","SLOT_H5","SLOT_H6","SLOT_H7","SLOT_H8"];
     const HOUR_LABELS = ["H1","H2","H3","H4","H5","H6","H7","H8"];
+    const EMPLOYEE_COUNT_LABELS = Array.from({ length: 11 }, (_, i) => String(i + 4));
 
     function parseNumber(v) {
       if (v === null || v === undefined) return NaN;
       const s = String(v).trim().replace(/,/g, "");
-      if (!s || s === "#DIV/0!" || s === "N/A") return NaN;
+      if (!s) return NaN;
+      const u = s.toUpperCase();
+      if (u === "N/A" || u === "NA" || u.includes("DIV/0") || u.includes("VALOR") || u.includes("VALUE") || u.includes("REF!") || u.includes("NAME?")) return NaN;
       const n = Number(s);
       return Number.isFinite(n) ? n : NaN;
     }
@@ -349,12 +741,44 @@
       if (!qualityFilter || qualityFilter === "all") return empRows;
       return empRows.filter((r) => summaryQualityBucket(r.avgIq, scale) === qualityFilter);
     }
+
+    function rowQualityBucket(row, scale) {
+      if (!row) return null;
+      const iqVals = (Array.isArray(row.iq) ? row.iq : []).map((v) => parseQualityNumber(v, scale));
+      const slots = Array.isArray(row.slots) ? row.slots : [];
+
+      const active = [];
+      for (let i = 0; i < iqVals.length; i++) {
+        const q = iqVals[i];
+        const slot = slots[i];
+        if (Number.isFinite(q) && Number.isFinite(slot) && slot > 0) {
+          active.push(q);
+        }
+      }
+
+      const source = active.length ? active : iqVals.filter((v) => Number.isFinite(v));
+      if (!source.length) return null;
+      const avg = source.reduce((a, b) => a + b, 0) / source.length;
+      return summaryQualityBucket(avg, scale);
+    }
+
     function filterRowsBySummaryQuality(rows, scale, qualityFilter) {
       if (!qualityFilter || qualityFilter === "all") return rows;
-      const agg = aggregate(rows, scale);
-      const kept = filterSummaryRows(agg.empRows, scale, qualityFilter);
-      const keepNames = new Set(kept.map((r) => r.name));
-      return rows.filter((r) => keepNames.has(r.name));
+      return rows.filter((r) => rowQualityBucket(r, scale) === qualityFilter);
+    }
+    function targetQualityScore(qualityFilter, scale) {
+      if (qualityFilter === "excellent") return scale.excellent;
+      if (qualityFilter === "good") return scale.good;
+      if (qualityFilter === "bad") return scale.bad;
+      if (qualityFilter === "very_bad") return scale.veryBad;
+      return NaN;
+    }
+    function qualityFilterLabel(qualityFilter) {
+      if (qualityFilter === "excellent") return "Excellent";
+      if (qualityFilter === "good") return "Good";
+      if (qualityFilter === "bad") return "Bad";
+      if (qualityFilter === "very_bad") return "Very Bad";
+      return "All";
     }
 
     async function fetchPayload() {
@@ -403,7 +827,10 @@
 
       const H = {
         EMPLOYEE: pick(map, COL.EMPLOYEE),
-        DATE: pick(map, COL.DATE)
+        DATE: pick(map, COL.DATE),
+        IQ_TOTAL: pick(map, COL.IQ_TOTAL),
+        PACK_HR: pick(map, COL.PACK_HR),
+        PACK_CANASTAS_HR: pick(map, COL.PACK_CANASTAS_HR)
       };
       IQ_KEYS.forEach((k) => { H[k] = pick(map, COL[k]); });
       SLOT_KEYS.forEach((k) => { H[k] = pick(map, COL[k]); });
@@ -418,13 +845,26 @@
       const rows = [];
       for (const r of sheetRows(sheet)) {
         const name = String(r[H.EMPLOYEE] ?? "").trim();
+        const dateRaw = String(r[H.DATE] ?? "").trim();
         const date = parseDate(r[H.DATE]);
         if (!name || !date) continue;
 
         const iq = IQ_KEYS.map((k) => r[H[k]]);
-        const slots = SLOT_KEYS.map((k) => parseNumber(r[H[k]]));
+        const slotsRaw = SLOT_KEYS.map((k) => r[H[k]]);
+        const slots = slotsRaw.map((v) => parseNumber(v));
 
-        rows.push({ name, date, dateISO: toISO(date), iq, slots });
+        rows.push({
+          name,
+          date,
+          dateISO: toISO(date),
+          dateRaw,
+          iq,
+          slotsRaw,
+          slots,
+          iqTotalRaw: H.IQ_TOTAL ? r[H.IQ_TOTAL] : "",
+          packHrRaw: H.PACK_HR ? r[H.PACK_HR] : "",
+          packCanastasHrRaw: H.PACK_CANASTAS_HR ? r[H.PACK_CANASTAS_HR] : ""
+        });
       }
 
       return { rows, missing: [] };
@@ -438,11 +878,25 @@
         const name = String(r.name ?? "").trim();
         const date = parseDate(r.date);
         if (!name || !date) continue;
+        const dateRaw = String(r.dateRaw ?? r.date ?? "").trim();
         const iq = Array.isArray(r.iq) ? r.iq.slice(0, 8) : [];
-        const slots = Array.isArray(r.slots) ? r.slots.slice(0, 8).map((v) => parseNumber(v)) : [];
+        const slotsRaw = Array.isArray(r.slotsRaw) ? r.slotsRaw.slice(0, 8) : (Array.isArray(r.slots) ? r.slots.slice(0, 8) : []);
+        const slots = slotsRaw.map((v) => parseNumber(v));
         while (iq.length < 8) iq.push("");
+        while (slotsRaw.length < 8) slotsRaw.push("");
         while (slots.length < 8) slots.push(NaN);
-        out.push({ name, date, dateISO: toISO(date), iq, slots });
+        out.push({
+          name,
+          date,
+          dateISO: toISO(date),
+          dateRaw,
+          iq,
+          slotsRaw,
+          slots,
+          iqTotalRaw: r.iqTotalRaw ?? r.incomingQualityTotal ?? "",
+          packHrRaw: r.packHrRaw ?? r.packHr ?? "",
+          packCanastasHrRaw: r.packCanastasHrRaw ?? r.packCanastasHr ?? ""
+        });
       }
       return out;
     }
@@ -450,11 +904,9 @@
     function applyFilters(allRows) {
       let rows = allRows.slice();
       const emp = $("empSel").value;
-      const q = $("q").value.trim().toLowerCase();
       const range = $("rangeSel").value;
 
       if (emp && emp !== "__all__") rows = rows.filter((r) => r.name === emp);
-      if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q));
 
       if (range !== "all" && rows.length) {
         const days = Number(range);
@@ -554,7 +1006,7 @@
             avgSlot: v.slot / days
           };
         })
-        .sort((a, b) => b.iq - a.iq);
+        .sort((a, b) => (b.canastasPerHour - a.canastasPerHour) || (b.canastas - a.canastas) || a.name.localeCompare(b.name));
 
       const hourAvgIQ = hourlyIQ.map((v, i) => hourlyCount[i] ? v / hourlyCount[i] : 0);
       const hourAvgCanastas = hourlyCanastas.map((v, i) => hourlyCanastasCount[i] ? v / hourlyCanastasCount[i] : 0);
@@ -574,9 +1026,67 @@
     const chartDaily = (typeof Chart !== "undefined") ? new Chart($("chartDaily"), {
       type: "line",
       data: { labels: [], datasets: [
-        { label: "Average Canastas/Hour", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.2)", tension: .25 }
+        { label: "Avg Cans/Person/Hr", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.2)", tension: .25 },
+        { label: "Last 5-Point Avg", data: [], borderColor: "#ffb65c", borderDash: [8, 6], pointRadius: 0, tension: 0 },
+        { label: "Target Quality Score", data: [], borderColor: "#4ea3ff", borderDash: [6, 6], pointRadius: 0, tension: 0, yAxisID: "yQuality" }
       ] },
-      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Date",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              maxRotation: 40,
+              minRotation: 20,
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.16)",
+              lineWidth: 1.2
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Avg Cans/Person/Hr",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.18)",
+              lineWidth: 1.2
+            }
+          },
+          yQuality: {
+            position: "right",
+            title: {
+              display: true,
+              text: "Quality Score",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              drawOnChartArea: false
+            }
+          }
+        }
+      }
     }) : null;
 
     const chartHourly = (typeof Chart !== "undefined") ? new Chart($("chartHourly"), {
@@ -584,21 +1094,213 @@
       data: { labels: HOUR_LABELS, datasets: [{ label: "Avg Canastas", data: [], backgroundColor: "#ffb65c" }] },
       options: { responsive: true, maintainAspectRatio: false }
     }) : null;
+    const chartDailyQc = (typeof Chart !== "undefined") ? new Chart($("chartDailyQc"), {
+      type: "line",
+      data: { labels: [], datasets: [
+        { label: "Avg Lbs/Person/Hr", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.2)", tension: .25 },
+        { label: "Last 5-Point Avg", data: [], borderColor: "#ffb65c", borderDash: [8, 6], pointRadius: 0, tension: 0 },
+        { label: "Target Lbs/Person/Hr", data: [], borderColor: "#4ea3ff", borderDash: [6, 6], pointRadius: 0, tension: 0 }
+      ] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Date",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              maxRotation: 40,
+              minRotation: 20,
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.16)",
+              lineWidth: 1.2
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Avg Lbs/Person/Hr",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.18)",
+              lineWidth: 1.2
+            }
+          }
+        }
+      }
+    }) : null;
+    const chartHourlyQc = (typeof Chart !== "undefined") ? new Chart($("chartHourlyQc"), {
+      type: "bar",
+      data: { labels: EMPLOYEE_COUNT_LABELS, datasets: [{ label: "Projected Lbs/Shift", data: [], backgroundColor: "#ffb65c" }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Number of Employees"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Team Lbs/Shift"
+            }
+          }
+        }
+      }
+    }) : null;
+    let chartEmpDaily = null;
 
     function renderTable(empRows, scale) {
       $("tb").innerHTML = empRows.map((r) => `
         <tr>
-          <td>${escapeHtml(r.name)}</td>
-          <td class="r">${fmtInt(r.days)}</td>
-          <td class="r">${fmt1(r.avgIq)}</td>
-          <td class="r">${fmtInt(r.slot)}</td>
-          <td class="r">${fmtInt(r.canastas)}</td>
+          <td><button class="empLink" type="button" data-emp="${encodeURIComponent(r.name)}">${escapeHtml(r.name)}</button></td>
           <td class="r">${fmt1(r.canastasPerHour)}</td>
+          <td class="r">${fmtInt(r.canastas)}</td>
+          <td class="r">${fmtInt(r.slot)}</td>
+          <td class="r">${fmt1(r.avgIq)}</td>
         </tr>
       `).join("");
       if (!empRows.length) {
-        $("tb").innerHTML = '<tr><td colspan="6" style="color:#a7bfd0;">No rows for current filters.</td></tr>';
+        $("tb").innerHTML = '<tr><td colspan="5" style="color:#a7bfd0;">No rows for current filters.</td></tr>';
       }
+    }
+
+    function renderTableQc(empRows, avgCanastaWeight) {
+      $("tbQc").innerHTML = empRows.map((r) => `
+        <tr>
+          <td><button class="empLink" type="button" data-emp="${encodeURIComponent(r.name)}">${escapeHtml(r.name)}</button></td>
+          <td class="r">${fmt1(r.canastasPerHour * avgCanastaWeight)}</td>
+          <td class="r">${fmt1(r.canastas * avgCanastaWeight)}</td>
+          <td class="r">${fmtInt(r.slot)}</td>
+          <td class="r">${fmt1(r.avgIq)}</td>
+        </tr>
+      `).join("");
+      if (!empRows.length) {
+        $("tbQc").innerHTML = '<tr><td colspan="5" style="color:#a7bfd0;">No rows for current filters.</td></tr>';
+      }
+    }
+
+    function rawCell(v) {
+      const s = String(v ?? "").trim();
+      if (!s) return "—";
+      const n = parseNumber(s);
+      if (Number.isFinite(n)) return escapeHtml(s);
+      const u = s.toUpperCase();
+      if (u.includes("DIV/0") || u.includes("VALOR") || u.includes("VALUE") || u.includes("REF!") || u.includes("NAME?") || u === "N/A" || u === "NA") return "0";
+      return "0";
+    }
+
+    function iqCell(v) {
+      const s = String(v ?? "").trim();
+      if (!s) return "—";
+      const n = parseNumber(s);
+      if (Number.isFinite(n)) return escapeHtml(s);
+      const q = s.toLowerCase();
+      if (q === "excellent" || q === "good" || q === "bad" || q === "very bad" || q === "verybad" || q === "v bad" || q === "vbad") {
+        return escapeHtml(s);
+      }
+      return rawCell(s);
+    }
+
+    function displayPackHr(r) {
+      const manual = String(r?.packHrRaw ?? "").trim();
+      if (manual) return manual;
+      const slots = Array.isArray(r?.slots) ? r.slots : [];
+      const computed = slots.reduce((acc, v) => acc + ((Number.isFinite(v) && v > 0) ? 1 : 0), 0);
+      return String(computed);
+    }
+
+    function displayPackCanstHr(r) {
+      const manual = String(r?.packCanastasHrRaw ?? "").trim();
+      if (manual) return manual;
+
+      const totalCanst = parseNumber(r?.iqTotalRaw);
+      const packHr = parseNumber(displayPackHr(r));
+      if (!Number.isFinite(totalCanst) || !Number.isFinite(packHr) || packHr <= 0) return "";
+
+      const rate = totalCanst / packHr;
+      return Number(rate.toFixed(2)).toString();
+    }
+
+    function displayTotalQualityPoints(r, scale) {
+      const iq = Array.isArray(r?.iq) ? r.iq : [];
+      const slots = Array.isArray(r?.slots) ? r.slots : [];
+      let total = 0;
+      for (let i = 0; i < 8; i++) {
+        const slot = slots[i];
+        if (!(Number.isFinite(slot) && slot > 0)) continue;
+        const q = parseQualityNumber(iq[i], scale);
+        if (Number.isFinite(q)) total += q;
+      }
+      return Number(total.toFixed(2)).toString();
+    }
+
+    function displayQualityPointsHour(r, scale) {
+      const totalQualityPoints = parseNumber(displayTotalQualityPoints(r, scale));
+      const packHr = parseNumber(displayPackHr(r));
+      if (!Number.isFinite(totalQualityPoints) || !Number.isFinite(packHr) || packHr <= 0) return "";
+      const rate = totalQualityPoints / packHr;
+      return Number(rate.toFixed(2)).toString();
+    }
+
+    function renderQualityTable(rows, scale) {
+      const sorted = rows.slice().sort((a, b) => {
+        const ta = a?.date instanceof Date ? a.date.getTime() : NaN;
+        const tb = b?.date instanceof Date ? b.date.getTime() : NaN;
+        if (Number.isFinite(tb) && Number.isFinite(ta) && tb !== ta) return tb - ta;
+        if (Number.isFinite(tb) && !Number.isFinite(ta)) return -1;
+        if (!Number.isFinite(tb) && Number.isFinite(ta)) return 1;
+        return String(b?.dateISO ?? "").localeCompare(String(a?.dateISO ?? ""));
+      });
+
+      $("qualityTb").innerHTML = sorted.map((r) => `
+        <tr>
+          <td class="r metricCell metricStart">${rawCell(displayTotalQualityPoints(r, scale))}</td>
+          <td class="r metricCell">${rawCell(r.iqTotalRaw)}</td>
+          <td class="r metricCell">${rawCell(displayPackHr(r))}</td>
+          <td class="r metricCell">${rawCell(displayPackCanstHr(r))}</td>
+          <td class="r metricCell">${rawCell(displayQualityPointsHour(r, scale))}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.dateRaw || r.dateISO)}</td>
+          <td class="r">${iqCell(r.iq[0])}</td>
+          <td class="r">${rawCell(r.slotsRaw[0])}</td>
+          <td class="r">${iqCell(r.iq[1])}</td>
+          <td class="r">${rawCell(r.slotsRaw[1])}</td>
+          <td class="r">${iqCell(r.iq[2])}</td>
+          <td class="r">${rawCell(r.slotsRaw[2])}</td>
+          <td class="r">${iqCell(r.iq[3])}</td>
+          <td class="r">${rawCell(r.slotsRaw[3])}</td>
+          <td class="r">${iqCell(r.iq[4])}</td>
+          <td class="r">${rawCell(r.slotsRaw[4])}</td>
+          <td class="r">${iqCell(r.iq[5])}</td>
+          <td class="r">${rawCell(r.slotsRaw[5])}</td>
+          <td class="r">${iqCell(r.iq[6])}</td>
+          <td class="r">${rawCell(r.slotsRaw[6])}</td>
+          <td class="r">${iqCell(r.iq[7])}</td>
+          <td class="r">${rawCell(r.slotsRaw[7])}</td>
+        </tr>
+      `).join("");
+      if (!sorted.length) {
+        $("qualityTb").innerHTML = '<tr><td colspan="23" style="color:#a7bfd0;">No rows for current filters.</td></tr>';
+      }
+      $("qualityStatus").textContent = `Rows shown: ${sorted.length.toLocaleString()}`;
     }
 
     function escapeHtml(s) {
@@ -613,11 +1315,159 @@
       $("metaRange").textContent = `Range: ${min} to ${max}`;
     }
 
+    function setActiveView(view) {
+      const next = (view === "raw" || view === "qc") ? view : "dashboard";
+      ACTIVE_VIEW = next;
+      const dashboardOn = next === "dashboard";
+      const rawOn = next === "raw";
+      const qcOn = next === "qc";
+      $("dashboardView").classList.toggle("hidden", !dashboardOn);
+      $("rawQualityView").classList.toggle("hidden", !rawOn);
+      $("qcPotentialView").classList.toggle("hidden", !qcOn);
+      $("tabDashboard").classList.toggle("active", dashboardOn);
+      $("tabRawQuality").classList.toggle("active", rawOn);
+      $("tabQCPotential").classList.toggle("active", qcOn);
+      $("tabDashboard").setAttribute("aria-selected", dashboardOn ? "true" : "false");
+      $("tabRawQuality").setAttribute("aria-selected", rawOn ? "true" : "false");
+      $("tabQCPotential").setAttribute("aria-selected", qcOn ? "true" : "false");
+      persistUIState();
+    }
+
+    function buildDailyTrend(dailyRows) {
+      return dailyRows
+        .map((d) => ({ dateISO: d.dateISO, rate: d.slot > 0 ? (d.canastas / d.slot) : NaN }))
+        .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
+    }
+
+    let CURRENT_ROWS = [];
+    let CURRENT_SCALE = getQualityScale();
+    let ACTIVE_EMPLOYEE = "";
+    let ACTIVE_SUMMARY_QUALITY = "all";
+    let ACTIVE_VIEW = "dashboard";
+    let ACTIVE_PROJECTION_MODE = "shift";
+
+    function captureUIState() {
+      return {
+        activeView: ACTIVE_VIEW,
+        summaryQuality: ACTIVE_SUMMARY_QUALITY,
+        projectionMode: ACTIVE_PROJECTION_MODE,
+        scrollX: window.scrollX || 0,
+        scrollY: window.scrollY || 0,
+        rawLeft: $("rawTableWrap") ? $("rawTableWrap").scrollLeft : 0,
+        rawTop: $("rawTableWrap") ? $("rawTableWrap").scrollTop : 0,
+        empLeft: $("empSummaryWrap") ? $("empSummaryWrap").scrollLeft : 0,
+        empTop: $("empSummaryWrap") ? $("empSummaryWrap").scrollTop : 0
+      };
+    }
+
+    function persistUIState() {
+      try {
+        sessionStorage.setItem(UI_STATE_KEY, JSON.stringify(captureUIState()));
+      } catch (_) {}
+    }
+
+    function restoreUIState() {
+      try {
+        const raw = sessionStorage.getItem(UI_STATE_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (!s || typeof s !== "object") return;
+        if (s.activeView === "dashboard" || s.activeView === "raw" || s.activeView === "qc") {
+          ACTIVE_VIEW = s.activeView;
+        }
+        if (typeof s.summaryQuality === "string" && s.summaryQuality) {
+          ACTIVE_SUMMARY_QUALITY = s.summaryQuality;
+        }
+        if (s.projectionMode === "shift" || s.projectionMode === "week") {
+          ACTIVE_PROJECTION_MODE = s.projectionMode;
+        }
+        const activeBtn = document.querySelector(`.qualityPill[data-quality="${ACTIVE_SUMMARY_QUALITY}"]`) || document.querySelector('.qualityPill[data-quality="all"]');
+        if (activeBtn) {
+          document.querySelectorAll(".qualityPill").forEach((b) => b.classList.toggle("active", b === activeBtn));
+        }
+        updateProjectionModeUI();
+        requestAnimationFrame(() => {
+          window.scrollTo(Number(s.scrollX) || 0, Number(s.scrollY) || 0);
+          if ($("rawTableWrap")) {
+            $("rawTableWrap").scrollLeft = Number(s.rawLeft) || 0;
+            $("rawTableWrap").scrollTop = Number(s.rawTop) || 0;
+          }
+          if ($("empSummaryWrap")) {
+            $("empSummaryWrap").scrollLeft = Number(s.empLeft) || 0;
+            $("empSummaryWrap").scrollTop = Number(s.empTop) || 0;
+          }
+        });
+      } catch (_) {}
+    }
+
+    function closeEmployeeTrendModal() {
+      $("empTrendModal").classList.add("hidden");
+      $("empTrendModal").setAttribute("aria-hidden", "true");
+      ACTIVE_EMPLOYEE = "";
+      persistUIState();
+    }
+
+    function renderEmployeeTrend() {
+      if (!ACTIVE_EMPLOYEE) return;
+      const empRows = CURRENT_ROWS.filter((r) => r.name === ACTIVE_EMPLOYEE);
+      const aEmp = aggregate(empRows, CURRENT_SCALE);
+      const trend = buildDailyTrend(aEmp.daily);
+      const rates = trend.map((d) => d.rate);
+      const prev5 = rates.slice(-10, -5);
+      const avg = (arr) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : NaN;
+      const prev5Avg = avg(prev5);
+      $("empTrendTitle").textContent = "Pernson - Performance";
+      if (!trend.length) {
+        $("empTrendStatus").textContent = "No daily trend data for current filters.";
+      } else {
+        const prevTxt = Number.isFinite(prev5Avg) ? prev5Avg.toFixed(2) : "n/a";
+        $("empTrendStatus").textContent = `Days shown: ${trend.length.toLocaleString()} | Previous 5-day avg: ${prevTxt}`;
+      }
+      if (typeof Chart === "undefined") {
+        return;
+      }
+      if (!chartEmpDaily) {
+        chartEmpDaily = new Chart($("chartEmpDaily"), {
+          type: "line",
+          data: { labels: [], datasets: [
+            { label: "Avg Cans/Person/Hr", data: [], borderColor: "#4ea3ff", backgroundColor: "rgba(78,163,255,.24)", tension: .25 },
+            { label: "Previous 5-Day Avg", data: [], borderColor: "#ffb65c", borderDash: [8, 6], pointRadius: 0, tension: 0 }
+          ] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            scales: {
+              x: { title: { display: true, text: "Date", color: "#e6f0f7", font: { size: 13, weight: "700" } } },
+              y: { title: { display: true, text: "Avg Cans/Person/Hr", color: "#e6f0f7", font: { size: 13, weight: "700" } } }
+            }
+          }
+        });
+      }
+      const labels = trend.map((d) => d.dateISO);
+      chartEmpDaily.data.labels = labels;
+      chartEmpDaily.data.datasets[0].data = rates.map((v) => Number(v.toFixed(2)));
+      chartEmpDaily.data.datasets[1].data = labels.map(() => Number.isFinite(prev5Avg) ? Number(prev5Avg.toFixed(2)) : null);
+      chartEmpDaily.update();
+    }
+
+    function openEmployeeTrendModal(name) {
+      ACTIVE_EMPLOYEE = name;
+      $("empTrendModal").classList.remove("hidden");
+      $("empTrendModal").setAttribute("aria-hidden", "false");
+      renderEmployeeTrend();
+    }
+
     function render(allRows) {
       const rowsBase = applyFilters(allRows);
       const scale = getQualityScale();
-      const qualityFilter = $("summaryQualityFilter").value;
+      const avgCanastaWeight = Math.max(readNum("avgCanastaWeight", 1), 0);
+      const shiftLength = Math.max(readNum("shiftLength", 8), 0);
+      const daysPerWeek = Math.max(readNum("daysPerWeek", 5), 0);
+      const qualityFilter = ACTIVE_SUMMARY_QUALITY;
       const rows = filterRowsBySummaryQuality(rowsBase, scale, qualityFilter);
+      CURRENT_ROWS = rows;
+      CURRENT_SCALE = scale;
       const a2 = aggregate(rows, scale);
 
       $("kIq").textContent = fmtInt(a2.totalIQ);
@@ -626,22 +1476,73 @@
       $("kEmp").textContent = fmtInt(a2.employees);
 
       if (chartDaily) {
-        const dailyTrend = a2.daily
-          .map((d) => ({ dateISO: d.dateISO, rate: d.slot > 0 ? (d.canastas / d.slot) : NaN }))
-          .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
-        chartDaily.data.labels = dailyTrend.map((d) => d.dateISO);
-        chartDaily.data.datasets[0].data = dailyTrend.map((d) => Number(d.rate.toFixed(2)));
+        const dailyTrend = buildDailyTrend(a2.daily);
+        const labels = dailyTrend.map((d) => d.dateISO);
+        const vals = dailyTrend.map((d) => Number(d.rate.toFixed(2)));
+        const last5 = vals.slice(-5).filter((v) => Number.isFinite(v));
+        const avg5 = last5.length ? (last5.reduce((a, b) => a + b, 0) / last5.length) : NaN;
+        const targetScore = targetQualityScore(qualityFilter, scale);
+        chartDaily.data.labels = labels;
+        chartDaily.data.datasets[0].data = vals;
+        chartDaily.data.datasets[1].data = labels.map(() => Number.isFinite(avg5) ? Number(avg5.toFixed(2)) : null);
+        chartDaily.data.datasets[2].data = labels.map(() => Number.isFinite(targetScore) ? Number(targetScore.toFixed(2)) : null);
+        chartDaily.data.datasets[2].label = Number.isFinite(targetScore)
+          ? `Target Quality Score (${qualityFilterLabel(qualityFilter)}: ${targetScore.toFixed(2)})`
+          : "Target Quality Score (select a quality filter)";
         chartDaily.update();
+      }
+      let avg5Qc = NaN;
+      if (chartDailyQc) {
+        const dailyTrendQc = buildDailyTrend(a2.daily);
+        const labelsQc = dailyTrendQc.map((d) => d.dateISO);
+        const valsQc = dailyTrendQc.map((d) => Number((d.rate * avgCanastaWeight).toFixed(2)));
+        const targetScore = targetQualityScore(qualityFilter, scale);
+        const targetLbsPerHour = Number.isFinite(targetScore) ? Number((targetScore * avgCanastaWeight).toFixed(2)) : NaN;
+        const qualityScoreQc = labelsQc.map(() => Number.isFinite(targetLbsPerHour) ? targetLbsPerHour : null);
+        const last5Qc = valsQc.slice(-5).filter((v) => Number.isFinite(v));
+        avg5Qc = last5Qc.length ? (last5Qc.reduce((a, b) => a + b, 0) / last5Qc.length) : NaN;
+        chartDailyQc.data.labels = labelsQc;
+        chartDailyQc.data.datasets[0].data = valsQc;
+        chartDailyQc.data.datasets[1].data = labelsQc.map(() => Number.isFinite(avg5Qc) ? Number(avg5Qc.toFixed(2)) : null);
+        chartDailyQc.data.datasets[2].data = qualityScoreQc;
+        chartDailyQc.data.datasets[2].label = Number.isFinite(targetLbsPerHour)
+          ? `Target Lbs/Person/Hr (${qualityFilterLabel(qualityFilter)}: ${targetScore.toFixed(2)} x ${avgCanastaWeight.toFixed(2)} = ${targetLbsPerHour.toFixed(2)})`
+          : "Target Lbs/Person/Hr (select a quality filter)";
+        chartDailyQc.update();
       }
 
       if (chartHourly) {
         chartHourly.data.datasets[0].data = a2.hourAvgCanastas.map((v) => Number(v.toFixed(2)));
         chartHourly.update();
       }
+      if (chartHourlyQc) {
+        const projected = Number.isFinite(avg5Qc) ? Number(avg5Qc.toFixed(2)) : 0;
+        const projectedPerShift = Number((projected * shiftLength).toFixed(2));
+        const isWeek = ACTIVE_PROJECTION_MODE === "week";
+        const modeFactor = isWeek ? daysPerWeek : 1;
+        const projectedBase = Number((projectedPerShift * modeFactor).toFixed(2));
+        $("qcProjectionTitle").textContent = isWeek ? "Projected Lbs/Week" : "Projected Lbs/Shift";
+        chartHourlyQc.data.datasets[0].label = isWeek ? "Projected Lbs/Week" : "Projected Lbs/Shift";
+        if (chartHourlyQc.options?.scales?.y?.title) {
+          chartHourlyQc.options.scales.y.title.text = isWeek ? "Team Lbs/Week" : "Team Lbs/Shift";
+        }
+        chartHourlyQc.data.datasets[0].data = EMPLOYEE_COUNT_LABELS.map((countStr) => {
+          const count = Number(countStr);
+          return Number.isFinite(count) ? Number((projectedBase * count).toFixed(2)) : 0;
+        });
+        chartHourlyQc.update();
+      }
 
       renderTable(a2.empRows, scale);
+      renderTableQc(a2.empRows, avgCanastaWeight);
+      renderQualityTable(rows, scale);
       updateMeta(rows);
       $("status").textContent = `Rows in filter: ${rows.length.toLocaleString()}`;
+      $("statusQc").textContent = `Rows in filter: ${rows.length.toLocaleString()} | Avg Canasta Weight: ${avgCanastaWeight.toFixed(2)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)} | Mode: ${ACTIVE_PROJECTION_MODE === "week" ? "Week" : "Shift"}`;
+      if (ACTIVE_EMPLOYEE && !$("empTrendModal").classList.contains("hidden")) {
+        renderEmployeeTrend();
+      }
+      persistUIState();
     }
 
     function fillEmployees(rows) {
@@ -652,11 +1553,96 @@
     }
 
     let ALL_ROWS = [];
+    let LAST_PACK_PAYLOAD = null;
+    let LAST_PAYLOAD_UPDATED_AT = "";
+    let IS_LOADING_PACK = false;
+    let HAS_QUEUED_RELOAD = false;
 
-    async function loadFromMasterPack() {
+    function updateProjectionModeUI() {
+      if ($("projModeShift")) $("projModeShift").classList.toggle("active", ACTIVE_PROJECTION_MODE === "shift");
+      if ($("projModeWeek")) $("projModeWeek").classList.toggle("active", ACTIVE_PROJECTION_MODE === "week");
+    }
+
+    function applySavedDashboardInputs(payload) {
+      const cfg = payload?.settings?.packTeamPerformance;
+      if (!cfg || typeof cfg !== "object") return;
+      const avg = Number(cfg.avgCanastaWeight);
+      const shift = Number(cfg.shiftLength);
+      const days = Number(cfg.daysPerWeek);
+      const mode = String(cfg.projectionMode || "").toLowerCase();
+      if (Number.isFinite(avg) && avg >= 0) $("avgCanastaWeight").value = String(avg);
+      if (Number.isFinite(shift) && shift >= 0) $("shiftLength").value = String(shift);
+      if (Number.isFinite(days) && days >= 0) $("daysPerWeek").value = String(days);
+      if (mode === "shift" || mode === "week") {
+        ACTIVE_PROJECTION_MODE = mode;
+      }
+      updateProjectionModeUI();
+    }
+
+    async function saveToSupabase() {
+      const btn = $("saveSupabaseBtn");
+      if (!btn) return;
       try {
-        $("status").textContent = "Loading Master Pack…";
+        btn.disabled = true;
+        const payloadToSave = (LAST_PACK_PAYLOAD && typeof LAST_PACK_PAYLOAD === "object")
+          ? JSON.parse(JSON.stringify(LAST_PACK_PAYLOAD))
+          : null;
+        if (!payloadToSave || typeof payloadToSave !== "object") {
+          $("status").textContent = "Save failed: no pack payload loaded yet.";
+          return;
+        }
+        const avg = Math.max(readNum("avgCanastaWeight", 1), 0);
+        const shift = Math.max(readNum("shiftLength", 8), 0);
+        const days = Math.max(readNum("daysPerWeek", 5), 0);
+        payloadToSave.settings = (payloadToSave.settings && typeof payloadToSave.settings === "object") ? payloadToSave.settings : {};
+        payloadToSave.settings.packTeamPerformance = {
+          ...(payloadToSave.settings.packTeamPerformance && typeof payloadToSave.settings.packTeamPerformance === "object"
+            ? payloadToSave.settings.packTeamPerformance
+            : {}),
+          avgCanastaWeight: Number(avg.toFixed(4)),
+          shiftLength: Number(shift.toFixed(4)),
+          daysPerWeek: Number(days.toFixed(4)),
+          projectionMode: ACTIVE_PROJECTION_MODE
+        };
+        $("status").textContent = "Saving to Supabase (via Worker)…";
+        const res = await fetch(WORKER_PACK_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payloadToSave)
+        });
+        const txt = await res.text().catch(() => "");
+        if (!res.ok) {
+          throw new Error(`Pack publish failed (${res.status}): ${txt}`);
+        }
+        LAST_PACK_PAYLOAD = payloadToSave;
+        $("status").textContent = "Saved to Supabase successfully.";
+      } catch (err) {
+        $("status").textContent = `Save failed: ${err?.message || String(err)}`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadFromMasterPack(opts = {}) {
+      const reason = String(opts.reason || "manual");
+      if (IS_LOADING_PACK) {
+        HAS_QUEUED_RELOAD = true;
+        return;
+      }
+      IS_LOADING_PACK = true;
+      try {
+        if (!ALL_ROWS.length) {
+          $("status").textContent = "Loading Master Pack…";
+        }
         const payload = await fetchPayload();
+        LAST_PACK_PAYLOAD = payload;
+        applySavedDashboardInputs(payload);
+        const updatedAt = String(payload?.updatedAt ?? "").trim();
+        if (reason === "message" && updatedAt && updatedAt === LAST_PAYLOAD_UPDATED_AT) {
+          return;
+        }
+        if (updatedAt) LAST_PAYLOAD_UPDATED_AT = updatedAt;
+
         const parsed = parseData(payload);
         if (parsed.missing.length) {
           ALL_ROWS = [];
@@ -669,15 +1655,83 @@
 
         fillEmployees(ALL_ROWS);
 
-        ["rangeSel", "empSel", "q", "summaryQualityFilter", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
+        ["rangeSel", "empSel", "avgCanastaWeight", "shiftLength", "daysPerWeek", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
           if (!$(id).dataset.bound) {
             $(id).addEventListener("input", () => render(ALL_ROWS));
             $(id).addEventListener("change", () => render(ALL_ROWS));
             $(id).dataset.bound = "1";
           }
         });
+        if (!document.body.dataset.projectionTogglesBound) {
+          $("projModeShift").addEventListener("click", () => {
+            ACTIVE_PROJECTION_MODE = "shift";
+            updateProjectionModeUI();
+            render(ALL_ROWS);
+            persistUIState();
+          });
+          $("projModeWeek").addEventListener("click", () => {
+            ACTIVE_PROJECTION_MODE = "week";
+            updateProjectionModeUI();
+            render(ALL_ROWS);
+            persistUIState();
+          });
+          document.body.dataset.projectionTogglesBound = "1";
+        }
+        if (!document.body.dataset.qualityPillsBound) {
+          document.querySelectorAll(".qualityPill").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              ACTIVE_SUMMARY_QUALITY = btn.dataset.quality || "all";
+              document.querySelectorAll(".qualityPill").forEach((b) => b.classList.toggle("active", b === btn));
+              render(ALL_ROWS);
+              persistUIState();
+            });
+          });
+          document.body.dataset.qualityPillsBound = "1";
+        }
+        if (!$("tb").dataset.bound) {
+          $("tb").addEventListener("click", (e) => {
+            const btn = e.target.closest(".empLink");
+            if (!btn) return;
+            const raw = btn.getAttribute("data-emp") || "";
+            openEmployeeTrendModal(decodeURIComponent(raw));
+          });
+          $("tb").dataset.bound = "1";
+        }
+        if (!$("tbQc").dataset.bound) {
+          $("tbQc").addEventListener("click", (e) => {
+            const btn = e.target.closest(".empLink");
+            if (!btn) return;
+            const raw = btn.getAttribute("data-emp") || "";
+            openEmployeeTrendModal(decodeURIComponent(raw));
+          });
+          $("tbQc").dataset.bound = "1";
+        }
+        if (!$("empTrendModal").dataset.bound) {
+          $("empTrendClose").addEventListener("click", closeEmployeeTrendModal);
+          $("empTrendModal").addEventListener("click", (e) => {
+            if (e.target === $("empTrendModal")) closeEmployeeTrendModal();
+          });
+          window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !$("empTrendModal").classList.contains("hidden")) {
+              closeEmployeeTrendModal();
+            }
+          });
+          $("empTrendModal").dataset.bound = "1";
+        }
+        if (!$("tabDashboard").dataset.bound) {
+          $("tabDashboard").addEventListener("click", () => setActiveView("dashboard"));
+          $("tabRawQuality").addEventListener("click", () => setActiveView("raw"));
+          $("tabQCPotential").addEventListener("click", () => setActiveView("qc"));
+          $("tabDashboard").dataset.bound = "1";
+        }
+        if (!$("saveSupabaseBtn").dataset.bound) {
+          $("saveSupabaseBtn").addEventListener("click", saveToSupabase);
+          $("saveSupabaseBtn").dataset.bound = "1";
+        }
+        setActiveView(ACTIVE_VIEW);
 
         render(ALL_ROWS);
+        restoreUIState();
         if (typeof Chart === "undefined") {
           $("status").textContent = `Rows in filter: ${ALL_ROWS.length.toLocaleString()} | Charts unavailable (Chart.js failed to load).`;
         }
@@ -686,6 +1740,12 @@
           ? "Load error: request timed out after 15s."
           : `Load error: ${err?.message || String(err)}`;
         $("status").textContent = msg;
+      } finally {
+        IS_LOADING_PACK = false;
+        if (HAS_QUEUED_RELOAD) {
+          HAS_QUEUED_RELOAD = false;
+          loadFromMasterPack({ reason: "queued" });
+        }
       }
     }
 
@@ -697,11 +1757,16 @@
     window.addEventListener("message", (e) => {
       const type = e?.data?.type;
       if (type === MSG_PACK || type === "MASTER_PACK_UPDATED") {
-        loadFromMasterPack();
+        loadFromMasterPack({ reason: "message" });
       }
     });
 
-    loadFromMasterPack();
+    window.addEventListener("beforeunload", () => {
+      persistUIState();
+    });
+
+    restoreUIState();
+    loadFromMasterPack({ reason: "initial" });
   </script>
 </body>
 </html>
