@@ -440,6 +440,7 @@
     }
 
     .chart-wrap {
+      min-height: 420px;
       height: 420px;
       margin-bottom: 18px;
       border: 1px solid var(--line);
@@ -869,7 +870,7 @@
               <option value="90">Window: 90 Days</option>
             </select>
           </div>
-          <div class="chart-wrap"><canvas id="ganttChart"></canvas></div>
+          <div class="chart-wrap" id="timelineChartWrap"><canvas id="ganttChart"></canvas></div>
           <div class="legend">
             <span class="l-prod">Operations</span>
             <span class="l-grow">Grow</span>
@@ -982,6 +983,7 @@
     const filterPhase = document.getElementById('filterPhase');
     const sortBy = document.getElementById('sortBy');
     const timelineWindow = document.getElementById('timelineWindow');
+    const timelineChartWrap = document.getElementById('timelineChartWrap');
     const taskRegisterHint = document.getElementById('taskRegisterHint');
     const taskRegisterToggleButtons = Array.from(document.querySelectorAll('[data-task-register-view]'));
     const categorySelect = document.getElementById('category');
@@ -1009,6 +1011,22 @@
     let timelineDragState = null;
     let timelineHoverIndex = -1;
     let suppressTimelineClickOnce = false;
+    const TIMELINE_MIN_HEIGHT_PX = 420;
+    const TIMELINE_ROW_HEIGHT_PX = 36;
+    const TIMELINE_VERTICAL_PADDING_PX = 28;
+
+    function resizeTimelineContainer(rowCount) {
+      if (!timelineChartWrap) return;
+      const safeRowCount = Math.max(1, Number(rowCount) || 0);
+      const computedHeight = Math.max(
+        TIMELINE_MIN_HEIGHT_PX,
+        safeRowCount * TIMELINE_ROW_HEIGHT_PX + TIMELINE_VERTICAL_PADDING_PX
+      );
+      const nextHeight = `${computedHeight}px`;
+      if (timelineChartWrap.style.height !== nextHeight) {
+        timelineChartWrap.style.height = nextHeight;
+      }
+    }
 
     function loadTimelineWindowSetting() {
       const allowed = new Set(['auto', '14', '35', '60', '90']);
@@ -1497,6 +1515,7 @@
       const dataset = buildTimelineDataset(filtered);
       const { minX, maxX } = getTimelineBounds(dataset);
       const visibleDataset = filterTimelineDatasetToWindow(dataset, minX, maxX);
+      resizeTimelineContainer(visibleDataset.length);
       const timelineDataset = chart.data.datasets?.[0];
       if (!timelineDataset) {
         renderChart();
@@ -1508,6 +1527,7 @@
         chart.options.scales.x.min = minX;
         chart.options.scales.x.max = maxX;
       }
+      chart.resize();
       chart.update(animated ? undefined : 'none');
     }
 
@@ -1573,6 +1593,7 @@
       const dataset = buildTimelineDataset(filtered);
       const { minX, maxX } = getTimelineBounds(dataset);
       const visibleDataset = filterTimelineDatasetToWindow(dataset, minX, maxX);
+      resizeTimelineContainer(visibleDataset.length);
 
       if (chart) chart.destroy();
 
