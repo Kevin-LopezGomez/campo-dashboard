@@ -1011,6 +1011,7 @@
     let timelineDragState = null;
     let timelineHoverIndex = -1;
     let suppressTimelineClickOnce = false;
+    let lastEmbeddedHeight = 0;
     const TIMELINE_MIN_HEIGHT_PX = 420;
     const TIMELINE_ROW_HEIGHT_PX = 36;
     const TIMELINE_VERTICAL_PADDING_PX = 28;
@@ -1026,6 +1027,36 @@
       if (timelineChartWrap.style.height !== nextHeight) {
         timelineChartWrap.style.height = nextHeight;
       }
+    }
+
+    function syncEmbeddedHeight() {
+      const doc = document.documentElement;
+      const body = document.body;
+      const nextHeight = Math.ceil(Math.max(
+        body?.scrollHeight || 0,
+        body?.offsetHeight || 0,
+        doc?.clientHeight || 0,
+        doc?.scrollHeight || 0,
+        doc?.offsetHeight || 0
+      ));
+      if (!Number.isFinite(nextHeight) || nextHeight <= 0) return;
+      if (Math.abs(nextHeight - lastEmbeddedHeight) < 2) return;
+      lastEmbeddedHeight = nextHeight;
+
+      try {
+        if (window.frameElement) {
+          window.frameElement.style.height = `${nextHeight}px`;
+        }
+      } catch (_) {}
+
+      if (window.parent && window.parent !== window) {
+        const payload = { type: 'campo:embed-height', file: '3.2 Facility Ramp Tracker.html', height: nextHeight };
+        window.parent.postMessage(payload, '*');
+      }
+    }
+
+    function scheduleEmbeddedHeightSync() {
+      requestAnimationFrame(() => requestAnimationFrame(syncEmbeddedHeight));
     }
 
     function loadTimelineWindowSetting() {
@@ -1451,6 +1482,7 @@
           <td colspan="9" class="small">No ${taskRegisterView === 'past' ? 'past' : 'current/upcoming'} tasks match the selected filters.</td>
         </tr>
       `;
+      scheduleEmbeddedHeightSync();
     }
 
     function buildTimelineDataset(filteredTasks) {
@@ -1529,6 +1561,7 @@
       }
       chart.resize();
       chart.update(animated ? undefined : 'none');
+      scheduleEmbeddedHeightSync();
     }
 
     function getTimelineRowIndex(chartInstance, event) {
@@ -2282,6 +2315,7 @@
     function renderAll() {
       renderTable();
       renderChart();
+      scheduleEmbeddedHeightSync();
     }
 
     async function initializeTracker() {
@@ -2297,6 +2331,12 @@
       timelineWindow.value = loadTimelineWindowSetting();
       updateTaskRegisterViewUI();
       renderAll();
+      if (typeof ResizeObserver === 'function') {
+        const pageResizeObserver = new ResizeObserver(() => scheduleEmbeddedHeightSync());
+        pageResizeObserver.observe(document.body);
+      }
+      window.addEventListener('resize', scheduleEmbeddedHeightSync);
+      window.addEventListener('load', scheduleEmbeddedHeightSync);
       void loadRampFromCloud(false);
     }
 
