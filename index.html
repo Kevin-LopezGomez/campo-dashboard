@@ -312,6 +312,7 @@
 
     .iframe-wrap{flex:1 1 auto;overflow:hidden;}
     iframe{width:100%;height:100%;border:0;background: transparent;}
+    #p-facility-ramp .iframe-wrap{ overflow-y:auto; overflow-x:hidden; }
 
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
 
@@ -1192,7 +1193,7 @@
           <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="facility-ramp"></code></div>
         </div>
         <div class="iframe-wrap">
-          <iframe id="ifr-facility-ramp" data-file-key="facility-ramp"></iframe>
+          <iframe id="ifr-facility-ramp" data-file-key="facility-ramp" scrolling="yes"></iframe>
         </div>
       </section>
 
@@ -2343,6 +2344,19 @@
       window.addEventListener("message", (event) => {
         const msg = event?.data || {};
         if (!msg.type) return;
+        if (msg.type === "campo:embed-height") {
+          const nextHeight = Math.round(Number(msg.height) || 0);
+          if (!Number.isFinite(nextHeight) || nextHeight < 320) return;
+          const iframe = Array.from(document.querySelectorAll("iframe")).find((frame) => frame.contentWindow === event.source);
+          if (!iframe) return;
+          iframe.style.height = `${Math.min(nextHeight, 20000)}px`;
+          const wrap = iframe.closest(".iframe-wrap");
+          if (wrap) {
+            wrap.style.overflowY = "auto";
+            wrap.style.overflowX = "hidden";
+          }
+          return;
+        }
         if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED") {
           touchPing(msg.type);
           notifyIframes(msg.type);
