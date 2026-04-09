@@ -581,8 +581,8 @@
                 <tr>
                   <th style="min-width:240px;">Category</th>
                   <th>Units</th>
-                  <th>Completed</th>
                   <th>TARGET</th>
+                  <th>Completed</th>
                   <th>% Completed</th>
                   <th>% Missed</th>
                   <th>Lbs. Missed</th>
@@ -2000,8 +2000,8 @@
       }, (summary.counts.seed > 0) || (summary.seeding.completed !== 0) || (summary.seeding.target !== 0));
 
       pushIfMeaningful({
-        label:"Transplanted - Boards",
-        metricLabel:"Transplanted - Boards",
+        label:"Transplanted",
+        metricLabel:"Transplanted",
         metricKey:"transplant_boards",
         completed: fmtInt(summary.aux?.boardsTrans ?? 0),
         target: fmtInt(summary.aux?.boardsExpected ?? 0),
@@ -2010,16 +2010,23 @@
         missed: missedPill(summary.aux?.boardsTrans ?? 0, summary.aux?.boardsExpected ?? 0)
       }, (summary.counts.trans > 0) || ((summary.aux?.boardsTrans ?? 0) !== 0) || ((summary.aux?.boardsExpected ?? 0) !== 0));
 
-      pushIfMeaningful({
-        label:"Transplanted - Plugs",
-        metricLabel:"Transplanted - Plugs",
-        metricKey:"transplant_plugs",
-        completed: fmtInt(summary.transplant.completed),
-        target: fmtInt(summary.transplant.target),
-        units: summary.transplant.unit,
-        pct: pctPill(summary.transplant.completed, summary.transplant.target),
-        missed: missedPill(summary.transplant.completed, summary.transplant.target)
-      }, (summary.counts.trans > 0) || (summary.transplant.completed !== 0) || (summary.transplant.target !== 0));
+      const transplantPlugsMeaningful =
+        (summary.counts.trans > 0) ||
+        (summary.transplant.completed !== 0) ||
+        (summary.transplant.target !== 0);
+
+      if (transplantExpanded && transplantPlugsMeaningful){
+        pushIfMeaningful({
+          label:"&nbsp;&nbsp;↳ Transplanted - Plugs",
+          metricLabel:"Transplanted - Plugs",
+          metricKey:"transplant_plugs",
+          completed: fmtInt(summary.transplant.completed),
+          target: fmtInt(summary.transplant.target),
+          units: summary.transplant.unit,
+          pct: pctPill(summary.transplant.completed, summary.transplant.target),
+          missed: missedPill(summary.transplant.completed, summary.transplant.target)
+        }, true);
+      }
 
       const harvestTarget = Number.isFinite(summary.harvestTargetBoards) ? summary.harvestTargetBoards : 0;
       pushIfMeaningful({
@@ -2042,8 +2049,8 @@
       const harvestForecastTarget = Number.isFinite(summary.harvestForecastTarget) ? summary.harvestForecastTarget : 0;
 
       pushIfMeaningful({
-        label:"Harvested - Forecast",
-        metricLabel:"Harvested - Forecast",
+        label:"Harvestable",
+        metricLabel:"Harvestable",
         metricKey:"harvest_forecast",
         completed: Number.isFinite(harvestPotentialTarget) ? fmtInt(harvestPotentialTarget) : "—",
         target: harvestForecastTarget > 0 ? fmtInt(harvestForecastTarget) : "—",
@@ -2053,8 +2060,8 @@
       }, (summary.counts.harv > 0) || (Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget !== 0) || harvestForecastTarget !== 0);
 
       pushIfMeaningful({
-        label:`<span title="Completed excludes waste; target includes waste.">Harvested - Potential</span>`,
-        metricLabel:"Harvested - Potential",
+        label:`<span title="Completed excludes waste; target includes waste.">Marketable</span>`,
+        metricLabel:"Marketable",
         metricKey:"harvest_potential",
         completed: fmtInt(summary.harvestCut),
         target: Number.isFinite(harvestPotentialTarget) ? fmtInt(harvestPotentialTarget) : "—",
@@ -2168,17 +2175,6 @@
         rowStyle: `--system-output-row-bg:${systemOutputRowBg(systemOutputPct)};`
       }, Number.isFinite(systemOutputPct));
 
-      pushIfMeaningful({
-        label:"Shipped",
-        metricLabel:"Shipped",
-        metricKey:"shipped",
-        completed: fmtInt(summary.ship?.sales ?? 0),
-        target: fmtInt(summary.salesShipLbs),
-        units:"Lbs",
-        pct:pctPill(summary.ship?.sales ?? 0, summary.salesShipLbs),
-        missed:missedPill(summary.ship?.sales ?? 0, summary.salesShipLbs)
-      }, true);
-
       if (!rows.length){
         const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : weekDisplay(summary.wkNum);
         rows.push({
@@ -2202,8 +2198,8 @@
         <tr class="${r.rowClass || ""} ${r.metricKey ? "metric-row" : ""}" style="${r.rowStyle || ""}" ${r.metricKey ? `data-metric-key="${escapeAttr(r.metricKey)}" data-metric-label="${escapeAttr(r.metricLabel || "")}"` : ""}>
           <td class="row-label">${r.label}</td>
           <td>${r.units}</td>
-          <td>${r.completed}</td>
           <td>${r.target}</td>
+          <td>${r.completed}</td>
           <td>${r.pct}</td>
           <td>${r.missed}</td>
           <td>${r.missedCount}</td>
@@ -2240,9 +2236,11 @@
     let viewMode = "week";
     let selectedDateISO = "";
     let packExpanded = false;
+    let transplantExpanded = false;
     let lastRenderedSummary = null;
     let activeTrendMetricKey = "";
     let activeTrendMetricLabel = "";
+    let transplantClickTimer = null;
 
     function missedValue(completed, target){
       if (!(target > 0)) return NaN;
@@ -2580,6 +2578,11 @@
       render();
     }
 
+    function toggleTransplantExpanded(){
+      transplantExpanded = !transplantExpanded;
+      render();
+    }
+
     function loadData(){
       const grow = loadJson(MASTER_GROW_KEY);
       const pack = loadJson(MASTER_PACK_KEY);
@@ -2871,7 +2874,30 @@
         if (ev.target.closest("button")) return;
         const tr = ev.target.closest("tr.metric-row");
         if (!tr) return;
-        openTrendModal(tr.dataset.metricKey || "", tr.dataset.metricLabel || "");
+        const metricKey = tr.dataset.metricKey || "";
+        const metricLabel = tr.dataset.metricLabel || "";
+        if (metricKey === "transplant_boards"){
+          if (transplantClickTimer) clearTimeout(transplantClickTimer);
+          transplantClickTimer = setTimeout(() => {
+            transplantClickTimer = null;
+            toggleTransplantExpanded();
+          }, 220);
+          return;
+        }
+        openTrendModal(metricKey, metricLabel);
+      });
+      $("tbody")?.addEventListener("dblclick", (ev) => {
+        if (ev.target.closest("button")) return;
+        const tr = ev.target.closest("tr.metric-row");
+        if (!tr) return;
+        const metricKey = tr.dataset.metricKey || "";
+        const metricLabel = tr.dataset.metricLabel || "";
+        if (metricKey !== "transplant_boards") return;
+        if (transplantClickTimer){
+          clearTimeout(transplantClickTimer);
+          transplantClickTimer = null;
+        }
+        openTrendModal(metricKey, metricLabel);
       });
       $("trendModalClose")?.addEventListener("click", closeTrendModal);
       $("trendPrev")?.addEventListener("click", () => stepTrendMetric(-1));
