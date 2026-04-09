@@ -143,6 +143,25 @@
       border-color: rgba(55,214,122,.35);
       background: linear-gradient(180deg, rgba(55,214,122,.95), rgba(55,214,122,.8));
     }
+    .yamatoPill {
+      appearance: none;
+      cursor: pointer;
+      color: var(--muted);
+      border-color: var(--line);
+      background: rgba(255,255,255,.02);
+      font-weight: 800;
+      transition: background .18s ease, border-color .18s ease, color .18s ease;
+    }
+    .yamatoPill:hover {
+      border-color: rgba(55,214,122,.35);
+      background: rgba(255,255,255,.06);
+      color: #d8ffe9;
+    }
+    .yamatoPill.active {
+      color: #082131;
+      border-color: rgba(55,214,122,.35);
+      background: linear-gradient(180deg, rgba(55,214,122,.95), rgba(55,214,122,.8));
+    }
     .view {
       margin-top: 10px;
     }
@@ -259,6 +278,7 @@
     #rangeSel { min-width: 140px; }
     #empSel { min-width: 220px; }
     #avgCanastaWeight { width: 76px; min-width: 76px; }
+    #yamatoCycles { width: 76px; min-width: 76px; }
     #shiftLength { width: 76px; min-width: 76px; }
     #daysPerWeek { width: 76px; min-width: 76px; }
     .projectionToggle {
@@ -298,7 +318,7 @@
     .grid4 {
       margin-top: 12px;
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 10px;
     }
     .kpi {
@@ -454,6 +474,7 @@
             <button class="pill pillBtn active" id="tabDashboard" type="button" role="tab" aria-selected="true" aria-controls="dashboardView">Pack Quality Dashbaord</button>
             <button class="pill pillBtn" id="tabRawQuality" type="button" role="tab" aria-selected="false" aria-controls="rawQualityView">Raw Quality Data Table</button>
             <button class="pill pillBtn" id="tabQCPotential" type="button" role="tab" aria-selected="false" aria-controls="qcPotentialView">QC Potential</button>
+            <button class="pill yamatoPill" id="yamatoTopPill" type="button" aria-label="Show Yamato">Yamato</button>
           </div>
         </div>
       </div>
@@ -477,7 +498,11 @@
           </div>
           <div class="control">
             <label for="avgCanastaWeight">Average Canasta Weight</label>
-            <input id="avgCanastaWeight" type="number" value="1" step="0.1" min="0" />
+            <input id="avgCanastaWeight" type="number" value="6" step="0.1" min="0" />
+          </div>
+          <div class="control">
+            <label for="yamatoCycles">Yamato Cycles</label>
+            <input id="yamatoCycles" type="number" value="7" step="1" min="0" />
           </div>
           <div class="control">
             <label for="shiftLength">Shift Length</label>
@@ -505,14 +530,15 @@
         <button class="qualityPill" type="button" data-quality="very_bad">Very Bad</button>
       </div>
 
-      <div class="view" id="dashboardView" role="tabpanel" aria-labelledby="tabDashboard">
-        <div class="grid4">
-          <div class="kpi"><div class="t">Total Incoming Quality</div><div class="v" id="kIq">—</div></div>
-          <div class="kpi"><div class="t">Total Hours Worked</div><div class="v" id="kH">—</div></div>
-          <div class="kpi"><div class="t">Active Days</div><div class="v" id="kDays">—</div></div>
-          <div class="kpi"><div class="t">Employees</div><div class="v" id="kEmp">—</div></div>
-        </div>
+      <div class="grid4">
+        <div class="kpi"><div class="t">Total Incoming Quality</div><div class="v" id="kIq">—</div></div>
+        <div class="kpi"><div class="t">Total Hours Worked</div><div class="v" id="kH">—</div></div>
+        <div class="kpi"><div class="t">Active Days</div><div class="v" id="kDays">—</div></div>
+        <div class="kpi"><div class="t">Employees</div><div class="v" id="kEmp">—</div></div>
+        <div class="kpi"><div class="t">Yamato Output</div><div class="v" id="kYamato">—</div></div>
+      </div>
 
+      <div class="view" id="dashboardView" role="tabpanel" aria-labelledby="tabDashboard">
         <div class="grid2">
           <div class="card">
             <h3 class="performanceTitle">Team Performance</h3>
@@ -641,6 +667,7 @@
     const MASTER_PACK_SHEET_NAME = "Master Pack";
     const MSG_PACK = "MASTER_PACK_UPDATED";
     const UI_STATE_KEY = "pack_quality_dashboard_ui_state_v1";
+    const PACK_SETTINGS_LOCAL_KEY = "pack_quality_dashboard_settings_v1";
 
     const COL = Object.freeze({
       EMPLOYEE: "Pack Nombre del Empleado",
@@ -1015,6 +1042,7 @@
         daily,
         empRows,
         totalIQ: daily.reduce((a, d) => a + d.iq, 0),
+        totalCanastas: daily.reduce((a, d) => a + d.canastas, 0),
         totalH: daily.reduce((a, d) => a + d.slot, 0),
         activeDays: activeDateSet.size,
         employees: empRows.length,
@@ -1316,20 +1344,23 @@
     }
 
     function setActiveView(view) {
-      const next = (view === "raw" || view === "qc") ? view : "dashboard";
+      const next = (view === "raw" || view === "qc" || view === "yamato") ? view : "dashboard";
       ACTIVE_VIEW = next;
       const dashboardOn = next === "dashboard";
       const rawOn = next === "raw";
-      const qcOn = next === "qc";
+      const qcOn = next === "qc" || next === "yamato";
+      const qcTabOn = next === "qc";
+      const yamatoOn = next === "yamato";
       $("dashboardView").classList.toggle("hidden", !dashboardOn);
       $("rawQualityView").classList.toggle("hidden", !rawOn);
       $("qcPotentialView").classList.toggle("hidden", !qcOn);
       $("tabDashboard").classList.toggle("active", dashboardOn);
       $("tabRawQuality").classList.toggle("active", rawOn);
-      $("tabQCPotential").classList.toggle("active", qcOn);
+      $("tabQCPotential").classList.toggle("active", qcTabOn);
+      if ($("yamatoTopPill")) $("yamatoTopPill").classList.toggle("active", yamatoOn);
       $("tabDashboard").setAttribute("aria-selected", dashboardOn ? "true" : "false");
       $("tabRawQuality").setAttribute("aria-selected", rawOn ? "true" : "false");
-      $("tabQCPotential").setAttribute("aria-selected", qcOn ? "true" : "false");
+      $("tabQCPotential").setAttribute("aria-selected", qcTabOn ? "true" : "false");
       persistUIState();
     }
 
@@ -1372,7 +1403,7 @@
         if (!raw) return;
         const s = JSON.parse(raw);
         if (!s || typeof s !== "object") return;
-        if (s.activeView === "dashboard" || s.activeView === "raw" || s.activeView === "qc") {
+        if (s.activeView === "dashboard" || s.activeView === "raw" || s.activeView === "qc" || s.activeView === "yamato") {
           ACTIVE_VIEW = s.activeView;
         }
         if (typeof s.summaryQuality === "string" && s.summaryQuality) {
@@ -1461,7 +1492,8 @@
     function render(allRows) {
       const rowsBase = applyFilters(allRows);
       const scale = getQualityScale();
-      const avgCanastaWeight = Math.max(readNum("avgCanastaWeight", 1), 0);
+      const avgCanastaWeight = Math.max(readNum("avgCanastaWeight", 6), 0);
+      const yamatoCycles = Math.max(readNum("yamatoCycles", 7), 0);
       const shiftLength = Math.max(readNum("shiftLength", 8), 0);
       const daysPerWeek = Math.max(readNum("daysPerWeek", 5), 0);
       const qualityFilter = ACTIVE_SUMMARY_QUALITY;
@@ -1474,6 +1506,8 @@
       $("kH").textContent = fmtInt(a2.totalH);
       $("kDays").textContent = fmtInt(a2.activeDays);
       $("kEmp").textContent = fmtInt(a2.employees);
+      $("kYamato").textContent = "";
+      if ($("yamatoTopPill")) $("yamatoTopPill").title = `Yamato Output: ${fmtInt(a2.totalCanastas)}`;
 
       if (chartDaily) {
         const dailyTrend = buildDailyTrend(a2.daily);
@@ -1538,7 +1572,7 @@
       renderQualityTable(rows, scale);
       updateMeta(rows);
       $("status").textContent = `Rows in filter: ${rows.length.toLocaleString()}`;
-      $("statusQc").textContent = `Rows in filter: ${rows.length.toLocaleString()} | Avg Canasta Weight: ${avgCanastaWeight.toFixed(2)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)} | Mode: ${ACTIVE_PROJECTION_MODE === "week" ? "Week" : "Shift"}`;
+      $("statusQc").textContent = `Rows in filter: ${rows.length.toLocaleString()} | Avg Canasta Weight: ${avgCanastaWeight.toFixed(2)} | Yamato Cycles: ${yamatoCycles.toFixed(0)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)} | Mode: ${ACTIVE_PROJECTION_MODE === "week" ? "Week" : "Shift"}`;
       if (ACTIVE_EMPLOYEE && !$("empTrendModal").classList.contains("hidden")) {
         renderEmployeeTrend();
       }
@@ -1564,19 +1598,42 @@
     }
 
     function applySavedDashboardInputs(payload) {
-      const cfg = payload?.settings?.packTeamPerformance;
+      const cfgRemote = payload?.settings?.packTeamPerformance;
+      const cfg = (cfgRemote && typeof cfgRemote === "object")
+        ? cfgRemote
+        : loadLocalPackSettings();
       if (!cfg || typeof cfg !== "object") return;
       const avg = Number(cfg.avgCanastaWeight);
+      const cycles = Number(cfg.yamatoCycles);
       const shift = Number(cfg.shiftLength);
       const days = Number(cfg.daysPerWeek);
       const mode = String(cfg.projectionMode || "").toLowerCase();
       if (Number.isFinite(avg) && avg >= 0) $("avgCanastaWeight").value = String(avg);
+      if (Number.isFinite(cycles) && cycles >= 0) $("yamatoCycles").value = String(cycles);
       if (Number.isFinite(shift) && shift >= 0) $("shiftLength").value = String(shift);
       if (Number.isFinite(days) && days >= 0) $("daysPerWeek").value = String(days);
       if (mode === "shift" || mode === "week") {
         ACTIVE_PROJECTION_MODE = mode;
       }
       updateProjectionModeUI();
+    }
+
+    function loadLocalPackSettings() {
+      try {
+        const raw = localStorage.getItem(PACK_SETTINGS_LOCAL_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === "object") ? parsed : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function saveLocalPackSettings(cfg) {
+      if (!cfg || typeof cfg !== "object") return;
+      try {
+        localStorage.setItem(PACK_SETTINGS_LOCAL_KEY, JSON.stringify(cfg));
+      } catch (_) {}
     }
 
     async function saveToSupabase() {
@@ -1591,7 +1648,8 @@
           $("status").textContent = "Save failed: no pack payload loaded yet.";
           return;
         }
-        const avg = Math.max(readNum("avgCanastaWeight", 1), 0);
+        const avg = Math.max(readNum("avgCanastaWeight", 6), 0);
+        const cycles = Math.max(readNum("yamatoCycles", 7), 0);
         const shift = Math.max(readNum("shiftLength", 8), 0);
         const days = Math.max(readNum("daysPerWeek", 5), 0);
         payloadToSave.settings = (payloadToSave.settings && typeof payloadToSave.settings === "object") ? payloadToSave.settings : {};
@@ -1600,6 +1658,7 @@
             ? payloadToSave.settings.packTeamPerformance
             : {}),
           avgCanastaWeight: Number(avg.toFixed(4)),
+          yamatoCycles: Number(cycles.toFixed(0)),
           shiftLength: Number(shift.toFixed(4)),
           daysPerWeek: Number(days.toFixed(4)),
           projectionMode: ACTIVE_PROJECTION_MODE
@@ -1615,6 +1674,7 @@
           throw new Error(`Pack publish failed (${res.status}): ${txt}`);
         }
         LAST_PACK_PAYLOAD = payloadToSave;
+        saveLocalPackSettings(payloadToSave.settings.packTeamPerformance);
         $("status").textContent = "Saved to Supabase successfully.";
       } catch (err) {
         $("status").textContent = `Save failed: ${err?.message || String(err)}`;
@@ -1655,7 +1715,7 @@
 
         fillEmployees(ALL_ROWS);
 
-        ["rangeSel", "empSel", "avgCanastaWeight", "shiftLength", "daysPerWeek", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
+        ["rangeSel", "empSel", "avgCanastaWeight", "yamatoCycles", "shiftLength", "daysPerWeek", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
           if (!$(id).dataset.bound) {
             $(id).addEventListener("input", () => render(ALL_ROWS));
             $(id).addEventListener("change", () => render(ALL_ROWS));
@@ -1723,6 +1783,12 @@
           $("tabRawQuality").addEventListener("click", () => setActiveView("raw"));
           $("tabQCPotential").addEventListener("click", () => setActiveView("qc"));
           $("tabDashboard").dataset.bound = "1";
+        }
+        if ($("yamatoTopPill") && !$("yamatoTopPill").dataset.bound) {
+          $("yamatoTopPill").addEventListener("click", () => {
+            setActiveView("yamato");
+          });
+          $("yamatoTopPill").dataset.bound = "1";
         }
         if (!$("saveSupabaseBtn").dataset.bound) {
           $("saveSupabaseBtn").addEventListener("click", saveToSupabase);
