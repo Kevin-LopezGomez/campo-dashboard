@@ -644,6 +644,47 @@
           <div class="status" id="statusQc">Loading…</div>
         </div>
       </div>
+
+      <div class="card view hidden" id="yamatoView" role="tabpanel" aria-labelledby="yamatoTopPill">
+        <div class="grid4">
+          <div class="kpi"><div class="t">Yamato Runs</div><div class="v" id="kYRuns">—</div></div>
+          <div class="kpi"><div class="t">Yamato Total Dumps</div><div class="v" id="kYDumps">—</div></div>
+          <div class="kpi"><div class="t">Avg Dumps/Run</div><div class="v" id="kYAvgDumps">—</div></div>
+          <div class="kpi"><div class="t">Avg People/Run</div><div class="v" id="kYAvgPeople">—</div></div>
+          <div class="kpi"><div class="t">Avg Dumps/Hour</div><div class="v" id="kYRate">—</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3 class="performanceTitle">Yamato Dumps/Hour by Day</h3>
+            <div class="chartWrap"><canvas id="chartYamatoDaily"></canvas></div>
+          </div>
+          <div class="card">
+            <h3 class="performanceTitle">Yamato by Clamshell Type</h3>
+            <div class="chartWrap"><canvas id="chartYamatoType"></canvas></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:10px;">
+          <h3>Yamato Raw Runs</h3>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Clamshell Type</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th class="r">Total Dumps</th>
+                  <th class="r"># of People</th>
+                  <th class="r">Hours</th>
+                  <th class="r">Dumps/Hour</th>
+                </tr>
+              </thead>
+              <tbody id="yamatoTb"></tbody>
+            </table>
+          </div>
+          <div class="status" id="yamatoStatus">Rows shown: 0</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -692,6 +733,18 @@
       PACK_HR: "Pack Hr",
       PACK_CANASTAS_HR: "Pack Canst/Hr"
     });
+    const YAMATO_COL = Object.freeze({
+      DATE: "Date",
+      CLAMSHELL: "Clamshell Type",
+      START: "Yamato Start Time",
+      END: "Yamato End Time",
+      DUMPS: "Yamato Total Dumps",
+      PEOPLE: "Yamato # of People"
+    });
+    const YAMATO_COL_ALT = Object.freeze({
+      DATE: "Yamato Date",
+      CLAMSHELL: "Yamato Clamshell Type"
+    });
 
     const IQ_KEYS = ["IQ_H1","IQ_H2","IQ_H3","IQ_H4","IQ_H5","IQ_H6","IQ_H7","IQ_H8"];
     const SLOT_KEYS = ["SLOT_H1","SLOT_H2","SLOT_H3","SLOT_H4","SLOT_H5","SLOT_H6","SLOT_H7","SLOT_H8"];
@@ -718,8 +771,51 @@
       if (typeof v === "string") {
         const s = v.trim();
         if (!s) return null;
-        const d = new Date(s);
-        if (!Number.isNaN(d.getTime())) return d;
+
+        // Excel serials sometimes arrive as strings.
+        if (/^\d+(\.\d+)?$/.test(s)) {
+          const serial = Number(s);
+          if (Number.isFinite(serial)) {
+            const epoch = new Date(Date.UTC(1899, 11, 30));
+            const d = new Date(epoch.getTime() + serial * 86400000);
+            if (!Number.isNaN(d.getTime())) return d;
+          }
+        }
+
+        const direct = new Date(s);
+        if (!Number.isNaN(direct.getTime())) return direct;
+
+        // Try again after dropping leading weekday text (e.g., "Monday, ...").
+        const noWeekday = s.replace(/^[^,]+,\s*/, "");
+        const noWeekdayDate = new Date(noWeekday);
+        if (!Number.isNaN(noWeekdayDate.getTime())) return noWeekdayDate;
+
+        // Support YYYY-MM-DD or YYYY/MM/DD.
+        let m = noWeekday.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+        if (m) {
+          const y = Number(m[1]);
+          const mm = Number(m[2]);
+          const dd = Number(m[3]);
+          const d = new Date(y, mm - 1, dd);
+          if (!Number.isNaN(d.getTime())) return d;
+        }
+
+        // Support DD/MM/YYYY and MM/DD/YYYY.
+        m = noWeekday.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+        if (m) {
+          let a = Number(m[1]);
+          let b = Number(m[2]);
+          let y = Number(m[3]);
+          if (y < 100) y += 2000;
+          let month = a;
+          let day = b;
+          if (a > 12 && b <= 12) {
+            day = a;
+            month = b;
+          }
+          const d = new Date(y, month - 1, day);
+          if (!Number.isNaN(d.getTime())) return d;
+        }
       }
       return null;
     }
@@ -727,6 +823,7 @@
     function fmtInt(v) { return Number.isFinite(v) ? Math.round(v).toLocaleString() : "0"; }
     function fmt1(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "0.0"; }
     function toISO(d) { return d.toISOString().slice(0, 10); }
+    function fmt2(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"; }
     function readNum(id, fallback) {
       const n = Number($(id).value);
       return Number.isFinite(n) ? n : fallback;
@@ -831,6 +928,21 @@
       return map.get(String(expected).trim().toLowerCase()) || null;
     }
 
+    function findHeaderIndex(headers, expectedNames, preferLast = false) {
+      const names = (Array.isArray(expectedNames) ? expectedNames : [expectedNames])
+        .map((n) => String(n ?? "").trim().toLowerCase())
+        .filter(Boolean);
+      if (!names.length || !Array.isArray(headers)) return -1;
+      let found = -1;
+      for (let i = 0; i < headers.length; i++) {
+        const h = String(headers[i] ?? "").trim().toLowerCase();
+        if (!h || !names.includes(h)) continue;
+        found = i;
+        if (!preferLast) return i;
+      }
+      return found;
+    }
+
     function sheetRows(sheet) {
       const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
       const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
@@ -845,9 +957,48 @@
       });
     }
 
+    function parseTimeOnDate(raw, anchorDate) {
+      if (raw === null || raw === undefined) return null;
+      if (!(anchorDate instanceof Date) || Number.isNaN(anchorDate.getTime())) return null;
+
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        if (raw >= 0 && raw < 1) {
+          const minutes = Math.round(raw * 24 * 60);
+          const d = new Date(anchorDate);
+          d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+          return d;
+        }
+        const d = parseDate(raw);
+        return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null;
+      }
+
+      const s = String(raw).trim();
+      if (!s) return null;
+      const direct = new Date(s);
+      if (!Number.isNaN(direct.getTime())) return direct;
+
+      const m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+      if (!m) return null;
+      let hh = Number(m[1]);
+      const mm = Number(m[2] || "0");
+      const ap = String(m[3] || "").toUpperCase();
+      if (!Number.isFinite(hh) || !Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+      if (ap) {
+        if (hh < 1 || hh > 12) return null;
+        if (ap === "AM" && hh === 12) hh = 0;
+        if (ap === "PM" && hh !== 12) hh += 12;
+      } else if (hh < 0 || hh > 23) {
+        return null;
+      }
+
+      const d = new Date(anchorDate);
+      d.setHours(hh, mm, 0, 0);
+      return d;
+    }
+
     function parseData(payload) {
       const sheet = payload?.sheets?.[MASTER_PACK_SHEET_NAME];
-      if (!sheet) return { rows: [], missing: ["Master Pack sheet missing"] };
+      if (!sheet) return { rows: [], missing: ["Master Pack sheet missing"], yamatoRows: [], yamatoMissing: [] };
 
       const headers = Array.isArray(sheet.headers) ? sheet.headers : [];
       const map = headerMap(headers);
@@ -867,7 +1018,7 @@
       if (!H.DATE) missing.push(COL.DATE);
       IQ_KEYS.forEach((k) => { if (!H[k]) missing.push(COL[k]); });
       SLOT_KEYS.forEach((k) => { if (!H[k]) missing.push(COL[k]); });
-      if (missing.length) return { rows: [], missing };
+      if (missing.length) return { rows: [], missing, yamatoRows: [], yamatoMissing: [] };
 
       const rows = [];
       for (const r of sheetRows(sheet)) {
@@ -894,7 +1045,69 @@
         });
       }
 
-      return { rows, missing: [] };
+      const yi = {
+        DATE: findHeaderIndex(headers, [YAMATO_COL_ALT.DATE, YAMATO_COL.DATE], true),
+        CLAMSHELL: findHeaderIndex(headers, [YAMATO_COL_ALT.CLAMSHELL, YAMATO_COL.CLAMSHELL], true),
+        START: findHeaderIndex(headers, [YAMATO_COL.START], true),
+        END: findHeaderIndex(headers, [YAMATO_COL.END], true),
+        DUMPS: findHeaderIndex(headers, [YAMATO_COL.DUMPS], true),
+        PEOPLE: findHeaderIndex(headers, [YAMATO_COL.PEOPLE], true)
+      };
+      const yamatoMissing = [];
+      if (yi.DATE < 0) yamatoMissing.push(`${YAMATO_COL_ALT.DATE} or ${YAMATO_COL.DATE}`);
+      if (yi.CLAMSHELL < 0) yamatoMissing.push(`${YAMATO_COL_ALT.CLAMSHELL} or ${YAMATO_COL.CLAMSHELL}`);
+      if (yi.START < 0) yamatoMissing.push(YAMATO_COL.START);
+      if (yi.END < 0) yamatoMissing.push(YAMATO_COL.END);
+      if (yi.DUMPS < 0) yamatoMissing.push(YAMATO_COL.DUMPS);
+      if (yi.PEOPLE < 0) yamatoMissing.push(YAMATO_COL.PEOPLE);
+
+      const yamatoRows = [];
+      let yamatoCandidateRows = 0;
+      if (!yamatoMissing.length) {
+        const rawRows = Array.isArray(sheet?.rows) ? sheet.rows : [];
+        for (const rr of rawRows) {
+          if (!Array.isArray(rr)) continue;
+          const get = (idx) => (idx >= 0 && idx < rr.length) ? rr[idx] : "";
+          const dateRaw = get(yi.DATE);
+          const date = parseDate(dateRaw);
+          const clamshellType = String(get(yi.CLAMSHELL) ?? "").trim();
+          const startRaw = get(yi.START);
+          const endRaw = get(yi.END);
+          const totalDumps = parseNumber(get(yi.DUMPS));
+          const people = parseNumber(get(yi.PEOPLE));
+          const hasAny = String(dateRaw ?? "").trim() || clamshellType || String(startRaw ?? "").trim() || String(endRaw ?? "").trim() || Number.isFinite(totalDumps) || Number.isFinite(people);
+          if (!hasAny) continue;
+          yamatoCandidateRows += 1;
+          if (!date) continue;
+
+          const start = parseTimeOnDate(startRaw, date);
+          const end = parseTimeOnDate(endRaw, date);
+          let durationHours = NaN;
+          if (start instanceof Date && end instanceof Date && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+            let ms = end.getTime() - start.getTime();
+            if (ms < 0) ms += 24 * 3600000;
+            durationHours = ms / 3600000;
+          }
+          const dumpsPerHour = (Number.isFinite(totalDumps) && Number.isFinite(durationHours) && durationHours > 0)
+            ? (totalDumps / durationHours)
+            : NaN;
+
+          yamatoRows.push({
+            date,
+            dateISO: toISO(date),
+            dateRaw: String(dateRaw ?? "").trim(),
+            clamshellType,
+            startRaw: String(startRaw ?? "").trim(),
+            endRaw: String(endRaw ?? "").trim(),
+            totalDumps,
+            people,
+            durationHours,
+            dumpsPerHour
+          });
+        }
+      }
+
+      return { rows, missing: [], yamatoRows, yamatoMissing, yamatoCandidateRows };
     }
 
     function normalizeHardcodedRows(rawRows) {
@@ -1051,6 +1264,75 @@
       };
     }
 
+    function applyYamatoFilters(allRows) {
+      let rows = Array.isArray(allRows) ? allRows.slice() : [];
+      const range = $("rangeSel").value;
+      if (range !== "all" && rows.length) {
+        const days = Number(range);
+        const maxT = Math.max(...rows.map((r) => r.date.getTime()));
+        const minT = maxT - (days - 1) * 86400000;
+        rows = rows.filter((r) => r.date.getTime() >= minT && r.date.getTime() <= maxT);
+      }
+      return rows;
+    }
+
+    function aggregateYamato(rows) {
+      const byDate = new Map();
+      const byType = new Map();
+      let totalDumps = 0;
+      let runCount = 0;
+      let totalPeople = 0;
+      let peopleCount = 0;
+      let totalDuration = 0;
+
+      for (const r of rows) {
+        const dumps = Number.isFinite(r.totalDumps) ? r.totalDumps : 0;
+        const people = Number.isFinite(r.people) ? r.people : NaN;
+        const duration = Number.isFinite(r.durationHours) ? r.durationHours : NaN;
+        const clamshell = r.clamshellType || "Unknown";
+
+        runCount += 1;
+        totalDumps += dumps;
+        if (Number.isFinite(people)) {
+          totalPeople += people;
+          peopleCount += 1;
+        }
+        if (Number.isFinite(duration) && duration > 0) {
+          totalDuration += duration;
+        }
+
+        if (!byDate.has(r.dateISO)) byDate.set(r.dateISO, { dumps: 0, duration: 0 });
+        const day = byDate.get(r.dateISO);
+        day.dumps += dumps;
+        if (Number.isFinite(duration) && duration > 0) day.duration += duration;
+
+        if (!byType.has(clamshell)) byType.set(clamshell, 0);
+        byType.set(clamshell, byType.get(clamshell) + dumps);
+      }
+
+      const daily = Array.from(byDate.entries())
+        .map(([dateISO, v]) => ({
+          dateISO,
+          dumps: v.dumps,
+          dumpsPerHour: v.duration > 0 ? (v.dumps / v.duration) : NaN
+        }))
+        .sort((a, b) => a.dateISO.localeCompare(b.dateISO));
+      const byClamshell = Array.from(byType.entries())
+        .map(([clamshellType, dumps]) => ({ clamshellType, dumps }))
+        .sort((a, b) => (b.dumps - a.dumps) || a.clamshellType.localeCompare(b.clamshellType));
+
+      return {
+        rows,
+        daily,
+        byClamshell,
+        runCount,
+        totalDumps,
+        avgDumpsPerRun: runCount > 0 ? (totalDumps / runCount) : NaN,
+        avgPeoplePerRun: peopleCount > 0 ? (totalPeople / peopleCount) : NaN,
+        avgDumpsPerHour: totalDuration > 0 ? (totalDumps / totalDuration) : NaN
+      };
+    }
+
     const chartDaily = (typeof Chart !== "undefined") ? new Chart($("chartDaily"), {
       type: "line",
       data: { labels: [], datasets: [
@@ -1192,6 +1474,16 @@
           }
         }
       }
+    }) : null;
+    const chartYamatoDaily = (typeof Chart !== "undefined" && $("chartYamatoDaily")) ? new Chart($("chartYamatoDaily"), {
+      type: "line",
+      data: { labels: [], datasets: [{ label: "Dumps/Hour", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.2)", tension: .25 }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    }) : null;
+    const chartYamatoType = (typeof Chart !== "undefined" && $("chartYamatoType")) ? new Chart($("chartYamatoType"), {
+      type: "bar",
+      data: { labels: [], datasets: [{ label: "Total Dumps", data: [], backgroundColor: "#4ea3ff" }] },
+      options: { responsive: true, maintainAspectRatio: false }
     }) : null;
     let chartEmpDaily = null;
 
@@ -1343,17 +1635,95 @@
       $("metaRange").textContent = `Range: ${min} to ${max}`;
     }
 
+    function renderYamatoTable(rows) {
+      const sorted = rows.slice().sort((a, b) => {
+        const ta = a?.date instanceof Date ? a.date.getTime() : NaN;
+        const tb = b?.date instanceof Date ? b.date.getTime() : NaN;
+        if (Number.isFinite(tb) && Number.isFinite(ta) && tb !== ta) return tb - ta;
+        return String(b?.dateISO ?? "").localeCompare(String(a?.dateISO ?? ""));
+      });
+      $("yamatoTb").innerHTML = sorted.map((r) => `
+        <tr>
+          <td>${escapeHtml(r.dateRaw || r.dateISO)}</td>
+          <td>${escapeHtml(r.clamshellType || "—")}</td>
+          <td>${escapeHtml(r.startRaw || "—")}</td>
+          <td>${escapeHtml(r.endRaw || "—")}</td>
+          <td class="r">${Number.isFinite(r.totalDumps) ? fmtInt(r.totalDumps) : "—"}</td>
+          <td class="r">${Number.isFinite(r.people) ? fmt1(r.people) : "—"}</td>
+          <td class="r">${fmt2(r.durationHours)}</td>
+          <td class="r">${fmt2(r.dumpsPerHour)}</td>
+        </tr>
+      `).join("");
+      if (!sorted.length) {
+        $("yamatoTb").innerHTML = '<tr><td colspan="8" style="color:#a7bfd0;">No Yamato rows for current filters.</td></tr>';
+      }
+      $("yamatoStatus").textContent = `Rows shown: ${sorted.length.toLocaleString()}`;
+    }
+
+    function renderYamatoDashboard(allRows, missingHeaders, candidateRows = 0) {
+      const missing = Array.isArray(missingHeaders) ? missingHeaders : [];
+      if (missing.length) {
+        $("kYRuns").textContent = "0";
+        $("kYDumps").textContent = "0";
+        $("kYAvgDumps").textContent = "0.0";
+        $("kYAvgPeople").textContent = "0.0";
+        $("kYRate").textContent = "0.0";
+        $("yamatoTb").innerHTML = '<tr><td colspan="8" style="color:#a7bfd0;">Yamato headers missing.</td></tr>';
+        $("yamatoStatus").textContent = `Missing Yamato headers: ${missing.join(", ")}`;
+        if (chartYamatoDaily) {
+          chartYamatoDaily.data.labels = [];
+          chartYamatoDaily.data.datasets[0].data = [];
+          chartYamatoDaily.update();
+        }
+        if (chartYamatoType) {
+          chartYamatoType.data.labels = [];
+          chartYamatoType.data.datasets[0].data = [];
+          chartYamatoType.update();
+        }
+        updateMeta([]);
+        return;
+      }
+
+      const rows = applyYamatoFilters(allRows);
+      const a = aggregateYamato(rows);
+      $("kYRuns").textContent = fmtInt(a.runCount);
+      $("kYDumps").textContent = fmtInt(a.totalDumps);
+      $("kYAvgDumps").textContent = fmt1(a.avgDumpsPerRun);
+      $("kYAvgPeople").textContent = fmt1(a.avgPeoplePerRun);
+      $("kYRate").textContent = fmt1(a.avgDumpsPerHour);
+      updateMeta(rows);
+      renderYamatoTable(rows);
+      if (candidateRows === 0) {
+        $("yamatoStatus").textContent = "Rows shown: 0 | Yamato headers found, but source values are empty.";
+      }
+      if (allRows.length && !rows.length) {
+        $("yamatoStatus").textContent = `Rows shown: 0 | Parsed Yamato rows: ${allRows.length.toLocaleString()} (date filter removed all rows)`;
+      }
+
+      if (chartYamatoDaily) {
+        chartYamatoDaily.data.labels = a.daily.map((d) => d.dateISO);
+        chartYamatoDaily.data.datasets[0].data = a.daily.map((d) => Number.isFinite(d.dumpsPerHour) ? Number(d.dumpsPerHour.toFixed(2)) : null);
+        chartYamatoDaily.update();
+      }
+      if (chartYamatoType) {
+        chartYamatoType.data.labels = a.byClamshell.map((d) => d.clamshellType);
+        chartYamatoType.data.datasets[0].data = a.byClamshell.map((d) => Number(d.dumps.toFixed(2)));
+        chartYamatoType.update();
+      }
+    }
+
     function setActiveView(view) {
       const next = (view === "raw" || view === "qc" || view === "yamato") ? view : "dashboard";
       ACTIVE_VIEW = next;
       const dashboardOn = next === "dashboard";
       const rawOn = next === "raw";
-      const qcOn = next === "qc" || next === "yamato";
+      const qcOn = next === "qc";
       const qcTabOn = next === "qc";
       const yamatoOn = next === "yamato";
       $("dashboardView").classList.toggle("hidden", !dashboardOn);
       $("rawQualityView").classList.toggle("hidden", !rawOn);
       $("qcPotentialView").classList.toggle("hidden", !qcOn);
+      if ($("yamatoView")) $("yamatoView").classList.toggle("hidden", !yamatoOn);
       $("tabDashboard").classList.toggle("active", dashboardOn);
       $("tabRawQuality").classList.toggle("active", rawOn);
       $("tabQCPotential").classList.toggle("active", qcTabOn);
@@ -1501,13 +1871,15 @@
       CURRENT_ROWS = rows;
       CURRENT_SCALE = scale;
       const a2 = aggregate(rows, scale);
+      const yamatoRowsFiltered = applyYamatoFilters(ALL_YAMATO_ROWS);
+      const yamatoAgg = aggregateYamato(yamatoRowsFiltered);
 
       $("kIq").textContent = fmtInt(a2.totalIQ);
       $("kH").textContent = fmtInt(a2.totalH);
       $("kDays").textContent = fmtInt(a2.activeDays);
       $("kEmp").textContent = fmtInt(a2.employees);
-      $("kYamato").textContent = "";
-      if ($("yamatoTopPill")) $("yamatoTopPill").title = `Yamato Output: ${fmtInt(a2.totalCanastas)}`;
+      $("kYamato").textContent = fmtInt(yamatoAgg.totalDumps);
+      if ($("yamatoTopPill")) $("yamatoTopPill").title = `Yamato Total Dumps: ${fmtInt(yamatoAgg.totalDumps)}`;
 
       if (chartDaily) {
         const dailyTrend = buildDailyTrend(a2.daily);
@@ -1570,7 +1942,11 @@
       renderTable(a2.empRows, scale);
       renderTableQc(a2.empRows, avgCanastaWeight);
       renderQualityTable(rows, scale);
-      updateMeta(rows);
+      if (ACTIVE_VIEW === "yamato") {
+        renderYamatoDashboard(ALL_YAMATO_ROWS, YAMATO_MISSING_HEADERS, YAMATO_CANDIDATE_ROWS);
+      } else {
+        updateMeta(rows);
+      }
       $("status").textContent = `Rows in filter: ${rows.length.toLocaleString()}`;
       $("statusQc").textContent = `Rows in filter: ${rows.length.toLocaleString()} | Avg Canasta Weight: ${avgCanastaWeight.toFixed(2)} | Yamato Cycles: ${yamatoCycles.toFixed(0)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)} | Mode: ${ACTIVE_PROJECTION_MODE === "week" ? "Week" : "Shift"}`;
       if (ACTIVE_EMPLOYEE && !$("empTrendModal").classList.contains("hidden")) {
@@ -1587,6 +1963,9 @@
     }
 
     let ALL_ROWS = [];
+    let ALL_YAMATO_ROWS = [];
+    let YAMATO_MISSING_HEADERS = [];
+    let YAMATO_CANDIDATE_ROWS = 0;
     let LAST_PACK_PAYLOAD = null;
     let LAST_PAYLOAD_UPDATED_AT = "";
     let IS_LOADING_PACK = false;
@@ -1706,12 +2085,18 @@
         const parsed = parseData(payload);
         if (parsed.missing.length) {
           ALL_ROWS = [];
+          ALL_YAMATO_ROWS = [];
+          YAMATO_MISSING_HEADERS = [];
+          YAMATO_CANDIDATE_ROWS = 0;
           $("status").textContent = `Missing required columns: ${parsed.missing.join(", ")}`;
           fillEmployees([]);
           render([]);
           return;
         }
         ALL_ROWS = parsed.rows;
+        ALL_YAMATO_ROWS = Array.isArray(parsed.yamatoRows) ? parsed.yamatoRows : [];
+        YAMATO_MISSING_HEADERS = Array.isArray(parsed.yamatoMissing) ? parsed.yamatoMissing : [];
+        YAMATO_CANDIDATE_ROWS = Number(parsed.yamatoCandidateRows || 0);
 
         fillEmployees(ALL_ROWS);
 
