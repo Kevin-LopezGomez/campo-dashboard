@@ -314,6 +314,15 @@
       border-color: rgba(55,214,122,.35);
       background: linear-gradient(180deg, rgba(55,214,122,.95), rgba(55,214,122,.8));
     }
+    .yamatoFilterToggle {
+      margin-top: 0;
+      margin-bottom: 8px;
+      justify-content: center;
+    }
+    .yamatoFilterBtn {
+      font-size: 11px;
+      padding: 4px 10px;
+    }
 
     .grid4 {
       margin-top: 12px;
@@ -655,11 +664,16 @@
         </div>
         <div class="grid2">
           <div class="card">
-            <h3 class="performanceTitle">Yamato Dumps/Hour by Day</h3>
+            <div class="projectionToggle yamatoFilterToggle" id="yamatoClamshellFilters"></div>
+            <h3 class="performanceTitle">Hourly Throughput</h3>
             <div class="chartWrap"><canvas id="chartYamatoDaily"></canvas></div>
           </div>
-          <div class="card">
-            <h3 class="performanceTitle">Yamato by Clamshell Type</h3>
+          <div class="card projectionCard">
+            <div class="projectionToggle">
+              <button class="projectionBtn active" id="yamatoProjDay" type="button">Daily</button>
+              <button class="projectionBtn" id="yamatoProjWeek" type="button">Weekly</button>
+            </div>
+            <h3 class="performanceTitle" id="yamatoProjectionTitle">Projected Units/Day by Clamshell Type</h3>
             <div class="chartWrap"><canvas id="chartYamatoType"></canvas></div>
           </div>
         </div>
@@ -824,6 +838,15 @@
     function fmt1(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "0.0"; }
     function toISO(d) { return d.toISOString().slice(0, 10); }
     function fmt2(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"; }
+    const CHART_DATE_LABEL_FORMATTER = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
+    function formatChartDateLabel(input) {
+      const date = input instanceof Date ? input : new Date(String(input ?? ""));
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return String(input ?? "");
+      return CHART_DATE_LABEL_FORMATTER.format(date);
+    }
+    function formatChartDateLabels(values) {
+      return (Array.isArray(values) ? values : []).map((v) => formatChartDateLabel(v));
+    }
     function readNum(id, fallback) {
       const n = Number($(id).value);
       return Number.isFinite(n) ? n : fallback;
@@ -977,12 +1000,13 @@
       const direct = new Date(s);
       if (!Number.isNaN(direct.getTime())) return direct;
 
-      const m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+      const m = s.match(/^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(AM|PM)?$/i);
       if (!m) return null;
       let hh = Number(m[1]);
       const mm = Number(m[2] || "0");
-      const ap = String(m[3] || "").toUpperCase();
-      if (!Number.isFinite(hh) || !Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+      const ss = Number(m[3] || "0");
+      const ap = String(m[4] || "").toUpperCase();
+      if (!Number.isFinite(hh) || !Number.isFinite(mm) || !Number.isFinite(ss) || mm < 0 || mm > 59 || ss < 0 || ss > 59) return null;
       if (ap) {
         if (hh < 1 || hh > 12) return null;
         if (ap === "AM" && hh === 12) hh = 0;
@@ -992,7 +1016,7 @@
       }
 
       const d = new Date(anchorDate);
-      d.setHours(hh, mm, 0, 0);
+      d.setHours(hh, mm, ss, 0);
       return d;
     }
 
@@ -1455,21 +1479,49 @@
     }) : null;
     const chartHourlyQc = (typeof Chart !== "undefined") ? new Chart($("chartHourlyQc"), {
       type: "bar",
-      data: { labels: EMPLOYEE_COUNT_LABELS, datasets: [{ label: "Projected Lbs/Shift", data: [], backgroundColor: "#ffb65c" }] },
+      data: { labels: EMPLOYEE_COUNT_LABELS, datasets: [{ label: "Projected Lbs/Shift", data: [], backgroundColor: "#ffb65c", borderColor: "#ffd59a", borderWidth: 1.5 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#d7e7f3",
+              font: { size: 12, weight: "600" }
+            }
+          }
+        },
         scales: {
           x: {
             title: {
               display: true,
-              text: "Number of Employees"
+              text: "Number of Employees",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.16)",
+              lineWidth: 1.2
             }
           },
           y: {
             title: {
               display: true,
-              text: "Team Lbs/Shift"
+              text: "Team Lbs/Shift",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.18)",
+              lineWidth: 1.2
             }
           }
         }
@@ -1477,13 +1529,109 @@
     }) : null;
     const chartYamatoDaily = (typeof Chart !== "undefined" && $("chartYamatoDaily")) ? new Chart($("chartYamatoDaily"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "Dumps/Hour", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.2)", tension: .25 }] },
-      options: { responsive: true, maintainAspectRatio: false }
+      data: { labels: [], datasets: [
+        { label: "Hourly Throughput", data: [], borderColor: "#37d67a", backgroundColor: "rgba(55,214,122,.22)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: .25, fill: true },
+        { label: "Last 5-Point Avg", data: [], borderColor: "#ffb65c", borderDash: [8, 6], pointRadius: 0, tension: 0, fill: false }
+      ] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#d7e7f3",
+              font: { size: 12, weight: "600" }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Date",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              maxRotation: 40,
+              minRotation: 20,
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.16)",
+              lineWidth: 1.2
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Units/Hour",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.18)",
+              lineWidth: 1.2
+            }
+          }
+        }
+      }
     }) : null;
     const chartYamatoType = (typeof Chart !== "undefined" && $("chartYamatoType")) ? new Chart($("chartYamatoType"), {
       type: "bar",
-      data: { labels: [], datasets: [{ label: "Total Dumps", data: [], backgroundColor: "#4ea3ff" }] },
-      options: { responsive: true, maintainAspectRatio: false }
+      data: { labels: [], datasets: [{ label: "Projected Units/Day", data: [], backgroundColor: "#4ea3ff", borderColor: "#8bc3ff", borderWidth: 1.5 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#d7e7f3",
+              font: { size: 12, weight: "600" }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Clamshell Type",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.16)",
+              lineWidth: 1.2
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Projected Units/Day",
+              color: "#e6f0f7",
+              font: { size: 13, weight: "700" }
+            },
+            ticks: {
+              color: "#d7e7f3",
+              font: { size: 11, weight: "600" }
+            },
+            grid: {
+              color: "rgba(167,191,208,.18)",
+              lineWidth: 1.2
+            }
+          }
+        }
+      }
     }) : null;
     let chartEmpDaily = null;
 
@@ -1660,8 +1808,65 @@
       $("yamatoStatus").textContent = `Rows shown: ${sorted.length.toLocaleString()}`;
     }
 
-    function renderYamatoDashboard(allRows, missingHeaders, candidateRows = 0) {
+    function normalizeClamshellType(v) {
+      const s = String(v ?? "").trim();
+      return s || "Unknown";
+    }
+
+    function computeYamatoProjectedByType(rows, shiftLength, daysPerWeek, mode) {
+      const byType = new Map();
+      for (const r of Array.isArray(rows) ? rows : []) {
+        const type = normalizeClamshellType(r?.clamshellType);
+        const dumps = Number.isFinite(r?.totalDumps) ? r.totalDumps : 0;
+        const duration = Number.isFinite(r?.durationHours) && r.durationHours > 0 ? r.durationHours : 0;
+        if (!byType.has(type)) byType.set(type, { dumps: 0, duration: 0 });
+        const t = byType.get(type);
+        t.dumps += dumps;
+        t.duration += duration;
+      }
+
+      const isWeek = mode === "week";
+      const shift = Math.max(Number(shiftLength) || 0, 0);
+      const days = Math.max(Number(daysPerWeek) || 0, 0);
+      const factor = isWeek ? days : 1;
+
+      return Array.from(byType.entries())
+        .map(([clamshellType, v]) => {
+          const unitsPerHour = v.duration > 0 ? (v.dumps / v.duration) : NaN;
+          const dailyThroughput = Number.isFinite(unitsPerHour) ? (unitsPerHour * shift) : NaN;
+          const projected = Number.isFinite(dailyThroughput) ? (dailyThroughput * factor) : NaN;
+          return { clamshellType, projected };
+        })
+        .sort((a, b) => {
+          const av = Number.isFinite(a.projected) ? a.projected : -Infinity;
+          const bv = Number.isFinite(b.projected) ? b.projected : -Infinity;
+          return (bv - av) || a.clamshellType.localeCompare(b.clamshellType);
+        });
+    }
+
+    function renderYamatoClamshellFilters(rows) {
+      const wrap = $("yamatoClamshellFilters");
+      if (!wrap) return;
+      const types = Array.from(new Set((Array.isArray(rows) ? rows : []).map((r) => normalizeClamshellType(r?.clamshellType))))
+        .sort((a, b) => a.localeCompare(b));
+      const options = ["__all__", ...types];
+      if (!options.includes(ACTIVE_YAMATO_CLAMSHELL)) {
+        ACTIVE_YAMATO_CLAMSHELL = "__all__";
+      }
+      wrap.innerHTML = options.map((type) => {
+        const isAll = type === "__all__";
+        const active = type === ACTIVE_YAMATO_CLAMSHELL;
+        const label = isAll ? "All" : type;
+        const title = isAll ? "Show all clamshell types" : `Show only ${type}`;
+        return `<button class="projectionBtn yamatoFilterBtn${active ? " active" : ""}" type="button" data-clamshell="${escapeHtml(type)}" title="${escapeHtml(title)}">${escapeHtml(label)}</button>`;
+      }).join("");
+    }
+
+    function renderYamatoDashboard(allRows, missingHeaders, candidateRows = 0, precomputed = null, opts = {}) {
       const missing = Array.isArray(missingHeaders) ? missingHeaders : [];
+      const shiftLength = Math.max(Number(opts.shiftLength) || 0, 0);
+      const daysPerWeek = Math.max(Number(opts.daysPerWeek) || 0, 0);
+      const isWeek = ACTIVE_YAMATO_PROJECTION_MODE === "week";
       if (missing.length) {
         $("kYRuns").textContent = "0";
         $("kYDumps").textContent = "0";
@@ -1673,6 +1878,7 @@
         if (chartYamatoDaily) {
           chartYamatoDaily.data.labels = [];
           chartYamatoDaily.data.datasets[0].data = [];
+          chartYamatoDaily.data.datasets[1].data = [];
           chartYamatoDaily.update();
         }
         if (chartYamatoType) {
@@ -1680,12 +1886,15 @@
           chartYamatoType.data.datasets[0].data = [];
           chartYamatoType.update();
         }
+        if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = isWeek ? "Projected Units/Week by Clamshell Type" : "Projected Units/Day by Clamshell Type";
+        renderYamatoClamshellFilters([]);
         updateMeta([]);
         return;
       }
 
-      const rows = applyYamatoFilters(allRows);
-      const a = aggregateYamato(rows);
+      const rows = Array.isArray(precomputed?.rows) ? precomputed.rows : applyYamatoFilters(allRows);
+      const a = precomputed?.agg && typeof precomputed.agg === "object" ? precomputed.agg : aggregateYamato(rows);
+      renderYamatoClamshellFilters(rows);
       $("kYRuns").textContent = fmtInt(a.runCount);
       $("kYDumps").textContent = fmtInt(a.totalDumps);
       $("kYAvgDumps").textContent = fmt1(a.avgDumpsPerRun);
@@ -1701,13 +1910,31 @@
       }
 
       if (chartYamatoDaily) {
-        chartYamatoDaily.data.labels = a.daily.map((d) => d.dateISO);
-        chartYamatoDaily.data.datasets[0].data = a.daily.map((d) => Number.isFinite(d.dumpsPerHour) ? Number(d.dumpsPerHour.toFixed(2)) : null);
+        const selectedType = ACTIVE_YAMATO_CLAMSHELL;
+        const dailyRows = selectedType === "__all__"
+          ? rows
+          : rows.filter((r) => normalizeClamshellType(r?.clamshellType) === selectedType);
+        const dailyAgg = aggregateYamato(dailyRows);
+        const labels = formatChartDateLabels(dailyAgg.daily.map((d) => d.dateISO));
+        const vals = dailyAgg.daily.map((d) => Number.isFinite(d.dumpsPerHour) ? Number(d.dumpsPerHour.toFixed(2)) : null);
+        const last5 = vals.filter((v) => Number.isFinite(v)).slice(-5);
+        const avg5 = last5.length ? (last5.reduce((acc, v) => acc + v, 0) / last5.length) : NaN;
+        chartYamatoDaily.data.labels = labels;
+        chartYamatoDaily.data.datasets[0].data = vals;
+        chartYamatoDaily.data.datasets[0].label = selectedType === "__all__" ? "Hourly Throughput" : `Hourly Throughput (${selectedType})`;
+        chartYamatoDaily.data.datasets[1].data = labels.map(() => Number.isFinite(avg5) ? Number(avg5.toFixed(2)) : null);
         chartYamatoDaily.update();
       }
       if (chartYamatoType) {
-        chartYamatoType.data.labels = a.byClamshell.map((d) => d.clamshellType);
-        chartYamatoType.data.datasets[0].data = a.byClamshell.map((d) => Number(d.dumps.toFixed(2)));
+        const projected = computeYamatoProjectedByType(rows, shiftLength, daysPerWeek, ACTIVE_YAMATO_PROJECTION_MODE);
+        const title = isWeek ? "Projected Units/Week by Clamshell Type" : "Projected Units/Day by Clamshell Type";
+        if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = title;
+        chartYamatoType.data.labels = projected.map((d) => d.clamshellType);
+        chartYamatoType.data.datasets[0].label = isWeek ? "Projected Units/Week" : "Projected Units/Day";
+        chartYamatoType.data.datasets[0].data = projected.map((d) => Number.isFinite(d.projected) ? Number(d.projected.toFixed(2)) : 0);
+        if (chartYamatoType.options?.scales?.y?.title) {
+          chartYamatoType.options.scales.y.title.text = isWeek ? "Projected Units/Week" : "Projected Units/Day";
+        }
         chartYamatoType.update();
       }
     }
@@ -1746,12 +1973,25 @@
     let ACTIVE_SUMMARY_QUALITY = "all";
     let ACTIVE_VIEW = "dashboard";
     let ACTIVE_PROJECTION_MODE = "shift";
+    let ACTIVE_YAMATO_PROJECTION_MODE = "day";
+    let ACTIVE_YAMATO_CLAMSHELL = "__all__";
+    let RENDER_TIMER = 0;
+
+    function scheduleRender(delayMs = 80) {
+      if (RENDER_TIMER) clearTimeout(RENDER_TIMER);
+      RENDER_TIMER = setTimeout(() => {
+        RENDER_TIMER = 0;
+        render(ALL_ROWS);
+      }, Math.max(0, Number(delayMs) || 0));
+    }
 
     function captureUIState() {
       return {
         activeView: ACTIVE_VIEW,
         summaryQuality: ACTIVE_SUMMARY_QUALITY,
         projectionMode: ACTIVE_PROJECTION_MODE,
+        yamatoProjectionMode: ACTIVE_YAMATO_PROJECTION_MODE,
+        yamatoClamshell: ACTIVE_YAMATO_CLAMSHELL,
         scrollX: window.scrollX || 0,
         scrollY: window.scrollY || 0,
         rawLeft: $("rawTableWrap") ? $("rawTableWrap").scrollLeft : 0,
@@ -1782,11 +2022,18 @@
         if (s.projectionMode === "shift" || s.projectionMode === "week") {
           ACTIVE_PROJECTION_MODE = s.projectionMode;
         }
+        if (s.yamatoProjectionMode === "day" || s.yamatoProjectionMode === "week") {
+          ACTIVE_YAMATO_PROJECTION_MODE = s.yamatoProjectionMode;
+        }
+        if (typeof s.yamatoClamshell === "string" && s.yamatoClamshell.trim()) {
+          ACTIVE_YAMATO_CLAMSHELL = s.yamatoClamshell.trim();
+        }
         const activeBtn = document.querySelector(`.qualityPill[data-quality="${ACTIVE_SUMMARY_QUALITY}"]`) || document.querySelector('.qualityPill[data-quality="all"]');
         if (activeBtn) {
           document.querySelectorAll(".qualityPill").forEach((b) => b.classList.toggle("active", b === activeBtn));
         }
         updateProjectionModeUI();
+        updateYamatoProjectionModeUI();
         requestAnimationFrame(() => {
           window.scrollTo(Number(s.scrollX) || 0, Number(s.scrollY) || 0);
           if ($("rawTableWrap")) {
@@ -1845,7 +2092,7 @@
           }
         });
       }
-      const labels = trend.map((d) => d.dateISO);
+      const labels = formatChartDateLabels(trend.map((d) => d.dateISO));
       chartEmpDaily.data.labels = labels;
       chartEmpDaily.data.datasets[0].data = rates.map((v) => Number(v.toFixed(2)));
       chartEmpDaily.data.datasets[1].data = labels.map(() => Number.isFinite(prev5Avg) ? Number(prev5Avg.toFixed(2)) : null);
@@ -1883,7 +2130,7 @@
 
       if (chartDaily) {
         const dailyTrend = buildDailyTrend(a2.daily);
-        const labels = dailyTrend.map((d) => d.dateISO);
+        const labels = formatChartDateLabels(dailyTrend.map((d) => d.dateISO));
         const vals = dailyTrend.map((d) => Number(d.rate.toFixed(2)));
         const last5 = vals.slice(-5).filter((v) => Number.isFinite(v));
         const avg5 = last5.length ? (last5.reduce((a, b) => a + b, 0) / last5.length) : NaN;
@@ -1900,7 +2147,7 @@
       let avg5Qc = NaN;
       if (chartDailyQc) {
         const dailyTrendQc = buildDailyTrend(a2.daily);
-        const labelsQc = dailyTrendQc.map((d) => d.dateISO);
+        const labelsQc = formatChartDateLabels(dailyTrendQc.map((d) => d.dateISO));
         const valsQc = dailyTrendQc.map((d) => Number((d.rate * avgCanastaWeight).toFixed(2)));
         const targetScore = targetQualityScore(qualityFilter, scale);
         const targetLbsPerHour = Number.isFinite(targetScore) ? Number((targetScore * avgCanastaWeight).toFixed(2)) : NaN;
@@ -1943,7 +2190,13 @@
       renderTableQc(a2.empRows, avgCanastaWeight);
       renderQualityTable(rows, scale);
       if (ACTIVE_VIEW === "yamato") {
-        renderYamatoDashboard(ALL_YAMATO_ROWS, YAMATO_MISSING_HEADERS, YAMATO_CANDIDATE_ROWS);
+        renderYamatoDashboard(
+          ALL_YAMATO_ROWS,
+          YAMATO_MISSING_HEADERS,
+          YAMATO_CANDIDATE_ROWS,
+          { rows: yamatoRowsFiltered, agg: yamatoAgg },
+          { shiftLength, daysPerWeek }
+        );
       } else {
         updateMeta(rows);
       }
@@ -1974,6 +2227,11 @@
     function updateProjectionModeUI() {
       if ($("projModeShift")) $("projModeShift").classList.toggle("active", ACTIVE_PROJECTION_MODE === "shift");
       if ($("projModeWeek")) $("projModeWeek").classList.toggle("active", ACTIVE_PROJECTION_MODE === "week");
+    }
+
+    function updateYamatoProjectionModeUI() {
+      if ($("yamatoProjDay")) $("yamatoProjDay").classList.toggle("active", ACTIVE_YAMATO_PROJECTION_MODE === "day");
+      if ($("yamatoProjWeek")) $("yamatoProjWeek").classList.toggle("active", ACTIVE_YAMATO_PROJECTION_MODE === "week");
     }
 
     function applySavedDashboardInputs(payload) {
@@ -2102,8 +2360,8 @@
 
         ["rangeSel", "empSel", "avgCanastaWeight", "yamatoCycles", "shiftLength", "daysPerWeek", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
           if (!$(id).dataset.bound) {
-            $(id).addEventListener("input", () => render(ALL_ROWS));
-            $(id).addEventListener("change", () => render(ALL_ROWS));
+            $(id).addEventListener("input", () => scheduleRender(80));
+            $(id).addEventListener("change", () => scheduleRender(0));
             $(id).dataset.bound = "1";
           }
         });
@@ -2111,13 +2369,13 @@
           $("projModeShift").addEventListener("click", () => {
             ACTIVE_PROJECTION_MODE = "shift";
             updateProjectionModeUI();
-            render(ALL_ROWS);
+            scheduleRender(0);
             persistUIState();
           });
           $("projModeWeek").addEventListener("click", () => {
             ACTIVE_PROJECTION_MODE = "week";
             updateProjectionModeUI();
-            render(ALL_ROWS);
+            scheduleRender(0);
             persistUIState();
           });
           document.body.dataset.projectionTogglesBound = "1";
@@ -2127,7 +2385,7 @@
             btn.addEventListener("click", () => {
               ACTIVE_SUMMARY_QUALITY = btn.dataset.quality || "all";
               document.querySelectorAll(".qualityPill").forEach((b) => b.classList.toggle("active", b === btn));
-              render(ALL_ROWS);
+              scheduleRender(0);
               persistUIState();
             });
           });
@@ -2164,22 +2422,62 @@
           $("empTrendModal").dataset.bound = "1";
         }
         if (!$("tabDashboard").dataset.bound) {
-          $("tabDashboard").addEventListener("click", () => setActiveView("dashboard"));
-          $("tabRawQuality").addEventListener("click", () => setActiveView("raw"));
-          $("tabQCPotential").addEventListener("click", () => setActiveView("qc"));
+          $("tabDashboard").addEventListener("click", () => {
+            setActiveView("dashboard");
+            scheduleRender(0);
+          });
+          $("tabRawQuality").addEventListener("click", () => {
+            setActiveView("raw");
+            scheduleRender(0);
+          });
+          $("tabQCPotential").addEventListener("click", () => {
+            setActiveView("qc");
+            scheduleRender(0);
+          });
           $("tabDashboard").dataset.bound = "1";
         }
         if ($("yamatoTopPill") && !$("yamatoTopPill").dataset.bound) {
           $("yamatoTopPill").addEventListener("click", () => {
             setActiveView("yamato");
+            scheduleRender(0);
           });
           $("yamatoTopPill").dataset.bound = "1";
+        }
+        if ($("yamatoClamshellFilters") && !$("yamatoClamshellFilters").dataset.bound) {
+          $("yamatoClamshellFilters").addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-clamshell]");
+            if (!btn) return;
+            const next = String(btn.getAttribute("data-clamshell") || "__all__").trim() || "__all__";
+            if (next === ACTIVE_YAMATO_CLAMSHELL) return;
+            ACTIVE_YAMATO_CLAMSHELL = next;
+            scheduleRender(0);
+            persistUIState();
+          });
+          $("yamatoClamshellFilters").dataset.bound = "1";
+        }
+        if ($("yamatoProjDay") && $("yamatoProjWeek") && !$("yamatoProjDay").dataset.bound) {
+          $("yamatoProjDay").addEventListener("click", () => {
+            if (ACTIVE_YAMATO_PROJECTION_MODE === "day") return;
+            ACTIVE_YAMATO_PROJECTION_MODE = "day";
+            updateYamatoProjectionModeUI();
+            scheduleRender(0);
+            persistUIState();
+          });
+          $("yamatoProjWeek").addEventListener("click", () => {
+            if (ACTIVE_YAMATO_PROJECTION_MODE === "week") return;
+            ACTIVE_YAMATO_PROJECTION_MODE = "week";
+            updateYamatoProjectionModeUI();
+            scheduleRender(0);
+            persistUIState();
+          });
+          $("yamatoProjDay").dataset.bound = "1";
         }
         if (!$("saveSupabaseBtn").dataset.bound) {
           $("saveSupabaseBtn").addEventListener("click", saveToSupabase);
           $("saveSupabaseBtn").dataset.bound = "1";
         }
         setActiveView(ACTIVE_VIEW);
+        updateYamatoProjectionModeUI();
 
         render(ALL_ROWS);
         restoreUIState();

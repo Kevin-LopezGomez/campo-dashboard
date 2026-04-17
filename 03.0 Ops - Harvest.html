@@ -355,6 +355,53 @@
       align-items: stretch;
     }
 
+    .global-controls {
+      display: flex;
+      justify-content: space-between;
+      margin: 0 0 10px;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .global-controls-label {
+      font-size: 0.72rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .global-view-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .date-range-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .date-range-controls label {
+      font-size: 0.7rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .date-range-input {
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      font-family: inherit;
+    }
+
     @media (max-width: 960px) {
       .layout-main { grid-template-columns: minmax(0, 1fr); }
     }
@@ -499,6 +546,20 @@
       background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.25), rgba(15, 23, 42, 0.96));
     }
 
+    #harvest-table.daily-mode thead th:nth-child(1),
+    #harvest-table.daily-mode tbody td:nth-child(1),
+    #harvest-table.week-mode thead th:nth-child(1),
+    #harvest-table.week-mode tbody td:nth-child(1) {
+      display: none;
+    }
+
+    #harvest-table.week-mode thead th:nth-child(4),
+    #harvest-table.week-mode thead th:nth-child(5),
+    #harvest-table.week-mode tbody td:nth-child(4),
+    #harvest-table.week-mode tbody td:nth-child(5) {
+      display: none;
+    }
+
     .hidden { display: none; }
     .hint-empty { font-size: 0.75rem; color: var(--muted); margin-top: 6px; white-space: pre-wrap; }
 
@@ -528,10 +589,7 @@
               <span class="title-sub">LIVE FROM DATA INPUT</span>
             </div>
           </div>
-          <p class="subtitle">
-            Cut-level harvest output, yield, and waste. KPIs are computed at the DAILY level using the daily span:
-            <b>earliest “Harvest Start” → latest “Harvest Finish”</b> (per date).
-          </p>
+          <p class="subtitle"></p>
         </div>
 
         <div class="header-tags">
@@ -572,21 +630,33 @@
       </section>
 
       <section class="layout-main">
+        <div class="global-controls">
+          <div class="global-view-group">
+            <span class="global-controls-label">Global View</span>
+            <div class="view-toggle">
+              <button id="global-view-cut" class="view-toggle-btn active" type="button">By Batch</button>
+              <button id="global-view-date" class="view-toggle-btn" type="button">By day</button>
+              <button id="global-view-week" class="view-toggle-btn" type="button">By week</button>
+            </div>
+          </div>
+          <div class="date-range-controls">
+            <label for="global-date-start">From</label>
+            <input id="global-date-start" class="date-range-input" type="date" />
+            <label for="global-date-end">To</label>
+            <input id="global-date-end" class="date-range-input" type="date" />
+          </div>
+        </div>
+
         <section class="panel">
           <div class="panel-header">
             <div>
               <div class="panel-title"><span class="panel-title-dot"></span><span>Performance over time</span></div>
               <div class="panel-subtitle">
-                Top: Boards harvested · Middle: Cut weight & “with waste” target · Bottom: Boards per hour. View by cut, day, or harvest week.
+                Top: Boards harvested · Middle: Cut weight & “with waste” target · Bottom: Boards per hour. View by batch, day, or week.
               </div>
             </div>
             <div class="panel-header-right">
               <div class="badge-soft"><span class="badge-dot"></span><span>Live from Data Input</span></div>
-              <div class="view-toggle">
-                <button id="view-by-cut" class="view-toggle-btn" type="button">By cut</button>
-                <button id="view-by-date" class="view-toggle-btn active" type="button">By day</button>
-                <button id="view-by-week" class="view-toggle-btn" type="button">By harvest week</button>
-              </div>
               <label class="trend-toggle">
                 <input type="checkbox" id="trend-toggle-input" />
                 <span>Trend line</span>
@@ -610,18 +680,14 @@
         <section class="panel">
           <div class="panel-header">
             <div>
-              <div class="panel-title"><span class="panel-title-dot"></span><span id="harvest-table-title">Cut-level harvest log</span></div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span id="harvest-table-title">Batch-level harvest log</span></div>
               <div class="panel-subtitle" id="harvest-table-subtitle">
                 Each row is a harvest cut loaded from Master Grow. Switch view to see daily or weekly summaries.
               </div>
+              <div class="panel-subtitle" id="harvest-source-line">Source: waiting for data…</div>
             </div>
             <div class="panel-header-right">
-              <span id="harvest-table-hint">Scroll to see all cuts</span>
-              <div class="view-toggle">
-                <button id="table-view-cut" class="view-toggle-btn active" type="button">By cut</button>
-                <button id="table-view-daily" class="view-toggle-btn" type="button">By day</button>
-                <button id="table-view-weekly" class="view-toggle-btn" type="button">By week</button>
-              </div>
+              <span id="harvest-table-hint">Scroll to see all batches</span>
             </div>
           </div>
 
@@ -630,9 +696,12 @@
               <table id="harvest-table">
                 <thead>
                   <tr>
-                    <th>Harvest Date / Week</th>
+                    <th>Batch Code</th>
+                    <th>Harvest Date</th>
                     <th>Harvest Week</th>
-                    <th># Boards Harvested</th>
+                    <th>Harvest Start</th>
+                    <th>Harvest Finish</th>
+                    <th># of Boards Cut</th>
                     <th>Hours (Span)</th>
                     <th>Cut Lbs</th>
                     <th>Waste Weight</th>
@@ -647,7 +716,7 @@
                 <tbody id="harvest-tbody-weekly" class="hidden"></tbody>
                 <tfoot>
                   <tr>
-                    <td>Grand Total</td><td>–</td><td>0</td><td>0.0</td><td>0</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
+                    <td>Grand Total</td><td>–</td><td>–</td><td>–</td><td>–</td><td>0</td><td>0.0</td><td>0</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
                   </tr>
                 </tfoot>
               </table>
@@ -667,6 +736,17 @@
     // =========================================================
     const MASTER_GROW_KEY = "campo_master_grow_v1";
     const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
+    const HARVEST_VIEW_MODE_KEY = "campo_harvest_view_mode_v1";
+    const HARVEST_VIEW_MODE_KEY_SS = "campo_harvest_view_mode_ss_v1";
+    const HARVEST_DATE_START_KEY = "campo_harvest_date_start_v1";
+    const HARVEST_DATE_END_KEY = "campo_harvest_date_end_v1";
+    const HARVEST_DATE_START_KEY_SS = "campo_harvest_date_start_ss_v1";
+    const HARVEST_DATE_END_KEY_SS = "campo_harvest_date_end_ss_v1";
+    const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+    const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
+    const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
+    const PUBLIC_GROW_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/grow.json";
+    const CANON_GROW_SHEET = "Master Grow";
 
     // IMPORTANT: We accept multiple possible sheet names (bulletproof),
     // but prefer "Master Grow" as the canonical name.
@@ -691,12 +771,13 @@
     // CANONICAL (meaning) headers we use internally
     // =========================================================
     const H = Object.freeze({
+      BATCH: "Batch Code",
       DATE: "Harvest Date",
       WEEK: "Harvest Week",
       START: "Harvest Start",
       FINISH: "Harvest Finish",
       WORKERS: "Harvest # of Workers",
-      BOARDS: "# of Boards Harvested",
+      BOARDS: "# of Boards Cut",
       CUT_LBS: "Peso de La Lechuga Cortada",
       WASTE_LBS: "Total Harvest Waste Weight",
       WITH_WASTE_LBS: "Peso de La Lechuga con Waste"
@@ -711,6 +792,11 @@
     }
 
     const HEADER_ALIASES = new Map([
+      // Batch
+      ["batch code", H.BATCH],
+      ["batch", H.BATCH],
+      ["batchcode", H.BATCH],
+
       // Date
       ["harvest date", H.DATE],
       ["date", H.DATE],
@@ -727,12 +813,18 @@
 
       // Start/Finish
       ["harvest start", H.START],
+      ["harvest team start", H.START],
+      ["harvest start time", H.START],
+      ["harvest starttime", H.START],
       ["start", H.START],
       ["inicio", H.START],
       ["inicio harvest", H.START],
       ["inicio de cosecha", H.START],
 
       ["harvest finish", H.FINISH],
+      ["harvest team finish", H.FINISH],
+      ["harvest finish time", H.FINISH],
+      ["harvest finishtime", H.FINISH],
       ["finish", H.FINISH],
       ["final", H.FINISH],
       ["fin", H.FINISH],
@@ -747,10 +839,23 @@
       ["trabajadores", H.WORKERS],
 
       // Boards
+      ["# of boards cut", H.BOARDS],
+      ["boards cut", H.BOARDS],
+      ["# boards cut", H.BOARDS],
+      ["sum of # of boards cut", H.BOARDS],
+      ["sum # of boards cut", H.BOARDS],
+      ["sum of boards cut", H.BOARDS],
+      ["total # of boards cut", H.BOARDS],
+      ["total boards cut", H.BOARDS],
       ["# of boards harvested", H.BOARDS],
       ["boards harvested", H.BOARDS],
       ["boards", H.BOARDS],
       ["# boards harvested", H.BOARDS],
+      ["sum of # of boards harvested", H.BOARDS],
+      ["sum # of boards harvested", H.BOARDS],
+      ["sum of boards harvested", H.BOARDS],
+      ["total # of boards harvested", H.BOARDS],
+      ["total boards harvested", H.BOARDS],
 
       // Cut lbs (common variants)
       ["peso de la lechuga cortada", H.CUT_LBS],
@@ -758,6 +863,9 @@
       ["peso lechuga cortada", H.CUT_LBS],
       ["cut lbs", H.CUT_LBS],
       ["cut weight", H.CUT_LBS],
+      ["sum of peso de la lechuga cortada", H.CUT_LBS],
+      ["sum of cut lbs", H.CUT_LBS],
+      ["sum cut lbs", H.CUT_LBS],
 
       // Waste
       ["total harvest waste weight", H.WASTE_LBS],
@@ -765,12 +873,17 @@
       ["waste", H.WASTE_LBS],
       ["desperdicio", H.WASTE_LBS],
       ["peso waste", H.WASTE_LBS],
+      ["sum of total harvest waste weight", H.WASTE_LBS],
+      ["sum waste weight", H.WASTE_LBS],
+      ["total waste weight", H.WASTE_LBS],
 
       // With waste
       ["peso de la lechuga con waste", H.WITH_WASTE_LBS],
       ["with waste", H.WITH_WASTE_LBS],
       ["con waste", H.WITH_WASTE_LBS],
-      ["total with waste", H.WITH_WASTE_LBS]
+      ["total with waste", H.WITH_WASTE_LBS],
+      ["sum of with waste", H.WITH_WASTE_LBS],
+      ["sum with waste", H.WITH_WASTE_LBS]
     ]);
 
     function canonicalizeHeaders(headersRaw){
@@ -793,13 +906,16 @@
     let weightChart = null;
     let bphChart = null;
 
-    let chartMode = "date";   // "cut" | "date" | "week"
+    let chartMode = "cut";    // "cut" | "date" | "week"
     let tableMode = "cut";    // "cut" | "daily" | "weekly"
     let showTrendLine = false;
+    let LAST_HYDRATE_REASON = "";
 
     let CUTS = [];
     let DAILY = [];
     let WEEKLY = [];
+    let RANGE_START_YMD = "";
+    let RANGE_END_YMD = "";
 
     // =========================================================
     // HELPERS
@@ -808,12 +924,66 @@
       const el = document.getElementById("empty-hint");
       if (el) el.textContent = msg || "";
     }
+    function setSourceLine(msg) {
+      const el = document.getElementById("harvest-source-line");
+      if (el) el.textContent = msg || "";
+    }
     function setDebug(msg){
       const el = document.getElementById("debug");
       if (!el) return;
       if (!msg) { el.style.display="none"; el.textContent=""; return; }
       el.style.display="block";
       el.textContent = msg;
+    }
+
+    function sanitizeChartMode(mode) {
+      return (mode === "cut" || mode === "date" || mode === "week") ? mode : "";
+    }
+
+    function chartModeToTableMode(mode) {
+      return mode === "date" ? "daily" : mode === "week" ? "weekly" : "cut";
+    }
+
+    function readSavedChartMode() {
+      try {
+        const ls = sanitizeChartMode(localStorage.getItem(HARVEST_VIEW_MODE_KEY));
+        if (ls) return ls;
+      } catch {}
+      try {
+        const ss = sanitizeChartMode(sessionStorage.getItem(HARVEST_VIEW_MODE_KEY_SS));
+        if (ss) return ss;
+      } catch {}
+      return "cut";
+    }
+
+    function persistChartMode(mode) {
+      const m = sanitizeChartMode(mode) || "cut";
+      try { localStorage.setItem(HARVEST_VIEW_MODE_KEY, m); } catch {}
+      try { sessionStorage.setItem(HARVEST_VIEW_MODE_KEY_SS, m); } catch {}
+    }
+
+    function readSavedDateRange() {
+      let start = "", end = "";
+      try { start = String(localStorage.getItem(HARVEST_DATE_START_KEY) || ""); } catch {}
+      try { end = String(localStorage.getItem(HARVEST_DATE_END_KEY) || ""); } catch {}
+      if (!start) {
+        try { start = String(sessionStorage.getItem(HARVEST_DATE_START_KEY_SS) || ""); } catch {}
+      }
+      if (!end) {
+        try { end = String(sessionStorage.getItem(HARVEST_DATE_END_KEY_SS) || ""); } catch {}
+      }
+      const sOk = /^\d{4}-\d{2}-\d{2}$/.test(start) ? start : "";
+      const eOk = /^\d{4}-\d{2}-\d{2}$/.test(end) ? end : "";
+      return { start: sOk, end: eOk };
+    }
+
+    function persistDateRange(startYmd, endYmd) {
+      const s = /^\d{4}-\d{2}-\d{2}$/.test(startYmd) ? startYmd : "";
+      const e = /^\d{4}-\d{2}-\d{2}$/.test(endYmd) ? endYmd : "";
+      try { localStorage.setItem(HARVEST_DATE_START_KEY, s); } catch {}
+      try { localStorage.setItem(HARVEST_DATE_END_KEY, e); } catch {}
+      try { sessionStorage.setItem(HARVEST_DATE_START_KEY_SS, s); } catch {}
+      try { sessionStorage.setItem(HARVEST_DATE_END_KEY_SS, e); } catch {}
     }
 
     function parseNumber(v) {
@@ -920,308 +1090,55 @@
       return `${mm}/${dd}/${yyyy}`;
     }
 
-    // Time parsing: supports "HH:MM", "HH:MM AM/PM", decimal hours (e.g. 6.5), and Excel time fractions (0.5)
-    function parseTimeToMinutes(v) {
-      if (v === null || v === undefined) return NaN;
-
-      // Excel time fraction (0..1)
-      if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1) {
-        return Math.round(v * 24 * 60);
-      }
-
-      // Decimal hours (e.g. 6.5)
-      if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 24) {
-        return Math.round(v * 60);
-      }
-
-      const str = String(v ?? "").trim();
-      if (!str) return NaN;
-
-      // If it's numeric string
-      const asNum = Number(str);
-      if (Number.isFinite(asNum)) {
-        if (asNum >= 0 && asNum < 1) return Math.round(asNum * 24 * 60);
-        if (asNum >= 1 && asNum <= 24) return Math.round(asNum * 60);
-      }
-
-      const m = str.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
-      if (!m) return NaN;
-      let hh = parseInt(m[1], 10);
-      const mm = parseInt(m[2], 10);
-      const ap = m[3] ? m[3].toUpperCase() : "";
-      if (ap) {
-        if (hh === 12) hh = 0;
-        if (ap === "PM") hh += 12;
-      }
-      return hh * 60 + mm;
+    function isoWeekFromUTC(dateObj) {
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+      const d = new Date(Date.UTC(
+        dateObj.getUTCFullYear(),
+        dateObj.getUTCMonth(),
+        dateObj.getUTCDate()
+      ));
+      const dayNum = d.getUTCDay() || 7; // Mon=1..Sun=7
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Thursday of this week
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return String(weekNo);
     }
 
-    function spanHoursFromMinMax(minStartMin, maxFinishMin) {
-      if (!Number.isFinite(minStartMin) || !Number.isFinite(maxFinishMin)) return 0;
-      let diff = maxFinishMin - minStartMin;
-      if (diff < 0) diff += 24 * 60;
-      return diff / 60;
+    function formatDayMonthLabel(dateStr) {
+      const d = parseAnyDate(dateStr);
+      if (!d) return String(dateStr || "");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
     }
 
-    function computeTrendLine(values) {
-      const n = values.length;
-      if (n < 2) return [];
-      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-      for (let i = 0; i < n; i++) {
-        const x = i + 1;
-        const y = Number(values[i]) || 0;
-        sumX += x; sumY += y; sumXY += x * y; sumXX += x * x;
-      }
-      const denom = n * sumXX - sumX * sumX;
-      if (denom === 0) return Array(n).fill(values[0] || 0);
-      const slope = (n * sumXY - sumX * sumY) / denom;
-      const intercept = (sumY - slope * sumX) / n;
-      return Array.from({ length: n }, (_, i) => slope * (i + 1) + intercept);
+    function fmtTick(value, decimals = 0) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      return n.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
     }
 
-    // =========================================================
-    // LOAD PAYLOAD + FIND SHEET (bulletproof)
-    // =========================================================
-    function loadMasterGrowPayload() {
-      const raw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
+    function ymdFromDateUTC(dateObj) {
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+      const y = dateObj.getUTCFullYear();
+      const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
     }
 
-    function pickSheet(payload){
-      const sheets = payload?.sheets || {};
-      if (!sheets || typeof sheets !== "object") return null;
-
-      // Exact candidate match
-      for (const name of SHEET_CANDIDATES) {
-        if (name in sheets) return { name, sheet: sheets[name] };
-      }
-
-      // Case-insensitive / includes match
-      const keys = Object.keys(sheets);
-      const normKeys = keys.map(k => ({ k, nk: String(k).trim().toLowerCase() }));
-      for (const want of SHEET_CANDIDATES.map(s => String(s).trim().toLowerCase())) {
-        const hit = normKeys.find(x => x.nk === want) || normKeys.find(x => x.nk.includes(want));
-        if (hit) return { name: hit.k, sheet: sheets[hit.k] };
-      }
-
-      // Fallback: first sheet
-      if (keys.length) return { name: keys[0], sheet: sheets[keys[0]] };
-      return null;
+    function isDateInRange(dateObj) {
+      const ymd = ymdFromDateUTC(dateObj);
+      if (!ymd) return false;
+      if (RANGE_START_YMD && ymd < RANGE_START_YMD) return false;
+      if (RANGE_END_YMD && ymd > RANGE_END_YMD) return false;
+      return true;
     }
 
-    function sheetToRowObjects(sheetObj) {
-      const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
-      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
-
-      const { canonHeaders } = canonicalizeHeaders(headersRaw);
-
-      const out = [];
-      for (const r of rows) {
-        if (!Array.isArray(r)) continue;
-        const obj = {};
-        for (let i = 0; i < canonHeaders.length; i++) {
-          const key = String(canonHeaders[i] ?? "").trim();
-          if (!key) continue;
-          obj[key] = (i < r.length) ? r[i] : "";
-        }
-        out.push(obj);
-      }
-      return { rows: out, canonHeaders };
-    }
-
-    function getCutLbs(row) {
-      // We canonicalize to H.CUT_LBS, but we also try common raw variants just in case.
-      const v = parseNumber(row[H.CUT_LBS]);
-      if (v) return v;
-
-      const fallbacks = [
-        "Peso de la Lechuga Cortada",
-        "PESO DE LA LECHUGA CORTADA",
-        "peso de la lechuga cortada"
-      ];
-      for (const h of fallbacks) {
-        if (h in row) {
-          const n = parseNumber(row[h]);
-          if (n) return n;
-        }
-      }
-      return 0;
-    }
-
-    function getWithWasteLbs(row, cut, waste) {
-      const v = parseNumber(row[H.WITH_WASTE_LBS]);
-      if (v > 0) return v;
-      return (cut || 0) + (waste || 0);
-    }
-
-    // =========================================================
-    // BUILD MODELS (CUTS / DAILY / WEEKLY)
-    // =========================================================
-    function buildModels() {
-      const payload = loadMasterGrowPayload();
-      if (!payload) {
-        CUTS = []; DAILY = []; WEEKLY = [];
-        setEmpty("No Master Grow payload in localStorage.\n\nFix:\n- Open Data Input\n- Upload Master Grow\n- Confirm it saves to campo_master_grow_v1");
-        setDebug("");
-        return;
-      }
-
-      const picked = pickSheet(payload);
-      if (!picked || !picked.sheet) {
-        CUTS = []; DAILY = []; WEEKLY = [];
-        setEmpty("Master Grow payload loaded, but no sheets were found.");
-        setDebug("Sheets keys:\n- " + Object.keys(payload.sheets || {}).join("\n- "));
-        return;
-      }
-
-      const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
-
-      if (!rows.length) {
-        CUTS = []; DAILY = []; WEEKLY = [];
-        setEmpty(`Sheet "${picked.name}" loaded, but it has 0 rows.`);
-        setDebug("Canonical headers (first 80):\n- " + canonHeaders.slice(0,80).filter(Boolean).join("\n- "));
-        return;
-      }
-
-      // Required canonical headers (tolerant input via alias mapping)
-      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
-      const required = [H.DATE, H.WEEK, H.START, H.FINISH, H.BOARDS];
-      const missing = required.filter(h => !headerSet.has(h));
-
-      // We do NOT hard-fail; we degrade gracefully and explain what is missing.
-      const softWarnings = [];
-      if (missing.length) softWarnings.push("Missing required headers:\n- " + missing.join("\n- "));
-      if (!headerSet.has(H.CUT_LBS)) softWarnings.push("Missing cut-lbs header (will show 0 cut lbs unless alias exists).");
-      if (!headerSet.has(H.WASTE_LBS)) softWarnings.push("Missing waste-lbs header (waste will be 0 unless alias exists).");
-
-      setEmpty(softWarnings.length ? ("Master Grow loaded with warnings.\n\n" + softWarnings.join("\n\n")) : "");
-      setDebug(
-        `Using sheet: ${picked.name}\n` +
-        `Rows: ${rows.length.toLocaleString()}\n` +
-        `Sheets available: ${(Object.keys(payload.sheets||{}).length)}\n\n` +
-        `Canonical headers (first 80):\n- ${canonHeaders.slice(0,80).filter(Boolean).join("\n- ")}`
-      );
-
-      // CUTS
-      const cuts = [];
-      let droppedBlank = 0;
-      let droppedNoDate = 0;
-
-      for (const r of rows) {
-        if (!r || typeof r !== "object") continue;
-
-        // --- FIX: normalize dates to UTC-midnight and format using UTC getters
-        const rawDate = parseAnyDate(r[H.DATE]);
-        if (!rawDate) { droppedNoDate++; continue; }
-        const dateObj = normalizeToUTCMidnight(rawDate);
-        const date = formatDateMMDDYYYY(dateObj);
-
-        const week = String(r[H.WEEK] ?? "").trim();
-
-        const startMin = parseTimeToMinutes(r[H.START]);
-        const finishMin = parseTimeToMinutes(r[H.FINISH]);
-
-        const boards = parseNumber(r[H.BOARDS]);
-        const cut = getCutLbs(r);
-        const waste = parseNumber(r[H.WASTE_LBS]);
-        const workers = parseNumber(r[H.WORKERS]);
-
-        const allBlank =
-          !week &&
-          !String(r[H.START] ?? "").trim() && !String(r[H.FINISH] ?? "").trim() &&
-          boards === 0 && cut === 0 && waste === 0 && workers === 0;
-
-        if (allBlank) { droppedBlank++; continue; }
-
-        const spanH = spanHoursFromMinMax(startMin, finishMin);
-        const withWaste = getWithWasteLbs(r, cut, waste);
-
-        const lbsPerBoard = boards > 0 ? (cut / boards) : 0;
-        const bph = spanH > 0 ? (boards / spanH) : 0;
-        const potential = withWaste > 0 ? (cut / withWaste) * 100 : 0;
-
-        cuts.push({
-          dateObj,
-          date,
-          week,
-          boards,
-          cut,
-          waste,
-          withWaste,
-          lbsPerBoard,
-          bph,
-          potential,
-          startMin,
-          finishMin,
-          workers
-        });
-      }
-
-      // Sort cuts by date then by start time
-      cuts.sort((a,b) => (a.dateObj - b.dateObj) || ((a.startMin||0)-(b.startMin||0)));
-
-      // DAILY: aggregate by date; span uses earliest start -> latest finish for that day.
-      const dayMap = new Map();
-      for (const c of cuts) {
-        const key = c.date;
-        if (!dayMap.has(key)) {
-          dayMap.set(key, {
-            date: key,
-            dateObj: c.dateObj,
-            weekGuess: c.week || "",
-            minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
-            maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
-            boards: 0,
-            cut: 0,
-            waste: 0,
-            withWaste: 0,
-            workersSum: 0,
-            workersCount: 0
-          });
-        }
-        const d = dayMap.get(key);
-
-        if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
-        if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
-
-        d.boards += c.boards;
-        d.cut += c.cut;
-        d.waste += c.waste;
-        d.withWaste += c.withWaste;
-
-        if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
-        if (!d.weekGuess && c.week) d.weekGuess = c.week;
-      }
-
-      const daily = Array.from(dayMap.values())
-        .sort((a,b) => a.dateObj - b.dateObj) // chronological for charts
-        .map(d => {
-          const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
-          const bph = spanH > 0 ? (d.boards / spanH) : 0;
-          const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
-          const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
-          const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
-          return {
-            date: d.date,
-            dateObj: d.dateObj,
-            week: d.weekGuess || "",
-            spanH,
-            boards: d.boards,
-            cut: d.cut,
-            waste: d.waste,
-            withWaste: d.withWaste,
-            bph,
-            lbsPerBoard,
-            potential,
-            avgWorkers
-          };
-        });
-
-      // WEEKLY: aggregate from daily by year + week.
+    function aggregateWeeklyFromDaily(dailyRows) {
       const wkMap = new Map();
       const years = new Set();
-      for (const d of daily) {
+      for (const d of dailyRows) {
         const wkStr = String(d.week ?? "").trim();
         if (!wkStr) continue;
         const year = d.dateObj instanceof Date && !isNaN(d.dateObj.getTime())
@@ -1266,7 +1183,7 @@
         }
       });
 
-      const weekly = Array.from(wkMap.values()).sort((a,b) => {
+      return Array.from(wkMap.values()).sort((a,b) => {
         if (a.order === null || b.order === null) return String(a.label).localeCompare(String(b.label));
         return a.order - b.order;
       }).map(w => {
@@ -1275,6 +1192,568 @@
         const potential = w.withWaste > 0 ? (w.cut / w.withWaste) * 100 : 0;
         return { ...w, bph, lbsPerBoard, potential };
       });
+    }
+
+    // Time parsing: supports "HH:MM", "HH:MM AM/PM", decimal hours (e.g. 6.5), and Excel time fractions (0.5)
+    function parseTimeToMinutes(v) {
+      if (v === null || v === undefined) return NaN;
+
+      // Excel time fraction (0..1)
+      if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1) {
+        return Math.round(v * 24 * 60);
+      }
+
+      // Decimal hours (e.g. 6.5)
+      if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 24) {
+        return Math.round(v * 60);
+      }
+
+      const str = String(v ?? "").trim();
+      if (!str) return NaN;
+
+      // If it's numeric string
+      const asNum = Number(str);
+      if (Number.isFinite(asNum)) {
+        if (asNum >= 0 && asNum < 1) return Math.round(asNum * 24 * 60);
+        if (asNum >= 1 && asNum <= 24) return Math.round(asNum * 60);
+      }
+
+      const m = str.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
+      if (!m) return NaN;
+      let hh = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const ap = m[3] ? m[3].toUpperCase() : "";
+      if (ap) {
+        if (hh === 12) hh = 0;
+        if (ap === "PM") hh += 12;
+      }
+      return hh * 60 + mm;
+    }
+
+    function spanHoursFromMinMax(minStartMin, maxFinishMin) {
+      if (!Number.isFinite(minStartMin) || !Number.isFinite(maxFinishMin)) return 0;
+      let diff = maxFinishMin - minStartMin;
+      if (diff < 0) diff += 24 * 60;
+      return diff / 60;
+    }
+
+    function formatTimeHM(mins){
+      if (!Number.isFinite(mins)) return "–";
+      const m = ((Math.round(mins) % (24 * 60)) + (24 * 60)) % (24 * 60);
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      const mm = String(m % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    function computeTrendLine(values) {
+      const n = values.length;
+      if (n < 2) return [];
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < n; i++) {
+        const x = i + 1;
+        const y = Number(values[i]) || 0;
+        sumX += x; sumY += y; sumXY += x * y; sumXX += x * x;
+      }
+      const denom = n * sumXX - sumX * sumX;
+      if (denom === 0) return Array(n).fill(values[0] || 0);
+      const slope = (n * sumXY - sumX * sumY) / denom;
+      const intercept = (sumY - slope * sumX) / n;
+      return Array.from({ length: n }, (_, i) => slope * (i + 1) + intercept);
+    }
+
+    // =========================================================
+    // LOAD PAYLOAD + FIND SHEET (bulletproof)
+    // =========================================================
+    async function workerGetJson(url){
+      const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
+      const r = await fetch(bust, { cache: "no-store" });
+      const t = await r.text();
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${t}`);
+      return JSON.parse(t);
+    }
+
+    function normalizeMasterGrowPayload(raw){
+      if (!isObject(raw)) return raw;
+      if (isObject(raw.sheets) && raw.sheets[CANON_GROW_SHEET]) return raw;
+
+      if (isObject(raw.sheets)) {
+        const keys = Object.keys(raw.sheets);
+        const wantLower = CANON_GROW_SHEET.toLowerCase();
+        let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
+        if (!match) match = keys.find(k => String(k).toLowerCase().includes("grow"));
+        if (match) {
+          const clone = JSON.parse(JSON.stringify(raw));
+          clone.sheets = clone.sheets || {};
+          clone.sheets[CANON_GROW_SHEET] = clone.sheets[match];
+          return clone;
+        }
+      }
+
+      if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
+        return {
+          version: raw.version || "v1",
+          updatedAt: raw.updatedAt || new Date().toISOString(),
+          kind: raw.kind || "grow",
+          sourceLabel: raw.sourceLabel || "worker",
+          sheets: { [CANON_GROW_SHEET]: { headers: raw.headers, rows: raw.rows } }
+        };
+      }
+
+      return raw;
+    }
+
+    async function tryHydrateGrowFromWorker(){
+      // If local payload already looks usable, keep it.
+      const currentRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+      if (currentRaw) {
+        try {
+          const current = JSON.parse(currentRaw);
+          if (pickSheet(current)) return { ok: true, source: "local" };
+        } catch {}
+      }
+
+      let lastErr = "";
+      try {
+        const hr = await fetch(WORKER_HEALTH_URL, { cache: "no-store" });
+        if (!hr.ok) lastErr = `worker health HTTP ${hr.status}`;
+      } catch {
+        lastErr = "worker health unreachable";
+      }
+
+      const urls = [WORKER_GROW_URL, PUBLIC_GROW_URL];
+      for (const url of urls) {
+        try {
+          const growJson = await workerGetJson(url);
+          const normalized = normalizeMasterGrowPayload(growJson);
+          localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(normalized));
+          localStorage.setItem(MASTER_GROW_PING_KEY, String(Date.now()));
+          try { window.dispatchEvent(new CustomEvent(MSG_GROW, { detail: { key: MASTER_GROW_KEY, ts: Date.now() } })); } catch {}
+          try { bc?.postMessage({ type: MSG_GROW, ts: Date.now() }); } catch {}
+          return { ok: true, source: url };
+        } catch (e) {
+          lastErr = `${url} failed`;
+          console.warn("Grow auto-hydrate failed for", url, e);
+        }
+      }
+      return { ok: false, reason: lastErr || "all grow hydrate sources failed" };
+    }
+
+    function loadMasterGrowPayload() {
+      function tagPayload(obj, source){
+        if (obj && typeof obj === "object") {
+          try {
+            Object.defineProperty(obj, "__campoSource", {
+              value: source,
+              enumerable: false,
+              configurable: true
+            });
+          } catch {}
+        }
+        return obj;
+      }
+
+      const primary = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+      if (primary) {
+        try { return tagPayload(JSON.parse(primary), "master"); } catch {}
+      }
+
+      return null;
+    }
+
+    function isObject(v){
+      return !!v && typeof v === "object" && !Array.isArray(v);
+    }
+
+    function looksLikeSheetShape(v){
+      return isObject(v) && Array.isArray(v.rows);
+    }
+
+    function parseDelimitedLine(line, delimiter){
+      const out = [];
+      let cur = "";
+      let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQ && line[i + 1] === '"') { cur += '"'; i++; continue; }
+          inQ = !inQ;
+          continue;
+        }
+        if (!inQ && ch === delimiter) {
+          out.push(cur);
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      out.push(cur);
+      return out.map(v => String(v ?? "").trim());
+    }
+
+    function parseTextToSheet(text){
+      const src = String(text || "").replace(/^\uFEFF/, "").trim();
+      if (!src) return null;
+
+      const lines = src.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      if (!lines.length) return null;
+
+      const delimiter = lines[0].includes("\t") ? "\t" : ",";
+      const matrix = lines.map(line => parseDelimitedLine(line, delimiter));
+      if (!matrix.length) return null;
+
+      const headers = matrix[0] || [];
+      const rows = matrix.slice(1);
+      if (!headers.length || !rows.length) return null;
+      return { headers, rows };
+    }
+
+    function pickSheet(payload){
+      // 1) Canonical sheet maps
+      const sheetMaps = [
+        payload?.sheets,
+        payload?.data?.sheets,
+        payload?.payload?.sheets,
+        payload?.result?.sheets
+      ].filter(isObject);
+
+      for (const sheets of sheetMaps) {
+        // Exact candidate match
+        for (const name of SHEET_CANDIDATES) {
+          if (name in sheets && looksLikeSheetShape(sheets[name])) return { name, sheet: sheets[name] };
+        }
+
+        // Case-insensitive / includes match
+        const keys = Object.keys(sheets);
+        const normKeys = keys.map(k => ({ k, nk: String(k).trim().toLowerCase() }));
+        for (const want of SHEET_CANDIDATES.map(s => String(s).trim().toLowerCase())) {
+          const hit = normKeys.find(x => x.nk === want) || normKeys.find(x => x.nk.includes(want));
+          if (hit && looksLikeSheetShape(sheets[hit.k])) return { name: hit.k, sheet: sheets[hit.k] };
+        }
+
+        // Fallback: first sheet-like object
+        for (const k of keys) {
+          if (looksLikeSheetShape(sheets[k])) return { name: k, sheet: sheets[k] };
+        }
+      }
+
+      // 2) Flat/alternate payloads where headers/rows are not nested in sheets
+      const flatCandidates = [
+        { name: "Master Grow", sheet: payload },
+        { name: "Master Grow", sheet: payload?.data },
+        { name: "Master Grow", sheet: payload?.payload },
+        { name: "Master Grow", sheet: payload?.result },
+        { name: "Master Grow", sheet: payload?.masterGrow },
+        { name: "Master Grow", sheet: payload?.master_grow },
+        { name: "Master Grow", sheet: payload?.grow },
+        { name: "Master Grow", sheet: payload?.harvest }
+      ];
+      for (const c of flatCandidates) {
+        if (looksLikeSheetShape(c.sheet)) return c;
+      }
+
+      // 3) Delimited text payloads
+      const textCandidates = [
+        payload?.rawText,
+        payload?.data,
+        payload?.raw,
+        payload?.text,
+        payload?.csv,
+        payload?.tsv,
+        payload?.content
+      ];
+      for (const txt of textCandidates) {
+        if (typeof txt !== "string") continue;
+        const parsed = parseTextToSheet(txt);
+        if (parsed) return { name: "Master Grow", sheet: parsed };
+      }
+
+      return null;
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      let headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      let rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+
+      // Some payloads store a matrix in rows with header row at index 0.
+      if (!headersRaw.length && rows.length && Array.isArray(rows[0])) {
+        headersRaw = rows[0];
+        rows = rows.slice(1);
+      }
+
+      // If rows are objects, derive headers from row keys when not explicitly provided.
+      const objectRows = rows.filter(r => isObject(r));
+      if (!headersRaw.length && objectRows.length) {
+        const seen = new Set();
+        headersRaw = [];
+        for (const r of objectRows) {
+          for (const k of Object.keys(r)) {
+            const key = String(k || "").trim();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            headersRaw.push(key);
+          }
+        }
+      }
+
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
+      const out = [];
+
+      for (const r of rows) {
+        if (!r) continue;
+        const obj = {};
+
+        if (Array.isArray(r)) {
+          for (let i = 0; i < canonHeaders.length; i++) {
+            const key = String(canonHeaders[i] ?? "").trim();
+            if (!key) continue;
+            obj[key] = (i < r.length) ? r[i] : "";
+          }
+          out.push(obj);
+          continue;
+        }
+
+        if (isObject(r)) {
+          const byNorm = new Map();
+          for (const [rk, rv] of Object.entries(r)) byNorm.set(normHeader(rk), rv);
+
+          for (let i = 0; i < headersRaw.length; i++) {
+            const rawKey = String(headersRaw[i] ?? "").trim();
+            const canonKey = String(canonHeaders[i] ?? "").trim();
+            if (!canonKey) continue;
+
+            let value = r[rawKey];
+            if (value === undefined) value = byNorm.get(normHeader(rawKey));
+            if (value === undefined && canonKey !== rawKey) value = r[canonKey];
+            if (value === undefined && canonKey !== rawKey) value = byNorm.get(normHeader(canonKey));
+            obj[canonKey] = (value === undefined ? "" : value);
+          }
+          out.push(obj);
+        }
+      }
+
+      return { rows: out, canonHeaders };
+    }
+
+    function getCutLbs(row) {
+      // We canonicalize to H.CUT_LBS, but we also try common raw variants just in case.
+      const v = parseNumber(row[H.CUT_LBS]);
+      if (v) return v;
+
+      const fallbacks = [
+        "Peso de la Lechuga Cortada",
+        "PESO DE LA LECHUGA CORTADA",
+        "peso de la lechuga cortada"
+      ];
+      for (const h of fallbacks) {
+        if (h in row) {
+          const n = parseNumber(row[h]);
+          if (n) return n;
+        }
+      }
+      return 0;
+    }
+
+    function getWithWasteLbs(row, cut, waste) {
+      const v = parseNumber(row[H.WITH_WASTE_LBS]);
+      if (v > 0) return v;
+      return (cut || 0) + (waste || 0);
+    }
+
+    // =========================================================
+    // BUILD MODELS (CUTS / DAILY / WEEKLY)
+    // =========================================================
+    function buildModels() {
+      const payload = loadMasterGrowPayload();
+      if (!payload) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        const reason = LAST_HYDRATE_REASON ? `\n\nHydrate status:\n- ${LAST_HYDRATE_REASON}` : "";
+        setEmpty("No Master Grow payload in localStorage.\n\nFix:\n- Open Data Input\n- Upload Master Grow\n- Confirm it saves to campo_master_grow_v1" + reason);
+        setSourceLine(`Source: none (no payload found${LAST_HYDRATE_REASON ? `; ${LAST_HYDRATE_REASON}` : ""})`);
+        setDebug("");
+        return;
+      }
+
+      const picked = pickSheet(payload);
+      if (!picked || !picked.sheet) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty("Master Grow payload loaded, but no readable rows/sheets were found.");
+        setSourceLine("Source: payload found, but no readable sheet");
+        setDebug("Sheets keys:\n- " + Object.keys(payload?.sheets || {}).join("\n- "));
+        return;
+      }
+
+      const sourceTag = String(payload?.__campoSource || "master");
+      setSourceLine(`Source: ${sourceTag} → sheet "${picked.name}"`);
+
+      const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
+
+      if (!rows.length) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty(`Sheet "${picked.name}" loaded, but it has 0 rows.`);
+        setSourceLine(`Source: ${sourceTag} → sheet "${picked.name}" (0 rows)`);
+        setDebug("");
+        return;
+      }
+
+      // Required canonical headers (tolerant input via alias mapping)
+      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
+      const required = [H.DATE, H.WEEK, H.START, H.FINISH, H.BOARDS];
+      const missing = required.filter(h => !headerSet.has(h));
+
+      // Guardrail: fallback payloads are only valid if required harvest headers exist.
+      const source = String(payload?.__campoSource || "unknown");
+      const usingFallback = source.startsWith("fallback_");
+      const hasMetricHeader =
+        headerSet.has(H.BOARDS) ||
+        headerSet.has(H.CUT_LBS) ||
+        headerSet.has(H.WASTE_LBS) ||
+        headerSet.has(H.WITH_WASTE_LBS);
+      if (usingFallback && (!headerSet.has(H.DATE) || !hasMetricHeader)) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty(
+          "Fallback harvest payload found, but minimum harvest headers are missing.\n\n" +
+          "Required for fallback:\n- Harvest Date\n- At least one metric column (Boards/Cut/Waste/With Waste)\n\n" +
+          "Missing required headers:\n- " + (missing.length ? missing.join("\n- ") : "Harvest Date / metric columns") +
+          "\n\nFix:\n- Load Master Grow into campo_master_grow_v1 from Data Input"
+        );
+        setDebug(`Rejected fallback source: ${source}`);
+        return;
+      }
+
+      // We do NOT hard-fail; we degrade gracefully and explain what is missing.
+      const softWarnings = [];
+      if (missing.length) softWarnings.push("Missing required headers:\n- " + missing.join("\n- "));
+      if (!headerSet.has(H.CUT_LBS)) softWarnings.push("Missing cut-lbs header (will show 0 cut lbs unless alias exists).");
+      if (!headerSet.has(H.WASTE_LBS)) softWarnings.push("Missing waste-lbs header (waste will be 0 unless alias exists).");
+
+      setEmpty(softWarnings.length ? ("Master Grow loaded with warnings.\n\n" + softWarnings.join("\n\n")) : "");
+      setDebug(
+        `Using sheet: ${picked.name}\n` +
+        `Rows: ${rows.length.toLocaleString()}\n` +
+        `Sheets available: ${(Object.keys(payload.sheets||{}).length)}`
+      );
+
+      // CUTS
+      const cuts = [];
+      let droppedBlank = 0;
+      let droppedNoDate = 0;
+
+      for (const r of rows) {
+        if (!r || typeof r !== "object") continue;
+
+        // --- FIX: normalize dates to UTC-midnight and format using UTC getters
+        const rawDate = parseAnyDate(r[H.DATE]);
+        if (!rawDate) { droppedNoDate++; continue; }
+        const dateObj = normalizeToUTCMidnight(rawDate);
+        const date = formatDateMMDDYYYY(dateObj);
+
+        const weekRaw = String(r[H.WEEK] ?? "").trim();
+        const week = weekRaw || isoWeekFromUTC(dateObj);
+        const batchCode = String(r[H.BATCH] ?? "").trim();
+
+        const startMin = parseTimeToMinutes(r[H.START]);
+        const finishMin = parseTimeToMinutes(r[H.FINISH]);
+
+        const boards = parseNumber(r[H.BOARDS]);
+        const cut = getCutLbs(r);
+        const waste = parseNumber(r[H.WASTE_LBS]);
+        const workers = parseNumber(r[H.WORKERS]);
+
+        const allBlank =
+          !week &&
+          !String(r[H.START] ?? "").trim() && !String(r[H.FINISH] ?? "").trim() &&
+          boards === 0 && cut === 0 && waste === 0 && workers === 0;
+
+        if (allBlank) { droppedBlank++; continue; }
+
+        const spanH = spanHoursFromMinMax(startMin, finishMin);
+        const withWaste = getWithWasteLbs(r, cut, waste);
+
+        const lbsPerBoard = boards > 0 ? (cut / boards) : 0;
+        const bph = spanH > 0 ? (boards / spanH) : 0;
+        const potential = withWaste > 0 ? (cut / withWaste) * 100 : 0;
+
+        cuts.push({
+          batchCode,
+          dateObj,
+          date,
+          week,
+          boards,
+          cut,
+          waste,
+          withWaste,
+          lbsPerBoard,
+          bph,
+          potential,
+          startMin,
+          finishMin,
+          workers
+        });
+      }
+
+      // Sort cuts by date then by start time
+      cuts.sort((a,b) => (a.dateObj - b.dateObj) || ((a.startMin||0)-(b.startMin||0)));
+
+      // DAILY: aggregate by date; span uses earliest start -> latest finish for that day.
+      const dayMap = new Map();
+      for (const c of cuts) {
+        const key = c.date;
+        if (!dayMap.has(key)) {
+          dayMap.set(key, {
+            date: key,
+            dateObj: c.dateObj,
+            weekGuess: c.week || isoWeekFromUTC(c.dateObj),
+            minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
+            maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
+            boards: 0,
+            cut: 0,
+            waste: 0,
+            withWaste: 0,
+            workersSum: 0,
+            workersCount: 0
+          });
+        }
+        const d = dayMap.get(key);
+
+        if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
+        if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
+
+        d.boards += c.boards;
+        d.cut += c.cut;
+        d.waste += c.waste;
+        d.withWaste += c.withWaste;
+
+        if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
+        if (!d.weekGuess && c.week) d.weekGuess = c.week;
+      }
+
+      const daily = Array.from(dayMap.values())
+        .sort((a,b) => a.dateObj - b.dateObj) // chronological for charts
+        .map(d => {
+          const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
+          const bph = spanH > 0 ? (d.boards / spanH) : 0;
+          const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
+          const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
+          const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
+          return {
+            date: d.date,
+            dateObj: d.dateObj,
+            week: d.weekGuess || isoWeekFromUTC(d.dateObj),
+            startMin: d.minStartMin,
+            finishMin: d.maxFinishMin,
+            spanH,
+            boards: d.boards,
+            cut: d.cut,
+            waste: d.waste,
+            withWaste: d.withWaste,
+            bph,
+            lbsPerBoard,
+            potential,
+            avgWorkers
+          };
+        });
+
+      const weekly = aggregateWeeklyFromDaily(daily);
 
       CUTS = cuts;
       DAILY = daily;
@@ -1297,8 +1776,8 @@
     function renderKPIs() {
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
       const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-
-      const days = DAILY.filter(d => d.spanH > 0 || d.boards > 0 || d.cut > 0 || d.waste > 0);
+      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const days = dailyVisible.filter(d => d.spanH > 0 || d.boards > 0 || d.cut > 0 || d.waste > 0);
 
       if (!days.length) {
         document.getElementById("kpi-total-boards").textContent = "–";
@@ -1316,15 +1795,15 @@
         const tfootRow = document.querySelector("#harvest-table tfoot tr");
         if (tfootRow) {
           const tds = tfootRow.querySelectorAll("td");
-          if (tds.length >= 10) {
-            tds[2].textContent = "0";
-            tds[3].textContent = "0.0";
-            tds[4].textContent = "0";
+          if (tds.length >= 13) {
             tds[5].textContent = "0";
-            tds[6].textContent = "0";
-            tds[7].textContent = "0.0";
-            tds[8].textContent = "0.0";
-            tds[9].textContent = "0%";
+            tds[6].textContent = "0.0";
+            tds[7].textContent = "0";
+            tds[8].textContent = "0";
+            tds[9].textContent = "0";
+            tds[10].textContent = "0.0";
+            tds[11].textContent = "0.0";
+            tds[12].textContent = "0%";
           }
         }
         return;
@@ -1375,16 +1854,16 @@
       const tfootRow = document.querySelector("#harvest-table tfoot tr");
       if (tfootRow) {
         const tds = tfootRow.querySelectorAll("td");
-        if (tds.length >= 10) {
+        if (tds.length >= 13) {
           const lbsPerBoard = totalBoards > 0 ? totalCut / totalBoards : 0;
-          tds[2].textContent = fmtInt(totalBoards);
-          tds[3].textContent = fmt1(totalSpanH);
-          tds[4].textContent = fmtInt(totalCut);
-          tds[5].textContent = fmtInt(totalWaste);
-          tds[6].textContent = fmtInt(totalWithWaste);
-          tds[7].textContent = fmt1(lbsPerBoard);
-          tds[8].textContent = fmt1(avgBph);
-          tds[9].textContent = fmt1(overallPotential) + "%";
+          tds[5].textContent = fmtInt(totalBoards);
+          tds[6].textContent = fmt1(totalSpanH);
+          tds[7].textContent = fmtInt(totalCut);
+          tds[8].textContent = fmtInt(totalWaste);
+          tds[9].textContent = fmtInt(totalWithWaste);
+          tds[10].textContent = fmt1(lbsPerBoard);
+          tds[11].textContent = fmt1(avgBph);
+          tds[12].textContent = fmt1(overallPotential) + "%";
         }
       }
     }
@@ -1400,6 +1879,9 @@
 
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
       const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
+      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
 
       function pctClass(p) {
         if (p >= 95) return "cell-percent-good";
@@ -1408,7 +1890,7 @@
       }
 
       cutBody.innerHTML = "";
-      CUTS.forEach(c => {
+      cutsVisible.forEach(c => {
         const p = c.potential || 0;
         const spanH = (Number.isFinite(c.startMin) && Number.isFinite(c.finishMin))
           ? spanHoursFromMinMax(c.startMin, c.finishMin)
@@ -1416,8 +1898,11 @@
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
+          <td>${c.batchCode || "–"}</td>
           <td>${c.date || "–"}</td>
           <td>${c.week || "–"}</td>
+          <td>${formatTimeHM(c.startMin)}</td>
+          <td>${formatTimeHM(c.finishMin)}</td>
           <td>${fmtInt(c.boards)}</td>
           <td>${fmt1(spanH)}</td>
           <td>${fmtInt(c.cut)}</td>
@@ -1432,13 +1917,16 @@
 
       // --- FIX: daily table should show newest first (human-friendly)
       dailyBody.innerHTML = "";
-      const dailySorted = [...DAILY].sort((a,b) => b.dateObj - a.dateObj);
+      const dailySorted = [...dailyVisible].sort((a,b) => b.dateObj - a.dateObj);
       dailySorted.forEach(d => {
         const p = d.potential || 0;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${d.date}</td>
           <td>–</td>
+          <td>${d.date}</td>
+          <td>${d.week || isoWeekFromUTC(d.dateObj) || "–"}</td>
+          <td>${formatTimeHM(d.startMin)}</td>
+          <td>${formatTimeHM(d.finishMin)}</td>
           <td>${fmtInt(d.boards)}</td>
           <td>${fmt1(d.spanH)}</td>
           <td>${fmtInt(d.cut)}</td>
@@ -1452,12 +1940,15 @@
       });
 
       weeklyBody.innerHTML = "";
-      WEEKLY.forEach(w => {
+      weeklyVisible.forEach(w => {
         const p = w.potential || 0;
         const tr = document.createElement("tr");
         tr.innerHTML = `
+          <td>–</td>
           <td>${w.label}</td>
           <td>${w.week}</td>
+          <td>–</td>
+          <td>–</td>
           <td>${fmtInt(w.boards)}</td>
           <td>${fmt1(w.spanH)}</td>
           <td>${fmtInt(w.cut)}</td>
@@ -1475,29 +1966,31 @@
     // CHARTS
     // =========================================================
     function renderCharts() {
-      const labelsCut = CUTS.map((c, i) => c.date ? `${c.date} #${i+1}` : String(i+1));
-      const boardsByCut = CUTS.map(c => c.boards);
-      const bphByCut = CUTS.map(c => c.bph);
-      const cutByCut = CUTS.map(c => c.cut);
-      const withWasteByCut = CUTS.map(c => c.withWaste);
+      const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
+      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
+
+      const labelsCut = cutsVisible.map((c, i) => c.batchCode || (c.date ? `${formatDayMonthLabel(c.date)} #${i+1}` : String(i+1)));
+      const boardsByCut = cutsVisible.map(c => c.boards);
+      const bphByCut = cutsVisible.map(c => c.bph);
+      const cutByCut = cutsVisible.map(c => c.cut);
+      const withWasteByCut = cutsVisible.map(c => c.withWaste);
 
       // --- FIX: always force daily chart data to be chronological (oldest -> newest)
-      const dailyChrono = [...DAILY].sort((a,b) => a.dateObj - b.dateObj);
-      const labelsByDate = dailyChrono.map(d => d.date);
+      const dailyChrono = [...dailyVisible].sort((a,b) => a.dateObj - b.dateObj);
+      const labelsByDate = dailyChrono.map(d => formatDayMonthLabel(d.date));
       const boardsByDate = dailyChrono.map(d => d.boards);
       const bphByDate = dailyChrono.map(d => d.bph);
       const cutByDate = dailyChrono.map(d => d.cut);
       const withWasteByDate = dailyChrono.map(d => d.withWaste);
 
-      const labelsByWeek = WEEKLY.map(w => w.label);
-      const boardsByWeek = WEEKLY.map(w => w.boards);
-      const bphByWeek = WEEKLY.map(w => w.bph);
-      const cutByWeek = WEEKLY.map(w => w.cut);
-      const withWasteByWeek = WEEKLY.map(w => w.withWaste);
+      const labelsByWeek = weeklyVisible.map(w => w.label);
+      const boardsByWeek = weeklyVisible.map(w => w.boards);
+      const bphByWeek = weeklyVisible.map(w => w.bph);
+      const cutByWeek = weeklyVisible.map(w => w.cut);
+      const withWasteByWeek = weeklyVisible.map(w => w.withWaste);
 
       let labels, boardsValues, bphValues, weightValues, weightTargetValues;
-      const isWeekly = chartMode === "week";
-      const isDaily = chartMode === "date";
       if (chartMode === "cut") {
         labels = labelsCut; boardsValues = boardsByCut; bphValues = bphByCut;
         weightValues = cutByCut; weightTargetValues = withWasteByCut;
@@ -1518,12 +2011,19 @@
       if (weightChart) weightChart.destroy();
       if (bphChart) bphChart.destroy();
 
+      const axisTickColor = "rgba(248, 250, 252, 0.97)";
+      const axisTitleColor = "rgba(255, 255, 255, 0.98)";
+      const axisGridColor = "rgba(148, 163, 184, 0.24)";
+      const axisTickFont = { size: 12, weight: "600" };
+      const axisTitleFont = { size: 13, weight: "700" };
+      const xTitle = chartMode === "cut" ? "Batch" : chartMode === "week" ? "Harvest Week" : "Date";
+
       boardsChart = new Chart(ctxBoards, {
         type: "bar",
         data: {
           labels,
           datasets: [{
-            label: chartMode === "cut" ? "Boards per cut" : chartMode === "week" ? "Boards per week" : "Boards per day",
+            label: chartMode === "cut" ? "Boards per batch" : chartMode === "week" ? "Boards per week" : "Boards per day",
             data: boardsValues,
             borderWidth: 0,
             borderRadius: 4,
@@ -1537,14 +2037,26 @@
           interaction: { mode: "index", intersect: false },
           scales: {
             x: {
-              grid: { display: false },
-              ticks: { color: "rgba(148, 163, 184, 0.9)", maxRotation: 0, autoSkip: true, autoSkipPadding: 18 },
-              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+              grid: { color: axisGridColor, lineWidth: 1, drawTicks: false },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: true,
+                autoSkipPadding: 10,
+                maxTicksLimit: 24
+              },
+              title: { display: true, text: xTitle, color: axisTitleColor, font: axisTitleFont }
             },
             y: {
-              grid: { color: "rgba(31, 41, 55, 0.8)" },
-              ticks: { color: "rgba(148, 163, 184, 0.9)" },
-              title: { display: isWeekly || isDaily, text: "Boards", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+              grid: { color: axisGridColor, lineWidth: 1 },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                callback: (v) => fmtTick(v, 0)
+              },
+              title: { display: true, text: "Boards", color: axisTitleColor, font: axisTitleFont }
             }
           }
         }
@@ -1566,14 +2078,26 @@
           interaction: { mode: "index", intersect: false },
           scales: {
             x: {
-              grid: { display: false },
-              ticks: { color: "rgba(148, 163, 184, 0.9)" },
-              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+              grid: { color: axisGridColor, lineWidth: 1, drawTicks: false },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: true,
+                autoSkipPadding: 10,
+                maxTicksLimit: 24
+              },
+              title: { display: true, text: xTitle, color: axisTitleColor, font: axisTitleFont }
             },
             y: {
-              grid: { color: "rgba(31, 41, 55, 0.8)" },
-              ticks: { color: "rgba(148, 163, 184, 0.9)" },
-              title: { display: isWeekly || isDaily, text: "Lbs", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+              grid: { color: axisGridColor, lineWidth: 1 },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                callback: (v) => fmtTick(v, 0)
+              },
+              title: { display: true, text: "Lbs", color: axisTitleColor, font: axisTitleFont }
             }
           }
         }
@@ -1615,14 +2139,26 @@
           interaction: { mode: "index", intersect: false },
           scales: {
             x: {
-              grid: { display: false },
-              ticks: { color: "rgba(148, 163, 184, 0.9)" },
-              title: { display: isWeekly || isDaily, text: isWeekly ? "Week" : "Date", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+              grid: { color: axisGridColor, lineWidth: 1, drawTicks: false },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: true,
+                autoSkipPadding: 10,
+                maxTicksLimit: 24
+              },
+              title: { display: true, text: xTitle, color: axisTitleColor, font: axisTitleFont }
             },
             y: {
-              grid: { color: "rgba(31, 41, 55, 0.8)" },
-              ticks: { color: "rgba(148, 163, 184, 0.9)" },
-              title: { display: isWeekly || isDaily, text: "Boards / hour", color: "rgba(148, 163, 184, 0.9)", font: { size: 10 } }
+              grid: { color: axisGridColor, lineWidth: 1 },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                callback: (v) => fmtTick(v, 1)
+              },
+              title: { display: true, text: "Boards / hour", color: axisTitleColor, font: axisTitleFont }
             }
           }
         }
@@ -1634,14 +2170,15 @@
     // =========================================================
     function setChartMode(mode, opts = {}) {
       const { fromTable = false } = opts;
-      chartMode = mode;
+      chartMode = sanitizeChartMode(mode) || "cut";
+      persistChartMode(chartMode);
 
-      document.getElementById("view-by-cut")?.classList.toggle("active", mode === "cut");
-      document.getElementById("view-by-date")?.classList.toggle("active", mode === "date");
-      document.getElementById("view-by-week")?.classList.toggle("active", mode === "week");
+      document.getElementById("global-view-cut")?.classList.toggle("active", chartMode === "cut");
+      document.getElementById("global-view-date")?.classList.toggle("active", chartMode === "date");
+      document.getElementById("global-view-week")?.classList.toggle("active", chartMode === "week");
 
       if (!fromTable) {
-        setTableMode(mode === "date" ? "daily" : mode === "week" ? "weekly" : "cut", { fromChart: true });
+        setTableMode(chartModeToTableMode(chartMode), { fromChart: true });
         renderCharts();
       } else {
         renderCharts();
@@ -1660,34 +2197,58 @@
       document.getElementById("harvest-tbody-daily")?.classList.toggle("hidden", !isDaily);
       document.getElementById("harvest-tbody-weekly")?.classList.toggle("hidden", !isWeekly);
 
-      document.getElementById("table-view-cut")?.classList.toggle("active", isCut);
-      document.getElementById("table-view-daily")?.classList.toggle("active", isDaily);
-      document.getElementById("table-view-weekly")?.classList.toggle("active", isWeekly);
-
       const titleEl = document.getElementById("harvest-table-title");
       const subEl = document.getElementById("harvest-table-subtitle");
       const hintEl = document.getElementById("harvest-table-hint");
+      const tableEl = document.getElementById("harvest-table");
 
-      if (titleEl) titleEl.textContent = isCut ? "Cut-level harvest log" : isDaily ? "Daily harvest summary" : "Weekly harvest summary";
+      if (titleEl) titleEl.textContent = isCut ? "Batch-level harvest log" : isDaily ? "Daily harvest summary" : "Weekly harvest summary";
       if (subEl) subEl.textContent = isCut
-        ? "Each row is a harvest cut loaded from Master Grow."
+        ? "Each row is a harvest batch loaded from Master Grow."
         : isDaily
           ? "Daily totals aggregated from cuts (span uses earliest start → latest finish per day)."
-          : "Aggregated by harvest week (built from daily totals).";
-      if (hintEl) hintEl.textContent = isCut ? "Scroll to see all cuts" : isDaily ? "Scroll to see all days" : "Scroll to see all weeks";
+          : "Aggregated by week (built from daily totals).";
+      if (hintEl) hintEl.textContent = isCut ? "Scroll to see all batches" : isDaily ? "Scroll to see all days" : "Scroll to see all weeks";
+      tableEl?.classList.toggle("daily-mode", isDaily);
+      tableEl?.classList.toggle("week-mode", isWeekly);
 
       if (!fromChart) setChartMode(isDaily ? "date" : isWeekly ? "week" : "cut", { fromTable: true });
       else renderTable();
     }
 
     function setupUI() {
-      document.getElementById("view-by-cut")?.addEventListener("click", () => setChartMode("cut"));
-      document.getElementById("view-by-date")?.addEventListener("click", () => setChartMode("date"));
-      document.getElementById("view-by-week")?.addEventListener("click", () => setChartMode("week"));
+      chartMode = readSavedChartMode();
+      tableMode = chartModeToTableMode(chartMode);
+      const savedRange = readSavedDateRange();
+      RANGE_START_YMD = savedRange.start;
+      RANGE_END_YMD = savedRange.end;
 
-      document.getElementById("table-view-cut")?.addEventListener("click", () => setTableMode("cut"));
-      document.getElementById("table-view-daily")?.addEventListener("click", () => setTableMode("daily"));
-      document.getElementById("table-view-weekly")?.addEventListener("click", () => setTableMode("weekly"));
+      const startInput = document.getElementById("global-date-start");
+      const endInput = document.getElementById("global-date-end");
+      if (startInput) startInput.value = RANGE_START_YMD;
+      if (endInput) endInput.value = RANGE_END_YMD;
+
+      document.getElementById("global-view-cut")?.addEventListener("click", () => setChartMode("cut"));
+      document.getElementById("global-view-date")?.addEventListener("click", () => setChartMode("date"));
+      document.getElementById("global-view-week")?.addEventListener("click", () => setChartMode("week"));
+
+      const onRangeChange = () => {
+        let start = String(startInput?.value || "");
+        let end = String(endInput?.value || "");
+        if (start && end && start > end) {
+          const t = start; start = end; end = t;
+          if (startInput) startInput.value = start;
+          if (endInput) endInput.value = end;
+        }
+        RANGE_START_YMD = start;
+        RANGE_END_YMD = end;
+        persistDateRange(start, end);
+        renderKPIs();
+        renderTable();
+        renderCharts();
+      };
+      startInput?.addEventListener("change", onRangeChange);
+      endInput?.addEventListener("change", onRangeChange);
 
       document.getElementById("trend-toggle-input")?.addEventListener("change", (e) => {
         showTrendLine = !!e.target.checked;
@@ -1742,10 +2303,13 @@
 
       // 5) Safety poll (Safari iframe oddities)
       let lastLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+      let lastPing = String(localStorage.getItem(MASTER_GROW_PING_KEY) || "");
       setInterval(() => {
         const curLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
-        if (curLen !== lastLen) {
+        const curPing = String(localStorage.getItem(MASTER_GROW_PING_KEY) || "");
+        if (curLen !== lastLen || curPing !== lastPing) {
           lastLen = curLen;
+          lastPing = curPing;
           reloadAll("poll");
         }
       }, 1500);
@@ -1754,7 +2318,16 @@
     document.addEventListener("DOMContentLoaded", () => {
       setupUI();
       setupListeners();
-      reloadAll("init");
+      (async () => {
+        const hydrated = await tryHydrateGrowFromWorker();
+        if (!hydrated?.ok) {
+          LAST_HYDRATE_REASON = `hydrate failed: ${hydrated?.reason || "unknown"}`;
+          setSourceLine(`Source: none (${LAST_HYDRATE_REASON})`);
+        } else {
+          LAST_HYDRATE_REASON = "";
+        }
+        reloadAll("init");
+      })();
     });
   </script>
 </body>
