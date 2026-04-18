@@ -968,6 +968,7 @@
                 <div class="cat-grid" id="homeGrowing" style="display:none;">
                   <button class="tile" data-home-go="p-expcal"><div class="ico">🌿</div><div class="name" data-i18n="tile.expcal.name">Experiment Calendar</div><div class="meta" data-i18n="tile.expcal.meta">TSV paste + filters</div></button>
                   <button class="tile" data-home-go="p-mulders"><div class="ico">📊</div><div class="name" data-i18n="tile.mulders.name">Mulders Chart</div><div class="meta" data-i18n="tile.mulders.meta">Growing performance chart</div></button>
+                  <button class="tile" data-home-go="p-grow-harvest-dashboard"><div class="ico">✂️</div><div class="name" data-i18n="tile.grow-harvest-dashboard.name">Grow Harvest Dashbaord</div><div class="meta" data-i18n="tile.grow-harvest-dashboard.meta">Grow harvest output and timeline dashboard</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeFoodSafety" style="display:none;">
@@ -1160,6 +1161,19 @@
         </div>
       </section>
 
+      <section class="panel" id="p-grow-harvest-dashboard" data-growing="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Grow Harvest Dashbaord</h2>
+            <p>Grow harvest dashboard view (embedded from <code data-file-text="grow-harvest-dashboard"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="grow-harvest-dashboard"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-grow-harvest-dashboard" data-file-key="grow-harvest-dashboard"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-board-inventory" data-team="true">
         <div class="section-head">
           <div class="head-left">
@@ -1337,6 +1351,7 @@
       <div class="launcher-grid" id="cat-growing" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-expcal"><div class="app-ico">🌿</div><div class="app-name" data-i18n="tile.expcal.name">Experiment Calendar</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-mulders"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.mulders.name">Mulders Chart</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-grow-harvest-dashboard"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.grow-harvest-dashboard.name">Grow Harvest Dashbaord</div></button>
       </div>
       <div class="launcher-grid" id="cat-procurement" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-proc-open-orders"><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.proc-open-orders.name">Open Orders</div></button>
@@ -1434,6 +1449,8 @@
           "tile.facility-ramp.meta":"Facility ramp milestones and readiness",
           "tile.mulders.name":"Mulders Chart",
           "tile.mulders.meta":"Growing performance chart",
+          "tile.grow-harvest-dashboard.name":"Grow Harvest Dashbaord",
+          "tile.grow-harvest-dashboard.meta":"Grow harvest output and timeline dashboard",
           "tile.foodsafety.name":"Batch Traceability",
           "tile.hr-attendances.name":"Attendances",
           "tile.hr-attendances.meta":"Daily attendance and punctuality tracking",
@@ -1559,6 +1576,8 @@
           "tile.facility-ramp.meta":"Hitos de rampa de facilidades y preparación",
           "tile.mulders.name":"Grafico Mulders",
           "tile.mulders.meta":"Grafico de rendimiento de cultivo",
+          "tile.grow-harvest-dashboard.name":"Grow Harvest Dashbaord",
+          "tile.grow-harvest-dashboard.meta":"Panel de salida y tiempos de cosecha Grow",
           "tile.foodsafety.name":"Trazabilidad de lotes",
           "tile.hr-attendances.name":"Asistencias",
           "tile.hr-attendances.meta":"Seguimiento diario de asistencia y puntualidad",
@@ -1622,6 +1641,7 @@
         "proc-open-orders": "14.0 Procurement - Open Orders.html",
         "seed-inventory": "Inventory - seed inventory Dashboard.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
+        "grow-harvest-dashboard": "03.1 Grow - Harvest Dashboard.html",
         "sales-tracking": "13.0 Sales - Productivity Dashboard.html",
         "store-visits": "12.0 Sales - Store Visit.html",
         foodsafety: "11.0 Food Safety - Traceibility.html",

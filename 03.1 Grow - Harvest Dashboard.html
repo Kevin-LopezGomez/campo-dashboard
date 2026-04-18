@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grow Harvest Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-alt: #020617;
+      --panel: #020617;
+      --panel-soft: #020617;
+      --card: #020617;
+      --border: #1f2937;
+      --border-subtle: #374151;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --accent-strong: #4ade80;
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --muted: #6b7280;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1320px;
+      border-radius: 24px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.09), transparent 55%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .title-block { flex: 1 1 200px; min-width: 0; }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 4px;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
+    }
+
+    .title-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #34d399, #22c55e 55%, #16a34a 100%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9), 0 12px 30px rgba(16, 185, 129, 0.6);
+    }
+
+    .title-pill span {
+      font-size: 15px;
+      font-weight: 700;
+      color: #022c22;
+    }
+
+    .title-text {
+      font-weight: 620;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .title-sub {
+      font-size: 0.8rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 960px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .kpi-card {
+      position: relative;
+      border-radius: 16px;
+      padding: 10px 12px 11px;
+      background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.85), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      overflow: hidden;
+    }
+
+    .kpi-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(248, 250, 252, 0.97);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi-value {
+      font-size: 1.15rem;
+      font-weight: 650;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .kpi-unit {
+      font-size: 0.72rem;
+      color: rgba(234, 179, 8, 0.98);
+      text-transform: uppercase;
+    }
+
+    .kpi-trend {
+      margin-top: 2px;
+      font-size: 0.7rem;
+      color: var(--accent-strong);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kpi-trend.muted { color: var(--accent-strong); }
+
+    .kpi-glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background:
+        radial-gradient(circle at 15% 0, rgba(34, 197, 94, 0.4), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.4), transparent 60%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .panel {
+      border-radius: 18px;
+      padding: 12px 12px 10px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.99));
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(14px);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--sub);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .panel-title-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.45);
+    }
+
+    .panel-subtitle {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .panel-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--sub);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge-soft {
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.95));
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+    }
+
+    .badge-soft span {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(226, 232, 240, 0.95);
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.48);
+    }
+
+    .view-toggle {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(100, 116, 139, 0.95);
+      background: rgba(2, 6, 23, 0.98);
+      padding: 2px;
+      font-size: 0.92rem;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8) inset;
+    }
+
+    .view-toggle-btn {
+      border: none;
+      background: transparent;
+      color: rgba(226, 232, 240, 0.92);
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      font-family: inherit;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    .view-toggle-btn.active {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(34, 197, 94, 0.2));
+      color: #dcfce7;
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.45) inset;
+    }
+
+    .trend-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      color: var(--sub);
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+
+    .trend-toggle input { margin: 0; }
+
+    .layout-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .global-controls {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0 4px;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .global-controls-label {
+      font-size: 1rem;
+      color: rgba(241, 245, 249, 0.96);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    .global-view-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .middle-pill-group {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 1 1 260px;
+    }
+
+    .blank-panel-body {
+      min-height: 420px;
+      border-radius: 12px;
+      border: 1px dashed rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .date-range-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .date-range-controls label {
+      font-size: 1rem;
+      color: rgba(241, 245, 249, 0.95);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .date-range-input {
+      border: 1px solid rgba(100, 116, 139, 0.95);
+      background: rgba(2, 6, 23, 0.98);
+      color: rgba(248, 250, 252, 0.98);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-family: inherit;
+    }
+
+    @media (max-width: 960px) {
+      .layout-main { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .chart-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+      flex: 1 1 auto;
+    }
+
+    .chart-row { position: relative; width: 100%; }
+    .chart-canvas-main { width: 100%; height: 276px; }
+    .chart-canvas-secondary { width: 100%; height: 200px; }
+    #panel-performance.harvestable-mode #chart-row-boards .chart-canvas-main { height: 552px; }
+
+    @media (max-width: 960px) {
+      .chart-canvas-main { height: 252px; }
+      .chart-canvas-secondary { height: 180px; }
+      #panel-performance.harvestable-mode #chart-row-boards .chart-canvas-main { height: 504px; }
+    }
+
+    .footer-note {
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-note span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-box {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+    }
+
+    .legend-box.boards { background: rgba(59, 130, 246, 0.6); }
+    .legend-box.bph { background: rgba(34, 197, 94, 0.7); }
+
+    .table-wrapper {
+      margin-top: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.95);
+      background:
+        linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.99)),
+        radial-gradient(circle at top left, rgba(51, 65, 85, 0.65), rgba(15, 23, 42, 0.96));
+      overflow: hidden;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-scroll {
+      max-height: 430px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #4b5563 rgba(15, 23, 42, 0.2);
+      flex: 1 1 auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 980px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background:
+        linear-gradient(to bottom, #020617, #020617),
+        radial-gradient(circle at top left, rgba(55, 65, 81, 0.5), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 1px 0 rgba(31, 41, 55, 0.9);
+    }
+
+    th, td {
+      text-align: center;
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.85);
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child {
+      text-align: center;
+      padding-left: 10px;
+    }
+
+    th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--sub);
+    }
+
+    tbody tr:nth-child(odd) td { background: rgba(15, 23, 42, 0.85); }
+    tbody tr:nth-child(even) td { background: rgba(17, 24, 39, 0.92); }
+
+    tfoot td {
+      background:
+        radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.12), rgba(15, 23, 42, 0.98));
+      font-weight: 600;
+      border-top: 1px solid rgba(55, 65, 81, 0.95);
+      border-bottom: none;
+    }
+
+    .cell-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cell-percent-good {
+      color: #bbf7d0;
+      border-color: rgba(74, 222, 128, 0.7);
+      background: radial-gradient(circle at 0 0, rgba(22, 163, 74, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .cell-percent-warn {
+      color: #fed7aa;
+      border-color: rgba(249, 115, 22, 0.8);
+      background: radial-gradient(circle at 0 0, rgba(251, 146, 60, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    .cell-percent-low {
+      color: #fecaca;
+      border-color: rgba(248, 113, 113, 0.8);
+      background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.25), rgba(15, 23, 42, 0.96));
+    }
+
+    #harvest-table.daily-mode thead th:nth-child(1),
+    #harvest-table.daily-mode tbody td:nth-child(1),
+    #harvest-table.week-mode thead th:nth-child(1),
+    #harvest-table.week-mode tbody td:nth-child(1) {
+      display: none;
+    }
+
+    .timeline-col { display: none; }
+    #harvest-table.timeline-mode .timeline-col,
+    #harvest-table.all-cols-mode .timeline-col { display: table-cell; }
+    .harvestable-col { display: none; }
+    #harvest-table.harvestable-mode .harvestable-col,
+    #harvest-table.all-cols-mode .harvestable-col { display: table-cell; }
+
+    .hidden { display: none; }
+    .hint-empty { font-size: 0.75rem; color: var(--muted); margin-top: 6px; white-space: pre-wrap; }
+    .header-pill-btn {
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--sub);
+      padding: 3px 9px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: inherit;
+    }
+    .header-pill-btn:hover { border-color: rgba(100, 116, 139, 0.95); }
+
+    #panel-table.log-collapsed .table-wrapper,
+    #panel-table.log-collapsed #empty-hint,
+    #panel-table.log-collapsed #debug {
+      display: none;
+    }
+
+    .debug {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(2,6,23,.35);
+      font-size: .74rem;
+      color: var(--sub);
+      display:none;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="container">
+      <header class="header">
+        <div class="title-block">
+          <div class="title">
+            <div class="title-pill"><span>H</span></div>
+            <div class="title-text">
+              <span>Grow Harvest Dashboard</span>
+            </div>
+          </div>
+          <p class="subtitle"></p>
+        </div>
+
+      </header>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Average LSY</span></div>
+          <div class="kpi-value"><span id="kpi-avg-lsy">–</span><span class="kpi-unit">LSY</span></div>
+          <div class="kpi-trend muted"><span id="kpi-lsy-note">Best day: –</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Avg lbs/board w/ waste</span></div>
+          <div class="kpi-value"><span id="kpi-avg-lbs-board-ww">–</span><span class="kpi-unit">LBS/BOARD</span></div>
+          <div class="kpi-trend muted"><span id="kpi-lbs-board-note">Range: –</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Forecast attainment</span></div>
+          <div class="kpi-value"><span id="kpi-forecast-attain">–</span><span class="kpi-unit">%</span></div>
+          <div class="kpi-trend muted"><span id="kpi-forecast-note">Forecast: – · Actual: –</span></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-glow"></div>
+          <div class="kpi-label"><span>Avg days to harvest</span></div>
+          <div class="kpi-value"><span id="kpi-avg-harvest-days">–</span><span class="kpi-unit">DAYS</span></div>
+          <div class="kpi-trend muted"><span id="kpi-timeline-note">Propagation: – · Production: –</span></div>
+        </article>
+      </section>
+
+      <section class="layout-main">
+        <div class="global-controls">
+          <div class="global-view-group">
+            <span class="global-controls-label">Global View</span>
+            <div class="view-toggle">
+              <button id="global-view-cut" class="view-toggle-btn active" type="button">By Batch</button>
+              <button id="global-view-date" class="view-toggle-btn" type="button">By day</button>
+              <button id="global-view-week" class="view-toggle-btn" type="button">By week</button>
+            </div>
+          </div>
+          <div class="middle-pill-group" aria-label="Harvest categories">
+            <div class="view-toggle">
+              <button id="middle-view-output" class="view-toggle-btn active" type="button">Output</button>
+              <button id="middle-view-timeline" class="view-toggle-btn" type="button">Timeline</button>
+              <button id="middle-view-harvestable" class="view-toggle-btn" type="button">Harvestable</button>
+              <button id="middle-view-table" class="view-toggle-btn" type="button">Table</button>
+            </div>
+          </div>
+          <div class="date-range-controls">
+            <label for="global-date-start">From</label>
+            <input id="global-date-start" class="date-range-input" type="date" />
+            <label for="global-date-end">To</label>
+            <input id="global-date-end" class="date-range-input" type="date" />
+          </div>
+        </div>
+
+        <section id="panel-performance" class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span>Performance over time</span></div>
+              <div class="panel-subtitle">
+                Top: LSY (lbs/sqft/yr) · Middle: Harvest Cut Lbs/Board w/ waste. View by batch, day, or week.
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <div class="badge-soft"><span class="badge-dot"></span><span>Live from Data Input</span></div>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <div id="chart-row-boards" class="chart-row"><canvas id="chart-boards" class="chart-canvas-main"></canvas></div>
+            <div id="chart-row-weight" class="chart-row"><canvas id="chart-weight" class="chart-canvas-main"></canvas></div>
+            <div id="chart-row-production" class="chart-row hidden"><canvas id="chart-production" class="chart-canvas-main"></canvas></div>
+          </div>
+
+          <div class="footer-note">
+            <span id="legend-top"><span class="legend-box boards"></span> Top: LSY (lbs/sqft/yr)</span>
+            <span id="legend-middle"><span class="legend-box boards"></span> Middle: Harvest Cut Lbs/Board w/ waste</span>
+            <span id="legend-bottom" class="hidden"><span class="legend-box boards"></span> Bottom: Production Days</span>
+          </div>
+        </section>
+
+        <section id="panel-table" class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span id="harvest-table-title">Batch-level harvest log</span></div>
+              <div class="panel-subtitle" id="harvest-table-subtitle">
+                Each row is a harvest cut loaded from Master Grow. Switch view to see daily or weekly summaries.
+              </div>
+              <div class="panel-subtitle" id="harvest-source-line">Source: waiting for data…</div>
+            </div>
+            <div class="panel-header-right">
+              <button id="harvest-log-toggle" class="header-pill-btn" type="button" aria-expanded="false">Open log</button>
+              <span id="harvest-table-hint">Scroll to see all batches</span>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table id="harvest-table">
+                <thead>
+                  <tr>
+                    <th>Batch Code</th>
+                    <th class="timeline-col">Harvest Days to Harvest</th>
+                    <th class="timeline-col">Propagation Days</th>
+                    <th class="timeline-col">Production Days</th>
+                    <th class="harvestable-col">Grow Forecasted Weight Lbs</th>
+                    <th>Harvest Date</th>
+                    <th>Harvest Week</th>
+                    <th># of Boards Cut</th>
+                    <th>With Waste</th>
+                    <th>LBS/BOARD W/ WASTE</th>
+                    <th>LSY (lbs/sqft/yr)</th>
+                    <th>% Potential</th>
+                  </tr>
+                </thead>
+                <tbody id="harvest-tbody-cut"></tbody>
+                <tbody id="harvest-tbody-daily" class="hidden"></tbody>
+                <tbody id="harvest-tbody-weekly" class="hidden"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>Grand Total</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="harvestable-col">0</td><td>–</td><td>–</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div id="empty-hint" class="hint-empty"></div>
+          <div id="debug" class="debug"></div>
+        </section>
+
+        <section id="panel-blank" class="panel hidden">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title"><span class="panel-title-dot"></span><span id="blank-panel-title">Timeline</span></div>
+            </div>
+          </div>
+          <div class="blank-panel-body"></div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // STORAGE CONTRACT
+    // =========================================================
+    const MASTER_GROW_KEY = "campo_master_grow_v1";
+    const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
+    const HARVEST_VIEW_MODE_KEY = "campo_harvest_view_mode_v1";
+    const HARVEST_VIEW_MODE_KEY_SS = "campo_harvest_view_mode_ss_v1";
+    const HARVEST_DATE_START_KEY = "campo_harvest_date_start_v1";
+    const HARVEST_DATE_END_KEY = "campo_harvest_date_end_v1";
+    const HARVEST_DATE_START_KEY_SS = "campo_harvest_date_start_ss_v1";
+    const HARVEST_DATE_END_KEY_SS = "campo_harvest_date_end_ss_v1";
+    const HARVEST_LOG_OPEN_KEY = "campo_harvest_log_open_v1";
+    const HARVEST_LOG_OPEN_KEY_SS = "campo_harvest_log_open_ss_v1";
+    const HARVEST_PILL_STATES_KEY = "campo_harvest_pill_states_v1";
+    const HARVEST_PILL_STATES_KEY_SS = "campo_harvest_pill_states_ss_v1";
+    const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
+    const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
+    const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
+    const PUBLIC_GROW_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/grow.json";
+    const CANON_GROW_SHEET = "Master Grow";
+
+    // IMPORTANT: We accept multiple possible sheet names (bulletproof),
+    // but prefer "Master Grow" as the canonical name.
+    const SHEET_CANDIDATES = [
+      "Master Grow",
+      "master grow",
+      "MASTER GROW",
+      "Grow",
+      "grow",
+      "MG",
+      "mg"
+    ];
+
+    // Parent/index message types
+    const MSG_GROW = "MASTER_GROW_UPDATED";
+
+    // BroadcastChannel (same-origin only; harmless if unsupported)
+    const BC_NAME = "campo_master_bus_v1";
+    const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
+
+    // =========================================================
+    // CANONICAL (meaning) headers we use internally
+    // =========================================================
+    const H = Object.freeze({
+      BATCH: "Batch Code",
+      HARVEST_DAYS_TO_HARVEST: "Harvest Days to Harvest",
+      PROPAGATION_DAYS: "Propagation Days",
+      PRODUCTION_DAYS: "Production Days",
+      GROW_FORECASTED_WEIGHT_LBS: "Grow Forecasted Weight Lbs",
+      DATE: "Harvest Date",
+      WEEK: "Harvest Week",
+      START: "Harvest Start",
+      FINISH: "Harvest Finish",
+      WORKERS: "Harvest # of Workers",
+      BOARDS: "# of Boards Cut",
+      CUT_LBS: "Peso de La Lechuga Cortada",
+      WASTE_LBS: "Total Harvest Waste Weight",
+      WITH_WASTE_LBS: "Peso de La Lechuga con Waste",
+      LSY: "LSY (lbs/sqft/yr)"
+    });
+
+    // =========================================================
+    // HEADER ALIASES (tolerant like Seeding)
+    // Add anything you ever see here.
+    // =========================================================
+    function normHeader(s){
+      return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    const HEADER_ALIASES = new Map([
+      // Batch
+      ["batch code", H.BATCH],
+      ["batch", H.BATCH],
+      ["batchcode", H.BATCH],
+
+      // Timeline day metrics
+      ["harvest days to harvest", H.HARVEST_DAYS_TO_HARVEST],
+      ["propagation days", H.PROPAGATION_DAYS],
+      ["production days", H.PRODUCTION_DAYS],
+      ["grow forecasted weight lbs", H.GROW_FORECASTED_WEIGHT_LBS],
+
+      // Date
+      ["harvest date", H.DATE],
+      ["date", H.DATE],
+      ["fecha de harvest", H.DATE],
+      ["fecha de cosecha", H.DATE],
+      ["cosecha date", H.DATE],
+
+      // Week
+      ["harvest week", H.WEEK],
+      ["week", H.WEEK],
+      ["cosecha week", H.WEEK],
+      ["semana", H.WEEK],
+      ["semana de cosecha", H.WEEK],
+
+      // Start/Finish
+      ["harvest start", H.START],
+      ["harvest team start", H.START],
+      ["harvest start time", H.START],
+      ["harvest starttime", H.START],
+      ["start", H.START],
+      ["inicio", H.START],
+      ["inicio harvest", H.START],
+      ["inicio de cosecha", H.START],
+
+      ["harvest finish", H.FINISH],
+      ["harvest team finish", H.FINISH],
+      ["harvest finish time", H.FINISH],
+      ["harvest finishtime", H.FINISH],
+      ["finish", H.FINISH],
+      ["final", H.FINISH],
+      ["fin", H.FINISH],
+      ["final harvest", H.FINISH],
+      ["final de cosecha", H.FINISH],
+
+      // Workers
+      ["harvest # of workers", H.WORKERS],
+      ["harvest workers", H.WORKERS],
+      ["# of workers", H.WORKERS],
+      ["workers", H.WORKERS],
+      ["trabajadores", H.WORKERS],
+
+      // Boards
+      ["# of boards cut", H.BOARDS],
+      ["boards cut", H.BOARDS],
+      ["# boards cut", H.BOARDS],
+      ["sum of # of boards cut", H.BOARDS],
+      ["sum # of boards cut", H.BOARDS],
+      ["sum of boards cut", H.BOARDS],
+      ["total # of boards cut", H.BOARDS],
+      ["total boards cut", H.BOARDS],
+      ["# of boards harvested", H.BOARDS],
+      ["boards harvested", H.BOARDS],
+      ["boards", H.BOARDS],
+      ["# boards harvested", H.BOARDS],
+      ["sum of # of boards harvested", H.BOARDS],
+      ["sum # of boards harvested", H.BOARDS],
+      ["sum of boards harvested", H.BOARDS],
+      ["total # of boards harvested", H.BOARDS],
+      ["total boards harvested", H.BOARDS],
+
+      // Cut lbs (common variants)
+      ["peso de la lechuga cortada", H.CUT_LBS],
+      ["peso de la lechuga  cortada", H.CUT_LBS],
+      ["peso lechuga cortada", H.CUT_LBS],
+      ["cut lbs", H.CUT_LBS],
+      ["cut weight", H.CUT_LBS],
+      ["sum of peso de la lechuga cortada", H.CUT_LBS],
+      ["sum of cut lbs", H.CUT_LBS],
+      ["sum cut lbs", H.CUT_LBS],
+
+      // Waste
+      ["total harvest waste weight", H.WASTE_LBS],
+      ["waste weight", H.WASTE_LBS],
+      ["waste", H.WASTE_LBS],
+      ["desperdicio", H.WASTE_LBS],
+      ["peso waste", H.WASTE_LBS],
+      ["sum of total harvest waste weight", H.WASTE_LBS],
+      ["sum waste weight", H.WASTE_LBS],
+      ["total waste weight", H.WASTE_LBS],
+
+      // With waste
+      ["peso de la lechuga con waste", H.WITH_WASTE_LBS],
+      ["with waste", H.WITH_WASTE_LBS],
+      ["con waste", H.WITH_WASTE_LBS],
+      ["total with waste", H.WITH_WASTE_LBS],
+      ["sum of with waste", H.WITH_WASTE_LBS],
+      ["sum with waste", H.WITH_WASTE_LBS],
+
+      // LSY
+      ["lsy (lbs/sqft/yr)", H.LSY],
+      ["lsy", H.LSY]
+    ]);
+
+    function canonicalizeHeaders(headersRaw){
+      const canonHeaders = [];
+      const canonIndexByName = new Map();
+      headersRaw.forEach((h, idx) => {
+        const raw = String(h ?? "");
+        const key = normHeader(raw);
+        const canon = HEADER_ALIASES.get(key) || raw.trim();
+        canonHeaders[idx] = canon;
+        if (canon && !canonIndexByName.has(canon)) canonIndexByName.set(canon, idx);
+      });
+      return { canonHeaders, canonIndexByName };
+    }
+
+    // =========================================================
+    // STATE
+    // =========================================================
+    let boardsChart = null;
+    let weightChart = null;
+    let productionChart = null;
+
+    let chartMode = "cut";    // "cut" | "date" | "week"
+    let tableMode = "cut";    // "cut" | "daily" | "weekly"
+    let middleViewMode = "output"; // "output" | "timeline" | "harvestable" | "table"
+    let harvestLogOpen = false;
+    let pillStates = {};
+    let LAST_HYDRATE_REASON = "";
+
+    let CUTS = [];
+    let DAILY = [];
+    let WEEKLY = [];
+    let RANGE_START_YMD = "";
+    let RANGE_END_YMD = "";
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+    function setEmpty(msg) {
+      const el = document.getElementById("empty-hint");
+      if (el) el.textContent = msg || "";
+    }
+    function setSourceLine(msg) {
+      const el = document.getElementById("harvest-source-line");
+      if (el) el.textContent = msg || "";
+    }
+    function setDebug(msg){
+      const el = document.getElementById("debug");
+      if (!el) return;
+      if (!msg) { el.style.display="none"; el.textContent=""; return; }
+      el.style.display="block";
+      el.textContent = msg;
+    }
+
+    function sanitizeChartMode(mode) {
+      return (mode === "cut" || mode === "date" || mode === "week") ? mode : "";
+    }
+
+    function sanitizeTableMode(mode) {
+      return (mode === "cut" || mode === "daily" || mode === "weekly") ? mode : "";
+    }
+
+    function chartModeToTableMode(mode) {
+      return mode === "date" ? "daily" : mode === "week" ? "weekly" : "cut";
+    }
+
+    function readSavedChartMode() {
+      try {
+        const ls = sanitizeChartMode(localStorage.getItem(HARVEST_VIEW_MODE_KEY));
+        if (ls) return ls;
+      } catch {}
+      try {
+        const ss = sanitizeChartMode(sessionStorage.getItem(HARVEST_VIEW_MODE_KEY_SS));
+        if (ss) return ss;
+      } catch {}
+      return "cut";
+    }
+
+    function persistChartMode(mode) {
+      const m = sanitizeChartMode(mode) || "cut";
+      try { localStorage.setItem(HARVEST_VIEW_MODE_KEY, m); } catch {}
+      try { sessionStorage.setItem(HARVEST_VIEW_MODE_KEY_SS, m); } catch {}
+    }
+
+    function readSavedDateRange() {
+      let start = "", end = "";
+      try { start = String(localStorage.getItem(HARVEST_DATE_START_KEY) || ""); } catch {}
+      try { end = String(localStorage.getItem(HARVEST_DATE_END_KEY) || ""); } catch {}
+      if (!start) {
+        try { start = String(sessionStorage.getItem(HARVEST_DATE_START_KEY_SS) || ""); } catch {}
+      }
+      if (!end) {
+        try { end = String(sessionStorage.getItem(HARVEST_DATE_END_KEY_SS) || ""); } catch {}
+      }
+      const sOk = /^\d{4}-\d{2}-\d{2}$/.test(start) ? start : "";
+      const eOk = /^\d{4}-\d{2}-\d{2}$/.test(end) ? end : "";
+      return { start: sOk, end: eOk };
+    }
+
+    function persistDateRange(startYmd, endYmd) {
+      const s = /^\d{4}-\d{2}-\d{2}$/.test(startYmd) ? startYmd : "";
+      const e = /^\d{4}-\d{2}-\d{2}$/.test(endYmd) ? endYmd : "";
+      try { localStorage.setItem(HARVEST_DATE_START_KEY, s); } catch {}
+      try { localStorage.setItem(HARVEST_DATE_END_KEY, e); } catch {}
+      try { sessionStorage.setItem(HARVEST_DATE_START_KEY_SS, s); } catch {}
+      try { sessionStorage.setItem(HARVEST_DATE_END_KEY_SS, e); } catch {}
+    }
+
+    function sanitizeLogOpen(raw) {
+      if (raw === "1") return true;
+      if (raw === "0") return false;
+      return null;
+    }
+
+    function readSavedLogOpen() {
+      try {
+        const ls = sanitizeLogOpen(localStorage.getItem(HARVEST_LOG_OPEN_KEY));
+        if (ls !== null) return ls;
+      } catch {}
+      try {
+        const ss = sanitizeLogOpen(sessionStorage.getItem(HARVEST_LOG_OPEN_KEY_SS));
+        if (ss !== null) return ss;
+      } catch {}
+      return false; // Default closed
+    }
+
+    function persistLogOpen(open) {
+      const value = open ? "1" : "0";
+      try { localStorage.setItem(HARVEST_LOG_OPEN_KEY, value); } catch {}
+      try { sessionStorage.setItem(HARVEST_LOG_OPEN_KEY_SS, value); } catch {}
+    }
+
+    function setHarvestLogOpen(open, opts = {}) {
+      const { persist = true } = opts;
+      harvestLogOpen = !!open;
+      const panel = document.getElementById("panel-table");
+      const btn = document.getElementById("harvest-log-toggle");
+      panel?.classList.toggle("log-collapsed", !harvestLogOpen);
+      if (btn) {
+        btn.textContent = harvestLogOpen ? "Close log" : "Open log";
+        btn.setAttribute("aria-expanded", harvestLogOpen ? "true" : "false");
+      }
+      pillStates[middleViewMode] = getDefaultPillState({
+        ...(pillStates[middleViewMode] || {}),
+        chartMode,
+        tableMode,
+        startYmd: RANGE_START_YMD,
+        endYmd: RANGE_END_YMD,
+        logOpen: harvestLogOpen
+      });
+      if (persist) {
+        persistLogOpen(harvestLogOpen);
+        persistPillStates();
+      }
+    }
+
+    function getDefaultPillState(seed = {}) {
+      const mode = sanitizeChartMode(seed.chartMode) || "cut";
+      const start = /^\d{4}-\d{2}-\d{2}$/.test(String(seed.startYmd || "")) ? String(seed.startYmd) : "";
+      const end = /^\d{4}-\d{2}-\d{2}$/.test(String(seed.endYmd || "")) ? String(seed.endYmd) : "";
+      return {
+        chartMode: mode,
+        tableMode: sanitizeTableMode(seed.tableMode) || chartModeToTableMode(mode),
+        startYmd: start,
+        endYmd: end,
+        logOpen: !!seed.logOpen
+      };
+    }
+
+    function normalizePillStates(raw, seed = {}) {
+      const views = ["output", "timeline", "harvestable", "table"];
+      const out = {};
+      for (const view of views) {
+        const fromRaw = raw && typeof raw === "object" ? raw[view] : null;
+        const fromSeed = seed && typeof seed === "object" ? seed[view] : null;
+        out[view] = getDefaultPillState(fromRaw || fromSeed || {});
+      }
+      return out;
+    }
+
+    function readSavedPillStates(seed = {}) {
+      let parsed = null;
+      try {
+        const raw = localStorage.getItem(HARVEST_PILL_STATES_KEY);
+        if (raw) parsed = JSON.parse(raw);
+      } catch {}
+      if (!parsed) {
+        try {
+          const raw = sessionStorage.getItem(HARVEST_PILL_STATES_KEY_SS);
+          if (raw) parsed = JSON.parse(raw);
+        } catch {}
+      }
+      return normalizePillStates(parsed, seed);
+    }
+
+    function persistPillStates() {
+      const snapshot = normalizePillStates(pillStates);
+      const encoded = JSON.stringify(snapshot);
+      try { localStorage.setItem(HARVEST_PILL_STATES_KEY, encoded); } catch {}
+      try { sessionStorage.setItem(HARVEST_PILL_STATES_KEY_SS, encoded); } catch {}
+    }
+
+    function saveActivePillState() {
+      const view = (["output", "timeline", "harvestable", "table"].includes(middleViewMode)) ? middleViewMode : "output";
+      pillStates[view] = getDefaultPillState({
+        chartMode,
+        tableMode,
+        startYmd: RANGE_START_YMD,
+        endYmd: RANGE_END_YMD,
+        logOpen: harvestLogOpen
+      });
+      persistPillStates();
+    }
+
+    function loadPillState(view) {
+      const v = (["output", "timeline", "harvestable", "table"].includes(view)) ? view : "output";
+      const state = getDefaultPillState(pillStates[v] || {});
+      chartMode = state.chartMode;
+      tableMode = chartModeToTableMode(chartMode);
+      RANGE_START_YMD = state.startYmd;
+      RANGE_END_YMD = state.endYmd;
+      harvestLogOpen = !!state.logOpen;
+    }
+
+    function parseNumber(v) {
+      if (v === null || v === undefined) return 0;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      const s = String(v).trim();
+      if (!s) return 0;
+      if (s.toUpperCase().includes("#VALUE")) return 0;
+      const cleaned = s.replace(/,/g, "");
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // --- Robust month-name date parsing (CSV format like: "Friday, December 19, 2025")
+    function parseMonthNameDate(s) {
+      const raw = String(s || "").trim();
+      if (!raw) return null;
+
+      const parts = raw.split(",");
+      const cleaned = (parts.length >= 2) ? parts.slice(1).join(",").trim() : raw;
+
+      const m = cleaned.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+      if (!m) return null;
+
+      const monthName = m[1].toLowerCase();
+      const day = parseInt(m[2], 10);
+      const year = parseInt(m[3], 10);
+
+      const months = {
+        january:0,february:1,march:2,april:3,may:4,june:5,
+        july:6,august:7,september:8,october:9,november:10,december:11
+      };
+      if (!(monthName in months)) return null;
+
+      // Build in UTC to avoid timezone day-shifts
+      const d = new Date(Date.UTC(year, months[monthName], day));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function normalizeToUTCMidnight(d) {
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    }
+
+    // Handles: Date obj, MM/DD/YYYY, ISO, long-form, Excel serial number, Month-name (with optional weekday)
+    function parseAnyDate(v){
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+
+      // Excel serial number (number)
+      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + v * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      const s0 = String(v).trim();
+      if (!s0) return null;
+
+      // common "no date" tokens
+      const s0n = s0.toLowerCase();
+      if (s0n === "(no date)" || s0n === "no date" || s0n === "n/a" || s0n === "na" || s0n === "null" || s0n === "undefined") return null;
+
+      // Month-name (robust for CSV)
+      const monthNameParsed = parseMonthNameDate(s0);
+      if (monthNameParsed) return monthNameParsed;
+
+      // Excel serial number (string)
+      const n = Number(s0);
+      if (Number.isFinite(n) && n > 20000 && n < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + n * 86400000);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Strip weekday prefix: "Wednesday, October 1, 2025"
+      let s = s0;
+      const parts = s.split(",");
+      if (parts.length >= 2 && /[a-z]/i.test(parts[0])) s = parts.slice(1).join(",").trim();
+
+      // ISO
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // US MM/DD/YYYY
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
+        const [mm, dd, yy] = s.split("/").map(Number);
+        const yyyy = yy < 100 ? 2000 + yy : yy;
+        const d = new Date(Date.UTC(yyyy, mm - 1, dd));
+        return isNaN(d.getTime()) ? null : d;
+      }
+
+      // Fallback (least reliable; but last resort)
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatDateMMDDYYYY(date) {
+      // IMPORTANT: UTC getters to avoid timezone day-shifts
+      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(date.getUTCDate()).padStart(2, "0");
+      const yyyy = date.getUTCFullYear();
+      return `${mm}/${dd}/${yyyy}`;
+    }
+
+    function isoWeekFromUTC(dateObj) {
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+      const d = new Date(Date.UTC(
+        dateObj.getUTCFullYear(),
+        dateObj.getUTCMonth(),
+        dateObj.getUTCDate()
+      ));
+      const dayNum = d.getUTCDay() || 7; // Mon=1..Sun=7
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Thursday of this week
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return String(weekNo);
+    }
+
+    function formatDayMonthLabel(dateStr) {
+      const d = parseAnyDate(dateStr);
+      if (!d) return String(dateStr || "");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    }
+
+    function fmtTick(value, decimals = 0) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      return n.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function ymdFromDateUTC(dateObj) {
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+      const y = dateObj.getUTCFullYear();
+      const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function isDateInRange(dateObj) {
+      const ymd = ymdFromDateUTC(dateObj);
+      if (!ymd) return false;
+      if (RANGE_START_YMD && ymd < RANGE_START_YMD) return false;
+      if (RANGE_END_YMD && ymd > RANGE_END_YMD) return false;
+      return true;
+    }
+
+    function aggregateWeeklyFromDaily(dailyRows) {
+      const wkMap = new Map();
+      const years = new Set();
+      for (const d of dailyRows) {
+        const wkStr = String(d.week ?? "").trim();
+        if (!wkStr) continue;
+        const year = d.dateObj instanceof Date && !isNaN(d.dateObj.getTime())
+          ? d.dateObj.getFullYear()
+          : null;
+        if (year) years.add(year);
+
+        const key = year ? `${year}-W${wkStr}` : wkStr;
+        if (!wkMap.has(key)) {
+          wkMap.set(key, {
+            week: wkStr,
+            year,
+            weekNum: parseFloat(wkStr),
+            label: "",
+            spanH: 0,
+            boards: 0,
+            cut: 0,
+            waste: 0,
+            withWaste: 0,
+            lsySum: 0,
+            lsyCount: 0,
+            harvestDaysToHarvestSum: 0,
+            harvestDaysToHarvestCount: 0,
+            propagationDaysSum: 0,
+            propagationDaysCount: 0,
+            productionDaysSum: 0,
+            productionDaysCount: 0,
+            growForecastedWeightLbs: 0
+          });
+        }
+        const w = wkMap.get(key);
+        w.spanH += d.spanH;
+        w.boards += d.boards;
+        w.cut += d.cut;
+        w.waste += d.waste;
+        w.withWaste += d.withWaste;
+        if (Number.isFinite(d.lsy)) {
+          w.lsySum += d.lsy;
+          w.lsyCount += 1;
+        }
+        if (Number.isFinite(d.harvestDaysToHarvest) && d.harvestDaysToHarvest > 0) {
+          w.harvestDaysToHarvestSum += d.harvestDaysToHarvest;
+          w.harvestDaysToHarvestCount += 1;
+        }
+        if (Number.isFinite(d.propagationDays) && d.propagationDays > 0) {
+          w.propagationDaysSum += d.propagationDays;
+          w.propagationDaysCount += 1;
+        }
+        if (Number.isFinite(d.productionDays) && d.productionDays > 0) {
+          w.productionDaysSum += d.productionDays;
+          w.productionDaysCount += 1;
+        }
+        w.growForecastedWeightLbs += (Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0);
+      }
+
+      const showYear = years.size > 1;
+      wkMap.forEach(w => {
+        const hasWeekNum = !isNaN(w.weekNum);
+        if (w.year && hasWeekNum) {
+          w.label = showYear ? `Week ${w.week} (${w.year})` : `Week ${w.week}`;
+          w.order = w.year * 100 + w.weekNum;
+        } else if (hasWeekNum) {
+          w.label = `Week ${w.week}`;
+          w.order = w.weekNum;
+        } else {
+          w.label = String(w.week || "N/A");
+          w.order = null;
+        }
+      });
+
+      return Array.from(wkMap.values()).sort((a,b) => {
+        if (a.order === null || b.order === null) return String(a.label).localeCompare(String(b.label));
+        return a.order - b.order;
+      }).map(w => {
+        const bph = w.spanH > 0 ? (w.boards / w.spanH) : 0;
+        const lbsPerBoard = w.boards > 0 ? (w.cut / w.boards) : 0;
+        const potential = w.withWaste > 0 ? (w.cut / w.withWaste) * 100 : 0;
+        const lsy = w.lsyCount > 0 ? (w.lsySum / w.lsyCount) : 0;
+        return {
+          ...w,
+          lsy,
+          bph,
+          lbsPerBoard,
+          potential,
+          harvestDaysToHarvest: w.harvestDaysToHarvestCount > 0 ? (w.harvestDaysToHarvestSum / w.harvestDaysToHarvestCount) : 0,
+          propagationDays: w.propagationDaysCount > 0 ? (w.propagationDaysSum / w.propagationDaysCount) : 0,
+          productionDays: w.productionDaysCount > 0 ? (w.productionDaysSum / w.productionDaysCount) : 0,
+          growForecastedWeightLbs: w.growForecastedWeightLbs
+        };
+      });
+    }
+
+    // Time parsing: supports "HH:MM", "HH:MM AM/PM", decimal hours (e.g. 6.5), and Excel time fractions (0.5)
+    function parseTimeToMinutes(v) {
+      if (v === null || v === undefined) return NaN;
+
+      // Excel time fraction (0..1)
+      if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1) {
+        return Math.round(v * 24 * 60);
+      }
+
+      // Decimal hours (e.g. 6.5)
+      if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 24) {
+        return Math.round(v * 60);
+      }
+
+      const str = String(v ?? "").trim();
+      if (!str) return NaN;
+
+      // If it's numeric string
+      const asNum = Number(str);
+      if (Number.isFinite(asNum)) {
+        if (asNum >= 0 && asNum < 1) return Math.round(asNum * 24 * 60);
+        if (asNum >= 1 && asNum <= 24) return Math.round(asNum * 60);
+      }
+
+      const m = str.match(/^(\d{1,2}):(\d{2})(?:\s*([APap][Mm]))?$/);
+      if (!m) return NaN;
+      let hh = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const ap = m[3] ? m[3].toUpperCase() : "";
+      if (ap) {
+        if (hh === 12) hh = 0;
+        if (ap === "PM") hh += 12;
+      }
+      return hh * 60 + mm;
+    }
+
+    function spanHoursFromMinMax(minStartMin, maxFinishMin) {
+      if (!Number.isFinite(minStartMin) || !Number.isFinite(maxFinishMin)) return 0;
+      let diff = maxFinishMin - minStartMin;
+      if (diff < 0) diff += 24 * 60;
+      return diff / 60;
+    }
+
+    function formatTimeHM(mins){
+      if (!Number.isFinite(mins)) return "–";
+      const m = ((Math.round(mins) % (24 * 60)) + (24 * 60)) % (24 * 60);
+      const hh = String(Math.floor(m / 60)).padStart(2, "0");
+      const mm = String(m % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    // =========================================================
+    // LOAD PAYLOAD + FIND SHEET (bulletproof)
+    // =========================================================
+    async function workerGetJson(url){
+      const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
+      const r = await fetch(bust, { cache: "no-store" });
+      const t = await r.text();
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${t}`);
+      return JSON.parse(t);
+    }
+
+    function normalizeMasterGrowPayload(raw){
+      if (!isObject(raw)) return raw;
+      if (isObject(raw.sheets) && raw.sheets[CANON_GROW_SHEET]) return raw;
+
+      if (isObject(raw.sheets)) {
+        const keys = Object.keys(raw.sheets);
+        const wantLower = CANON_GROW_SHEET.toLowerCase();
+        let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
+        if (!match) match = keys.find(k => String(k).toLowerCase().includes("grow"));
+        if (match) {
+          const clone = JSON.parse(JSON.stringify(raw));
+          clone.sheets = clone.sheets || {};
+          clone.sheets[CANON_GROW_SHEET] = clone.sheets[match];
+          return clone;
+        }
+      }
+
+      if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
+        return {
+          version: raw.version || "v1",
+          updatedAt: raw.updatedAt || new Date().toISOString(),
+          kind: raw.kind || "grow",
+          sourceLabel: raw.sourceLabel || "worker",
+          sheets: { [CANON_GROW_SHEET]: { headers: raw.headers, rows: raw.rows } }
+        };
+      }
+
+      return raw;
+    }
+
+    async function tryHydrateGrowFromWorker(){
+      // If local payload already looks usable, keep it.
+      const currentRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+      if (currentRaw) {
+        try {
+          const current = JSON.parse(currentRaw);
+          if (pickSheet(current)) return { ok: true, source: "local" };
+        } catch {}
+      }
+
+      let lastErr = "";
+      try {
+        const hr = await fetch(WORKER_HEALTH_URL, { cache: "no-store" });
+        if (!hr.ok) lastErr = `worker health HTTP ${hr.status}`;
+      } catch {
+        lastErr = "worker health unreachable";
+      }
+
+      const urls = [WORKER_GROW_URL, PUBLIC_GROW_URL];
+      for (const url of urls) {
+        try {
+          const growJson = await workerGetJson(url);
+          const normalized = normalizeMasterGrowPayload(growJson);
+          localStorage.setItem(MASTER_GROW_KEY, JSON.stringify(normalized));
+          localStorage.setItem(MASTER_GROW_PING_KEY, String(Date.now()));
+          try { window.dispatchEvent(new CustomEvent(MSG_GROW, { detail: { key: MASTER_GROW_KEY, ts: Date.now() } })); } catch {}
+          try { bc?.postMessage({ type: MSG_GROW, ts: Date.now() }); } catch {}
+          return { ok: true, source: url };
+        } catch (e) {
+          lastErr = `${url} failed`;
+          console.warn("Grow auto-hydrate failed for", url, e);
+        }
+      }
+      return { ok: false, reason: lastErr || "all grow hydrate sources failed" };
+    }
+
+    function loadMasterGrowPayload() {
+      function tagPayload(obj, source){
+        if (obj && typeof obj === "object") {
+          try {
+            Object.defineProperty(obj, "__campoSource", {
+              value: source,
+              enumerable: false,
+              configurable: true
+            });
+          } catch {}
+        }
+        return obj;
+      }
+
+      const primary = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
+      if (primary) {
+        try { return tagPayload(JSON.parse(primary), "master"); } catch {}
+      }
+
+      return null;
+    }
+
+    function isObject(v){
+      return !!v && typeof v === "object" && !Array.isArray(v);
+    }
+
+    function looksLikeSheetShape(v){
+      return isObject(v) && Array.isArray(v.rows);
+    }
+
+    function parseDelimitedLine(line, delimiter){
+      const out = [];
+      let cur = "";
+      let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQ && line[i + 1] === '"') { cur += '"'; i++; continue; }
+          inQ = !inQ;
+          continue;
+        }
+        if (!inQ && ch === delimiter) {
+          out.push(cur);
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      out.push(cur);
+      return out.map(v => String(v ?? "").trim());
+    }
+
+    function parseTextToSheet(text){
+      const src = String(text || "").replace(/^\uFEFF/, "").trim();
+      if (!src) return null;
+
+      const lines = src.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      if (!lines.length) return null;
+
+      const delimiter = lines[0].includes("\t") ? "\t" : ",";
+      const matrix = lines.map(line => parseDelimitedLine(line, delimiter));
+      if (!matrix.length) return null;
+
+      const headers = matrix[0] || [];
+      const rows = matrix.slice(1);
+      if (!headers.length || !rows.length) return null;
+      return { headers, rows };
+    }
+
+    function pickSheet(payload){
+      // 1) Canonical sheet maps
+      const sheetMaps = [
+        payload?.sheets,
+        payload?.data?.sheets,
+        payload?.payload?.sheets,
+        payload?.result?.sheets
+      ].filter(isObject);
+
+      for (const sheets of sheetMaps) {
+        // Exact candidate match
+        for (const name of SHEET_CANDIDATES) {
+          if (name in sheets && looksLikeSheetShape(sheets[name])) return { name, sheet: sheets[name] };
+        }
+
+        // Case-insensitive / includes match
+        const keys = Object.keys(sheets);
+        const normKeys = keys.map(k => ({ k, nk: String(k).trim().toLowerCase() }));
+        for (const want of SHEET_CANDIDATES.map(s => String(s).trim().toLowerCase())) {
+          const hit = normKeys.find(x => x.nk === want) || normKeys.find(x => x.nk.includes(want));
+          if (hit && looksLikeSheetShape(sheets[hit.k])) return { name: hit.k, sheet: sheets[hit.k] };
+        }
+
+        // Fallback: first sheet-like object
+        for (const k of keys) {
+          if (looksLikeSheetShape(sheets[k])) return { name: k, sheet: sheets[k] };
+        }
+      }
+
+      // 2) Flat/alternate payloads where headers/rows are not nested in sheets
+      const flatCandidates = [
+        { name: "Master Grow", sheet: payload },
+        { name: "Master Grow", sheet: payload?.data },
+        { name: "Master Grow", sheet: payload?.payload },
+        { name: "Master Grow", sheet: payload?.result },
+        { name: "Master Grow", sheet: payload?.masterGrow },
+        { name: "Master Grow", sheet: payload?.master_grow },
+        { name: "Master Grow", sheet: payload?.grow },
+        { name: "Master Grow", sheet: payload?.harvest }
+      ];
+      for (const c of flatCandidates) {
+        if (looksLikeSheetShape(c.sheet)) return c;
+      }
+
+      // 3) Delimited text payloads
+      const textCandidates = [
+        payload?.rawText,
+        payload?.data,
+        payload?.raw,
+        payload?.text,
+        payload?.csv,
+        payload?.tsv,
+        payload?.content
+      ];
+      for (const txt of textCandidates) {
+        if (typeof txt !== "string") continue;
+        const parsed = parseTextToSheet(txt);
+        if (parsed) return { name: "Master Grow", sheet: parsed };
+      }
+
+      return null;
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      let headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      let rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+
+      // Some payloads store a matrix in rows with header row at index 0.
+      if (!headersRaw.length && rows.length && Array.isArray(rows[0])) {
+        headersRaw = rows[0];
+        rows = rows.slice(1);
+      }
+
+      // If rows are objects, derive headers from row keys when not explicitly provided.
+      const objectRows = rows.filter(r => isObject(r));
+      if (!headersRaw.length && objectRows.length) {
+        const seen = new Set();
+        headersRaw = [];
+        for (const r of objectRows) {
+          for (const k of Object.keys(r)) {
+            const key = String(k || "").trim();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            headersRaw.push(key);
+          }
+        }
+      }
+
+      const { canonHeaders } = canonicalizeHeaders(headersRaw);
+      const out = [];
+
+      for (const r of rows) {
+        if (!r) continue;
+        const obj = {};
+
+        if (Array.isArray(r)) {
+          for (let i = 0; i < canonHeaders.length; i++) {
+            const key = String(canonHeaders[i] ?? "").trim();
+            if (!key) continue;
+            obj[key] = (i < r.length) ? r[i] : "";
+          }
+          out.push(obj);
+          continue;
+        }
+
+        if (isObject(r)) {
+          const byNorm = new Map();
+          for (const [rk, rv] of Object.entries(r)) byNorm.set(normHeader(rk), rv);
+
+          for (let i = 0; i < headersRaw.length; i++) {
+            const rawKey = String(headersRaw[i] ?? "").trim();
+            const canonKey = String(canonHeaders[i] ?? "").trim();
+            if (!canonKey) continue;
+
+            let value = r[rawKey];
+            if (value === undefined) value = byNorm.get(normHeader(rawKey));
+            if (value === undefined && canonKey !== rawKey) value = r[canonKey];
+            if (value === undefined && canonKey !== rawKey) value = byNorm.get(normHeader(canonKey));
+            obj[canonKey] = (value === undefined ? "" : value);
+          }
+          out.push(obj);
+        }
+      }
+
+      return { rows: out, canonHeaders };
+    }
+
+    function getCutLbs(row) {
+      // We canonicalize to H.CUT_LBS, but we also try common raw variants just in case.
+      const v = parseNumber(row[H.CUT_LBS]);
+      if (v) return v;
+
+      const fallbacks = [
+        "Peso de la Lechuga Cortada",
+        "PESO DE LA LECHUGA CORTADA",
+        "peso de la lechuga cortada"
+      ];
+      for (const h of fallbacks) {
+        if (h in row) {
+          const n = parseNumber(row[h]);
+          if (n) return n;
+        }
+      }
+      return 0;
+    }
+
+    function getWithWasteLbs(row, cut, waste) {
+      const v = parseNumber(row[H.WITH_WASTE_LBS]);
+      if (v > 0) return v;
+      return (cut || 0) + (waste || 0);
+    }
+
+    // =========================================================
+    // BUILD MODELS (CUTS / DAILY / WEEKLY)
+    // =========================================================
+    function buildModels() {
+      const payload = loadMasterGrowPayload();
+      if (!payload) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        const reason = LAST_HYDRATE_REASON ? `\n\nHydrate status:\n- ${LAST_HYDRATE_REASON}` : "";
+        setEmpty("No Master Grow payload in localStorage.\n\nFix:\n- Open Data Input\n- Upload Master Grow\n- Confirm it saves to campo_master_grow_v1" + reason);
+        setSourceLine(`Source: none (no payload found${LAST_HYDRATE_REASON ? `; ${LAST_HYDRATE_REASON}` : ""})`);
+        setDebug("");
+        return;
+      }
+
+      const picked = pickSheet(payload);
+      if (!picked || !picked.sheet) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty("Master Grow payload loaded, but no readable rows/sheets were found.");
+        setSourceLine("Source: payload found, but no readable sheet");
+        setDebug("Sheets keys:\n- " + Object.keys(payload?.sheets || {}).join("\n- "));
+        return;
+      }
+
+      const sourceTag = String(payload?.__campoSource || "master");
+      setSourceLine(`Source: ${sourceTag} → sheet "${picked.name}"`);
+
+      const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
+
+      if (!rows.length) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty(`Sheet "${picked.name}" loaded, but it has 0 rows.`);
+        setSourceLine(`Source: ${sourceTag} → sheet "${picked.name}" (0 rows)`);
+        setDebug("");
+        return;
+      }
+
+      // Required canonical headers (tolerant input via alias mapping)
+      const headerSet = new Set(canonHeaders.map(h => String(h || "").trim()).filter(Boolean));
+      const required = [H.DATE, H.WEEK, H.START, H.FINISH, H.BOARDS];
+      const missing = required.filter(h => !headerSet.has(h));
+
+      // Guardrail: fallback payloads are only valid if required harvest headers exist.
+      const source = String(payload?.__campoSource || "unknown");
+      const usingFallback = source.startsWith("fallback_");
+      const hasMetricHeader =
+        headerSet.has(H.BOARDS) ||
+        headerSet.has(H.CUT_LBS) ||
+        headerSet.has(H.WASTE_LBS) ||
+        headerSet.has(H.WITH_WASTE_LBS);
+      if (usingFallback && (!headerSet.has(H.DATE) || !hasMetricHeader)) {
+        CUTS = []; DAILY = []; WEEKLY = [];
+        setEmpty(
+          "Fallback harvest payload found, but minimum harvest headers are missing.\n\n" +
+          "Required for fallback:\n- Harvest Date\n- At least one metric column (Boards/Cut/Waste/With Waste)\n\n" +
+          "Missing required headers:\n- " + (missing.length ? missing.join("\n- ") : "Harvest Date / metric columns") +
+          "\n\nFix:\n- Load Master Grow into campo_master_grow_v1 from Data Input"
+        );
+        setDebug(`Rejected fallback source: ${source}`);
+        return;
+      }
+
+      // We do NOT hard-fail; we degrade gracefully and explain what is missing.
+      const softWarnings = [];
+      if (missing.length) softWarnings.push("Missing required headers:\n- " + missing.join("\n- "));
+      if (!headerSet.has(H.CUT_LBS)) softWarnings.push("Missing cut-lbs header (will show 0 cut lbs unless alias exists).");
+      if (!headerSet.has(H.WASTE_LBS)) softWarnings.push("Missing waste-lbs header (waste will be 0 unless alias exists).");
+
+      setEmpty(softWarnings.length ? ("Master Grow loaded with warnings.\n\n" + softWarnings.join("\n\n")) : "");
+      setDebug(
+        `Using sheet: ${picked.name}\n` +
+        `Rows: ${rows.length.toLocaleString()}\n` +
+        `Sheets available: ${(Object.keys(payload.sheets||{}).length)}`
+      );
+
+      // CUTS
+      const cuts = [];
+      let droppedBlank = 0;
+      let droppedNoDate = 0;
+
+      for (const r of rows) {
+        if (!r || typeof r !== "object") continue;
+
+        // --- FIX: normalize dates to UTC-midnight and format using UTC getters
+        const rawDate = parseAnyDate(r[H.DATE]);
+        if (!rawDate) { droppedNoDate++; continue; }
+        const dateObj = normalizeToUTCMidnight(rawDate);
+        const date = formatDateMMDDYYYY(dateObj);
+
+        const weekRaw = String(r[H.WEEK] ?? "").trim();
+        const week = weekRaw || isoWeekFromUTC(dateObj);
+        const batchCode = String(r[H.BATCH] ?? "").trim();
+
+        const startMin = parseTimeToMinutes(r[H.START]);
+        const finishMin = parseTimeToMinutes(r[H.FINISH]);
+
+        const boards = parseNumber(r[H.BOARDS]);
+        const cut = getCutLbs(r);
+        const waste = parseNumber(r[H.WASTE_LBS]);
+        const workers = parseNumber(r[H.WORKERS]);
+        const harvestDaysToHarvest = parseNumber(r[H.HARVEST_DAYS_TO_HARVEST]);
+        const propagationDays = parseNumber(r[H.PROPAGATION_DAYS]);
+        const productionDays = parseNumber(r[H.PRODUCTION_DAYS]);
+        const growForecastedWeightLbs = parseNumber(r[H.GROW_FORECASTED_WEIGHT_LBS]);
+
+        const allBlank =
+          !week &&
+          !String(r[H.START] ?? "").trim() && !String(r[H.FINISH] ?? "").trim() &&
+          boards === 0 && cut === 0 && waste === 0 && workers === 0;
+
+        if (allBlank) { droppedBlank++; continue; }
+
+        const spanH = spanHoursFromMinMax(startMin, finishMin);
+        const withWaste = getWithWasteLbs(r, cut, waste);
+        const lsy = parseNumber(r[H.LSY]);
+
+        const lbsPerBoard = boards > 0 ? (cut / boards) : 0;
+        const bph = spanH > 0 ? (boards / spanH) : 0;
+        const potential = withWaste > 0 ? (cut / withWaste) * 100 : 0;
+
+        cuts.push({
+          batchCode,
+          dateObj,
+          date,
+          week,
+          boards,
+          cut,
+          waste,
+          withWaste,
+          lsy,
+          lbsPerBoard,
+          bph,
+          potential,
+          startMin,
+          finishMin,
+          workers,
+          harvestDaysToHarvest,
+          propagationDays,
+          productionDays,
+          growForecastedWeightLbs
+        });
+      }
+
+      // Sort cuts by date then by start time
+      cuts.sort((a,b) => (a.dateObj - b.dateObj) || ((a.startMin||0)-(b.startMin||0)));
+
+      // DAILY: aggregate by date; span uses earliest start -> latest finish for that day.
+      const dayMap = new Map();
+      for (const c of cuts) {
+        const key = c.date;
+        if (!dayMap.has(key)) {
+          dayMap.set(key, {
+            date: key,
+            dateObj: c.dateObj,
+            weekGuess: c.week || isoWeekFromUTC(c.dateObj),
+            minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
+            maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
+            boards: 0,
+            cut: 0,
+            waste: 0,
+            withWaste: 0,
+            lsySum: 0,
+            lsyCount: 0,
+            workersSum: 0,
+            workersCount: 0,
+            harvestDaysToHarvestSum: 0,
+            harvestDaysToHarvestCount: 0,
+            propagationDaysSum: 0,
+            propagationDaysCount: 0,
+            productionDaysSum: 0,
+            productionDaysCount: 0,
+            growForecastedWeightLbs: 0
+          });
+        }
+        const d = dayMap.get(key);
+
+        if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
+        if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
+
+        d.boards += c.boards;
+        d.cut += c.cut;
+        d.waste += c.waste;
+        d.withWaste += c.withWaste;
+        if (Number.isFinite(c.lsy)) {
+          d.lsySum += c.lsy;
+          d.lsyCount += 1;
+        }
+
+        if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
+        if (Number.isFinite(c.harvestDaysToHarvest) && c.harvestDaysToHarvest > 0) {
+          d.harvestDaysToHarvestSum += c.harvestDaysToHarvest;
+          d.harvestDaysToHarvestCount += 1;
+        }
+        if (Number.isFinite(c.propagationDays) && c.propagationDays > 0) {
+          d.propagationDaysSum += c.propagationDays;
+          d.propagationDaysCount += 1;
+        }
+        if (Number.isFinite(c.productionDays) && c.productionDays > 0) {
+          d.productionDaysSum += c.productionDays;
+          d.productionDaysCount += 1;
+        }
+        d.growForecastedWeightLbs += (Number.isFinite(c.growForecastedWeightLbs) ? c.growForecastedWeightLbs : 0);
+        if (!d.weekGuess && c.week) d.weekGuess = c.week;
+      }
+
+      const daily = Array.from(dayMap.values())
+        .sort((a,b) => a.dateObj - b.dateObj) // chronological for charts
+        .map(d => {
+          const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
+          const bph = spanH > 0 ? (d.boards / spanH) : 0;
+          const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
+          const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
+          const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
+          return {
+            date: d.date,
+            dateObj: d.dateObj,
+            week: d.weekGuess || isoWeekFromUTC(d.dateObj),
+            startMin: d.minStartMin,
+            finishMin: d.maxFinishMin,
+            spanH,
+            boards: d.boards,
+            cut: d.cut,
+            waste: d.waste,
+            withWaste: d.withWaste,
+            lsy: d.lsyCount > 0 ? (d.lsySum / d.lsyCount) : 0,
+            bph,
+            lbsPerBoard,
+            potential,
+            avgWorkers,
+            harvestDaysToHarvest: d.harvestDaysToHarvestCount > 0 ? (d.harvestDaysToHarvestSum / d.harvestDaysToHarvestCount) : 0,
+            propagationDays: d.propagationDaysCount > 0 ? (d.propagationDaysSum / d.propagationDaysCount) : 0,
+            productionDays: d.productionDaysCount > 0 ? (d.productionDaysSum / d.productionDaysCount) : 0,
+            growForecastedWeightLbs: d.growForecastedWeightLbs
+          };
+        });
+
+      const weekly = aggregateWeeklyFromDaily(daily);
+
+      CUTS = cuts;
+      DAILY = daily;
+      WEEKLY = weekly;
+
+      // If we built nothing, provide diagnostics
+      if (!CUTS.length) {
+        setEmpty(
+          "No harvest cuts were built.\n\nDiagnostics:\n" +
+          `- Dropped blank rows: ${droppedBlank}\n` +
+          `- Dropped rows w/ unparseable date: ${droppedNoDate}\n\n` +
+          "Fix:\n- Ensure Harvest Date is present (MM/DD/YYYY, ISO, long-form, Month-name, or Excel serial)\n- Ensure headers match (or add alias in HEADER_ALIASES)"
+        );
+      }
+    }
+
+    // =========================================================
+    // KPIs
+    // =========================================================
+    function renderKPIs() {
+      const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const days = dailyVisible.filter(d =>
+        d.spanH > 0 ||
+        d.boards > 0 ||
+        d.cut > 0 ||
+        d.waste > 0 ||
+        d.withWaste > 0 ||
+        (Number.isFinite(d.growForecastedWeightLbs) && d.growForecastedWeightLbs > 0)
+      );
+
+      if (!days.length) {
+        document.getElementById("kpi-avg-lsy").textContent = "–";
+        document.getElementById("kpi-avg-lbs-board-ww").textContent = "–";
+        document.getElementById("kpi-forecast-attain").textContent = "–";
+        document.getElementById("kpi-avg-harvest-days").textContent = "–";
+        document.getElementById("kpi-lsy-note").textContent = "Best day: –";
+        document.getElementById("kpi-lbs-board-note").textContent = "Range: –";
+        document.getElementById("kpi-forecast-note").textContent = "Forecast: – · Actual: –";
+        document.getElementById("kpi-timeline-note").textContent = "Propagation: – · Production: –";
+        // Also reset footer totals
+        const tfootRow = document.querySelector("#harvest-table tfoot tr");
+        if (tfootRow) {
+          const tds = tfootRow.querySelectorAll("td");
+          if (tds.length >= 12) {
+            tds[4].textContent = "0";
+            tds[7].textContent = "0";
+            tds[8].textContent = "0";
+            tds[9].textContent = "0.0";
+            tds[10].textContent = "0.0";
+            tds[11].textContent = "0%";
+          }
+        }
+        return;
+      }
+
+      const totalBoards = days.reduce((s,d)=>s+d.boards,0);
+      const totalCut = days.reduce((s,d)=>s+d.cut,0);
+      const totalWithWaste = days.reduce((s,d)=>s+d.withWaste,0);
+      const totalGrowForecastedWeightLbs = days.reduce((s,d)=>s+(Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0),0);
+      const daysWithLsy = days.filter(d => Number.isFinite(d.lsy));
+      const avgLsy = daysWithLsy.length
+        ? daysWithLsy.reduce((s,d)=>s+d.lsy,0) / daysWithLsy.length
+        : 0;
+      const avgWithWastePerBoard = totalBoards > 0 ? totalWithWaste / totalBoards : 0;
+      const forecastAttainment = totalGrowForecastedWeightLbs > 0 ? (totalWithWaste / totalGrowForecastedWeightLbs) * 100 : 0;
+
+      const overallPotential = totalWithWaste > 0 ? (totalCut / totalWithWaste) * 100 : 0;
+      let bestLsyDay = null, bestLsy = 0;
+      for (const d of daysWithLsy) {
+        if (!bestLsyDay || d.lsy > bestLsy) { bestLsyDay = d; bestLsy = d.lsy; }
+      }
+      const dayLbsPerBoard = days.filter(d => d.boards > 0).map(d => d.withWaste / d.boards);
+      const minDayLbsPerBoard = dayLbsPerBoard.length ? Math.min(...dayLbsPerBoard) : 0;
+      const maxDayLbsPerBoard = dayLbsPerBoard.length ? Math.max(...dayLbsPerBoard) : 0;
+      const daysWithHarvestTimeline = days.filter(d => Number.isFinite(d.harvestDaysToHarvest) && d.harvestDaysToHarvest > 0);
+      const daysWithPropagation = days.filter(d => Number.isFinite(d.propagationDays) && d.propagationDays > 0);
+      const daysWithProduction = days.filter(d => Number.isFinite(d.productionDays) && d.productionDays > 0);
+      const avgHarvestDays = daysWithHarvestTimeline.length
+        ? daysWithHarvestTimeline.reduce((s,d)=>s+d.harvestDaysToHarvest,0) / daysWithHarvestTimeline.length
+        : 0;
+      const avgPropagationDays = daysWithPropagation.length
+        ? daysWithPropagation.reduce((s,d)=>s+d.propagationDays,0) / daysWithPropagation.length
+        : 0;
+      const avgProductionDays = daysWithProduction.length
+        ? daysWithProduction.reduce((s,d)=>s+d.productionDays,0) / daysWithProduction.length
+        : 0;
+
+      document.getElementById("kpi-avg-lsy").textContent = fmt1(avgLsy);
+      document.getElementById("kpi-avg-lbs-board-ww").textContent = fmt1(avgWithWastePerBoard);
+      document.getElementById("kpi-forecast-attain").textContent = fmt1(forecastAttainment);
+      document.getElementById("kpi-avg-harvest-days").textContent = fmt1(avgHarvestDays);
+      document.getElementById("kpi-lsy-note").textContent =
+        bestLsyDay ? ("Best day: " + fmt1(bestLsy) + " (" + bestLsyDay.date + ")") : "Best day: –";
+      document.getElementById("kpi-lbs-board-note").textContent =
+        dayLbsPerBoard.length ? ("Range: " + fmt1(minDayLbsPerBoard) + " to " + fmt1(maxDayLbsPerBoard)) : "Range: –";
+      document.getElementById("kpi-forecast-note").textContent =
+        "Forecast: " + fmtInt(totalGrowForecastedWeightLbs) + " lbs · Actual: " + fmtInt(totalWithWaste) + " lbs";
+      document.getElementById("kpi-timeline-note").textContent =
+        "Propagation: " + fmt1(avgPropagationDays) + " · Production: " + fmt1(avgProductionDays);
+
+      const tfootRow = document.querySelector("#harvest-table tfoot tr");
+      if (tfootRow) {
+        const tds = tfootRow.querySelectorAll("td");
+        if (tds.length >= 12) {
+          tds[4].textContent = fmtInt(totalGrowForecastedWeightLbs);
+          tds[7].textContent = fmtInt(totalBoards);
+          tds[8].textContent = fmtInt(totalWithWaste);
+          tds[9].textContent = fmt1(avgWithWastePerBoard);
+          tds[10].textContent = fmt1(avgLsy);
+          tds[11].textContent = fmt1(overallPotential) + "%";
+        }
+      }
+    }
+
+    // =========================================================
+    // TABLE
+    // =========================================================
+    function renderTable() {
+      const cutBody = document.getElementById("harvest-tbody-cut");
+      const dailyBody = document.getElementById("harvest-tbody-daily");
+      const weeklyBody = document.getElementById("harvest-tbody-weekly");
+      if (!cutBody || !dailyBody || !weeklyBody) return;
+
+      const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
+      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
+
+      function pctClass(p) {
+        if (p >= 95) return "cell-percent-good";
+        if (p < 85) return "cell-percent-low";
+        return "cell-percent-warn";
+      }
+
+      cutBody.innerHTML = "";
+      cutsVisible.forEach(c => {
+        const p = c.potential || 0;
+        const tr = document.createElement("tr");
+        const withWastePerBoard = c.boards > 0 ? (c.withWaste / c.boards) : 0;
+        tr.innerHTML = `
+          <td>${c.batchCode || "–"}</td>
+          <td class="timeline-col">${fmt1(c.harvestDaysToHarvest || 0)}</td>
+          <td class="timeline-col">${fmt1(c.propagationDays || 0)}</td>
+          <td class="timeline-col">${fmt1(c.productionDays || 0)}</td>
+          <td class="harvestable-col">${fmtInt(c.growForecastedWeightLbs || 0)}</td>
+          <td>${c.date || "–"}</td>
+          <td>${c.week || "–"}</td>
+          <td>${fmtInt(c.boards)}</td>
+          <td>${fmtInt(c.withWaste)}</td>
+          <td>${fmt1(withWastePerBoard)}</td>
+          <td>${fmt1(c.lsy || 0)}</td>
+          <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
+        `;
+        cutBody.appendChild(tr);
+      });
+
+      // --- FIX: daily table should show newest first (human-friendly)
+      dailyBody.innerHTML = "";
+      const dailySorted = [...dailyVisible].sort((a,b) => b.dateObj - a.dateObj);
+      dailySorted.forEach(d => {
+        const p = d.potential || 0;
+        const withWastePerBoard = d.boards > 0 ? (d.withWaste / d.boards) : 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>–</td>
+          <td class="timeline-col">${fmt1(d.harvestDaysToHarvest || 0)}</td>
+          <td class="timeline-col">${fmt1(d.propagationDays || 0)}</td>
+          <td class="timeline-col">${fmt1(d.productionDays || 0)}</td>
+          <td class="harvestable-col">${fmtInt(d.growForecastedWeightLbs || 0)}</td>
+          <td>${d.date}</td>
+          <td>${d.week || isoWeekFromUTC(d.dateObj) || "–"}</td>
+          <td>${fmtInt(d.boards)}</td>
+          <td>${fmtInt(d.withWaste)}</td>
+          <td>${fmt1(withWastePerBoard)}</td>
+          <td>${fmt1(d.lsy || 0)}</td>
+          <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
+        `;
+        dailyBody.appendChild(tr);
+      });
+
+      weeklyBody.innerHTML = "";
+      weeklyVisible.forEach(w => {
+        const p = w.potential || 0;
+        const withWastePerBoard = w.boards > 0 ? (w.withWaste / w.boards) : 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>–</td>
+          <td class="timeline-col">${fmt1(w.harvestDaysToHarvest || 0)}</td>
+          <td class="timeline-col">${fmt1(w.propagationDays || 0)}</td>
+          <td class="timeline-col">${fmt1(w.productionDays || 0)}</td>
+          <td class="harvestable-col">${fmtInt(w.growForecastedWeightLbs || 0)}</td>
+          <td>${w.label}</td>
+          <td>${w.week}</td>
+          <td>${fmtInt(w.boards)}</td>
+          <td>${fmtInt(w.withWaste)}</td>
+          <td>${fmt1(withWastePerBoard)}</td>
+          <td>${fmt1(w.lsy || 0)}</td>
+          <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
+        `;
+        weeklyBody.appendChild(tr);
+      });
+    }
+
+    // =========================================================
+    // CHARTS
+    // =========================================================
+    function renderCharts() {
+      const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
+      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
+
+      const isTimeline = middleViewMode === "timeline";
+      const isHarvestable = middleViewMode === "harvestable";
+      const boardsRow = document.getElementById("chart-row-boards");
+      const weightRow = document.getElementById("chart-row-weight");
+      const thirdRow = document.getElementById("chart-row-production");
+      const legendTop = document.getElementById("legend-top");
+      const legendMiddle = document.getElementById("legend-middle");
+      const legendBottom = document.getElementById("legend-bottom");
+      boardsRow?.classList.remove("hidden");
+      weightRow?.classList.toggle("hidden", isHarvestable);
+      thirdRow?.classList.toggle("hidden", !isTimeline);
+      legendBottom?.classList.toggle("hidden", !isTimeline);
+
+      const labelsCut = cutsVisible.map((_, i) => String(i + 1));
+      const batchTooltipTitles = cutsVisible.map((c, i) => {
+        const batch = c.batchCode || "No Batch Code";
+        const date = c.date || "";
+        return date ? `#${i + 1} · ${batch} · ${date}` : `#${i + 1} · ${batch}`;
+      });
+      const lsyByCut = cutsVisible.map(c => Number.isFinite(c.lsy) ? c.lsy : 0);
+      const withWastePerBoardByCut = cutsVisible.map(c => c.boards > 0 ? (c.withWaste / c.boards) : 0);
+      const withWasteByCut = cutsVisible.map(c => Number.isFinite(c.withWaste) ? c.withWaste : 0);
+      const growForecastByCut = cutsVisible.map(c => Number.isFinite(c.growForecastedWeightLbs) ? c.growForecastedWeightLbs : 0);
+      const harvestDaysByCut = cutsVisible.map(c => Number.isFinite(c.harvestDaysToHarvest) ? c.harvestDaysToHarvest : 0);
+      const propagationDaysByCut = cutsVisible.map(c => Number.isFinite(c.propagationDays) ? c.propagationDays : 0);
+      const productionDaysByCut = cutsVisible.map(c => Number.isFinite(c.productionDays) ? c.productionDays : 0);
+
+      // --- FIX: always force daily chart data to be chronological (oldest -> newest)
+      const dailyChrono = [...dailyVisible].sort((a,b) => a.dateObj - b.dateObj);
+      const labelsByDate = dailyChrono.map(d => formatDayMonthLabel(d.date));
+      const lsyByDate = dailyChrono.map(d => Number.isFinite(d.lsy) ? d.lsy : 0);
+      const withWastePerBoardByDate = dailyChrono.map(d => d.boards > 0 ? (d.withWaste / d.boards) : 0);
+      const withWasteByDate = dailyChrono.map(d => Number.isFinite(d.withWaste) ? d.withWaste : 0);
+      const growForecastByDate = dailyChrono.map(d => Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0);
+      const harvestDaysByDate = dailyChrono.map(d => Number.isFinite(d.harvestDaysToHarvest) ? d.harvestDaysToHarvest : 0);
+      const propagationDaysByDate = dailyChrono.map(d => Number.isFinite(d.propagationDays) ? d.propagationDays : 0);
+      const productionDaysByDate = dailyChrono.map(d => Number.isFinite(d.productionDays) ? d.productionDays : 0);
+
+      const labelsByWeek = weeklyVisible.map(w => w.label);
+      const lsyByWeek = weeklyVisible.map(w => Number.isFinite(w.lsy) ? w.lsy : 0);
+      const withWastePerBoardByWeek = weeklyVisible.map(w => w.boards > 0 ? (w.withWaste / w.boards) : 0);
+      const withWasteByWeek = weeklyVisible.map(w => Number.isFinite(w.withWaste) ? w.withWaste : 0);
+      const growForecastByWeek = weeklyVisible.map(w => Number.isFinite(w.growForecastedWeightLbs) ? w.growForecastedWeightLbs : 0);
+      const harvestDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.harvestDaysToHarvest) ? w.harvestDaysToHarvest : 0);
+      const propagationDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.propagationDays) ? w.propagationDays : 0);
+      const productionDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.productionDays) ? w.productionDays : 0);
+
+      let labels, topValues, middleValues, bottomValues, forecastValues, withWasteValues;
+      if (chartMode === "cut") {
+        labels = labelsCut;
+        if (isTimeline) {
+          topValues = harvestDaysByCut;
+          middleValues = propagationDaysByCut;
+          bottomValues = productionDaysByCut;
+        } else if (isHarvestable) {
+          forecastValues = growForecastByCut;
+          withWasteValues = withWasteByCut;
+        } else {
+          topValues = lsyByCut;
+          middleValues = withWastePerBoardByCut;
+        }
+      } else if (chartMode === "week") {
+        labels = labelsByWeek;
+        if (isTimeline) {
+          topValues = harvestDaysByWeek;
+          middleValues = propagationDaysByWeek;
+          bottomValues = productionDaysByWeek;
+        } else if (isHarvestable) {
+          forecastValues = growForecastByWeek;
+          withWasteValues = withWasteByWeek;
+        } else {
+          topValues = lsyByWeek;
+          middleValues = withWastePerBoardByWeek;
+        }
+      } else {
+        labels = labelsByDate;
+        if (isTimeline) {
+          topValues = harvestDaysByDate;
+          middleValues = propagationDaysByDate;
+          bottomValues = productionDaysByDate;
+        } else if (isHarvestable) {
+          forecastValues = growForecastByDate;
+          withWasteValues = withWasteByDate;
+        } else {
+          topValues = lsyByDate;
+          middleValues = withWastePerBoardByDate;
+        }
+      }
+
+      const ctxBoards = document.getElementById("chart-boards")?.getContext("2d");
+      const ctxWeight = document.getElementById("chart-weight")?.getContext("2d");
+      const ctxProduction = document.getElementById("chart-production")?.getContext("2d");
+      if (!ctxBoards) return;
+      if (!isHarvestable && !ctxWeight) return;
+      if (isTimeline && !ctxProduction) return;
+
+      if (boardsChart) boardsChart.destroy();
+      if (weightChart) weightChart.destroy();
+      if (productionChart) productionChart.destroy();
+      boardsChart = null;
+      weightChart = null;
+      productionChart = null;
+
+      const axisTickColor = "rgba(248, 250, 252, 0.97)";
+      const axisTitleColor = "rgba(255, 255, 255, 0.98)";
+      const axisGridColor = "rgba(148, 163, 184, 0.24)";
+      const axisTickFont = { size: 12, weight: "600" };
+      const axisTitleFont = { size: 13, weight: "700" };
+      const xTitle = chartMode === "cut" ? "Batch" : chartMode === "week" ? "Harvest Week" : "Date";
+      const xTickRotation = chartMode === "cut" ? 0 : 45;
+      const isBatchMode = chartMode === "cut";
+      const topLabel = isTimeline
+        ? (chartMode === "cut" ? "Harvest Days to Harvest per batch" : chartMode === "week" ? "Harvest Days to Harvest per week" : "Harvest Days to Harvest per day")
+        : (chartMode === "cut" ? "LSY per batch" : chartMode === "week" ? "LSY per week" : "LSY per day");
+      const middleLabel = isTimeline ? "Propagation Days" : "Harvest Cut Lbs/Board w/ waste";
+      const topYAxisTitle = isTimeline ? "HARVEST DAYS TO HARVEST" : "LSY (lbs/sqft/yr)";
+      const middleYAxisTitle = isTimeline ? "PROPAGATION DAYS" : "Harvest Cut Lbs/Board w/ waste";
+      if (isHarvestable) {
+        if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Grow Frecasted`;
+        if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Actual Harvested`;
+        if (legendBottom) legendBottom.classList.add("hidden");
+      } else {
+        if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Top: ${isTimeline ? "Harvest Days to Harvest" : "LSY (lbs/sqft/yr)"}`;
+        if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Middle: ${isTimeline ? "Propagation Days" : "Harvest Cut Lbs/Board w/ waste"}`;
+        if (legendBottom) legendBottom.innerHTML = `<span class="legend-box boards"></span> Bottom: Production Days`;
+      }
+
+      boardsChart = new Chart(ctxBoards, {
+        type: isBatchMode ? "bar" : "line",
+        data: {
+          labels,
+          datasets: isHarvestable
+            ? [
+                {
+                  label: "Grow Frecasted",
+                  data: forecastValues,
+                  borderWidth: isBatchMode ? 0 : 2.2,
+                  borderRadius: isBatchMode ? 4 : 0,
+                  tension: isBatchMode ? 0 : 0.35,
+                  pointRadius: isBatchMode ? 0 : 2.8,
+                  fill: false,
+                  borderColor: "rgba(52, 211, 153, 0.98)",
+                  backgroundColor: "rgba(52, 211, 153, 0.88)"
+                },
+                {
+                  label: "Actual Harvested",
+                  data: withWasteValues,
+                  borderWidth: isBatchMode ? 0 : 2.2,
+                  borderRadius: isBatchMode ? 4 : 0,
+                  tension: isBatchMode ? 0 : 0.35,
+                  pointRadius: isBatchMode ? 0 : 2.8,
+                  fill: false,
+                  borderColor: "rgba(234, 179, 8, 0.98)",
+                  backgroundColor: "rgba(234, 179, 8, 0.92)"
+                }
+              ]
+            : [{
+                label: topLabel,
+                data: topValues,
+                borderWidth: isBatchMode ? 0 : 2.2,
+                borderRadius: isBatchMode ? 4 : 0,
+                tension: isBatchMode ? 0 : 0.35,
+                pointRadius: isBatchMode ? 0 : 2.8,
+                fill: false,
+                borderColor: "rgba(52, 211, 153, 0.98)",
+                backgroundColor: "rgba(52, 211, 153, 0.85)"
+              }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: isHarvestable,
+              position: "top",
+              labels: {
+                color: "rgba(248, 250, 252, 0.96)",
+                boxWidth: 16,
+                boxHeight: 10,
+                font: { size: 12, weight: "600" }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  if (!items?.length) return "";
+                  if (chartMode !== "cut") return String(items[0].label || "");
+                  const i = items[0].dataIndex;
+                  return batchTooltipTitles[i] || String(items[0].label || "");
+                }
+              }
+            }
+          },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: {
+              grid: { color: axisGridColor, lineWidth: 1, drawTicks: false },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                maxRotation: xTickRotation,
+                minRotation: xTickRotation,
+                autoSkip: true,
+                autoSkipPadding: 10,
+                maxTicksLimit: 24
+              },
+              title: { display: true, text: xTitle, color: axisTitleColor, font: axisTitleFont }
+            },
+            y: {
+              grid: { color: axisGridColor, lineWidth: 1 },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                callback: (v) => fmtTick(v, 1)
+              },
+              title: { display: true, text: isHarvestable ? "GROW FORECASTED WEIGHT LBS / WITH WASTE" : topYAxisTitle, color: axisTitleColor, font: axisTitleFont }
+            }
+          }
+        }
+      });
+
+      if (isHarvestable) {
+        return;
+      }
+
+      weightChart = new Chart(ctxWeight, {
+        type: isBatchMode ? "bar" : "line",
+        data: {
+          labels,
+          datasets: [{
+            label: middleLabel,
+            data: middleValues,
+            tension: isBatchMode ? 0 : 0.35,
+            borderWidth: isBatchMode ? 0 : 2.2,
+            borderRadius: isBatchMode ? 4 : 0,
+            pointRadius: isBatchMode ? 0 : 2.8,
+            fill: false,
+            borderColor: "rgba(234, 179, 8, 0.95)",
+            backgroundColor: "rgba(234, 179, 8, 0.95)"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  if (!items?.length) return "";
+                  if (chartMode !== "cut") return String(items[0].label || "");
+                  const i = items[0].dataIndex;
+                  return batchTooltipTitles[i] || String(items[0].label || "");
+                }
+              }
+            }
+          },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: {
+              grid: { color: axisGridColor, lineWidth: 1, drawTicks: false },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                maxRotation: xTickRotation,
+                minRotation: xTickRotation,
+                autoSkip: true,
+                autoSkipPadding: 10,
+                maxTicksLimit: 24
+              },
+              title: { display: true, text: xTitle, color: axisTitleColor, font: axisTitleFont }
+            },
+            y: {
+              grid: { color: axisGridColor, lineWidth: 1 },
+              ticks: {
+                color: axisTickColor,
+                font: axisTickFont,
+                callback: (v) => fmtTick(v, 2)
+              },
+              title: { display: true, text: middleYAxisTitle, color: axisTitleColor, font: axisTitleFont }
+            }
+          }
+        }
+      });
+
+      if (isTimeline && ctxProduction) {
+        productionChart = new Chart(ctxProduction, {
+          type: isBatchMode ? "bar" : "line",
+          data: {
+            labels,
+            datasets: [{
+              label: "Production Days",
+              data: bottomValues,
+              tension: isBatchMode ? 0 : 0.35,
+              borderWidth: isBatchMode ? 0 : 2.2,
+              borderRadius: isBatchMode ? 4 : 0,
+              pointRadius: isBatchMode ? 0 : 2.8,
+              fill: false,
+              borderColor: "rgba(59, 130, 246, 0.95)",
+              backgroundColor: "rgba(59, 130, 246, 0.9)"
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  title: (items) => {
+                    if (!items?.length) return "";
+                    if (chartMode !== "cut") return String(items[0].label || "");
+                    const i = items[0].dataIndex;
+                    return batchTooltipTitles[i] || String(items[0].label || "");
+                  }
+                }
+              }
+            },
+            interaction: { mode: "index", intersect: false },
+            scales: {
+              x: {
+                grid: { color: axisGridColor, lineWidth: 1, drawTicks: false },
+                ticks: {
+                  color: axisTickColor,
+                  font: axisTickFont,
+                  maxRotation: xTickRotation,
+                  minRotation: xTickRotation,
+                  autoSkip: true,
+                  autoSkipPadding: 10,
+                  maxTicksLimit: 24
+                },
+                title: { display: true, text: xTitle, color: axisTitleColor, font: axisTitleFont }
+              },
+              y: {
+                grid: { color: axisGridColor, lineWidth: 1 },
+                ticks: {
+                  color: axisTickColor,
+                  font: axisTickFont,
+                  callback: (v) => fmtTick(v, 2)
+                },
+                title: { display: true, text: "PRODUCTION DAYS", color: axisTitleColor, font: axisTitleFont }
+              }
+            }
+          }
+        });
+      }
+
+    }
+
+    // =========================================================
+    // MODE TOGGLES
+    // =========================================================
+    function setChartMode(mode, opts = {}) {
+      const { fromTable = false } = opts;
+      chartMode = sanitizeChartMode(mode) || "cut";
+      tableMode = chartModeToTableMode(chartMode);
+      persistChartMode(chartMode);
+
+      document.getElementById("global-view-cut")?.classList.toggle("active", chartMode === "cut");
+      document.getElementById("global-view-date")?.classList.toggle("active", chartMode === "date");
+      document.getElementById("global-view-week")?.classList.toggle("active", chartMode === "week");
+
+      if (!fromTable) {
+        setTableMode(chartModeToTableMode(chartMode), { fromChart: true });
+        renderCharts();
+      } else {
+        renderCharts();
+      }
+      saveActivePillState();
+    }
+
+    function setTableMode(mode, opts = {}) {
+      const { fromChart = false } = opts;
+      tableMode = mode;
+
+      const isCut = mode === "cut";
+      const isDaily = mode === "daily";
+      const isWeekly = mode === "weekly";
+
+      document.getElementById("harvest-tbody-cut")?.classList.toggle("hidden", !isCut);
+      document.getElementById("harvest-tbody-daily")?.classList.toggle("hidden", !isDaily);
+      document.getElementById("harvest-tbody-weekly")?.classList.toggle("hidden", !isWeekly);
+
+      const titleEl = document.getElementById("harvest-table-title");
+      const subEl = document.getElementById("harvest-table-subtitle");
+      const hintEl = document.getElementById("harvest-table-hint");
+      const tableEl = document.getElementById("harvest-table");
+
+      if (titleEl) titleEl.textContent = isCut ? "Batch-level harvest log" : isDaily ? "Daily harvest summary" : "Weekly harvest summary";
+      if (subEl) subEl.textContent = isCut
+        ? "Each row is a harvest batch loaded from Master Grow."
+        : isDaily
+          ? "Daily totals aggregated from cuts (span uses earliest start → latest finish per day)."
+          : "Aggregated by week (built from daily totals).";
+      if (hintEl) hintEl.textContent = isCut ? "Scroll to see all batches" : isDaily ? "Scroll to see all days" : "Scroll to see all weeks";
+      tableEl?.classList.toggle("daily-mode", isDaily);
+      tableEl?.classList.toggle("week-mode", isWeekly);
+
+      if (!fromChart) setChartMode(isDaily ? "date" : isWeekly ? "week" : "cut", { fromTable: true });
+      else renderTable();
+      saveActivePillState();
+    }
+
+    function setMiddleView(mode) {
+      const nextMode = (["output", "timeline", "harvestable", "table"].includes(mode)) ? mode : "output";
+      saveActivePillState();
+      middleViewMode = nextMode;
+
+      document.getElementById("middle-view-output")?.classList.toggle("active", middleViewMode === "output");
+      document.getElementById("middle-view-timeline")?.classList.toggle("active", middleViewMode === "timeline");
+      document.getElementById("middle-view-harvestable")?.classList.toggle("active", middleViewMode === "harvestable");
+      document.getElementById("middle-view-table")?.classList.toggle("active", middleViewMode === "table");
+
+      const perf = document.getElementById("panel-performance");
+      const table = document.getElementById("panel-table");
+      const blank = document.getElementById("panel-blank");
+      const tableEl = document.getElementById("harvest-table");
+      perf?.classList.toggle("harvestable-mode", middleViewMode === "harvestable");
+
+      if (middleViewMode === "table") {
+        perf?.classList.add("hidden");
+        table?.classList.remove("hidden");
+        blank?.classList.add("hidden");
+      } else {
+        perf?.classList.remove("hidden");
+        table?.classList.remove("hidden");
+        blank?.classList.add("hidden");
+      }
+
+      loadPillState(middleViewMode);
+      tableEl?.classList.toggle("timeline-mode", middleViewMode === "timeline");
+      tableEl?.classList.toggle("harvestable-mode", middleViewMode === "harvestable");
+      tableEl?.classList.toggle("all-cols-mode", middleViewMode === "table");
+      const startInput = document.getElementById("global-date-start");
+      const endInput = document.getElementById("global-date-end");
+      if (startInput) startInput.value = RANGE_START_YMD;
+      if (endInput) endInput.value = RANGE_END_YMD;
+      setChartMode(chartMode);
+      setTableMode(tableMode, { fromChart: true });
+      setHarvestLogOpen(harvestLogOpen, { persist: false });
+      renderKPIs();
+      renderTable();
+      renderCharts();
+    }
+
+    function setupUI() {
+      const legacyChartMode = readSavedChartMode();
+      const legacyDateRange = readSavedDateRange();
+      const legacyLogOpen = readSavedLogOpen();
+      const seed = {
+        output: {
+          chartMode: legacyChartMode,
+          tableMode: chartModeToTableMode(legacyChartMode),
+          startYmd: legacyDateRange.start,
+          endYmd: legacyDateRange.end,
+          logOpen: legacyLogOpen
+        },
+        timeline: {
+          chartMode: legacyChartMode,
+          tableMode: chartModeToTableMode(legacyChartMode),
+          startYmd: legacyDateRange.start,
+          endYmd: legacyDateRange.end,
+          logOpen: false
+        },
+        harvestable: {
+          chartMode: legacyChartMode,
+          tableMode: chartModeToTableMode(legacyChartMode),
+          startYmd: legacyDateRange.start,
+          endYmd: legacyDateRange.end,
+          logOpen: false
+        },
+        table: {
+          chartMode: legacyChartMode,
+          tableMode: chartModeToTableMode(legacyChartMode),
+          startYmd: legacyDateRange.start,
+          endYmd: legacyDateRange.end,
+          logOpen: false
+        }
+      };
+      pillStates = readSavedPillStates(seed);
+      loadPillState(middleViewMode);
+
+      const startInput = document.getElementById("global-date-start");
+      const endInput = document.getElementById("global-date-end");
+      if (startInput) startInput.value = RANGE_START_YMD;
+      if (endInput) endInput.value = RANGE_END_YMD;
+
+      document.getElementById("global-view-cut")?.addEventListener("click", () => setChartMode("cut"));
+      document.getElementById("global-view-date")?.addEventListener("click", () => setChartMode("date"));
+      document.getElementById("global-view-week")?.addEventListener("click", () => setChartMode("week"));
+      document.getElementById("middle-view-output")?.addEventListener("click", () => setMiddleView("output"));
+      document.getElementById("middle-view-timeline")?.addEventListener("click", () => setMiddleView("timeline"));
+      document.getElementById("middle-view-harvestable")?.addEventListener("click", () => setMiddleView("harvestable"));
+      document.getElementById("middle-view-table")?.addEventListener("click", () => setMiddleView("table"));
+      document.getElementById("harvest-log-toggle")?.addEventListener("click", () => setHarvestLogOpen(!harvestLogOpen));
+
+      const onRangeChange = () => {
+        let start = String(startInput?.value || "");
+        let end = String(endInput?.value || "");
+        if (start && end && start > end) {
+          const t = start; start = end; end = t;
+          if (startInput) startInput.value = start;
+          if (endInput) endInput.value = end;
+        }
+        RANGE_START_YMD = start;
+        RANGE_END_YMD = end;
+        persistDateRange(start, end);
+        saveActivePillState();
+        renderKPIs();
+        renderTable();
+        renderCharts();
+      };
+      startInput?.addEventListener("change", onRangeChange);
+      endInput?.addEventListener("change", onRangeChange);
+
+      setChartMode(chartMode);
+      setTableMode(tableMode);
+      setMiddleView(middleViewMode);
+      setHarvestLogOpen(harvestLogOpen, { persist: false });
+      saveActivePillState();
+    }
+
+    // =========================================================
+    // LIVE REFRESH (bulletproof: debounce + poll + bc + message)
+    // =========================================================
+    let reloadTimer = null;
+    function reloadAll(reason){
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        buildModels();
+        renderKPIs();
+        renderTable();
+        renderCharts();
+        // console.log("🔄 Harvest reload", reason || "");
+      }, 60);
+    }
+
+    function setupListeners() {
+      // 1) storage
+      window.addEventListener("storage", (e) => {
+        if (!e) return;
+        if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll("storage");
+      });
+
+      // 2) CustomEvent (same frame)
+      window.addEventListener(MSG_GROW, () => reloadAll("customevent"));
+      document.addEventListener(MSG_GROW, () => reloadAll("customevent-doc"));
+
+      // 3) postMessage from index/data input
+      window.addEventListener("message", (event) => {
+        const msg = event?.data;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") reloadAll("message");
+      });
+
+      // 4) BroadcastChannel
+      if (bc) {
+        bc.onmessage = (ev) => {
+          const msg = ev?.data;
+          if (msg?.type === MSG_GROW) reloadAll("broadcast");
+        };
+      }
+
+      // 5) Safety poll (Safari iframe oddities)
+      let lastLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+      let lastPing = String(localStorage.getItem(MASTER_GROW_PING_KEY) || "");
+      setInterval(() => {
+        const curLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
+        const curPing = String(localStorage.getItem(MASTER_GROW_PING_KEY) || "");
+        if (curLen !== lastLen || curPing !== lastPing) {
+          lastLen = curLen;
+          lastPing = curPing;
+          reloadAll("poll");
+        }
+      }, 1500);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupUI();
+      setupListeners();
+      (async () => {
+        const hydrated = await tryHydrateGrowFromWorker();
+        if (!hydrated?.ok) {
+          LAST_HYDRATE_REASON = `hydrate failed: ${hydrated?.reason || "unknown"}`;
+          setSourceLine(`Source: none (${LAST_HYDRATE_REASON})`);
+        } else {
+          LAST_HYDRATE_REASON = "";
+        }
+        reloadAll("init");
+      })();
+    });
+  </script>
+</body>
+</html>
