@@ -196,6 +196,37 @@
       border-color: rgba(78,163,255,.35);
       background: linear-gradient(180deg, rgba(78,163,255,.95), rgba(78,163,255,.8));
     }
+    .summaryFilterBar {
+      margin-top: 10px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .summaryFilterBar .qualityRow {
+      margin-top: 0;
+    }
+    .packageSizeRow {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+    }
+    .packageSizeRow .qualityLabel {
+      position: relative;
+      top: -4px;
+    }
+    #yamatoClamshellFilters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 0;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+    }
 
     .controls {
       margin-top: 12px;
@@ -281,6 +312,7 @@
     #yamatoCycles { width: 76px; min-width: 76px; }
     #shiftLength { width: 76px; min-width: 76px; }
     #daysPerWeek { width: 76px; min-width: 76px; }
+    #qcPeople { width: 76px; min-width: 76px; }
     .projectionToggle {
       margin-top: 6px;
       display: flex;
@@ -295,6 +327,17 @@
       right: 12px;
       margin-top: 0;
       justify-content: flex-end;
+      z-index: 2;
+    }
+    .yamatoValueToggle {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      margin-top: 0;
+      display: flex;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
       z-index: 2;
     }
     .projectionBtn {
@@ -330,6 +373,12 @@
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 10px;
     }
+    .summaryKpiStrip {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    #topKpiStrip {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
     .kpi {
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -345,6 +394,9 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
+    }
+    .yamatoChartsStack {
+      grid-template-columns: 1fr;
     }
     .card {
       border: 1px solid var(--line);
@@ -385,6 +437,29 @@
       border-spacing: 0;
     }
     #rawQualityView th, #rawQualityView td { white-space: nowrap; }
+    #rawQualityView thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: #0f2740;
+    }
+    #rawQualityView .rawQualityTableWrap {
+      border: 1px solid rgba(78,163,255,.35);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(78,163,255,.10), rgba(12,30,46,.55));
+    }
+    #rawQualityView .yamatoRawCard {
+      border-color: rgba(55,214,122,.35);
+      background: linear-gradient(180deg, rgba(55,214,122,.09), rgba(11,33,24,.62));
+    }
+    #rawQualityView .yamatoRawCard h3 {
+      color: #baf4d3;
+    }
+    #rawQualityView .yamatoRawCard .tableWrap {
+      border: 1px solid rgba(55,214,122,.28);
+      border-radius: 10px;
+      background: rgba(8,28,20,.58);
+    }
     #rawQualityView tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
     #rawQualityView tbody tr:hover { background: rgba(78,163,255,.12); }
     #rawQualityView .metricHead,
@@ -458,6 +533,15 @@
     @media (max-width: 1050px) {
       .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .grid2 { grid-template-columns: 1fr; }
+      .packageSizeRow {
+        margin-left: 0;
+        justify-content: flex-start;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      #yamatoClamshellFilters {
+        flex-wrap: wrap;
+      }
     }
     @media (max-width: 600px) {
       .grid4 { grid-template-columns: 1fr; }
@@ -480,10 +564,11 @@
         <div class="topRight">
           <div class="pill" id="metaRange">Range: —</div>
           <div class="pillTabs" role="tablist" aria-label="Dashboard Views">
-            <button class="pill pillBtn active" id="tabDashboard" type="button" role="tab" aria-selected="true" aria-controls="dashboardView">Pack Quality Dashbaord</button>
-            <button class="pill pillBtn" id="tabRawQuality" type="button" role="tab" aria-selected="false" aria-controls="rawQualityView">Raw Quality Data Table</button>
+            <button class="pill pillBtn" id="tabSummary" type="button" role="tab" aria-selected="false" aria-controls="summaryView">Summary</button>
+            <button class="pill pillBtn active" id="tabDashboard" type="button" role="tab" aria-selected="true" aria-controls="dashboardView">Pack Quality Dashboard</button>
             <button class="pill pillBtn" id="tabQCPotential" type="button" role="tab" aria-selected="false" aria-controls="qcPotentialView">QC Potential</button>
             <button class="pill yamatoPill" id="yamatoTopPill" type="button" aria-label="Show Yamato">Yamato</button>
+            <button class="pill pillBtn" id="tabRawQuality" type="button" role="tab" aria-selected="false" aria-controls="rawQualityView">Raw Data</button>
           </div>
         </div>
       </div>
@@ -515,7 +600,7 @@
           </div>
           <div class="control">
             <label for="shiftLength">Shift Length</label>
-            <input id="shiftLength" type="number" value="8" step="0.5" min="0" />
+            <input id="shiftLength" type="number" value="6.5" step="0.5" min="0" />
           </div>
           <div class="control">
             <label for="daysPerWeek">Days/Week</label>
@@ -530,25 +615,45 @@
         </div>
       </details>
 
-      <div class="qualityRow" role="group" aria-label="Summary Quality">
-        <span class="qualityLabel">Summary Quality</span>
-        <button class="qualityPill active" type="button" data-quality="all">All</button>
-        <button class="qualityPill" type="button" data-quality="excellent">Excellent</button>
-        <button class="qualityPill" type="button" data-quality="good">Good</button>
-        <button class="qualityPill" type="button" data-quality="bad">Bad</button>
-        <button class="qualityPill" type="button" data-quality="very_bad">Very Bad</button>
+      <div class="summaryFilterBar">
+        <div class="qualityRow" role="group" aria-label="Summary Quality">
+          <span class="qualityLabel">Summary Quality</span>
+          <button class="qualityPill active" type="button" data-quality="all">All</button>
+          <button class="qualityPill" type="button" data-quality="excellent">Excellent</button>
+          <button class="qualityPill" type="button" data-quality="good">Good</button>
+          <button class="qualityPill" type="button" data-quality="bad">Bad</button>
+          <button class="qualityPill" type="button" data-quality="very_bad">Very Bad</button>
+        </div>
+        <div class="packageSizeRow hidden" id="yamatoPackageSizeRow" role="group" aria-label="Package Size">
+          <span class="qualityLabel">Package Size</span>
+          <div class="projectionToggle yamatoFilterToggle" id="yamatoClamshellFilters"></div>
+        </div>
       </div>
 
-      <div class="grid4">
-        <div class="kpi"><div class="t">Total Incoming Quality</div><div class="v" id="kIq">—</div></div>
+      <div class="grid4" id="topKpiStrip">
         <div class="kpi"><div class="t">Total Hours Worked</div><div class="v" id="kH">—</div></div>
         <div class="kpi"><div class="t">Active Days</div><div class="v" id="kDays">—</div></div>
         <div class="kpi"><div class="t">Employees</div><div class="v" id="kEmp">—</div></div>
-        <div class="kpi"><div class="t">Yamato Output</div><div class="v" id="kYamato">—</div></div>
+      </div>
+
+      <div class="view hidden" id="summaryView" role="tabpanel" aria-labelledby="tabSummary">
+        <div class="controls">
+          <div class="control">
+            <label for="qcPeople">QC People</label>
+            <input id="qcPeople" type="number" value="4" step="1" min="0" />
+          </div>
+        </div>
+        <div class="grid4 summaryKpiStrip">
+          <div class="kpi"><div class="t">QC Potential Lbs/Shift</div><div class="v" id="kSummaryQcShift">—</div></div>
+          <div class="kpi"><div class="t">QC Potential Lbs/Week</div><div class="v" id="kSummaryQcWeek">—</div></div>
+          <div class="kpi"><div class="t">Yamato Throughput Lbs/Day</div><div class="v" id="kSummaryYamatoDay">—</div></div>
+          <div class="kpi"><div class="t">Yamato Throughput Lbs/Week</div><div class="v" id="kSummaryYamatoWeek">—</div></div>
+        </div>
+        <div class="status" id="summaryStatus">QC People: —</div>
       </div>
 
       <div class="view" id="dashboardView" role="tabpanel" aria-labelledby="tabDashboard">
-        <div class="grid2">
+        <div class="grid2 yamatoChartsStack">
           <div class="card">
             <h3 class="performanceTitle">Team Performance</h3>
             <div class="chartWrap"><canvas id="chartDaily"></canvas></div>
@@ -583,7 +688,7 @@
         <div class="cardHead">
           <h3>Raw Quality Data Table</h3>
         </div>
-        <div class="tableWrap" id="rawTableWrap">
+        <div class="tableWrap rawQualityTableWrap" id="rawTableWrap">
           <table>
             <thead>
               <tr>
@@ -616,10 +721,31 @@
           </table>
         </div>
         <div class="status" id="qualityStatus">Rows shown: 0</div>
+        <div class="card yamatoRawCard" style="margin-top:10px;">
+          <h3>Yamato Raw Runs</h3>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Clamshell Type</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th class="r">Total Dumps</th>
+                  <th class="r"># of People</th>
+                  <th class="r">Hours</th>
+                  <th class="r">Dumps/Hour</th>
+                </tr>
+              </thead>
+              <tbody id="yamatoTb"></tbody>
+            </table>
+          </div>
+          <div class="status" id="yamatoStatus">Rows shown: 0</div>
+        </div>
       </div>
 
       <div class="card view hidden" id="qcPotentialView" role="tabpanel" aria-labelledby="tabQCPotential">
-        <div class="grid2">
+        <div class="grid2 yamatoChartsStack">
           <div class="card">
             <h3 class="performanceTitle">Team Performance</h3>
             <div class="chartWrap"><canvas id="chartDailyQc"></canvas></div>
@@ -662,9 +788,8 @@
           <div class="kpi"><div class="t">Avg People/Run</div><div class="v" id="kYAvgPeople">—</div></div>
           <div class="kpi"><div class="t">Avg Dumps/Hour</div><div class="v" id="kYRate">—</div></div>
         </div>
-        <div class="grid2">
+        <div class="grid2 yamatoChartsStack">
           <div class="card">
-            <div class="projectionToggle yamatoFilterToggle" id="yamatoClamshellFilters"></div>
             <h3 class="performanceTitle">Hourly Throughput</h3>
             <div class="chartWrap"><canvas id="chartYamatoDaily"></canvas></div>
           </div>
@@ -673,30 +798,13 @@
               <button class="projectionBtn active" id="yamatoProjDay" type="button">Daily</button>
               <button class="projectionBtn" id="yamatoProjWeek" type="button">Weekly</button>
             </div>
-            <h3 class="performanceTitle" id="yamatoProjectionTitle">Projected Units/Day by Clamshell Type</h3>
+            <div class="yamatoValueToggle" role="group" aria-label="Projection units">
+              <button class="projectionBtn active" id="yamatoValUnits" type="button">Units</button>
+              <button class="projectionBtn" id="yamatoValLbs" type="button">Lbs</button>
+            </div>
+            <h3 class="performanceTitle" id="yamatoProjectionTitle">Units per Day</h3>
             <div class="chartWrap"><canvas id="chartYamatoType"></canvas></div>
           </div>
-        </div>
-        <div class="card" style="margin-top:10px;">
-          <h3>Yamato Raw Runs</h3>
-          <div class="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Clamshell Type</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
-                  <th class="r">Total Dumps</th>
-                  <th class="r"># of People</th>
-                  <th class="r">Hours</th>
-                  <th class="r">Dumps/Hour</th>
-                </tr>
-              </thead>
-              <tbody id="yamatoTb"></tbody>
-            </table>
-          </div>
-          <div class="status" id="yamatoStatus">Rows shown: 0</div>
         </div>
       </div>
     </div>
@@ -1300,6 +1408,24 @@
       return rows;
     }
 
+    function filterYamatoRowsBySummaryQuality(yamatoRows, packRows, qualityFilter) {
+      const rows = Array.isArray(yamatoRows) ? yamatoRows.slice() : [];
+      if (!rows.length) return rows;
+      if (!qualityFilter || qualityFilter === "all") return rows;
+      const dateSet = new Set((Array.isArray(packRows) ? packRows : [])
+        .map((r) => String(r?.dateISO ?? "").trim())
+        .filter((v) => v));
+      if (!dateSet.size) return [];
+      return rows.filter((r) => dateSet.has(String(r?.dateISO ?? "").trim()));
+    }
+
+    function filterYamatoRowsByActiveClamshell(rows) {
+      const source = Array.isArray(rows) ? rows : [];
+      const selected = String(ACTIVE_YAMATO_CLAMSHELL || "__all__").trim() || "__all__";
+      if (selected === "__all__") return source.slice();
+      return source.filter((r) => normalizeClamshellType(r?.clamshellType) === selected);
+    }
+
     function aggregateYamato(rows) {
       const byDate = new Map();
       const byType = new Map();
@@ -1585,7 +1711,7 @@
     }) : null;
     const chartYamatoType = (typeof Chart !== "undefined" && $("chartYamatoType")) ? new Chart($("chartYamatoType"), {
       type: "bar",
-      data: { labels: [], datasets: [{ label: "Projected Units/Day", data: [], backgroundColor: "#4ea3ff", borderColor: "#8bc3ff", borderWidth: 1.5 }] },
+      data: { labels: [], datasets: [{ label: "Units per Day", data: [], backgroundColor: "#4ea3ff", borderColor: "#8bc3ff", borderWidth: 1.5 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -1617,7 +1743,7 @@
           y: {
             title: {
               display: true,
-              text: "Projected Units/Day",
+              text: "Units per Day",
               color: "#e6f0f7",
               font: { size: 13, weight: "700" }
             },
@@ -1728,6 +1854,22 @@
       return Number(rate.toFixed(2)).toString();
     }
 
+    function applyRawTableViewportLimit(maxRows = 25) {
+      const wrap = $("rawTableWrap");
+      if (!wrap) return;
+      const headRow = wrap.querySelector("thead tr");
+      const bodyRow = wrap.querySelector("tbody tr");
+      const headerHeight = (headRow && headRow.getBoundingClientRect().height > 10)
+        ? headRow.getBoundingClientRect().height
+        : 42;
+      const rowHeight = (bodyRow && bodyRow.getBoundingClientRect().height > 10)
+        ? bodyRow.getBoundingClientRect().height
+        : 40;
+      const rows = Math.max(1, Number(maxRows) || 25);
+      wrap.style.maxHeight = `${Math.round(headerHeight + (rowHeight * rows) + 2)}px`;
+      wrap.style.overflowY = "auto";
+    }
+
     function renderQualityTable(rows, scale) {
       const sorted = rows.slice().sort((a, b) => {
         const ta = a?.date instanceof Date ? a.date.getTime() : NaN;
@@ -1768,6 +1910,7 @@
       if (!sorted.length) {
         $("qualityTb").innerHTML = '<tr><td colspan="23" style="color:#a7bfd0;">No rows for current filters.</td></tr>';
       }
+      applyRawTableViewportLimit(25);
       $("qualityStatus").textContent = `Rows shown: ${sorted.length.toLocaleString()}`;
     }
 
@@ -1813,7 +1956,39 @@
       return s || "Unknown";
     }
 
-    function computeYamatoProjectedByType(rows, shiftLength, daysPerWeek, mode) {
+    function yamatoValueLabel(mode, isWeek) {
+      const unit = mode === "lbs" ? "Lbs" : "Units";
+      return `${unit} per ${isWeek ? "Week" : "Day"}`;
+    }
+
+    function clamshellOunces(type) {
+      const raw = String(type ?? "").trim().toUpperCase();
+      const compact = raw.replace(/\s+/g, "");
+      if (compact === "5OZ") return 5;
+      if (compact === "10OZ") return 10;
+      if (compact === "16OZ") return 16;
+      const alt = compact.match(/^(\d+(?:\.\d+)?)0Z$/);
+      if (alt) {
+        const oz = Number(alt[1]);
+        return Number.isFinite(oz) && oz > 0 ? oz : NaN;
+      }
+      const m = compact.match(/(\d+(?:\.\d+)?)OZ/);
+      if (m) {
+        const oz = Number(m[1]);
+        return Number.isFinite(oz) && oz > 0 ? oz : NaN;
+      }
+      return NaN;
+    }
+
+    function convertUnitsByClamshell(units, clamshellType, valueMode) {
+      if (!Number.isFinite(units)) return NaN;
+      if (valueMode !== "lbs") return units;
+      const ozPerUnit = clamshellOunces(clamshellType);
+      if (!Number.isFinite(ozPerUnit) || ozPerUnit <= 0) return NaN;
+      return units * (ozPerUnit / 16);
+    }
+
+    function computeYamatoProjectedByType(rows, shiftLength, daysPerWeek, mode, valueMode = "units") {
       const byType = new Map();
       for (const r of Array.isArray(rows) ? rows : []) {
         const type = normalizeClamshellType(r?.clamshellType);
@@ -1834,7 +2009,8 @@
         .map(([clamshellType, v]) => {
           const unitsPerHour = v.duration > 0 ? (v.dumps / v.duration) : NaN;
           const dailyThroughput = Number.isFinite(unitsPerHour) ? (unitsPerHour * shift) : NaN;
-          const projected = Number.isFinite(dailyThroughput) ? (dailyThroughput * factor) : NaN;
+          const projectedUnits = Number.isFinite(dailyThroughput) ? (dailyThroughput * factor) : NaN;
+          const projected = convertUnitsByClamshell(projectedUnits, clamshellType, valueMode);
           return { clamshellType, projected };
         })
         .sort((a, b) => {
@@ -1842,6 +2018,40 @@
           const bv = Number.isFinite(b.projected) ? b.projected : -Infinity;
           return (bv - av) || a.clamshellType.localeCompare(b.clamshellType);
         });
+    }
+
+    function computeQcPotentialSummaryLbs(a2, avgCanastaWeight, shiftLength, daysPerWeek, qcPeople) {
+      const dailyTrendQc = buildDailyTrend(a2?.daily || []);
+      const valsQc = dailyTrendQc
+        .map((d) => Number(d.rate) * Number(avgCanastaWeight))
+        .filter((v) => Number.isFinite(v));
+      const last5Qc = valsQc.slice(-5);
+      const avg5Qc = last5Qc.length ? (last5Qc.reduce((a, b) => a + b, 0) / last5Qc.length) : NaN;
+      const teamCount = Math.max(0, Number(qcPeople) || 0);
+      if (!Number.isFinite(avg5Qc) || teamCount <= 0) {
+        return { shift: NaN, week: NaN };
+      }
+      const shiftVal = avg5Qc * Math.max(0, Number(shiftLength) || 0) * teamCount;
+      const weekVal = shiftVal * Math.max(0, Number(daysPerWeek) || 0);
+      return { shift: shiftVal, week: weekVal };
+    }
+
+    function computeYamatoThroughputSummaryLbs(rows, shiftLength, daysPerWeek) {
+      let totalLbs = 0;
+      let totalDuration = 0;
+      for (const r of Array.isArray(rows) ? rows : []) {
+        const units = Number.isFinite(r?.totalDumps) ? r.totalDumps : NaN;
+        const duration = Number.isFinite(r?.durationHours) && r.durationHours > 0 ? r.durationHours : NaN;
+        const oz = clamshellOunces(r?.clamshellType);
+        if (!Number.isFinite(units) || !Number.isFinite(duration) || !Number.isFinite(oz) || oz <= 0) continue;
+        totalLbs += units * (oz / 16);
+        totalDuration += duration;
+      }
+      if (!(totalDuration > 0)) return { day: NaN, week: NaN };
+      const lbsPerHour = totalLbs / totalDuration;
+      const dayVal = lbsPerHour * Math.max(0, Number(shiftLength) || 0);
+      const weekVal = dayVal * Math.max(0, Number(daysPerWeek) || 0);
+      return { day: dayVal, week: weekVal };
     }
 
     function renderYamatoClamshellFilters(rows) {
@@ -1867,6 +2077,7 @@
       const shiftLength = Math.max(Number(opts.shiftLength) || 0, 0);
       const daysPerWeek = Math.max(Number(opts.daysPerWeek) || 0, 0);
       const isWeek = ACTIVE_YAMATO_PROJECTION_MODE === "week";
+      const metricLabel = yamatoValueLabel(ACTIVE_YAMATO_VALUE_MODE, isWeek);
       if (missing.length) {
         $("kYRuns").textContent = "0";
         $("kYDumps").textContent = "0";
@@ -1886,15 +2097,16 @@
           chartYamatoType.data.datasets[0].data = [];
           chartYamatoType.update();
         }
-        if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = isWeek ? "Projected Units/Week by Clamshell Type" : "Projected Units/Day by Clamshell Type";
+        if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = metricLabel;
         renderYamatoClamshellFilters([]);
         updateMeta([]);
         return;
       }
 
-      const rows = Array.isArray(precomputed?.rows) ? precomputed.rows : applyYamatoFilters(allRows);
-      const a = precomputed?.agg && typeof precomputed.agg === "object" ? precomputed.agg : aggregateYamato(rows);
-      renderYamatoClamshellFilters(rows);
+      const baseRows = Array.isArray(precomputed?.rows) ? precomputed.rows : applyYamatoFilters(allRows);
+      renderYamatoClamshellFilters(baseRows);
+      const rows = filterYamatoRowsByActiveClamshell(baseRows);
+      const a = aggregateYamato(rows);
       $("kYRuns").textContent = fmtInt(a.runCount);
       $("kYDumps").textContent = fmtInt(a.totalDumps);
       $("kYAvgDumps").textContent = fmt1(a.avgDumpsPerRun);
@@ -1905,16 +2117,13 @@
       if (candidateRows === 0) {
         $("yamatoStatus").textContent = "Rows shown: 0 | Yamato headers found, but source values are empty.";
       }
-      if (allRows.length && !rows.length) {
-        $("yamatoStatus").textContent = `Rows shown: 0 | Parsed Yamato rows: ${allRows.length.toLocaleString()} (date filter removed all rows)`;
+      if (baseRows.length && !rows.length) {
+        $("yamatoStatus").textContent = `Rows shown: 0 | Parsed Yamato rows: ${baseRows.length.toLocaleString()} (current filters removed all rows)`;
       }
 
       if (chartYamatoDaily) {
         const selectedType = ACTIVE_YAMATO_CLAMSHELL;
-        const dailyRows = selectedType === "__all__"
-          ? rows
-          : rows.filter((r) => normalizeClamshellType(r?.clamshellType) === selectedType);
-        const dailyAgg = aggregateYamato(dailyRows);
+        const dailyAgg = aggregateYamato(rows);
         const labels = formatChartDateLabels(dailyAgg.daily.map((d) => d.dateISO));
         const vals = dailyAgg.daily.map((d) => Number.isFinite(d.dumpsPerHour) ? Number(d.dumpsPerHour.toFixed(2)) : null);
         const last5 = vals.filter((v) => Number.isFinite(v)).slice(-5);
@@ -1926,35 +2135,40 @@
         chartYamatoDaily.update();
       }
       if (chartYamatoType) {
-        const projected = computeYamatoProjectedByType(rows, shiftLength, daysPerWeek, ACTIVE_YAMATO_PROJECTION_MODE);
-        const title = isWeek ? "Projected Units/Week by Clamshell Type" : "Projected Units/Day by Clamshell Type";
-        if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = title;
+        const projected = computeYamatoProjectedByType(baseRows, shiftLength, daysPerWeek, ACTIVE_YAMATO_PROJECTION_MODE, ACTIVE_YAMATO_VALUE_MODE);
+        if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = metricLabel;
         chartYamatoType.data.labels = projected.map((d) => d.clamshellType);
-        chartYamatoType.data.datasets[0].label = isWeek ? "Projected Units/Week" : "Projected Units/Day";
+        chartYamatoType.data.datasets[0].label = metricLabel;
         chartYamatoType.data.datasets[0].data = projected.map((d) => Number.isFinite(d.projected) ? Number(d.projected.toFixed(2)) : 0);
         if (chartYamatoType.options?.scales?.y?.title) {
-          chartYamatoType.options.scales.y.title.text = isWeek ? "Projected Units/Week" : "Projected Units/Day";
+          chartYamatoType.options.scales.y.title.text = metricLabel;
         }
         chartYamatoType.update();
       }
     }
 
     function setActiveView(view) {
-      const next = (view === "raw" || view === "qc" || view === "yamato") ? view : "dashboard";
+      const next = (view === "summary" || view === "raw" || view === "qc" || view === "yamato") ? view : "dashboard";
       ACTIVE_VIEW = next;
+      const summaryOn = next === "summary";
       const dashboardOn = next === "dashboard";
       const rawOn = next === "raw";
       const qcOn = next === "qc";
       const qcTabOn = next === "qc";
       const yamatoOn = next === "yamato";
+      if ($("summaryView")) $("summaryView").classList.toggle("hidden", !summaryOn);
       $("dashboardView").classList.toggle("hidden", !dashboardOn);
       $("rawQualityView").classList.toggle("hidden", !rawOn);
       $("qcPotentialView").classList.toggle("hidden", !qcOn);
       if ($("yamatoView")) $("yamatoView").classList.toggle("hidden", !yamatoOn);
+      if ($("topKpiStrip")) $("topKpiStrip").classList.toggle("hidden", yamatoOn || summaryOn);
+      if ($("yamatoPackageSizeRow")) $("yamatoPackageSizeRow").classList.toggle("hidden", !(yamatoOn || summaryOn));
+      if ($("tabSummary")) $("tabSummary").classList.toggle("active", summaryOn);
       $("tabDashboard").classList.toggle("active", dashboardOn);
       $("tabRawQuality").classList.toggle("active", rawOn);
       $("tabQCPotential").classList.toggle("active", qcTabOn);
       if ($("yamatoTopPill")) $("yamatoTopPill").classList.toggle("active", yamatoOn);
+      if ($("tabSummary")) $("tabSummary").setAttribute("aria-selected", summaryOn ? "true" : "false");
       $("tabDashboard").setAttribute("aria-selected", dashboardOn ? "true" : "false");
       $("tabRawQuality").setAttribute("aria-selected", rawOn ? "true" : "false");
       $("tabQCPotential").setAttribute("aria-selected", qcTabOn ? "true" : "false");
@@ -1974,6 +2188,7 @@
     let ACTIVE_VIEW = "dashboard";
     let ACTIVE_PROJECTION_MODE = "shift";
     let ACTIVE_YAMATO_PROJECTION_MODE = "day";
+    let ACTIVE_YAMATO_VALUE_MODE = "units";
     let ACTIVE_YAMATO_CLAMSHELL = "__all__";
     let RENDER_TIMER = 0;
 
@@ -1991,6 +2206,7 @@
         summaryQuality: ACTIVE_SUMMARY_QUALITY,
         projectionMode: ACTIVE_PROJECTION_MODE,
         yamatoProjectionMode: ACTIVE_YAMATO_PROJECTION_MODE,
+        yamatoValueMode: ACTIVE_YAMATO_VALUE_MODE,
         yamatoClamshell: ACTIVE_YAMATO_CLAMSHELL,
         scrollX: window.scrollX || 0,
         scrollY: window.scrollY || 0,
@@ -2013,7 +2229,7 @@
         if (!raw) return;
         const s = JSON.parse(raw);
         if (!s || typeof s !== "object") return;
-        if (s.activeView === "dashboard" || s.activeView === "raw" || s.activeView === "qc" || s.activeView === "yamato") {
+        if (s.activeView === "summary" || s.activeView === "dashboard" || s.activeView === "raw" || s.activeView === "qc" || s.activeView === "yamato") {
           ACTIVE_VIEW = s.activeView;
         }
         if (typeof s.summaryQuality === "string" && s.summaryQuality) {
@@ -2025,6 +2241,9 @@
         if (s.yamatoProjectionMode === "day" || s.yamatoProjectionMode === "week") {
           ACTIVE_YAMATO_PROJECTION_MODE = s.yamatoProjectionMode;
         }
+        if (s.yamatoValueMode === "units" || s.yamatoValueMode === "lbs") {
+          ACTIVE_YAMATO_VALUE_MODE = s.yamatoValueMode;
+        }
         if (typeof s.yamatoClamshell === "string" && s.yamatoClamshell.trim()) {
           ACTIVE_YAMATO_CLAMSHELL = s.yamatoClamshell.trim();
         }
@@ -2034,6 +2253,7 @@
         }
         updateProjectionModeUI();
         updateYamatoProjectionModeUI();
+        updateYamatoValueModeUI();
         requestAnimationFrame(() => {
           window.scrollTo(Number(s.scrollX) || 0, Number(s.scrollY) || 0);
           if ($("rawTableWrap")) {
@@ -2111,21 +2331,31 @@
       const scale = getQualityScale();
       const avgCanastaWeight = Math.max(readNum("avgCanastaWeight", 6), 0);
       const yamatoCycles = Math.max(readNum("yamatoCycles", 7), 0);
-      const shiftLength = Math.max(readNum("shiftLength", 8), 0);
+      const shiftLength = Math.max(readNum("shiftLength", 6.5), 0);
       const daysPerWeek = Math.max(readNum("daysPerWeek", 5), 0);
+      const qcPeople = Math.max(readNum("qcPeople", 4), 0);
       const qualityFilter = ACTIVE_SUMMARY_QUALITY;
       const rows = filterRowsBySummaryQuality(rowsBase, scale, qualityFilter);
       CURRENT_ROWS = rows;
       CURRENT_SCALE = scale;
       const a2 = aggregate(rows, scale);
-      const yamatoRowsFiltered = applyYamatoFilters(ALL_YAMATO_ROWS);
-      const yamatoAgg = aggregateYamato(yamatoRowsFiltered);
+      const yamatoRowsDateFiltered = applyYamatoFilters(ALL_YAMATO_ROWS);
+      const yamatoRowsSummaryFiltered = filterYamatoRowsBySummaryQuality(yamatoRowsDateFiltered, rows, qualityFilter);
+      const yamatoRowsForKpis = filterYamatoRowsByActiveClamshell(yamatoRowsSummaryFiltered);
+      const yamatoAgg = aggregateYamato(yamatoRowsForKpis);
+      const qcSummary = computeQcPotentialSummaryLbs(a2, avgCanastaWeight, shiftLength, daysPerWeek, qcPeople);
+      const yamatoSummary = computeYamatoThroughputSummaryLbs(yamatoRowsForKpis, shiftLength, daysPerWeek);
 
-      $("kIq").textContent = fmtInt(a2.totalIQ);
       $("kH").textContent = fmtInt(a2.totalH);
       $("kDays").textContent = fmtInt(a2.activeDays);
       $("kEmp").textContent = fmtInt(a2.employees);
-      $("kYamato").textContent = fmtInt(yamatoAgg.totalDumps);
+      if ($("kSummaryQcShift")) $("kSummaryQcShift").textContent = Number.isFinite(qcSummary.shift) ? fmt1(qcSummary.shift) : "—";
+      if ($("kSummaryQcWeek")) $("kSummaryQcWeek").textContent = Number.isFinite(qcSummary.week) ? fmt1(qcSummary.week) : "—";
+      if ($("kSummaryYamatoDay")) $("kSummaryYamatoDay").textContent = Number.isFinite(yamatoSummary.day) ? fmt1(yamatoSummary.day) : "—";
+      if ($("kSummaryYamatoWeek")) $("kSummaryYamatoWeek").textContent = Number.isFinite(yamatoSummary.week) ? fmt1(yamatoSummary.week) : "—";
+      if ($("summaryStatus")) {
+        $("summaryStatus").textContent = `QC People: ${qcPeople.toFixed(0)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)}`;
+      }
       if ($("yamatoTopPill")) $("yamatoTopPill").title = `Yamato Total Dumps: ${fmtInt(yamatoAgg.totalDumps)}`;
 
       if (chartDaily) {
@@ -2189,19 +2419,23 @@
       renderTable(a2.empRows, scale);
       renderTableQc(a2.empRows, avgCanastaWeight);
       renderQualityTable(rows, scale);
-      if (ACTIVE_VIEW === "yamato") {
+      if (ACTIVE_VIEW === "summary") {
+        renderYamatoClamshellFilters(yamatoRowsSummaryFiltered);
+      }
+      if (ACTIVE_VIEW === "yamato" || ACTIVE_VIEW === "raw") {
         renderYamatoDashboard(
           ALL_YAMATO_ROWS,
           YAMATO_MISSING_HEADERS,
           YAMATO_CANDIDATE_ROWS,
-          { rows: yamatoRowsFiltered, agg: yamatoAgg },
+          { rows: yamatoRowsSummaryFiltered },
           { shiftLength, daysPerWeek }
         );
-      } else {
+      }
+      if (ACTIVE_VIEW !== "yamato") {
         updateMeta(rows);
       }
       $("status").textContent = `Rows in filter: ${rows.length.toLocaleString()}`;
-      $("statusQc").textContent = `Rows in filter: ${rows.length.toLocaleString()} | Avg Canasta Weight: ${avgCanastaWeight.toFixed(2)} | Yamato Cycles: ${yamatoCycles.toFixed(0)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)} | Mode: ${ACTIVE_PROJECTION_MODE === "week" ? "Week" : "Shift"}`;
+      $("statusQc").textContent = `Rows in filter: ${rows.length.toLocaleString()} | Avg Canasta Weight: ${avgCanastaWeight.toFixed(2)} | Yamato Cycles: ${yamatoCycles.toFixed(0)} | Shift Length: ${shiftLength.toFixed(1)} | Days/Week: ${daysPerWeek.toFixed(0)} | QC People: ${qcPeople.toFixed(0)} | Mode: ${ACTIVE_PROJECTION_MODE === "week" ? "Week" : "Shift"}`;
       if (ACTIVE_EMPLOYEE && !$("empTrendModal").classList.contains("hidden")) {
         renderEmployeeTrend();
       }
@@ -2234,6 +2468,11 @@
       if ($("yamatoProjWeek")) $("yamatoProjWeek").classList.toggle("active", ACTIVE_YAMATO_PROJECTION_MODE === "week");
     }
 
+    function updateYamatoValueModeUI() {
+      if ($("yamatoValUnits")) $("yamatoValUnits").classList.toggle("active", ACTIVE_YAMATO_VALUE_MODE === "units");
+      if ($("yamatoValLbs")) $("yamatoValLbs").classList.toggle("active", ACTIVE_YAMATO_VALUE_MODE === "lbs");
+    }
+
     function applySavedDashboardInputs(payload) {
       const cfgRemote = payload?.settings?.packTeamPerformance;
       const cfg = (cfgRemote && typeof cfgRemote === "object")
@@ -2244,11 +2483,13 @@
       const cycles = Number(cfg.yamatoCycles);
       const shift = Number(cfg.shiftLength);
       const days = Number(cfg.daysPerWeek);
+      const qcPeople = Number(cfg.qcPeople);
       const mode = String(cfg.projectionMode || "").toLowerCase();
       if (Number.isFinite(avg) && avg >= 0) $("avgCanastaWeight").value = String(avg);
       if (Number.isFinite(cycles) && cycles >= 0) $("yamatoCycles").value = String(cycles);
       if (Number.isFinite(shift) && shift >= 0) $("shiftLength").value = String(shift);
       if (Number.isFinite(days) && days >= 0) $("daysPerWeek").value = String(days);
+      if (Number.isFinite(qcPeople) && qcPeople >= 0) $("qcPeople").value = String(qcPeople);
       if (mode === "shift" || mode === "week") {
         ACTIVE_PROJECTION_MODE = mode;
       }
@@ -2287,8 +2528,9 @@
         }
         const avg = Math.max(readNum("avgCanastaWeight", 6), 0);
         const cycles = Math.max(readNum("yamatoCycles", 7), 0);
-        const shift = Math.max(readNum("shiftLength", 8), 0);
+        const shift = Math.max(readNum("shiftLength", 6.5), 0);
         const days = Math.max(readNum("daysPerWeek", 5), 0);
+        const qcPeople = Math.max(readNum("qcPeople", 4), 0);
         payloadToSave.settings = (payloadToSave.settings && typeof payloadToSave.settings === "object") ? payloadToSave.settings : {};
         payloadToSave.settings.packTeamPerformance = {
           ...(payloadToSave.settings.packTeamPerformance && typeof payloadToSave.settings.packTeamPerformance === "object"
@@ -2298,6 +2540,7 @@
           yamatoCycles: Number(cycles.toFixed(0)),
           shiftLength: Number(shift.toFixed(4)),
           daysPerWeek: Number(days.toFixed(4)),
+          qcPeople: Number(qcPeople.toFixed(0)),
           projectionMode: ACTIVE_PROJECTION_MODE
         };
         $("status").textContent = "Saving to Supabase (via Worker)…";
@@ -2358,7 +2601,7 @@
 
         fillEmployees(ALL_ROWS);
 
-        ["rangeSel", "empSel", "avgCanastaWeight", "yamatoCycles", "shiftLength", "daysPerWeek", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
+        ["rangeSel", "empSel", "avgCanastaWeight", "yamatoCycles", "shiftLength", "daysPerWeek", "qcPeople", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
           if (!$(id).dataset.bound) {
             $(id).addEventListener("input", () => scheduleRender(80));
             $(id).addEventListener("change", () => scheduleRender(0));
@@ -2422,6 +2665,12 @@
           $("empTrendModal").dataset.bound = "1";
         }
         if (!$("tabDashboard").dataset.bound) {
+          if ($("tabSummary")) {
+            $("tabSummary").addEventListener("click", () => {
+              setActiveView("summary");
+              scheduleRender(0);
+            });
+          }
           $("tabDashboard").addEventListener("click", () => {
             setActiveView("dashboard");
             scheduleRender(0);
@@ -2472,12 +2721,30 @@
           });
           $("yamatoProjDay").dataset.bound = "1";
         }
+        if ($("yamatoValUnits") && $("yamatoValLbs") && !$("yamatoValUnits").dataset.bound) {
+          $("yamatoValUnits").addEventListener("click", () => {
+            if (ACTIVE_YAMATO_VALUE_MODE === "units") return;
+            ACTIVE_YAMATO_VALUE_MODE = "units";
+            updateYamatoValueModeUI();
+            scheduleRender(0);
+            persistUIState();
+          });
+          $("yamatoValLbs").addEventListener("click", () => {
+            if (ACTIVE_YAMATO_VALUE_MODE === "lbs") return;
+            ACTIVE_YAMATO_VALUE_MODE = "lbs";
+            updateYamatoValueModeUI();
+            scheduleRender(0);
+            persistUIState();
+          });
+          $("yamatoValUnits").dataset.bound = "1";
+        }
         if (!$("saveSupabaseBtn").dataset.bound) {
           $("saveSupabaseBtn").addEventListener("click", saveToSupabase);
           $("saveSupabaseBtn").dataset.bound = "1";
         }
         setActiveView(ACTIVE_VIEW);
         updateYamatoProjectionModeUI();
+        updateYamatoValueModeUI();
 
         render(ALL_ROWS);
         restoreUIState();
