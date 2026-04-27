@@ -632,6 +632,32 @@
       font-size: 0.75rem;
     }
 
+    /* Full-width raw sales table mode */
+    .table-card.sales-table-mode .table-wrapper {
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+
+    .table-card.sales-table-mode .table-wrapper table {
+      width: max-content;
+      min-width: 2600px;
+      table-layout: auto;
+    }
+
+    .table-card.sales-table-mode th,
+    .table-card.sales-table-mode td {
+      text-align: center !important;
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
+      min-width: 160px;
+    }
+
+    .table-card.sales-table-mode th:nth-child(n),
+    .table-card.sales-table-mode td:nth-child(n) {
+      width: auto !important;
+    }
+
     thead {
       background: linear-gradient(to right,#020617,#020617);
       position: sticky;
@@ -879,11 +905,13 @@
             <div class="week-source-toggle-header" id="weekSourceToggle" aria-label="Week source">
               <button data-week-source="sales" class="active">Sales Week <span class="mode-tag">SLS</span></button>
               <button data-week-source="ship">Sales Ship Week <span class="mode-tag">SHIP</span></button>
+              <button data-week-source="table">Sales Table <span class="mode-tag">TBL</span></button>
             </div>
           </div>
           <div class="title-sub">
-            Daily / weekly sales by SKU, customer, and ship method. Toggle between cases and pounds sold.
+            Daily / weekly sales by SKU, customer, and destination. Toggle between Sales # of Cases and Sales Lbs Eq.
           </div>
+          <div class="title-sub" id="dataInputStatus">Waiting for Master Pack in localStorage.</div>
         </div>
         <div class="badge-row">
           <div class="pill-badge">
@@ -914,11 +942,11 @@
             </div>
             <div class="toggle-row">
               <div class="chip">
-                Units
+                Reporting metric
                 <span class="info-icon" id="unitsInfo" title="COMBO-05OZ → 18 bags × 5 oz = 5.625 lbs/case&#10;COMBO-10OZ → 12 bags × 10 oz = 7.5 lbs/case&#10;COMBO-01LB → 10 bags × 1 lb = 10 lbs/case&#10;CRNCH-01LB → 10 bags × 1 lb = 10 lbs/case&#10;COMBO-03LB → 3 bags × 3 lb = 9 lbs/case&#10;CRNCH-03LB → 3 bags × 3 lb = 9 lbs/case">ⓘ</span>
                 <div class="pill-toggle" id="unitModeToggle">
-                  <button data-unit="cases" class="active">Cases</button>
-                  <button data-unit="pounds">Pounds</button>
+                  <button data-unit="cases" class="active">Sales # of Cases</button>
+                  <button data-unit="lbsEq">Sales Lbs Eq.</button>
                 </div>
               </div>
               <button class="chip reset-btn hidden" id="resetFiltersBtn">Reset filters</button>
@@ -951,6 +979,20 @@
               </span>
             </div>
             <div class="strip" id="customerStrip"></div>
+          </div>
+
+          <!-- DESTINATION STRIP -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title">
+                <span class="dot"></span>
+                Sales destination
+              </div>
+              <span class="chip">
+                View by Sales Destination
+              </span>
+            </div>
+            <div class="strip" id="destinationStrip"></div>
           </div>
         </aside>
 
@@ -992,7 +1034,7 @@
                   Performance over time
                 </div>
                 <div class="chart-sub" id="performanceSub">
-                  Bars: total units sold per day or per week.
+                  Bars: total Sales # of Cases per day or per week.
                 </div>
               </div>
               <div class="pill-toggle" id="timeAxisToggle">
@@ -1002,7 +1044,7 @@
             </div>
             <canvas id="salesPerformanceChart"></canvas>
             <div class="chart-footer-note" id="chartFooterNote">
-              Showing units sold by Invoice Date. Data reflects all active filters.
+              Showing Sales # of Cases by invoice date. Data reflects all active filters.
             </div>
           </div>
 
@@ -1016,9 +1058,9 @@
                     <span class="dot"></span>
                     Sales breakdown
                   </div>
-                  <div class="chart-sub" id="breakdownSub">
-                    Units sold by SKU or by customer (current filters).
-                  </div>
+                <div class="chart-sub" id="breakdownSub">
+                    Sales metric by SKU or by customer (current filters).
+                </div>
                 </div>
                 <div class="pill-toggle" id="breakdownToggle">
                   <button data-mode="sku" class="active">By SKU</button>
@@ -1027,7 +1069,7 @@
               </div>
               <canvas id="salesBreakdownChart"></canvas>
               <div class="chart-footer-note" id="breakdownFooterNote">
-                Showing units sold by SKU. Data reflects all active filters.
+                Showing Sales # of Cases by SKU. Data reflects all active filters.
               </div>
               <div id="leaderboardContainer"></div>
             </div>
@@ -1053,7 +1095,7 @@
             </div>
 
             <!-- TABLE -->
-            <div class="table-card">
+            <div class="table-card" id="salesLogCard">
               <div class="table-header-row">
                 <div>
                   <div class="table-title">
@@ -1074,17 +1116,7 @@
               <div class="table-wrapper" id="salesLogWrapper" style="display:none;">
                 <table>
                   <thead>
-                    <tr>
-                      <th>Invoice date</th>
-                      <th id="weekColHeader">Sales week</th>
-                      <th>SKU</th>
-                      <th class="text-right">Cases</th>
-                      <th class="text-right">Units</th>
-                      <th>Customer</th>
-                      <th>Ship via</th>
-                      <th>Sales term</th>
-                      <th class="text-center">Invoice #</th>
-                    </tr>
+                    <tr id="salesTableHeadRow"></tr>
                   </thead>
                   <tbody id="salesTableBody"></tbody>
                 </table>
@@ -1106,16 +1138,53 @@
     const BC_NAME = "campo_master_bus_v1";
     const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
 
+    const SALES = Object.freeze({
+      INVOICE_DATE: "Sales Invoice Date",
+      PO_DATE: "Sale PO Date",
+      SHIP_VIA: "Sales Ship Via",
+      DESTINATION: "Sales Destination",
+      WEEK: "Sales Week",
+      SHIP_WEEK: "Sales Ship Week",
+      SHIP_DATE: "Sales Ship Date",
+      INVOICE_NO: "Sales Invoice No.",
+      SKU: "Sales SKU",
+      CASES: "Sales # of Cases",
+      LBS_PER_CASE: "Sales Lbs. Per Case",
+      LBS_EQ: "Sales Lbs Eq.",
+      CUSTOMER: "Sales Customer",
+      TERM: "Sales Term",
+      EXTRA: "Sales Extra"
+    });
+
     const REQUIRED_SALES_HEADERS = [
-      "Sales Invoice Date",
-      "Sales Ship Via",
-      "Sales Week",
-      "Sales Invoice No.",
-      "Sales SKU",
-      "Sales # of Cases",
-      "Sales Customer",
-      "Sales Term"
+      SALES.INVOICE_DATE,
+      SALES.INVOICE_NO,
+      SALES.SKU,
+      SALES.CASES,
+      SALES.CUSTOMER
     ];
+
+    function normHeader(s) {
+      return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    const SALES_HEADER_ALIASES = new Map([
+      ["sales invoice date", SALES.INVOICE_DATE], ["invoice date", SALES.INVOICE_DATE],
+      ["sale po date", SALES.PO_DATE], ["sales po date", SALES.PO_DATE], ["po date", SALES.PO_DATE],
+      ["sales ship via", SALES.SHIP_VIA], ["ship via", SALES.SHIP_VIA], ["via", SALES.SHIP_VIA],
+      ["sales destination", SALES.DESTINATION], ["destination", SALES.DESTINATION],
+      ["sales week", SALES.WEEK], ["week", SALES.WEEK],
+      ["sales ship week", SALES.SHIP_WEEK], ["ship week", SALES.SHIP_WEEK],
+      ["sales ship date", SALES.SHIP_DATE], ["ship date", SALES.SHIP_DATE],
+      ["sales invoice no.", SALES.INVOICE_NO], ["sales invoice no", SALES.INVOICE_NO], ["invoice no.", SALES.INVOICE_NO], ["invoice #", SALES.INVOICE_NO], ["invoice no", SALES.INVOICE_NO],
+      ["sales sku", SALES.SKU], ["sku", SALES.SKU],
+      ["sales # of cases", SALES.CASES], ["# of cases", SALES.CASES], ["cases", SALES.CASES],
+      ["sales lbs. per case", SALES.LBS_PER_CASE], ["sales lbs per case", SALES.LBS_PER_CASE], ["lbs per case", SALES.LBS_PER_CASE],
+      ["sales lbs eq.", SALES.LBS_EQ], ["sales lbs eq", SALES.LBS_EQ], ["lbs eq", SALES.LBS_EQ],
+      ["sales customer", SALES.CUSTOMER], ["customer", SALES.CUSTOMER],
+      ["sales term", SALES.TERM], ["term", SALES.TERM],
+      ["sales extra", SALES.EXTRA], ["extra", SALES.EXTRA]
+    ]);
 
 const excludedCustomers = new Set([
   "donación - banco de alimento pr",
@@ -1168,23 +1237,65 @@ const skuWeightLbs = {
       return excludedCustomers.has(name.trim().toLowerCase());
     }
 
+    function parseNumeric(value) {
+      const cleaned = String(value ?? "").replace(/,/g, "").trim();
+      if (!cleaned) return 0;
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function parseWeekNumber(value) {
+      const s = String(value ?? "").trim();
+      if (!s) return 0;
+      const direct = Number(s);
+      if (Number.isFinite(direct) && direct > 0) return direct;
+      const match = s.match(/\d{1,2}/);
+      return match ? Number(match[0]) : 0;
+    }
+
     function normalizeData(raw) {
       return raw
         .map(r => {
-          const [invoiceDate, shipVia, salesWeek, salesShipWeek, invoiceNo, sku, cases, customer, term = ""] = r;
+          const [
+            invoiceDate,
+            poDate,
+            shipVia,
+            salesWeek,
+            salesShipWeek,
+            shipDate,
+            invoiceNo,
+            sku,
+            cases,
+            lbsPerCase,
+            lbsEq,
+            destination,
+            customer,
+            term = "",
+            extra = ""
+          ] = r;
           const invoiceDateObj = new Date(invoiceDate);
           const invoiceDateISO = isNaN(invoiceDateObj.getTime()) ? "" : invoiceDateObj.toISOString().slice(0,10);
           const invoiceDateSafe = isNaN(invoiceDateObj.getTime()) ? null : invoiceDateObj;
+          const casesNum = parseNumeric(cases);
+          const lbsPerCaseNum = parseNumeric(lbsPerCase);
+          const lbsEqNum = parseNumeric(lbsEq);
+          const skuKey = String(sku ?? "").trim();
+          const derivedLbsEq = casesNum * (lbsPerCaseNum || (skuWeightLbs[skuKey] ?? 0));
           const invoiceYear = invoiceDateObj.getTime && !isNaN(invoiceDateObj.getTime()) ? invoiceDateObj.getFullYear() : 0;
-          const salesWeekNum = Number(salesWeek) || 0;
-          const salesShipWeekNum = Number(salesShipWeek) || 0;
+          const salesWeekNum = parseWeekNumber(salesWeek);
+          const salesShipWeekNum = parseWeekNumber(salesShipWeek);
           const weekKey = invoiceYear ? `${invoiceYear}-W${salesWeekNum}` : `0000-W${salesWeekNum}`;
           const weekOrder = invoiceYear ? (invoiceYear * 100 + salesWeekNum) : salesWeekNum;
           const shipWeekKey = invoiceYear ? `${invoiceYear}-W${salesShipWeekNum}` : `0000-W${salesShipWeekNum}`;
           const shipWeekOrder = invoiceYear ? (invoiceYear * 100 + salesShipWeekNum) : salesShipWeekNum;
           return {
             invoiceDate,
-            shipVia,
+            poDate: String(poDate ?? "").trim(),
+            shipVia: String(shipVia ?? "").trim(),
+            shipDate: String(shipDate ?? "").trim(),
+            salesWeekRaw: String(salesWeek ?? "").trim(),
+            salesShipWeekRaw: String(salesShipWeek ?? "").trim(),
+            destination: destination || "Unspecified",
             salesWeek: salesWeekNum,
             salesShipWeek: salesShipWeekNum,
             invoiceYear,
@@ -1195,10 +1306,13 @@ const skuWeightLbs = {
             invoiceDateObj: invoiceDateSafe,
             invoiceDateISO,
             invoiceNo: String(invoiceNo),
-            sku,
-            cases: Number(cases),
+            sku: skuKey,
+            cases: casesNum,
+            lbsPerCase: lbsPerCaseNum,
+            lbsEq: lbsEqNum || derivedLbsEq,
             customer,
-            term
+            term,
+            extra: String(extra ?? "").trim()
           };
         })
         .filter(record => !isExcludedCustomer(record.customer));
@@ -1207,6 +1321,7 @@ const skuWeightLbs = {
     let salesData = [];
 
     const state = {
+      headerTab: "sales", // "sales" | "ship" | "table"
       viewMode: "daily",   // "daily" or "weekly" (global)
       timeAxis: "daily",   // chart axis (kept in sync with viewMode)
       unitMode: "cases",
@@ -1216,14 +1331,17 @@ const skuWeightLbs = {
       filters: {
         sku: "all",
         customer: "all",
+        destination: "all",
         week: "all",
         date: "all"
       }
     };
 
     const salesTableBody = document.getElementById("salesTableBody");
+    const salesTableHeadRow = document.getElementById("salesTableHeadRow");
     const skuStripEl = document.getElementById("skuStrip");
     const customerStripEl = document.getElementById("customerStrip");
+    const destinationStripEl = document.getElementById("destinationStrip");
 
     const kpiTotalSoldEl = document.getElementById("kpiTotalSold");
     const kpiTotalSoldSubEl = document.getElementById("kpiTotalSoldSub");
@@ -1238,7 +1356,6 @@ const skuWeightLbs = {
     const chartFooterNoteEl = document.getElementById("chartFooterNote");
     const breakdownFooterNoteEl = document.getElementById("breakdownFooterNote");
     const tableModeChipEl = document.getElementById("tableModeChip");
-    const weekColHeaderEl = document.getElementById("weekColHeader");
     const performanceSubEl = document.getElementById("performanceSub");
     const breakdownSubEl = document.getElementById("breakdownSub");
     const weeklySummaryContainer = document.getElementById("weeklySummaryContainer");
@@ -1249,6 +1366,13 @@ const skuWeightLbs = {
     const salesLogWrapperEl = document.getElementById("salesLogWrapper");
     const salesLogCollapsedNoteEl = document.getElementById("salesLogCollapsedNote");
     const toggleSalesLogBtnEl = document.getElementById("toggleSalesLogBtn");
+    const salesLogCardEl = document.getElementById("salesLogCard");
+    const layoutEl = document.querySelector(".layout");
+    const sidebarEl = document.querySelector(".sidebar");
+    const kpiRowEl = document.querySelector(".kpi-row");
+    const performanceCardEl = document.querySelector(".performance-card");
+    const breakdownCardEl = document.querySelector(".breakdown-card");
+    const heatmapCardEl = document.querySelector(".heatmap-card");
 
     const dataInputStatus = document.getElementById("dataInputStatus");
 
@@ -1263,17 +1387,56 @@ const skuWeightLbs = {
       try { return JSON.parse(raw); } catch { return null; }
     }
 
+    function canonicalizeHeaderList(headersRaw) {
+      return (Array.isArray(headersRaw) ? headersRaw : []).map(h => {
+        const raw = String(h ?? "").trim();
+        if (!raw) return "";
+        return SALES_HEADER_ALIASES.get(normHeader(raw)) || raw;
+      });
+    }
+
+    function getMissingSalesHeaders(headerSet) {
+      const missing = REQUIRED_SALES_HEADERS.filter(h => !headerSet.has(h));
+      if (!headerSet.has(SALES.WEEK) && !headerSet.has(SALES.SHIP_WEEK)) {
+        missing.push(`${SALES.WEEK} or ${SALES.SHIP_WEEK}`);
+      }
+      return missing;
+    }
+
+    function pickSalesSheet(payload) {
+      const sheets = payload?.sheets || {};
+      const entries = Object.entries(sheets);
+      if (!entries.length) return { name: MASTER_PACK_SHEET_NAME, sheet: null };
+
+      const primary = sheets[MASTER_PACK_SHEET_NAME];
+      if (primary) {
+        const primarySet = new Set(canonicalizeHeaderList(primary.headers).filter(Boolean));
+        if (!getMissingSalesHeaders(primarySet).length) {
+          return { name: MASTER_PACK_SHEET_NAME, sheet: primary };
+        }
+      }
+
+      for (const [name, sheet] of entries) {
+        const hs = new Set(canonicalizeHeaderList(sheet?.headers).filter(Boolean));
+        if (!getMissingSalesHeaders(hs).length) {
+          return { name, sheet };
+        }
+      }
+
+      return { name: MASTER_PACK_SHEET_NAME, sheet: primary || null };
+    }
+
     function sheetToRowObjects(sheetObj) {
       const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
       const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      const canonHeaders = canonicalizeHeaderList(headers);
       const out = [];
       for (const r of rows) {
         if (!Array.isArray(r)) continue;
         const obj = {};
-        for (let i = 0; i < headers.length; i++) {
-          const h = headers[i];
-          const key = (h === null || h === undefined) ? "" : String(h);
-          if (!key.trim()) continue;
+        for (let i = 0; i < canonHeaders.length; i++) {
+          const key = String(canonHeaders[i] ?? "").trim();
+          if (!key) continue;
           obj[key] = (i < r.length) ? r[i] : "";
         }
         out.push(obj);
@@ -1282,32 +1445,55 @@ const skuWeightLbs = {
     }
 
     function parseSalesFromMasterPack(payload) {
-      const sheet = payload?.sheets?.[MASTER_PACK_SHEET_NAME];
-      if (!sheet) return { rows: [], missing: REQUIRED_SALES_HEADERS.slice() };
-      const headers = Array.isArray(sheet.headers) ? sheet.headers.map(h => String(h ?? "")) : [];
+      const picked = pickSalesSheet(payload);
+      const sheet = picked.sheet;
+      if (!sheet) return { rows: [], missing: REQUIRED_SALES_HEADERS.slice(), sourceSheet: picked.name };
+      const headers = canonicalizeHeaderList(sheet.headers);
       const headerSet = new Set(headers);
-      const missing = REQUIRED_SALES_HEADERS.filter(h => !headerSet.has(h));
-      if (missing.length) return { rows: [], missing };
+      const missing = getMissingSalesHeaders(headerSet);
+      if (missing.length) return { rows: [], missing, sourceSheet: picked.name };
 
       const rowObjs = sheetToRowObjects(sheet);
       const out = [];
 
       for (const r of rowObjs) {
-        const invoiceDate = String(r["Sales Invoice Date"] ?? "").trim();
-        const shipVia = String(r["Sales Ship Via"] ?? "").trim();
-        const salesWeek = String(r["Sales Week"] ?? "").trim();
-        const salesShipWeek = String(r["Sales Ship Week"] ?? r["Sales Week"] ?? "").trim();
-        const invoiceNo = String(r["Sales Invoice No."] ?? "").trim();
-        const sku = String(r["Sales SKU"] ?? "").trim();
-        const cases = String(r["Sales # of Cases"] ?? "").trim();
-        const customer = String(r["Sales Customer"] ?? "").trim();
-        const term = String(r["Sales Term"] ?? "").trim();
+        const invoiceDate = String(r[SALES.INVOICE_DATE] ?? "").trim();
+        const poDate = String(r[SALES.PO_DATE] ?? "").trim();
+        const shipVia = String(r[SALES.SHIP_VIA] ?? "").trim();
+        const destination = String(r[SALES.DESTINATION] ?? "").trim();
+        const salesWeek = String(r[SALES.WEEK] ?? r[SALES.SHIP_WEEK] ?? "").trim();
+        const salesShipWeek = String(r[SALES.SHIP_WEEK] ?? r[SALES.WEEK] ?? "").trim();
+        const shipDate = String(r[SALES.SHIP_DATE] ?? "").trim();
+        const invoiceNo = String(r[SALES.INVOICE_NO] ?? "").trim();
+        const sku = String(r[SALES.SKU] ?? "").trim();
+        const cases = String(r[SALES.CASES] ?? "").trim();
+        const lbsPerCase = String(r[SALES.LBS_PER_CASE] ?? "").trim();
+        const lbsEq = String(r[SALES.LBS_EQ] ?? "").trim();
+        const customer = String(r[SALES.CUSTOMER] ?? "").trim();
+        const term = String(r[SALES.TERM] ?? "").trim();
+        const extra = String(r[SALES.EXTRA] ?? "").trim();
 
         if (!invoiceDate && !sku && !cases && !customer) continue;
-        out.push([invoiceDate, shipVia, salesWeek, salesShipWeek, invoiceNo, sku, cases, customer, term]);
+        out.push([
+          invoiceDate,
+          poDate,
+          shipVia,
+          salesWeek,
+          salesShipWeek,
+          shipDate,
+          invoiceNo,
+          sku,
+          cases,
+          lbsPerCase,
+          lbsEq,
+          destination,
+          customer,
+          term,
+          extra
+        ]);
       }
 
-      return { rows: out, missing: [] };
+      return { rows: out, missing: [], sourceSheet: picked.name };
     }
 
     function hydrateFromMasterPack(reason) {
@@ -1328,7 +1514,8 @@ const skuWeightLbs = {
         initFilters();
         refreshDashboard();
         if (dataInputStatus) {
-          dataInputStatus.textContent = `Master Pack missing Sales columns: ${parsed.missing.join(", ")}`;
+          const from = parsed.sourceSheet ? ` in sheet "${parsed.sourceSheet}"` : "";
+          dataInputStatus.textContent = `Missing Sales columns${from}: ${parsed.missing.join(", ")}`;
         }
         return;
       }
@@ -1337,7 +1524,8 @@ const skuWeightLbs = {
       initFilters();
       refreshDashboard();
       if (dataInputStatus) {
-        dataInputStatus.textContent = `Loaded ${salesData.length} sales rows from Master Pack.`;
+        const from = parsed.sourceSheet ? ` from "${parsed.sourceSheet}"` : "";
+        dataInputStatus.textContent = `Loaded ${salesData.length} sales rows${from}.`;
       }
     }
 
@@ -1350,9 +1538,27 @@ const skuWeightLbs = {
       return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
     }
 
+    function getUnitModeMeta(unitMode = state.unitMode) {
+      if (unitMode === "cases") {
+        return {
+          chartLabel: "Sales # of Cases",
+          shortLabel: "cases",
+          compactLabel: "Cases",
+          weeklyMetricHeader: "Units"
+        };
+      }
+      return {
+        chartLabel: "Sales Lbs Eq.",
+        shortLabel: "lbs eq.",
+        compactLabel: "Lbs Eq.",
+        weeklyMetricHeader: "Lbs Eq."
+      };
+    }
+
     function getUnits(record, unitMode) {
       if (unitMode === "cases") return record.cases;
-      const w = skuWeightLbs[record.sku] ?? 1;
+      if (record.lbsEq > 0) return record.lbsEq;
+      const w = skuWeightLbs[record.sku] ?? 0;
       return record.cases * w;
     }
 
@@ -1386,6 +1592,7 @@ const skuWeightLbs = {
         const selectedWeek = getSelectedWeekMeta(row);
         if (state.filters.sku !== "all" && row.sku !== state.filters.sku) return false;
         if (state.filters.customer !== "all" && row.customer !== state.filters.customer) return false;
+        if (state.filters.destination !== "all" && row.destination !== state.filters.destination) return false;
         if (state.filters.week !== "all" && selectedWeek.weekKey !== state.filters.week) return false;
         if (state.filters.date !== "all" && row.invoiceDateISO !== state.filters.date) return false;
         return true;
@@ -1429,41 +1636,135 @@ const skuWeightLbs = {
     function initFilters() {
       const skuSet = new Set();
       const customerSet = new Set();
+      const destinationSet = new Set();
 
       salesData.forEach(row => {
         skuSet.add(row.sku);
         customerSet.add(row.customer);
+        destinationSet.add(row.destination);
       });
 
       buildStrip(skuStripEl, "All SKUs", skuSet, "sku");
       buildStrip(customerStripEl, "All customers", customerSet, "customer");
+      buildStrip(destinationStripEl, "All destinations", destinationSet, "destination");
 
-      state.filters = { sku: "all", customer: "all", week: "all", date: "all" };
+      state.filters = { sku: "all", customer: "all", destination: "all", week: "all", date: "all" };
+    }
+
+    function renderSalesTableHeaders(isSalesTableMode) {
+      if (!salesTableHeadRow) return;
+
+      const headerDefs = isSalesTableMode
+        ? [
+            "Sales Invoice Date",
+            "Sale PO Date",
+            "Sales Ship Via",
+            "Sales Week",
+            "Sales Ship Week",
+            "Sales Ship Date",
+            "Sales Invoice No.",
+            "Sales SKU",
+            "Sales # of Cases",
+            "Sales Lbs. Per Case",
+            "Sales Lbs Eq.",
+            "Sales Destination",
+            "Sales Customer",
+            "Sales Term",
+            "Sales Extra"
+          ]
+        : [
+            "Invoice date",
+            "Sales week",
+            "Sales ship week",
+            "Invoice #",
+            "SKU",
+            "Sales # of Cases",
+            getUnitModeMeta(state.unitMode).chartLabel,
+            "Customer",
+            "Sales destination",
+            "Sales term"
+          ];
+
+      salesTableHeadRow.innerHTML = headerDefs.map((label, idx) => {
+        const rightAligned = isSalesTableMode
+          ? (label === "Sales # of Cases" || label === "Sales Lbs. Per Case" || label === "Sales Lbs Eq.")
+          : (idx === 5 || idx === 6);
+        const centerAligned = (!isSalesTableMode && idx === 3) || (isSalesTableMode && label === "Sales Invoice No.");
+        const cls = rightAligned ? "text-right" : (centerAligned ? "text-center" : "");
+        return `<th${cls ? ` class="${cls}"` : ""}>${label}</th>`;
+      }).join("");
     }
 
     function renderTable(filtered) {
       salesTableBody.innerHTML = "";
       const unitMode = state.unitMode;
       const frag = document.createDocumentFragment();
-      const isWeekly = state.viewMode === "weekly";
+      const forceSalesTable = state.headerTab === "table";
+      renderSalesTableHeaders(forceSalesTable);
+      const isWeekly = state.viewMode === "weekly" && !forceSalesTable;
 
-      if (!isWeekly) {
-        // DAILY: one row per invoice line (original behavior)
+      if (forceSalesTable) {
+        filtered
+          .slice()
+          .sort((a,b)=> (a.invoiceDateObj?.getTime() || 0) - (b.invoiceDateObj?.getTime() || 0) || a.invoiceNo.localeCompare(b.invoiceNo))
+          .forEach(row => {
+            const tr = document.createElement("tr");
+            const invoiceDateText = row.invoiceDateObj ? formatDateShort(row.invoiceDateObj) : (row.invoiceDate || "—");
+            const salesWeekText = row.salesWeekRaw || (row.salesWeek ? String(row.salesWeek) : "");
+            const salesShipWeekText = row.salesShipWeekRaw || (row.salesShipWeek ? String(row.salesShipWeek) : "");
+
+            const cells = [
+              invoiceDateText || "—",
+              row.poDate || "—",
+              row.shipVia || "—",
+              salesWeekText || "—",
+              salesShipWeekText || "—",
+              row.shipDate || "—",
+              row.invoiceNo || "—",
+              row.sku || "—",
+              formatNumber(row.cases),
+              formatNumber(row.lbsPerCase || 0),
+              formatNumber(row.lbsEq || 0),
+              row.destination || "—",
+              row.customer || "—",
+              row.term || "—",
+              row.extra || "—"
+            ];
+
+            cells.forEach((value, idx) => {
+              const td = document.createElement("td");
+              if ([8, 9, 10].includes(idx)) td.className = "text-right";
+              if (idx === 6) td.className = "text-center";
+              td.textContent = value;
+              tr.appendChild(td);
+            });
+            frag.appendChild(tr);
+          });
+      } else if (!isWeekly) {
+        // RAW table: one row per invoice line
         filtered
           .slice()
           .sort((a,b)=> (a.invoiceDateObj?.getTime() || 0) - (b.invoiceDateObj?.getTime() || 0) || a.invoiceNo.localeCompare(b.invoiceNo))
           .forEach(row => {
             const tr = document.createElement("tr");
             const units = getUnits(row, unitMode);
-            const selectedWeek = getSelectedWeekMeta(row);
 
             const invoiceDateTd = document.createElement("td");
             invoiceDateTd.textContent = formatDateShort(row.invoiceDateObj);
             tr.appendChild(invoiceDateTd);
 
-            const weekTd = document.createElement("td");
-            weekTd.textContent = selectedWeek.week;
-            tr.appendChild(weekTd);
+            const salesWeekTd = document.createElement("td");
+            salesWeekTd.textContent = row.salesWeek ? `W${row.salesWeek}${row.invoiceYear ? ` ${row.invoiceYear}` : ""}` : "–";
+            tr.appendChild(salesWeekTd);
+
+            const salesShipWeekTd = document.createElement("td");
+            salesShipWeekTd.textContent = row.salesShipWeek ? `W${row.salesShipWeek}${row.invoiceYear ? ` ${row.invoiceYear}` : ""}` : "–";
+            tr.appendChild(salesShipWeekTd);
+
+            const invTd = document.createElement("td");
+            invTd.className = "text-center";
+            invTd.textContent = row.invoiceNo;
+            tr.appendChild(invTd);
 
             const skuTd = document.createElement("td");
             skuTd.textContent = row.sku;
@@ -1484,17 +1785,12 @@ const skuWeightLbs = {
             tr.appendChild(custTd);
 
             const viaTd = document.createElement("td");
-            viaTd.textContent = row.shipVia;
+            viaTd.textContent = row.destination;
             tr.appendChild(viaTd);
 
             const termTd = document.createElement("td");
             termTd.textContent = row.term || "-";
             tr.appendChild(termTd);
-
-            const invTd = document.createElement("td");
-            invTd.className = "text-center";
-            invTd.textContent = row.invoiceNo;
-            tr.appendChild(invTd);
 
             frag.appendChild(tr);
           });
@@ -1529,13 +1825,22 @@ const skuWeightLbs = {
         rows.forEach(row => {
           const tr = document.createElement("tr");
 
-          const shipTd = document.createElement("td");
-          shipTd.textContent = row.weekLabel;
-          tr.appendChild(shipTd);
+          const invoiceDateTd = document.createElement("td");
+          invoiceDateTd.textContent = "–";
+          tr.appendChild(invoiceDateTd);
 
-          const weekTd = document.createElement("td");
-          weekTd.textContent = row.weekLabel.replace(/^W/, "");
-          tr.appendChild(weekTd);
+          const salesWeekTd = document.createElement("td");
+          salesWeekTd.textContent = row.weekLabel;
+          tr.appendChild(salesWeekTd);
+
+          const salesShipWeekTd = document.createElement("td");
+          salesShipWeekTd.textContent = row.weekLabel;
+          tr.appendChild(salesShipWeekTd);
+
+          const invTd = document.createElement("td");
+          invTd.className = "text-center";
+          invTd.textContent = "Multiple";
+          tr.appendChild(invTd);
 
           const skuTd = document.createElement("td");
           skuTd.textContent = row.sku;
@@ -1556,17 +1861,12 @@ const skuWeightLbs = {
           tr.appendChild(custTd);
 
           const viaTd = document.createElement("td");
-          viaTd.textContent = "–";
+          viaTd.textContent = "Multiple";
           tr.appendChild(viaTd);
 
           const termTd = document.createElement("td");
           termTd.textContent = "–";
           tr.appendChild(termTd);
-
-          const invTd = document.createElement("td");
-          invTd.className = "text-center";
-          invTd.textContent = "Multiple";
-          tr.appendChild(invTd);
 
           frag.appendChild(tr);
         });
@@ -1577,7 +1877,8 @@ const skuWeightLbs = {
 
     function renderKpis(filtered) {
       const unitMode = state.unitMode;
-      const unitLabel = unitMode === "cases" ? "cases" : "lbs";
+      const unitMeta = getUnitModeMeta(unitMode);
+      const unitLabel = unitMeta.shortLabel;
       const isWeekly = state.viewMode === "weekly";
 
       if (!filtered.length) {
@@ -1612,7 +1913,7 @@ const skuWeightLbs = {
       });
 
       kpiTotalSoldEl.textContent = formatNumber(totalUnits);
-      kpiTotalSoldSubEl.textContent = `Across ${filtered.length} invoice lines (${unitLabel})`;
+      kpiTotalSoldSubEl.textContent = `Across ${filtered.length} invoice lines (${unitMeta.chartLabel})`;
 
       const groupCount = byGroup.size;
       if (isWeekly) {
@@ -1658,7 +1959,7 @@ const skuWeightLbs = {
         return;
       }
 
-      const unitMode = state.unitMode; // "cases" or "pounds"
+      const unitMode = state.unitMode; // "cases" or "lbsEq"
       const byWeek = new Map();
       const showYear = hasMultipleWeekYears(filtered);
 
@@ -1671,10 +1972,10 @@ const skuWeightLbs = {
 
         // Second metric depends on mode:
         // - cases mode  -> units (bags)
-        // - pounds mode -> lbs
+        // - lbsEq mode -> lbs
         const secondMetric = unitMode === "cases"
           ? getUnitCount(row)          // cases × units-per-case
-          : getUnits(row, "pounds");   // cases × lbs-per-case
+          : getUnits(row, "lbsEq");    // cases × lbs-per-case
 
         if (!byWeek.has(wk)) {
           byWeek.set(wk, {
@@ -1709,10 +2010,10 @@ const skuWeightLbs = {
         })
         .join("");
 
-      const secondHeader = unitMode === "cases" ? "Units" : "Lbs";
+      const secondHeader = getUnitModeMeta(unitMode).weeklyMetricHeader;
       const chipLabel = unitMode === "cases"
-        ? "Mode: Cases + units/case"
-        : "Mode: Lbs (cases × lbs/case)";
+        ? "Mode: Sales # of Cases + units/case"
+        : "Mode: Sales Lbs Eq. (cases × lbs/case)";
       const weekHeaderLabel = getWeekSourceLabel(true);
 
       weeklySummaryContainer.innerHTML = `
@@ -1813,7 +2114,7 @@ const skuWeightLbs = {
     function renderChart(filtered) {
       const ctx = document.getElementById("salesPerformanceChart").getContext("2d");
       const { labels, data, keys } = buildTimeChartData(filtered);
-      const unitLabel = state.unitMode === "cases" ? "Cases sold" : "Pounds sold";
+      const unitLabel = getUnitModeMeta(state.unitMode).chartLabel;
       const axisText = state.timeAxis === "weekly" ? getWeekSourceLabel() : "invoice date";
       const windowSize = state.viewMode === "weekly" ? 4 : 7;
 
@@ -1900,19 +2201,19 @@ const skuWeightLbs = {
       });
 
       chartFooterNoteEl.textContent =
-        `Showing ${unitLabel.toLowerCase()} by ${axisText} (${state.viewMode === "weekly" ? "total per week" : "per invoice day"}). Data reflects all active filters.`;
+        `Showing ${unitLabel} by ${axisText} (${state.viewMode === "weekly" ? "total per week" : "per invoice day"}). Data reflects all active filters.`;
 
       if (performanceSubEl) {
         performanceSubEl.textContent = state.viewMode === "weekly"
-          ? "Bars: total units sold per week."
-          : "Bars: total units sold per invoice date.";
+          ? `Bars: total ${unitLabel.toLowerCase()} per week.`
+          : `Bars: total ${unitLabel.toLowerCase()} per invoice date.`;
       }
     }
 
     function renderBreakdownChart(filtered) {
       const ctx = document.getElementById("salesBreakdownChart").getContext("2d");
       const { labels, data } = buildBreakdownData(filtered);
-      const unitLabel = state.unitMode === "cases" ? "Cases sold" : "Pounds sold";
+      const unitLabel = getUnitModeMeta(state.unitMode).chartLabel;
       const mode = state.breakdownMode;
       const modeLabel = mode === "sku" ? "SKU" : "customer";
       const isDaily = state.viewMode === "daily";
@@ -1958,12 +2259,12 @@ const skuWeightLbs = {
       });
 
       breakdownFooterNoteEl.textContent =
-        `Showing ${unitLabel.toLowerCase()} by ${modeLabel}${metricLabel}. Values shown in ${state.unitMode === "cases" ? "cases" : "pounds"}. Data reflects all active filters.`;
+        `Showing ${unitLabel} by ${modeLabel}${metricLabel}. Values shown in ${getUnitModeMeta(state.unitMode).shortLabel}. Data reflects all active filters.`;
 
       if (breakdownSubEl) {
         breakdownSubEl.textContent = isDaily
-          ? "Units sold by SKU or customer (avg per invoice day)."
-          : "Units sold by SKU or customer (total per week).";
+          ? `${unitLabel} by SKU or customer (avg per invoice day).`
+          : `${unitLabel} by SKU or customer (total per week).`;
       }
     }
 
@@ -1974,7 +2275,7 @@ const skuWeightLbs = {
         return;
       }
 
-      const unitLabel = state.unitMode === "cases" ? "cases" : "lbs";
+      const unitLabel = getUnitModeMeta(state.unitMode).shortLabel;
       const byCustomer = new Map();
       const bySku = new Map();
 
@@ -2224,7 +2525,7 @@ const skuWeightLbs = {
       });
 
       if (skuShareAreaChartNoteEl) {
-        const unit = state.unitMode === "cases" ? "cases" : "lbs";
+        const unit = getUnitModeMeta(state.unitMode).shortLabel;
         skuShareAreaChartNoteEl.textContent = `Top SKU share by ${getWeekSourceLabel()} using ${unit} as the denominator.`;
       }
     }
@@ -2232,10 +2533,12 @@ const skuWeightLbs = {
     function updateModeLabels() {
       const isWeekly = state.viewMode === "weekly";
       const weekSourceLabel = getWeekSourceLabel(true);
-      if (weekColHeaderEl) weekColHeaderEl.textContent = weekSourceLabel;
       const weeklyAxisBtn = document.querySelector("#timeAxisToggle button[data-view=\"weekly\"]");
       if (weeklyAxisBtn) weeklyAxisBtn.textContent = `By ${weekSourceLabel}`;
-      if (isWeekly) {
+      if (state.headerTab === "table") {
+        tableModeChipEl.textContent = "Sales table rows";
+        kpiAvgPerDayLabelEl.textContent = isWeekly ? "Average per day (7-day week)" : "Average per day";
+      } else if (isWeekly) {
         kpiAvgPerDayLabelEl.textContent = "Average per day (7-day week)";
         tableModeChipEl.textContent = "Weekly rows";
       } else {
@@ -2255,11 +2558,34 @@ const skuWeightLbs = {
       }
     }
 
+    function updateHeaderTabLayout() {
+      const isTableMode = state.headerTab === "table";
+
+      if (sidebarEl) sidebarEl.style.display = isTableMode ? "none" : "";
+      if (layoutEl) layoutEl.style.gridTemplateColumns = isTableMode ? "minmax(0, 1fr)" : "";
+      if (salesLogCardEl) salesLogCardEl.classList.toggle("sales-table-mode", isTableMode);
+
+      if (kpiRowEl) kpiRowEl.style.display = isTableMode ? "none" : "";
+      if (weeklySummaryContainer) weeklySummaryContainer.style.display = isTableMode ? "none" : "";
+      if (performanceCardEl) performanceCardEl.style.display = isTableMode ? "none" : "";
+      if (breakdownCardEl) breakdownCardEl.style.display = isTableMode ? "none" : "";
+      if (heatmapCardEl) heatmapCardEl.style.display = isTableMode ? "none" : "";
+      if (salesLogCardEl) salesLogCardEl.style.display = isTableMode ? "" : "none";
+
+      if (toggleSalesLogBtnEl) {
+        toggleSalesLogBtnEl.style.display = isTableMode ? "none" : "";
+      }
+
+      setSalesLogVisibility(isTableMode);
+    }
+
     function updateResetButtonVisibility() {
       if (!resetFiltersBtn) return;
       const needsReset =
+        state.headerTab !== "sales" ||
         state.filters.sku !== "all" ||
         state.filters.customer !== "all" ||
+        state.filters.destination !== "all" ||
         state.filters.week !== "all" ||
         state.filters.date !== "all" ||
         state.unitMode !== "cases" ||
@@ -2273,6 +2599,7 @@ const skuWeightLbs = {
       const filtered = applyFilters();
       updateHeatmapMetricToggleLabel();
       updateModeLabels();
+      updateHeaderTabLayout();
       renderKpis(filtered);
       renderWeeklySummary(filtered);
       renderChart(filtered);
@@ -2304,7 +2631,7 @@ const skuWeightLbs = {
       if (!heatmapMetricToggle) return;
       const valueBtn = heatmapMetricToggle.querySelector("button[data-heatmap-metric=\"value\"]");
       if (!valueBtn) return;
-      valueBtn.textContent = state.unitMode === "cases" ? "Cases" : "Lbs";
+      valueBtn.textContent = getUnitModeMeta(state.unitMode).compactLabel;
     }
 
     function initToggles() {
@@ -2315,19 +2642,21 @@ const skuWeightLbs = {
       const heatmapMetricToggle = document.getElementById("heatmapMetricToggle");
 
       unitToggle.addEventListener("click", (e) => {
-        if (e.target.tagName !== "BUTTON") return;
+        const targetBtn = e.target.closest("button");
+        if (!targetBtn) return;
         [...unitToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
-        e.target.classList.add("active");
-        state.unitMode = e.target.dataset.unit;
+        targetBtn.classList.add("active");
+        state.unitMode = targetBtn.dataset.unit;
         refreshDashboard();
       });
 
       timeAxisToggle.addEventListener("click", (e) => {
-        if (e.target.tagName !== "BUTTON") return;
+        const targetBtn = e.target.closest("button");
+        if (!targetBtn) return;
         [...timeAxisToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
-        e.target.classList.add("active");
+        targetBtn.classList.add("active");
 
-        const view = e.target.dataset.view === "weekly" ? "weekly" : "daily";
+        const view = targetBtn.dataset.view === "weekly" ? "weekly" : "daily";
         state.timeAxis = view;   // chart axis
         state.viewMode = view;   // global mode (KPIs + table)
         refreshDashboard();
@@ -2335,36 +2664,46 @@ const skuWeightLbs = {
 
       if (weekSourceToggle) {
         weekSourceToggle.addEventListener("click", (e) => {
-          if (e.target.tagName !== "BUTTON") return;
+          const targetBtn = e.target.closest("button");
+          if (!targetBtn) return;
           [...weekSourceToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
-          e.target.classList.add("active");
-          state.weekSource = e.target.dataset.weekSource === "ship" ? "ship" : "sales";
-          state.filters.week = "all";
+          targetBtn.classList.add("active");
+          const sourceMode = targetBtn.dataset.weekSource;
+          if (sourceMode === "table") {
+            state.headerTab = "table";
+          } else {
+            state.headerTab = sourceMode === "ship" ? "ship" : "sales";
+            state.weekSource = state.headerTab === "ship" ? "ship" : "sales";
+            state.filters.week = "all";
+          }
           refreshDashboard();
         });
       }
 
       breakdownToggle.addEventListener("click", (e) => {
-        if (e.target.tagName !== "BUTTON") return;
+        const targetBtn = e.target.closest("button");
+        if (!targetBtn) return;
         [...breakdownToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
-        e.target.classList.add("active");
-        state.breakdownMode = e.target.dataset.mode;
+        targetBtn.classList.add("active");
+        state.breakdownMode = targetBtn.dataset.mode;
         refreshDashboard();
       });
 
       if (heatmapMetricToggle) {
         heatmapMetricToggle.addEventListener("click", (e) => {
-          if (e.target.tagName !== "BUTTON") return;
+          const targetBtn = e.target.closest("button");
+          if (!targetBtn) return;
           [...heatmapMetricToggle.querySelectorAll("button")].forEach(btn => btn.classList.remove("active"));
-          e.target.classList.add("active");
-          state.heatmapMetric = e.target.dataset.heatmapMetric === "pct" ? "pct" : "value";
+          targetBtn.classList.add("active");
+          state.heatmapMetric = targetBtn.dataset.heatmapMetric === "pct" ? "pct" : "value";
           refreshDashboard();
         });
       }
 
       if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener("click", () => {
-          state.filters = { sku: "all", customer: "all", week: "all", date: "all" };
+          state.headerTab = "sales";
+          state.filters = { sku: "all", customer: "all", destination: "all", week: "all", date: "all" };
           state.unitMode = "cases";
           state.weekSource = "sales";
           state.viewMode = "daily";
@@ -2377,6 +2716,8 @@ const skuWeightLbs = {
           setActiveToggle(heatmapMetricToggle, "heatmapMetric", "value");
           resetStripActive(skuStripEl, "sku");
           resetStripActive(customerStripEl, "customer");
+          resetStripActive(destinationStripEl, "destination");
+          setSalesLogVisibility(false);
 
           refreshDashboard();
         });
@@ -2405,6 +2746,15 @@ const skuWeightLbs = {
         [...customerStripEl.querySelectorAll(".pill")].forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         state.filters.customer = btn.dataset.customer;
+        refreshDashboard();
+      });
+
+      destinationStripEl.addEventListener("click", (e) => {
+        const btn = e.target.closest(".pill");
+        if (!btn || !btn.dataset.destination) return;
+        [...destinationStripEl.querySelectorAll(".pill")].forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filters.destination = btn.dataset.destination;
         refreshDashboard();
       });
     }
