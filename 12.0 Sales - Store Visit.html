@@ -547,6 +547,21 @@
   let charts = { route:null, chainLow:null, wob:null, temp:null };
 
   const STORE_VISITS_KEY = "campo_store_visits_v1";
+  const LEGACY_STORE_VISITS_KEY = "campo_master_store_visit_v1";
+
+  function getStoreVisitsRawFromStorage(){
+    const canonical = (localStorage.getItem(STORE_VISITS_KEY) || "").trim();
+    if (canonical) return canonical;
+    const legacy = (localStorage.getItem(LEGACY_STORE_VISITS_KEY) || "").trim();
+    if (legacy) {
+      try {
+        localStorage.setItem(STORE_VISITS_KEY, legacy);
+        localStorage.removeItem(LEGACY_STORE_VISITS_KEY);
+      } catch {}
+      return legacy;
+    }
+    return "";
+  }
 
   function extractObjectsFromStoreVisitsPayload(payload){
     if(!payload || typeof payload !== "object") return [];
@@ -575,7 +590,7 @@
   }
 
   function loadFromLocalStorage(){
-    const raw = (localStorage.getItem(STORE_VISITS_KEY) || "").trim();
+    const raw = getStoreVisitsRawFromStorage();
     if(!raw) throw new Error(`No local data found in localStorage["${STORE_VISITS_KEY}"]`);
     let payload = null;
     try { payload = JSON.parse(raw); } catch { throw new Error("Local Store Visits payload is not valid JSON"); }

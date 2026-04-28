@@ -1699,6 +1699,13 @@
       const EXPERIMENTS_PING = "campo_experiments_push_ping_v1";
       const PROCUREMENT_PING = "campo_master_procurement_push_ping_v1";
       const STORE_VISITS_PING = "campo_store_visits_push_ping_v1";
+      const LEGACY_EXPERIMENTS_KEY = "campo_master_experiments_v1";
+      const LEGACY_EXPERIMENTS_PING = "campo_master_experiments_push_ping_v1";
+      const LEGACY_STORE_VISITS_KEY = "campo_master_store_visit_v1";
+      const LEGACY_STORE_VISITS_PING = "campo_master_store_visit_push_ping_v1";
+      const LOCAL_DB_NAME = "campo_local_cache_v1";
+      const LOCAL_DB_STORE = "datasets";
+      const PACK_INDEXEDDB_MARKER = "indexeddb";
 
 
       const CANON_GROW_SHEET = "Master Grow";
@@ -1843,6 +1850,49 @@
         }
       }
 
+      function openLocalDb(version = 1){
+        return new Promise((resolve, reject) => {
+          if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+          const req = indexedDB.open(LOCAL_DB_NAME, version);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+              db.createObjectStore(LOCAL_DB_STORE);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+        });
+      }
+
+      async function openLocalDbWithStore(){
+        let db = await openLocalDb(1);
+        if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+        const nextVersion = Math.max(2, (db.version || 1) + 1);
+        db.close();
+        db = await openLocalDb(nextVersion);
+        if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+          db.close();
+          throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+        }
+        return db;
+      }
+
+      async function idbSetJson(key, value){
+        const db = await openLocalDbWithStore();
+        try {
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(LOCAL_DB_STORE, "readwrite");
+            tx.objectStore(LOCAL_DB_STORE).put(value, key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error("indexedDB write failed"));
+            tx.onabort = () => reject(tx.error || new Error("indexedDB tx aborted"));
+          });
+        } finally {
+          db.close();
+        }
+      }
+
       function notifyIframes(type){
         for (const id of IFRAME_IDS){
           const ifr = document.getElementById(id);
@@ -1902,11 +1952,64 @@
         return raw;
       }
 
+      function isPackIdbPointer(payload){
+        return !!(payload && typeof payload === "object" &&
+          payload._storage === PACK_INDEXEDDB_MARKER &&
+          payload._idbKey === MASTER_PACK_KEY);
+      }
+
+      function buildPackPointerPayload(fullPayload, sourceLabel){
+        const packSheet = fullPayload?.sheets?.[CANON_PACK_SHEET] || {};
+        const headerCount = Array.isArray(packSheet.headers) ? packSheet.headers.length : 0;
+        const rowCount = Array.isArray(packSheet.rows) ? packSheet.rows.length : 0;
+        return {
+          version: fullPayload?.version || "v1",
+          kind: "pack",
+          updatedAt: fullPayload?.updatedAt || new Date().toISOString(),
+          sourceLabel: sourceLabel || fullPayload?.sourceLabel || "",
+          _storage: PACK_INDEXEDDB_MARKER,
+          _idbKey: MASTER_PACK_KEY,
+          sheets: {
+            [CANON_PACK_SHEET]: {
+              headers: [],
+              rows: [],
+              headerCount,
+              rowCount
+            }
+          }
+        };
+      }
+
+      function migrateLegacyDatasetKeys(){
+        const migrations = [
+          { canonical: EXPERIMENTS_KEY, legacy: LEGACY_EXPERIMENTS_KEY },
+          { canonical: EXPERIMENTS_PING, legacy: LEGACY_EXPERIMENTS_PING },
+          { canonical: STORE_VISITS_KEY, legacy: LEGACY_STORE_VISITS_KEY },
+          { canonical: STORE_VISITS_PING, legacy: LEGACY_STORE_VISITS_PING }
+        ];
+
+        for (const { canonical, legacy } of migrations) {
+          try {
+            const canonicalVal = localStorage.getItem(canonical);
+            const legacyVal = localStorage.getItem(legacy);
+            if ((!canonicalVal || canonicalVal === "") && legacyVal && legacyVal !== "") {
+              localStorage.setItem(canonical, legacyVal);
+            }
+            if (legacyVal != null) localStorage.removeItem(legacy);
+          } catch {}
+        }
+      }
+
       function storageContractOk(){
         const growRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
         if (growRaw) { try { if (!JSON.parse(growRaw)?.sheets?.[CANON_GROW_SHEET]) return false; } catch { return false; } }
         const packRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
-        if (packRaw) { try { if (!JSON.parse(packRaw)?.sheets?.[CANON_PACK_SHEET]) return false; } catch { return false; } }
+        if (packRaw) {
+          try {
+            const parsed = JSON.parse(packRaw);
+            if (!isPackIdbPointer(parsed) && !parsed?.sheets?.[CANON_PACK_SHEET]) return false;
+          } catch { return false; }
+        }
         return true;
       }
 
@@ -1914,12 +2017,14 @@
         try{
           const hr = await fetch(WORKER_HEALTH_URL, { cache:"no-store" });
           if (!hr.ok) throw new Error(`Health HTTP ${hr.status}`);
-          showToast("Worker connected", "Hydrating localStorage…", true);
+          showToast("Worker connected", "Hydrating dashboard cache…", true);
         } catch(err){
           console.error("❌ Worker not reachable:", err);
           showToast("Worker not reachable", "Using whatever is already in localStorage.", false);
           return;
         }
+
+        migrateLegacyDatasetKeys();
 
         let wroteAny = false;
         const now = Date.now();
@@ -1938,7 +2043,22 @@
         try{
           const packJson = await workerGetJson(WORKER_PACK_URL);
           const normalizedPack = normalizeMasterPayload(packJson, "pack");
-          localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(normalizedPack));
+          let cachedPackInIdb = false;
+          try {
+            await idbSetJson(MASTER_PACK_KEY, normalizedPack);
+            cachedPackInIdb = true;
+          } catch (idbErr) {
+            console.warn("Pack cache write failed:", idbErr);
+          }
+
+          const fullPackStr = JSON.stringify(normalizedPack);
+          try {
+            localStorage.removeItem(MASTER_PACK_KEY);
+            localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
+          } catch (lsErr) {
+            if (!cachedPackInIdb) throw lsErr;
+            localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(normalizedPack, "worker")));
+          }
           localStorage.setItem(MASTER_PACK_PING, String(now));
           try { window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } })); } catch {}
           notifyIframes(MSG_PACK);
@@ -2423,6 +2543,7 @@
       setLanguage(currentLang);
       homeShowLevel1();
       activate("p-home");
+      migrateLegacyDatasetKeys();
       checkFiles();
       tryHydrateFromWorker();
     })();

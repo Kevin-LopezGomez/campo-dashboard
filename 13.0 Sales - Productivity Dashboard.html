@@ -1262,10 +1262,10 @@
     const LOCAL_DB_NAME = "campo_local_cache_v1";
     const LOCAL_DB_STORE = "datasets";
 
-    function openLocalDb() {
+    function openLocalDb(version = 1) {
       return new Promise((resolve, reject) => {
         if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
-        const req = indexedDB.open(LOCAL_DB_NAME, 1);
+        const req = indexedDB.open(LOCAL_DB_NAME, version);
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
@@ -1277,8 +1277,21 @@
       });
     }
 
+    async function openLocalDbWithStore() {
+      let db = await openLocalDb(1);
+      if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+      const nextVersion = Math.max(2, (db.version || 1) + 1);
+      db.close();
+      db = await openLocalDb(nextVersion);
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+        db.close();
+        throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+      }
+      return db;
+    }
+
     async function idbGetJson(key) {
-      const db = await openLocalDb();
+      const db = await openLocalDbWithStore();
       try {
         return await new Promise((resolve, reject) => {
           const tx = db.transaction(LOCAL_DB_STORE, "readonly");

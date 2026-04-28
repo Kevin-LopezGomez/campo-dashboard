@@ -359,18 +359,22 @@ const PUBLIC_SEED_INVENTORY_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/stor
   // Storage keys (must match dashboards)
 const MASTER_GROW_KEY = "campo_master_grow_v1";
 const MASTER_PACK_KEY = "campo_master_pack_v1";
-const MASTER_EXP_KEY  = "campo_master_experiments_v1";
+const MASTER_EXP_KEY  = "campo_experiments_v1";
 const MASTER_PROC_KEY = "campo_master_procurement_v1";
-const MASTER_STORE_KEY = "campo_master_store_visit_v1";
+const MASTER_STORE_KEY = "campo_store_visits_v1";
 const MASTER_SEED_KEY = "campo_master_seed_inventory_v1";
 const LAST_ASSIGN_META_KEY = "campo_last_assignment_meta_v1";
+const LEGACY_MASTER_EXP_KEY = "campo_master_experiments_v1";
+const LEGACY_MASTER_STORE_KEY = "campo_master_store_visit_v1";
 
 const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
 const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
-const MASTER_EXP_PING  = "campo_master_experiments_push_ping_v1";
+const MASTER_EXP_PING  = "campo_experiments_push_ping_v1";
 const MASTER_PROC_PING = "campo_master_procurement_push_ping_v1";
-const MASTER_STORE_PING = "campo_master_store_visit_push_ping_v1";
+const MASTER_STORE_PING = "campo_store_visits_push_ping_v1";
 const MASTER_SEED_PING = "campo_master_seed_inventory_push_ping_v1";
+const LEGACY_MASTER_EXP_PING = "campo_master_experiments_push_ping_v1";
+const LEGACY_MASTER_STORE_PING = "campo_master_store_visit_push_ping_v1";
 
 
   // Canonical sheet keys (contract)
@@ -387,7 +391,7 @@ const MSG_GROW = "MASTER_GROW_UPDATED";
 const MSG_PACK = "MASTER_PACK_UPDATED";
 const MSG_EXP  = "EXPERIMENTS_UPDATED";
 const MSG_PROC = "PROCUREMENT_UPDATED";
-const MSG_STORE = "STORE_VISIT_UPDATED";
+const MSG_STORE = "STORE_VISITS_UPDATED";
 const MSG_SEED = "SEED_INVENTORY_UPDATED";
 
   // IndexedDB cache (Pack-only migration)
@@ -395,10 +399,10 @@ const LOCAL_DB_NAME = "campo_local_cache_v1";
 const LOCAL_DB_STORE = "datasets";
 const PACK_INDEXEDDB_MARKER = "indexeddb";
 
-  function openLocalDb(){
+  function openLocalDb(version = 1){
     return new Promise((resolve, reject) => {
       if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
-      const req = indexedDB.open(LOCAL_DB_NAME, 1);
+      const req = indexedDB.open(LOCAL_DB_NAME, version);
       req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
@@ -410,8 +414,21 @@ const PACK_INDEXEDDB_MARKER = "indexeddb";
     });
   }
 
+  async function openLocalDbWithStore(){
+    let db = await openLocalDb(1);
+    if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+    const nextVersion = Math.max(2, (db.version || 1) + 1);
+    db.close();
+    db = await openLocalDb(nextVersion);
+    if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+      db.close();
+      throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+    }
+    return db;
+  }
+
   async function idbSetJson(key, value){
-    const db = await openLocalDb();
+    const db = await openLocalDbWithStore();
     try{
       await new Promise((resolve, reject) => {
         const tx = db.transaction(LOCAL_DB_STORE, "readwrite");
@@ -426,7 +443,7 @@ const PACK_INDEXEDDB_MARKER = "indexeddb";
   }
 
   async function idbGetJson(key){
-    const db = await openLocalDb();
+    const db = await openLocalDbWithStore();
     try{
       return await new Promise((resolve, reject) => {
         const tx = db.transaction(LOCAL_DB_STORE, "readonly");
@@ -441,7 +458,7 @@ const PACK_INDEXEDDB_MARKER = "indexeddb";
   }
 
   async function idbDeleteKey(key){
-    const db = await openLocalDb();
+    const db = await openLocalDbWithStore();
     try{
       await new Promise((resolve, reject) => {
         const tx = db.transaction(LOCAL_DB_STORE, "readwrite");
@@ -537,6 +554,25 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
   const contractWarn = document.getElementById("contractWarn");
 
   function setStatus(msg){ statusEl.textContent = msg; }
+  function migrateLegacyStorageKeys(){
+    const migrations = [
+      { canonical: MASTER_EXP_KEY, legacy: LEGACY_MASTER_EXP_KEY },
+      { canonical: MASTER_EXP_PING, legacy: LEGACY_MASTER_EXP_PING },
+      { canonical: MASTER_STORE_KEY, legacy: LEGACY_MASTER_STORE_KEY },
+      { canonical: MASTER_STORE_PING, legacy: LEGACY_MASTER_STORE_PING }
+    ];
+
+    for (const { canonical, legacy } of migrations) {
+      try {
+        const canonicalVal = localStorage.getItem(canonical);
+        const legacyVal = localStorage.getItem(legacy);
+        if ((!canonicalVal || canonicalVal === "") && legacyVal && legacyVal !== "") {
+          localStorage.setItem(canonical, legacyVal);
+        }
+        if (legacyVal != null) localStorage.removeItem(legacy);
+      } catch {}
+    }
+  }
   function norm(s){ return String(s||"").trim().toLowerCase(); }
   const KIND_LABEL = {
     grow: "Master Grow",
@@ -1457,12 +1493,16 @@ async function publishToSupabase(){
   localStorage.removeItem(MASTER_PROC_KEY);
   localStorage.removeItem(MASTER_STORE_KEY);
   localStorage.removeItem(MASTER_SEED_KEY);
+  localStorage.removeItem(LEGACY_MASTER_EXP_KEY);
+  localStorage.removeItem(LEGACY_MASTER_STORE_KEY);
   localStorage.removeItem(MASTER_GROW_PING);
   localStorage.removeItem(MASTER_PACK_PING);
   localStorage.removeItem(MASTER_EXP_PING);
   localStorage.removeItem(MASTER_PROC_PING);
   localStorage.removeItem(MASTER_STORE_PING);
   localStorage.removeItem(MASTER_SEED_PING);
+  localStorage.removeItem(LEGACY_MASTER_EXP_PING);
+  localStorage.removeItem(LEGACY_MASTER_STORE_PING);
   localStorage.removeItem(LAST_ASSIGN_META_KEY);
   await idbDeleteKey(MASTER_PACK_KEY);
     }catch(e){}
@@ -1512,7 +1552,8 @@ async function publishToSupabase(){
   // Keep badges fresh if something else updates localStorage
   window.addEventListener("storage", (e) => {
     if (!e) return;
-    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_STORE_KEY, MASTER_SEED_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_STORE_PING, MASTER_SEED_PING, LAST_ASSIGN_META_KEY].includes(e.key)) {
+    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_STORE_KEY, MASTER_SEED_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_STORE_PING, MASTER_SEED_PING, LEGACY_MASTER_EXP_KEY, LEGACY_MASTER_STORE_KEY, LEGACY_MASTER_EXP_PING, LEGACY_MASTER_STORE_PING, LAST_ASSIGN_META_KEY].includes(e.key)) {
+      migrateLegacyStorageKeys();
       refreshBadges();
     }
   });
@@ -1520,6 +1561,7 @@ async function publishToSupabase(){
   // =========================================================
   // INIT
   // =========================================================
+  migrateLegacyStorageKeys();
   refreshBadges();
   setStatus("Waiting for file…");
 </script>
