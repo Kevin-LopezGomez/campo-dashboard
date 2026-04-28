@@ -302,7 +302,7 @@
           <br>
           <code>payload.sheets["Master Grow"]</code>, <code>payload.sheets["Master Pack"]</code>, <code>payload.sheets["Current Experiments"]</code>, <code>payload.sheets["Procurement"]</code>, <code>payload.sheets["Store Visit"]</code>, and <code>payload.sheets["Seed Inventory"]</code>
           <br><br>
-          Uploads save JSON into <code>localStorage</code> so dashboards read immediately.
+          Uploads save JSON locally so dashboards read immediately (<code>Master Pack</code> uses IndexedDB cache; other datasets use <code>localStorage</code>).
           “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
           <br><br>
           Worker endpoints:
@@ -389,6 +389,99 @@ const MSG_EXP  = "EXPERIMENTS_UPDATED";
 const MSG_PROC = "PROCUREMENT_UPDATED";
 const MSG_STORE = "STORE_VISIT_UPDATED";
 const MSG_SEED = "SEED_INVENTORY_UPDATED";
+
+  // IndexedDB cache (Pack-only migration)
+const LOCAL_DB_NAME = "campo_local_cache_v1";
+const LOCAL_DB_STORE = "datasets";
+const PACK_INDEXEDDB_MARKER = "indexeddb";
+
+  function openLocalDb(){
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+      const req = indexedDB.open(LOCAL_DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+          db.createObjectStore(LOCAL_DB_STORE);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+    });
+  }
+
+  async function idbSetJson(key, value){
+    const db = await openLocalDb();
+    try{
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(LOCAL_DB_STORE, "readwrite");
+        tx.objectStore(LOCAL_DB_STORE).put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("indexedDB write failed"));
+        tx.onabort = () => reject(tx.error || new Error("indexedDB tx aborted"));
+      });
+    }finally{
+      db.close();
+    }
+  }
+
+  async function idbGetJson(key){
+    const db = await openLocalDb();
+    try{
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(LOCAL_DB_STORE, "readonly");
+        const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error || new Error("indexedDB read failed"));
+        tx.onerror = () => reject(tx.error || new Error("indexedDB tx failed"));
+      });
+    }finally{
+      db.close();
+    }
+  }
+
+  async function idbDeleteKey(key){
+    const db = await openLocalDb();
+    try{
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(LOCAL_DB_STORE, "readwrite");
+        tx.objectStore(LOCAL_DB_STORE).delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("indexedDB delete failed"));
+        tx.onabort = () => reject(tx.error || new Error("indexedDB tx aborted"));
+      });
+    }finally{
+      db.close();
+    }
+  }
+
+  function isPackIdbPointer(payload){
+    return !!(payload && typeof payload === "object" &&
+      payload._storage === PACK_INDEXEDDB_MARKER &&
+      payload._idbKey === MASTER_PACK_KEY);
+  }
+
+  function buildPackPointerPayload(fullPayload, sourceLabel){
+    const packSheet = fullPayload?.sheets?.[CANON_PACK_SHEET] || {};
+    const headerCount = Array.isArray(packSheet.headers) ? packSheet.headers.length : 0;
+    const rowCount = Array.isArray(packSheet.rows) ? packSheet.rows.length : 0;
+    return {
+      version: fullPayload?.version || "v1",
+      kind: "pack",
+      updatedAt: fullPayload?.updatedAt || new Date().toISOString(),
+      sourceLabel: sourceLabel || fullPayload?.sourceLabel || "",
+      _storage: PACK_INDEXEDDB_MARKER,
+      _idbKey: MASTER_PACK_KEY,
+      sheets: {
+        [CANON_PACK_SHEET]: {
+          headers: [],
+          rows: [],
+          headerCount,
+          rowCount
+        }
+      }
+    };
+  }
 
 
   // BroadcastChannel for same-origin pages (index + dashboards)
@@ -601,6 +694,9 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
     if(!raw) return { ok:true, msg:"" };
     try{
       const obj = JSON.parse(raw);
+      if (storageKey === MASTER_PACK_KEY && isPackIdbPointer(obj)) {
+        return { ok:true, msg:"" };
+      }
       const has = !!obj?.sheets?.[canon];
       if(!has){
         const keys = obj?.sheets ? Object.keys(obj.sheets) : [];
@@ -766,7 +862,7 @@ function refreshBadges(){
   // =========================================================
   // SAVE (overwrite) with contract guarantees + update signals
   // =========================================================
-  function saveSource(which, payload, sourceLabel){
+  async function saveSource(which, payload, sourceLabel){
   const now = String(Date.now());
   let saved = false;
   try{
@@ -779,11 +875,20 @@ function refreshBadges(){
       setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}`);
     } else if(which === "pack"){
       if (!payload?.sheets?.[CANON_PACK_SHEET]) throw new Error(`Pack payload missing sheets["${CANON_PACK_SHEET}"]`);
-      localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(payload));
+      await idbSetJson(MASTER_PACK_KEY, payload);
+      const fullPackStr = JSON.stringify(payload);
+      try{
+        // Compatibility path for dashboards that still read full pack from localStorage.
+        localStorage.removeItem(MASTER_PACK_KEY);
+        localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
+      }catch(_quotaOrWriteErr){
+        const pointer = buildPackPointerPayload(payload, sourceLabel);
+        localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pointer));
+      }
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
       saved = true;
-      setStatus(`Saved Master Pack (JSON overwritten): ${sourceLabel}`);
+      setStatus(`Saved Master Pack (IndexedDB): ${sourceLabel}`);
     } else if(which === "exp"){
       if (!payload?.sheets?.[CANON_EXP_SHEET]) throw new Error(`Experiments payload missing sheets["${CANON_EXP_SHEET}"]`);
       localStorage.setItem(MASTER_EXP_KEY, JSON.stringify(payload));
@@ -815,10 +920,11 @@ function refreshBadges(){
     }
   }catch(e){
     console.warn("Save failed:", e);
-    setStatus("Failed to write to localStorage (blocked/full) or payload contract violated.");
+    setStatus(`Failed to save ${KIND_LABEL[which] || which} (${e?.name || "error"}).`);
   }
   if(saved) setLastAssignMeta(which, sourceLabel, lastCsvName || inferFileNameFromSourceLabel(sourceLabel));
   refreshBadges();
+  return saved;
 }
 
 // =========================================================
@@ -964,6 +1070,47 @@ const plans = [];
     setStatus(`Downloaded ${filename}.`);
   }
 
+  async function downloadPackJson(){
+    const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+    if(!raw){
+      const fromIdb = await idbGetJson(MASTER_PACK_KEY).catch(() => null);
+      if (!fromIdb) return setStatus("Nothing stored for pack.json yet.");
+      const str = JSON.stringify(fromIdb);
+      const blob = new Blob([str], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pack.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("Downloaded pack.json.");
+      return;
+    }
+    try{
+      const parsed = JSON.parse(raw);
+      let out = parsed;
+      if (isPackIdbPointer(parsed)) {
+        out = await idbGetJson(MASTER_PACK_KEY);
+        if (!out) return setStatus("Pack cache missing in IndexedDB.");
+      }
+      const str = JSON.stringify(out);
+      const blob = new Blob([str], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pack.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("Downloaded pack.json.");
+    }catch{
+      setStatus("Stored Pack JSON is invalid.");
+    }
+  }
+
   // =========================================================
   
 function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
@@ -1048,7 +1195,14 @@ function normalizeMasterPayload(raw, kind){
 
     try{
       const pack = normalizeMasterPayload(await workerGetJson(WORKER_PACK_URL), "pack");
-      localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pack));
+      await idbSetJson(MASTER_PACK_KEY, pack);
+      const fullPackStr = JSON.stringify(pack);
+      try{
+        localStorage.removeItem(MASTER_PACK_KEY);
+        localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
+      }catch(_quotaOrWriteErr){
+        localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(pack, pack?.sourceLabel || "worker")));
+      }
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
       gotAny = true;
@@ -1088,7 +1242,7 @@ function normalizeMasterPayload(raw, kind){
 
     refreshBadges();
 
-    if(gotAny) setStatus("✅ Pulled latest JSON into localStorage.");
+    if(gotAny) setStatus("✅ Pulled latest JSON into local cache.");
     else setStatus("⚠️ Nothing pulled. (Worker returned errors / files missing.)");
 
     const v = validateStorageContract();
@@ -1103,7 +1257,7 @@ function normalizeMasterPayload(raw, kind){
 
 async function publishToSupabase(){
     const growStr = localStorage.getItem(MASTER_GROW_KEY);
-    const packStr = localStorage.getItem(MASTER_PACK_KEY);
+    let packStr = localStorage.getItem(MASTER_PACK_KEY);
     const expStr  = localStorage.getItem(MASTER_EXP_KEY);
     const procStr = localStorage.getItem(MASTER_PROC_KEY);
     const storeStr = localStorage.getItem(MASTER_STORE_KEY);
@@ -1116,7 +1270,18 @@ async function publishToSupabase(){
 
     // validate JSON early
     try { if(growStr) JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
-    try { if(packStr) JSON.parse(packStr); } catch { return setStatus("Pack JSON is invalid (cannot publish)."); }
+    try {
+      if(packStr){
+        const parsedPack = JSON.parse(packStr);
+        if (isPackIdbPointer(parsedPack)) {
+          const fullPack = await idbGetJson(MASTER_PACK_KEY);
+          if (!fullPack) return setStatus("Pack cache missing in IndexedDB (cannot publish).");
+          packStr = JSON.stringify(fullPack);
+        }
+      }
+    } catch {
+      return setStatus("Pack JSON is invalid (cannot publish).");
+    }
     try { if(expStr)  JSON.parse(expStr);  } catch { return setStatus("Experiments JSON is invalid (cannot publish)."); }
     try { if(procStr) JSON.parse(procStr); } catch { return setStatus("Procurement JSON is invalid (cannot publish)."); }
     try { if(storeStr) JSON.parse(storeStr); } catch { return setStatus("Store Visit JSON is invalid (cannot publish)."); }
@@ -1214,7 +1379,7 @@ async function publishToSupabase(){
   chooseBtn.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
 
-  wizConfirmCsvBtn.addEventListener("click", () => {
+  wizConfirmCsvBtn.addEventListener("click", async () => {
     if(!stagedUpload || stagedUpload.type !== "csv"){
       setStatus("No staged CSV upload to confirm.");
       return;
@@ -1226,17 +1391,18 @@ async function publishToSupabase(){
     }
     const hr = rowsToHeaderRows(stagedUpload.rows || []);
     const sourceLabel = `CSV: ${stagedUpload.fileName}`;
-    if(target === "grow") saveSource("grow", buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel }), sourceLabel);
-    else if(target === "pack") saveSource("pack", buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel }), sourceLabel);
-    else if(target === "exp") saveSource("exp", buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel }), sourceLabel);
-    else if(target === "proc") saveSource("proc", buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel }), sourceLabel);
-    else if(target === "store") saveSource("store", buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel }), sourceLabel);
-    else if(target === "seed") saveSource("seed", buildPayloadSingleCanonical(CANON_SEED_SHEET, hr, { kind: "seed", sourceLabel }), sourceLabel);
+    let ok = false;
+    if(target === "grow") ok = await saveSource("grow", buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel }), sourceLabel);
+    else if(target === "pack") ok = await saveSource("pack", buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel }), sourceLabel);
+    else if(target === "exp") ok = await saveSource("exp", buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel }), sourceLabel);
+    else if(target === "proc") ok = await saveSource("proc", buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel }), sourceLabel);
+    else if(target === "store") ok = await saveSource("store", buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel }), sourceLabel);
+    else if(target === "seed") ok = await saveSource("seed", buildPayloadSingleCanonical(CANON_SEED_SHEET, hr, { kind: "seed", sourceLabel }), sourceLabel);
     clearWizard();
-    setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}.`);
+    if (ok) setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}.`);
   });
 
-  wizConfirmXlsxBtn.addEventListener("click", () => {
+  wizConfirmXlsxBtn.addEventListener("click", async () => {
     if(!stagedUpload || stagedUpload.type !== "xlsx"){
       setStatus("No staged XLSX upload to confirm.");
       return;
@@ -1247,6 +1413,7 @@ async function publishToSupabase(){
       return;
     }
     const selects = Array.from(wizXlsxList.querySelectorAll("select[data-plan-index]"));
+    let allSaved = true;
     for(let i=0; i<plans.length; i++){
       const p = plans[i];
       const sel = selects.find(s => Number(s.getAttribute("data-plan-index")) === i);
@@ -1259,11 +1426,16 @@ async function publishToSupabase(){
         target === "store" ? CANON_STORE_SHEET :
         CANON_SEED_SHEET;
       const payload = buildPayloadSingleCanonical(canonical, p.hr, { kind: target, sourceLabel: p.sourceLabel });
-      saveSource(target, payload, p.sourceLabel);
+      const ok = await saveSource(target, payload, p.sourceLabel);
+      if (!ok) allSaved = false;
     }
     clearWizard();
     const chosen = selects.map(s => KIND_LABEL[s.value] || s.value);
-    setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}.`);
+    if (allSaved) {
+      setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}.`);
+    } else {
+      setStatus("One or more XLSX assignments failed to save.");
+    }
   });
 
   wizCancelBtn.addEventListener("click", () => {
@@ -1275,7 +1447,7 @@ async function publishToSupabase(){
     setStatus("Staged upload cancelled.");
   });
 
-  clearBtn.addEventListener("click", () => {
+  clearBtn.addEventListener("click", async () => {
     lastCsvMatrix = null;
     lastCsvName = "";
     try{
@@ -1292,6 +1464,7 @@ async function publishToSupabase(){
   localStorage.removeItem(MASTER_STORE_PING);
   localStorage.removeItem(MASTER_SEED_PING);
   localStorage.removeItem(LAST_ASSIGN_META_KEY);
+  await idbDeleteKey(MASTER_PACK_KEY);
     }catch(e){}
 
     emit(MSG_GROW, MASTER_GROW_KEY);
@@ -1309,7 +1482,7 @@ async function publishToSupabase(){
   });
 
   growDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_GROW_KEY, "grow.json"));
-  packDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PACK_KEY, "pack.json"));
+  packDlBtn.addEventListener("click", () => { downloadPackJson(); });
   expDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_EXP_KEY, "experiments.json"));
   procDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PROC_KEY, "procurement.json"));
   storeDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_STORE_KEY, "store-visit.json"));
