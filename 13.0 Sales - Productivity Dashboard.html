@@ -408,6 +408,61 @@
       align-items: stretch;
     }
 
+    .scope-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .scope-chip {
+      font-size: 0.68rem;
+      padding: 3px 9px;
+      color: #94a3b8;
+      border-color: rgba(71, 85, 105, 0.85);
+      background: rgba(2, 6, 23, 0.95);
+    }
+
+    .date-range-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .date-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .date-field input {
+      width: 100%;
+      min-width: 0;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      color: #cbd5e1;
+      padding: 6px 8px;
+      font-size: 0.74rem;
+      font-family: inherit;
+    }
+
+    .strip-search {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.74rem;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      font-family: inherit;
+    }
+
     .pill-toggle {
       display: inline-flex;
       padding: 3px;
@@ -610,6 +665,24 @@
       letter-spacing: 0.08em;
     }
 
+    .table-action-btn {
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--sub);
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .table-action-btn:hover {
+      color: #bbf7d0;
+      border-color: rgba(74, 222, 128, 0.65);
+    }
+
     .log-toggle-btn:hover {
       color: #bbf7d0;
       border-color: rgba(74, 222, 128, 0.65);
@@ -636,12 +709,14 @@
     .table-card.sales-table-mode .table-wrapper {
       overflow-x: auto;
       overflow-y: auto;
+      min-height: clamp(320px, 62vh, 900px);
     }
 
     .table-card.sales-table-mode .table-wrapper table {
       width: max-content;
       min-width: 2600px;
       table-layout: auto;
+      font-size: 0.82rem;
     }
 
     .table-card.sales-table-mode th,
@@ -697,6 +772,20 @@
 
     .text-right { text-align: right !important; }
     .text-center { text-align: center !important; }
+
+    .missing-destination-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.55);
+      background: rgba(127, 29, 29, 0.28);
+    }
 
     /* Column widths */
     th:nth-child(1), td:nth-child(1) { width: 110px; }
@@ -940,7 +1029,7 @@
               <span class="dot"></span>
               View & units
             </div>
-              <span class="chip">
+              <span class="chip" id="scopeChip">
                 <strong>Scope:</strong> All invoice dates & weeks
               </span>
             </div>
@@ -954,6 +1043,31 @@
                 </div>
               </div>
               <button class="chip reset-btn hidden" id="resetFiltersBtn">Reset filters</button>
+              <div class="scope-chips">
+                <span class="chip scope-chip" id="activeScopeChip">Scope: all rows</span>
+                <span class="chip scope-chip" id="rowCountChip">0 invoice lines</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DATE RANGE -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="section-title">
+                <span class="dot"></span>
+                Date range
+              </div>
+              <button class="chip reset-btn" id="clearDateRangeBtn" type="button">Clear dates</button>
+            </div>
+            <div class="date-range-row">
+              <label class="date-field">
+                From
+                <input type="date" id="dateFromInput" />
+              </label>
+              <label class="date-field">
+                To
+                <input type="date" id="dateToInput" />
+              </label>
             </div>
           </div>
 
@@ -965,9 +1079,10 @@
                 All SKUs
               </div>
               <span class="chip">
-                View by product · click to filter
+                View by product · multi-select enabled
               </span>
             </div>
+            <input class="strip-search" id="skuSearchInput" type="search" placeholder="Search SKU..." />
             <div class="strip" id="skuStrip"></div>
           </div>
 
@@ -982,6 +1097,7 @@
                 View by account · click to filter
               </span>
             </div>
+            <input class="strip-search" id="customerSearchInput" type="search" placeholder="Search customer..." />
             <div class="strip" id="customerStrip"></div>
           </div>
 
@@ -993,9 +1109,10 @@
                 Sales destination
               </div>
               <span class="chip">
-                View by Sales Destination
+                View by Sales Destination · multi-select enabled
               </span>
             </div>
+            <input class="strip-search" id="destinationSearchInput" type="search" placeholder="Search destination..." />
             <div class="strip" id="destinationStrip"></div>
           </div>
         </aside>
@@ -1106,7 +1223,7 @@
                     <span class="dot"></span>
                     Sales log
                   </div>
-                  <div class="table-sub">
+                  <div class="table-sub" id="salesLogSub">
                     Source data driving the dashboard.
                   </div>
                 </div>
@@ -1114,6 +1231,7 @@
                   <div class="chip" id="tableModeChip">
                     Daily rows
                   </div>
+                  <button class="table-action-btn" id="exportCsvBtn" type="button">Export CSV</button>
                   <button class="log-toggle-btn" id="toggleSalesLogBtn" type="button" aria-expanded="false">Show log</button>
                 </div>
               </div>
@@ -1365,11 +1483,13 @@ const skuWeightLbs = {
       breakdownMode: "sku",
       heatmapMetric: "value", // "value" or "pct" (% of week total in selected unit mode)
       filters: {
-        sku: "all",
+        skus: [],
         customer: "all",
-        destination: "all",
+        destinations: [],
         week: "all",
-        date: "all"
+        date: "all",
+        dateFrom: "",
+        dateTo: ""
       }
     };
 
@@ -1378,6 +1498,16 @@ const skuWeightLbs = {
     const skuStripEl = document.getElementById("skuStrip");
     const customerStripEl = document.getElementById("customerStrip");
     const destinationStripEl = document.getElementById("destinationStrip");
+    const skuSearchInput = document.getElementById("skuSearchInput");
+    const customerSearchInput = document.getElementById("customerSearchInput");
+    const destinationSearchInput = document.getElementById("destinationSearchInput");
+    const dateFromInput = document.getElementById("dateFromInput");
+    const dateToInput = document.getElementById("dateToInput");
+    const clearDateRangeBtn = document.getElementById("clearDateRangeBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    const scopeChipEl = document.getElementById("scopeChip");
+    const activeScopeChipEl = document.getElementById("activeScopeChip");
+    const rowCountChipEl = document.getElementById("rowCountChip");
 
     const kpiTotalSoldEl = document.getElementById("kpiTotalSold");
     const kpiTotalSoldSubEl = document.getElementById("kpiTotalSoldSub");
@@ -1403,6 +1533,7 @@ const skuWeightLbs = {
     const salesLogCollapsedNoteEl = document.getElementById("salesLogCollapsedNote");
     const toggleSalesLogBtnEl = document.getElementById("toggleSalesLogBtn");
     const salesLogCardEl = document.getElementById("salesLogCard");
+    const salesLogSubEl = document.getElementById("salesLogSub");
     const layoutEl = document.querySelector(".layout");
     const sidebarEl = document.querySelector(".sidebar");
     const kpiRowEl = document.querySelector(".kpi-row");
@@ -1639,14 +1770,41 @@ const skuWeightLbs = {
       };
     }
 
+    function isUnspecifiedDestination(destination = "") {
+      return String(destination || "").trim().toLowerCase() === "unspecified";
+    }
+
+    function setDestinationCellContent(td, destinationValue) {
+      if (!td) return;
+      if (isUnspecifiedDestination(destinationValue)) {
+        const tag = document.createElement("span");
+        tag.className = "missing-destination-tag";
+        tag.textContent = "Unspecified ⚠";
+        td.appendChild(tag);
+        td.title = "Missing Sales Destination in source data";
+        return;
+      }
+      td.textContent = destinationValue || "—";
+    }
+
     function applyFilters() {
+      const selectedSkus = Array.isArray(state.filters.skus) ? state.filters.skus : [];
+      const skuSet = selectedSkus.length ? new Set(selectedSkus) : null;
+      const selectedDestinations = Array.isArray(state.filters.destinations) ? state.filters.destinations : [];
+      const destinationSet = selectedDestinations.length ? new Set(selectedDestinations) : null;
       return salesData.filter(row => {
         const selectedWeek = getSelectedWeekMeta(row);
-        if (state.filters.sku !== "all" && row.sku !== state.filters.sku) return false;
+        if (skuSet && !skuSet.has(row.sku)) return false;
         if (state.filters.customer !== "all" && row.customer !== state.filters.customer) return false;
-        if (state.filters.destination !== "all" && row.destination !== state.filters.destination) return false;
+        if (destinationSet && !destinationSet.has(row.destination)) return false;
         if (state.filters.week !== "all" && selectedWeek.weekKey !== state.filters.week) return false;
         if (state.filters.date !== "all" && row.invoiceDateISO !== state.filters.date) return false;
+        if (state.filters.dateFrom) {
+          if (!row.invoiceDateISO || row.invoiceDateISO < state.filters.dateFrom) return false;
+        }
+        if (state.filters.dateTo) {
+          if (!row.invoiceDateISO || row.invoiceDateISO > state.filters.dateTo) return false;
+        }
         return true;
       });
     }
@@ -1685,6 +1843,19 @@ const skuWeightLbs = {
       });
     }
 
+    function applyStripSearch(container, keyName, rawQuery) {
+      if (!container) return;
+      const query = String(rawQuery || "").trim().toLowerCase();
+      container.querySelectorAll(".pill").forEach(btn => {
+        if (btn.dataset[keyName] === "all") {
+          btn.style.display = "";
+          return;
+        }
+        const match = !query || String(btn.textContent || "").toLowerCase().includes(query);
+        btn.style.display = match ? "" : "none";
+      });
+    }
+
     function initFilters() {
       const skuSet = new Set();
       const customerSet = new Set();
@@ -1693,14 +1864,22 @@ const skuWeightLbs = {
       salesData.forEach(row => {
         skuSet.add(row.sku);
         customerSet.add(row.customer);
-        destinationSet.add(row.destination);
+        if (!isUnspecifiedDestination(row.destination)) destinationSet.add(row.destination);
       });
 
       buildStrip(skuStripEl, "All SKUs", skuSet, "sku");
       buildStrip(customerStripEl, "All customers", customerSet, "customer");
       buildStrip(destinationStripEl, "All destinations", destinationSet, "destination");
 
-      state.filters = { sku: "all", customer: "all", destination: "all", week: "all", date: "all" };
+      state.filters = { skus: [], customer: "all", destinations: [], week: "all", date: "all", dateFrom: "", dateTo: "" };
+
+      applyStripSearch(skuStripEl, "sku", skuSearchInput?.value || "");
+      applyStripSearch(customerStripEl, "customer", customerSearchInput?.value || "");
+      applyStripSearch(destinationStripEl, "destination", destinationSearchInput?.value || "");
+      updateSkuStripActiveState();
+      updateDestinationStripActiveState();
+      if (dateFromInput) dateFromInput.value = "";
+      if (dateToInput) dateToInput.value = "";
     }
 
     function renderSalesTableHeaders(isSalesTableMode) {
@@ -1787,7 +1966,11 @@ const skuWeightLbs = {
               const td = document.createElement("td");
               if ([8, 9, 10].includes(idx)) td.className = "text-right";
               if (idx === 6) td.className = "text-center";
-              td.textContent = value;
+              if (idx === 11) {
+                setDestinationCellContent(td, row.destination);
+              } else {
+                td.textContent = value;
+              }
               tr.appendChild(td);
             });
             frag.appendChild(tr);
@@ -1837,7 +2020,7 @@ const skuWeightLbs = {
             tr.appendChild(custTd);
 
             const viaTd = document.createElement("td");
-            viaTd.textContent = row.destination;
+            setDestinationCellContent(viaTd, row.destination);
             tr.appendChild(viaTd);
 
             const termTd = document.createElement("td");
@@ -2011,7 +2194,6 @@ const skuWeightLbs = {
         return;
       }
 
-      const unitMode = state.unitMode; // "cases" or "lbsEq"
       const byWeek = new Map();
       const showYear = hasMultipleWeekYears(filtered);
 
@@ -2019,32 +2201,22 @@ const skuWeightLbs = {
         const selectedWeek = getSelectedWeekMeta(row);
         const wk = selectedWeek.weekKey;
 
-        // First metric: always raw cases
+        // Weekly summary now uses fixed sales metrics.
         const cases = row.cases;
-
-        // Second metric depends on mode:
-        // - cases mode  -> units (bags)
-        // - lbsEq mode -> lbs
-        const secondMetric = unitMode === "cases"
-          ? getUnitCount(row)          // cases × units-per-case
-          : getUnits(row, "lbsEq");    // cases × lbs-per-case
+        const lbsEq = getUnits(row, "lbsEq");
 
         if (!byWeek.has(wk)) {
           byWeek.set(wk, {
             weekLabel: weekLabelFromRow(row, showYear),
             weekOrder: selectedWeek.weekOrder,
             cases: 0,
-            metric: 0,
-            customers: new Set(),
-            skus: new Set()
+            lbsEq: 0
           });
         }
 
         const bucket = byWeek.get(wk);
         bucket.cases += cases;
-        bucket.metric += secondMetric;
-        bucket.customers.add(row.customer);
-        bucket.skus.add(row.sku);
+        bucket.lbsEq += lbsEq;
       });
 
       const rows = [...byWeek.entries()]
@@ -2054,18 +2226,13 @@ const skuWeightLbs = {
             <tr>
               <td>${info.weekLabel}</td>
               <td class="text-right">${formatNumber(info.cases)}</td>
-              <td class="text-right">${formatNumber(info.metric)}</td>
-              <td class="text-center">${info.customers.size}</td>
-              <td class="text-center">${info.skus.size}</td>
+              <td class="text-right">${formatNumber(info.lbsEq)}</td>
             </tr>
           `;
         })
         .join("");
 
-      const secondHeader = getUnitModeMeta(unitMode).weeklyMetricHeader;
-      const chipLabel = unitMode === "cases"
-        ? "Mode: Sales # of Cases + units/case"
-        : "Mode: Sales Lbs Eq. (cases × lbs/case)";
+      const chipLabel = "Metrics: Sales # of Cases + Sales Lbs Eq.";
       const weekHeaderLabel = getWeekSourceLabel(true);
 
       weeklySummaryContainer.innerHTML = `
@@ -2082,9 +2249,7 @@ const skuWeightLbs = {
               <tr>
                 <th>${weekHeaderLabel}</th>
                 <th class="text-right">Cases</th>
-                <th class="text-right">${secondHeader}</th>
-                <th class="text-center">Customers</th>
-                <th class="text-center">SKUs</th>
+                <th class="text-right">Sales Lbs Eq.</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -2210,8 +2375,10 @@ const skuWeightLbs = {
               data: movingAverageData,
               borderColor: "rgba(59,130,246,0.8)",
               backgroundColor: "transparent",
-              borderWidth: 1.5,
+              borderWidth: 2,
               pointRadius: 0,
+              pointHoverRadius: 4,
+              pointHitRadius: 16,
               tension: 0.3,
               fill: false,
               yAxisID: "y"
@@ -2222,6 +2389,7 @@ const skuWeightLbs = {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
           onClick: (evt, elements, chart) => {
             if (!elements.length) return;
             const idx = elements[0].index;
@@ -2250,6 +2418,10 @@ const skuWeightLbs = {
           plugins: {
             legend: {
               labels: { color: "#e5e7eb", font: { size: 11 } }
+            },
+            tooltip: {
+              mode: "index",
+              intersect: false
             }
           }
         }
@@ -2642,16 +2814,98 @@ const skuWeightLbs = {
       if (!resetFiltersBtn) return;
       const needsReset =
         state.headerTab !== "sales" ||
-        state.filters.sku !== "all" ||
+        (Array.isArray(state.filters.skus) && state.filters.skus.length > 0) ||
         state.filters.customer !== "all" ||
-        state.filters.destination !== "all" ||
+        (Array.isArray(state.filters.destinations) && state.filters.destinations.length > 0) ||
         state.filters.week !== "all" ||
         state.filters.date !== "all" ||
+        !!state.filters.dateFrom ||
+        !!state.filters.dateTo ||
         state.unitMode !== "cases" ||
         state.weekSource !== "sales" ||
         state.viewMode !== "daily" ||
         state.heatmapMetric !== "value";
       resetFiltersBtn.classList.toggle("hidden", !needsReset);
+    }
+
+    function updateScopeSummary(filtered) {
+      const active = [];
+      const selectedSkus = Array.isArray(state.filters.skus) ? state.filters.skus : [];
+      const selectedDestinations = Array.isArray(state.filters.destinations) ? state.filters.destinations : [];
+      if (selectedSkus.length) {
+        const preview = selectedSkus.slice(0, 3).join(", ");
+        const suffix = selectedSkus.length > 3 ? ` (+${selectedSkus.length - 3} more)` : "";
+        active.push(`SKUs (${selectedSkus.length}): ${preview}${suffix}`);
+      }
+      if (state.filters.customer !== "all") active.push(`Customer: ${state.filters.customer}`);
+      if (selectedDestinations.length) {
+        const preview = selectedDestinations.slice(0, 3).join(", ");
+        const suffix = selectedDestinations.length > 3 ? ` (+${selectedDestinations.length - 3} more)` : "";
+        active.push(`Destinations (${selectedDestinations.length}): ${preview}${suffix}`);
+      }
+      if (state.filters.week !== "all") active.push(`${getWeekSourceLabel(true)}: ${weekLabelFromKey(state.filters.week, true)}`);
+      if (state.filters.date !== "all") active.push(`Invoice date: ${state.filters.date}`);
+      if (state.filters.dateFrom || state.filters.dateTo) {
+        const from = state.filters.dateFrom || "start";
+        const to = state.filters.dateTo || "end";
+        active.push(`Date range: ${from} to ${to}`);
+      }
+
+      if (scopeChipEl) {
+        scopeChipEl.textContent = active.length
+          ? `Scope: ${active.join(" | ")}`
+          : "Scope: All invoice dates & weeks";
+      }
+      if (activeScopeChipEl) {
+        activeScopeChipEl.textContent = active.length
+          ? `${active.length} active filter${active.length === 1 ? "" : "s"}`
+          : "No active filters";
+      }
+      if (rowCountChipEl) {
+        rowCountChipEl.textContent = `${filtered.length.toLocaleString()} invoice line${filtered.length === 1 ? "" : "s"}`;
+      }
+    }
+
+    function updateSalesLogSubtitle(filtered) {
+      if (!salesLogSubEl) return;
+      const missingDestinationCount = filtered.reduce((acc, row) => {
+        return acc + (isUnspecifiedDestination(row.destination) ? 1 : 0);
+      }, 0);
+
+      if (missingDestinationCount > 0) {
+        salesLogSubEl.textContent = `Source data driving the dashboard. ${missingDestinationCount.toLocaleString()} row${missingDestinationCount === 1 ? "" : "s"} missing Sales Destination (flagged as Unspecified ⚠).`;
+      } else {
+        salesLogSubEl.textContent = "Source data driving the dashboard.";
+      }
+    }
+
+    function csvEscapeCell(value) {
+      const raw = String(value ?? "");
+      if (/[",\n]/.test(raw)) return `"${raw.replace(/"/g, "\"\"")}"`;
+      return raw;
+    }
+
+    function exportCurrentTableToCsv() {
+      if (!salesTableHeadRow || !salesTableBody) return;
+      const headers = [...salesTableHeadRow.querySelectorAll("th")].map(th => String(th.textContent || "").trim());
+      const rows = [...salesTableBody.querySelectorAll("tr")].map(tr => {
+        return [...tr.querySelectorAll("td")].map(td => String(td.textContent || "").trim());
+      });
+      if (!headers.length) return;
+
+      const csv = [headers, ...rows].map(row => row.map(csvEscapeCell).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const unitSuffix = state.unitMode === "lbsEq" ? "lbs-eq" : "cases";
+      const modeSuffix = state.headerTab === "table" ? "table" : state.viewMode;
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `sales-log-${modeSuffix}-${unitSuffix}-${dateStamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
     function refreshDashboard() {
@@ -2667,6 +2921,8 @@ const skuWeightLbs = {
       renderSkuWeekHeatmap(filtered);
       renderSkuShareAreaChart(filtered);
       renderTable(filtered);
+      updateScopeSummary(filtered);
+      updateSalesLogSubtitle(filtered);
       updateResetButtonVisibility();
     }
 
@@ -2683,6 +2939,38 @@ const skuWeightLbs = {
       container.querySelectorAll(".pill").forEach(btn => btn.classList.remove("active"));
       const allBtn = container.querySelector(`.pill[data-${keyName}="all"]`);
       if (allBtn) allBtn.classList.add("active");
+    }
+
+    function updateSkuStripActiveState() {
+      if (!skuStripEl) return;
+      const selected = new Set(Array.isArray(state.filters.skus) ? state.filters.skus : []);
+      const hasSelected = selected.size > 0;
+
+      skuStripEl.querySelectorAll(".pill").forEach(btn => {
+        const sku = btn.dataset.sku;
+        if (!sku) return;
+        if (sku === "all") {
+          btn.classList.toggle("active", !hasSelected);
+          return;
+        }
+        btn.classList.toggle("active", hasSelected && selected.has(sku));
+      });
+    }
+
+    function updateDestinationStripActiveState() {
+      if (!destinationStripEl) return;
+      const selected = new Set(Array.isArray(state.filters.destinations) ? state.filters.destinations : []);
+      const hasSelected = selected.size > 0;
+
+      destinationStripEl.querySelectorAll(".pill").forEach(btn => {
+        const destination = btn.dataset.destination;
+        if (!destination) return;
+        if (destination === "all") {
+          btn.classList.toggle("active", !hasSelected);
+          return;
+        }
+        btn.classList.toggle("active", hasSelected && selected.has(destination));
+      });
     }
 
     function updateHeatmapMetricToggleLabel() {
@@ -2762,7 +3050,7 @@ const skuWeightLbs = {
       if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener("click", () => {
           state.headerTab = "sales";
-          state.filters = { sku: "all", customer: "all", destination: "all", week: "all", date: "all" };
+          state.filters = { skus: [], customer: "all", destinations: [], week: "all", date: "all", dateFrom: "", dateTo: "" };
           state.unitMode = "cases";
           state.weekSource = "sales";
           state.viewMode = "daily";
@@ -2776,6 +3064,15 @@ const skuWeightLbs = {
           resetStripActive(skuStripEl, "sku");
           resetStripActive(customerStripEl, "customer");
           resetStripActive(destinationStripEl, "destination");
+          updateDestinationStripActiveState();
+          if (skuSearchInput) skuSearchInput.value = "";
+          if (customerSearchInput) customerSearchInput.value = "";
+          if (destinationSearchInput) destinationSearchInput.value = "";
+          applyStripSearch(skuStripEl, "sku", "");
+          applyStripSearch(customerStripEl, "customer", "");
+          applyStripSearch(destinationStripEl, "destination", "");
+          if (dateFromInput) dateFromInput.value = "";
+          if (dateToInput) dateToInput.value = "";
           setSalesLogVisibility(false);
 
           refreshDashboard();
@@ -2789,13 +3086,82 @@ const skuWeightLbs = {
       }
     }
 
+    function initAdvancedControls() {
+      const syncDateRange = (source) => {
+        let from = dateFromInput?.value || "";
+        let to = dateToInput?.value || "";
+        if (from && to && from > to) {
+          if (source === "from") {
+            to = from;
+            if (dateToInput) dateToInput.value = to;
+          } else {
+            from = to;
+            if (dateFromInput) dateFromInput.value = from;
+          }
+        }
+        state.filters.dateFrom = from;
+        state.filters.dateTo = to;
+        refreshDashboard();
+      };
+
+      if (dateFromInput) dateFromInput.addEventListener("change", () => syncDateRange("from"));
+      if (dateToInput) dateToInput.addEventListener("change", () => syncDateRange("to"));
+
+      if (clearDateRangeBtn) {
+        clearDateRangeBtn.addEventListener("click", () => {
+          state.filters.dateFrom = "";
+          state.filters.dateTo = "";
+          if (dateFromInput) dateFromInput.value = "";
+          if (dateToInput) dateToInput.value = "";
+          refreshDashboard();
+        });
+      }
+
+      if (skuSearchInput) {
+        skuSearchInput.addEventListener("input", () => {
+          applyStripSearch(skuStripEl, "sku", skuSearchInput.value);
+        });
+      }
+      if (customerSearchInput) {
+        customerSearchInput.addEventListener("input", () => {
+          applyStripSearch(customerStripEl, "customer", customerSearchInput.value);
+        });
+      }
+      if (destinationSearchInput) {
+        destinationSearchInput.addEventListener("input", () => {
+          applyStripSearch(destinationStripEl, "destination", destinationSearchInput.value);
+          updateDestinationStripActiveState();
+        });
+      }
+
+      if (exportCsvBtn) {
+        exportCsvBtn.addEventListener("click", () => {
+          exportCurrentTableToCsv();
+        });
+      }
+    }
+
     function initFilterEvents() {
       skuStripEl.addEventListener("click", (e) => {
         const btn = e.target.closest(".pill");
         if (!btn || !btn.dataset.sku) return;
-        [...skuStripEl.querySelectorAll(".pill")].forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.filters.sku = btn.dataset.sku;
+
+        const skuValue = btn.dataset.sku;
+        if (skuValue === "all") {
+          state.filters.skus = [];
+          updateSkuStripActiveState();
+          refreshDashboard();
+          return;
+        }
+
+        const current = new Set(Array.isArray(state.filters.skus) ? state.filters.skus : []);
+        if (current.has(skuValue)) {
+          current.delete(skuValue);
+        } else {
+          current.add(skuValue);
+        }
+        state.filters.skus = [...current].sort((a, b) => a.localeCompare(b));
+        updateSkuStripActiveState();
         refreshDashboard();
       });
 
@@ -2811,9 +3177,23 @@ const skuWeightLbs = {
       destinationStripEl.addEventListener("click", (e) => {
         const btn = e.target.closest(".pill");
         if (!btn || !btn.dataset.destination) return;
-        [...destinationStripEl.querySelectorAll(".pill")].forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.filters.destination = btn.dataset.destination;
+
+        const destinationValue = btn.dataset.destination;
+        if (destinationValue === "all") {
+          state.filters.destinations = [];
+          updateDestinationStripActiveState();
+          refreshDashboard();
+          return;
+        }
+
+        const current = new Set(Array.isArray(state.filters.destinations) ? state.filters.destinations : []);
+        if (current.has(destinationValue)) {
+          current.delete(destinationValue);
+        } else {
+          current.add(destinationValue);
+        }
+        state.filters.destinations = [...current].sort((a, b) => a.localeCompare(b));
+        updateDestinationStripActiveState();
         refreshDashboard();
       });
     }
@@ -2858,6 +3238,7 @@ const skuWeightLbs = {
     hydrateFromMasterPack("init");
     initToggles();
     initFilterEvents();
+    initAdvancedControls();
     setSalesLogVisibility(false);
     refreshDashboard();
   </script>
