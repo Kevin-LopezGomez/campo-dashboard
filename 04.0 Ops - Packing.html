@@ -994,6 +994,8 @@
     const UPDATE_EVENT_TYPE = "MASTER_PACK_UPDATED"; // received via postMessage
     const MASTER_PACK_SHEET_NAME = "Master Pack";
     const POTENTIAL_DAYS_PER_WEEK = 5;
+    const LOCAL_DB_NAME = "campo_local_cache_v1";
+    const LOCAL_DB_STORE = "datasets";
 
     // Config storage
     const UNITS_CONFIG_KEY = "campo_packing_units_config_v1";
@@ -1126,10 +1128,66 @@
     // -------------------------
     // MASTER PACK JSON PAYLOAD (from Data Input)
     // -------------------------
-    function loadMasterPackPayload() {
+    function openLocalDb(version = 1) {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+        const req = indexedDB.open(LOCAL_DB_NAME, version);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+            db.createObjectStore(LOCAL_DB_STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+      });
+    }
+
+    async function openLocalDbWithStore() {
+      let db = await openLocalDb(1);
+      if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+      const nextVersion = Math.max(2, (db.version || 1) + 1);
+      db.close();
+      db = await openLocalDb(nextVersion);
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+        db.close();
+        throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+      }
+      return db;
+    }
+
+    async function idbGetJson(key) {
+      const db = await openLocalDbWithStore();
+      try {
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(LOCAL_DB_STORE, "readonly");
+          const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error || new Error("indexedDB read failed"));
+          tx.onerror = () => reject(tx.error || new Error("indexedDB tx failed"));
+        });
+      } finally {
+        db.close();
+      }
+    }
+
+    async function loadMasterPackPayload() {
+      try {
+        const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+        if (idbPayload?.sheets && typeof idbPayload === "object") return idbPayload;
+      } catch (_e) {}
+
       const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
       if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed._storage === "indexeddb" && parsed._idbKey === MASTER_PACK_KEY) {
+          return await idbGetJson(MASTER_PACK_KEY);
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
     }
 
     function sheetToRowObjects(sheetObj) {
@@ -1809,7 +1867,7 @@
     // -------------------------
     // Load from Master Pack (JSON) and render
     // -------------------------
-    function loadFromMasterPackAndRender(opts = {}) {
+    async function loadFromMasterPackAndRender(opts = {}) {
       const { keepTab = true } = opts;
 
       const ping = (() => {
@@ -1817,7 +1875,7 @@
       })();
       setUpdatedChip(ping);
 
-      const payload = loadMasterPackPayload();
+      const payload = await loadMasterPackPayload();
       const parsed = parseMasterPackJSON(payload);
 
       if (parsed.missing.length) {
@@ -1825,7 +1883,7 @@
         buildSkuTabs();
         setActiveTab("all");
 
-        const hasAny = !!(localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+        const hasAny = !!payload || !!(localStorage.getItem(MASTER_PACK_KEY) || "").trim();
         setStatusChip("warn", hasAny ? "Master Pack missing required columns" : "Master Pack not loaded");
 
         const missingList = parsed.missing.map(h => `<li><code>${h}</code></li>`).join("");
