@@ -375,6 +375,7 @@ const MASTER_STORE_PING = "campo_store_visits_push_ping_v1";
 const MASTER_SEED_PING = "campo_master_seed_inventory_push_ping_v1";
 const LEGACY_MASTER_EXP_PING = "campo_master_experiments_push_ping_v1";
 const LEGACY_MASTER_STORE_PING = "campo_master_store_visit_push_ping_v1";
+const PACK_STORAGE_MODE_KEY = "campo_master_pack_storage_mode_v1";
 
 
   // Canonical sheet keys (contract)
@@ -554,6 +555,9 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
   const contractWarn = document.getElementById("contractWarn");
 
   function setStatus(msg){ statusEl.textContent = msg; }
+  function setPackStorageMode(mode){
+    try { localStorage.setItem(PACK_STORAGE_MODE_KEY, String(mode || "")); } catch {}
+  }
   function migrateLegacyStorageKeys(){
     const migrations = [
       { canonical: MASTER_EXP_KEY, legacy: LEGACY_MASTER_EXP_KEY },
@@ -917,14 +921,17 @@ function refreshBadges(){
         // Compatibility path for dashboards that still read full pack from localStorage.
         localStorage.removeItem(MASTER_PACK_KEY);
         localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
+        setPackStorageMode("full-localStorage");
       }catch(_quotaOrWriteErr){
         const pointer = buildPackPointerPayload(payload, sourceLabel);
         localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pointer));
+        setPackStorageMode("indexeddb-pointer-fallback");
       }
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
       saved = true;
-      setStatus(`Saved Master Pack (IndexedDB): ${sourceLabel}`);
+      const mode = localStorage.getItem(PACK_STORAGE_MODE_KEY) || "unknown";
+      setStatus(`Saved Master Pack (${mode}): ${sourceLabel}`);
     } else if(which === "exp"){
       if (!payload?.sheets?.[CANON_EXP_SHEET]) throw new Error(`Experiments payload missing sheets["${CANON_EXP_SHEET}"]`);
       localStorage.setItem(MASTER_EXP_KEY, JSON.stringify(payload));
@@ -1236,8 +1243,10 @@ function normalizeMasterPayload(raw, kind){
       try{
         localStorage.removeItem(MASTER_PACK_KEY);
         localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
+        setPackStorageMode("full-localStorage");
       }catch(_quotaOrWriteErr){
         localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(pack, pack?.sourceLabel || "worker")));
+        setPackStorageMode("indexeddb-pointer-fallback");
       }
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
@@ -1503,6 +1512,7 @@ async function publishToSupabase(){
   localStorage.removeItem(MASTER_SEED_PING);
   localStorage.removeItem(LEGACY_MASTER_EXP_PING);
   localStorage.removeItem(LEGACY_MASTER_STORE_PING);
+  localStorage.removeItem(PACK_STORAGE_MODE_KEY);
   localStorage.removeItem(LAST_ASSIGN_META_KEY);
   await idbDeleteKey(MASTER_PACK_KEY);
     }catch(e){}

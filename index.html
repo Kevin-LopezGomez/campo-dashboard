@@ -1706,6 +1706,7 @@
       const LOCAL_DB_NAME = "campo_local_cache_v1";
       const LOCAL_DB_STORE = "datasets";
       const PACK_INDEXEDDB_MARKER = "indexeddb";
+      const PACK_STORAGE_MODE_KEY = "campo_master_pack_storage_mode_v1";
 
 
       const CANON_GROW_SHEET = "Master Grow";
@@ -1980,6 +1981,10 @@
         };
       }
 
+      function setPackStorageMode(mode){
+        try { localStorage.setItem(PACK_STORAGE_MODE_KEY, String(mode || "")); } catch {}
+      }
+
       function migrateLegacyDatasetKeys(){
         const migrations = [
           { canonical: EXPERIMENTS_KEY, legacy: LEGACY_EXPERIMENTS_KEY },
@@ -2055,9 +2060,11 @@
           try {
             localStorage.removeItem(MASTER_PACK_KEY);
             localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
+            setPackStorageMode("full-localStorage");
           } catch (lsErr) {
             if (!cachedPackInIdb) throw lsErr;
             localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(normalizedPack, "worker")));
+            setPackStorageMode("indexeddb-pointer-fallback");
           }
           localStorage.setItem(MASTER_PACK_PING, String(now));
           try { window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } })); } catch {}
