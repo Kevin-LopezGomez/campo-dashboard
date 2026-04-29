@@ -1447,7 +1447,6 @@ const skuWeightLbs = {
           const lbsPerCaseNum = parseNumeric(lbsPerCase);
           const lbsEqNum = parseNumeric(lbsEq);
           const skuKey = String(sku ?? "").trim();
-          const derivedLbsEq = casesNum * (lbsPerCaseNum || (skuWeightLbs[skuKey] ?? 0));
           const invoiceYear = invoiceDateObj.getTime && !isNaN(invoiceDateObj.getTime()) ? invoiceDateObj.getFullYear() : 0;
           const salesWeekNum = parseWeekNumber(salesWeek);
           const salesShipWeekNum = parseWeekNumber(salesShipWeek);
@@ -1476,7 +1475,7 @@ const skuWeightLbs = {
             sku: skuKey,
             cases: casesNum,
             lbsPerCase: lbsPerCaseNum,
-            lbsEq: lbsEqNum || derivedLbsEq,
+            lbsEq: lbsEqNum,
             customer,
             term,
             extra: String(extra ?? "").trim()
@@ -1753,9 +1752,7 @@ const skuWeightLbs = {
 
     function getUnits(record, unitMode) {
       if (unitMode === "cases") return record.cases;
-      if (record.lbsEq > 0) return record.lbsEq;
-      const w = skuWeightLbs[record.sku] ?? 0;
-      return record.cases * w;
+      return record.lbsEq;
     }
 
     function getUnitCount(record) {
