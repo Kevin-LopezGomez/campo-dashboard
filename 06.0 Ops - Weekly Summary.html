@@ -620,6 +620,8 @@
     const MASTER_PACK_KEY = "campo_master_pack_v1";
     const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
     const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
+    const LOCAL_DB_NAME = "campo_local_cache_v1";
+    const LOCAL_DB_STORE = "datasets";
 
     const MSG_GROW = "MASTER_GROW_UPDATED";
     const MSG_PACK = "MASTER_PACK_UPDATED";
@@ -809,6 +811,7 @@
       ["pack week", H.PACK_WEEK],
       ["pack date", "Pack Date"],
       ["packing date", "Pack Date"],
+      ["batch run date", "Pack Date"],
       ["ship date", "Ship Date"],
       ["shipping date", "Ship Date"],
       ["sales invoice date", "Sales Invoice Date"],
@@ -965,7 +968,7 @@
         consider(parseAnyDate(r[H.SAN_DATE]));
       }
 
-      const packDateFields = [H.DATE, "Date", "Pack Date", "Ship Date"];
+      const packDateFields = [H.DATE, "Date", "Pack Date", "Batch Run Date"];
       for (const r of (packRows||[])){
         for (const f of packDateFields){
           if (f in r) consider(parseAnyDate(r[f]));
@@ -986,7 +989,7 @@
         if (isMatch(r[H.DATE]) || isMatch(r[H.TRANS_DATE]) || isMatch(r[H.SAN_DATE])) return true;
       }
 
-      const packDateFields = [H.DATE, "Date", "Pack Date", "Ship Date"];
+      const packDateFields = [H.DATE, "Date", "Pack Date", "Batch Run Date"];
       for (const r of (packRows||[])){
         for (const f of packDateFields){
           if (f in r && isMatch(r[f])) return true;
@@ -1120,6 +1123,68 @@
       try { return JSON.parse(raw); } catch { return null; }
     }
 
+    function openLocalDb(version = 1) {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+        const req = indexedDB.open(LOCAL_DB_NAME, version);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+            db.createObjectStore(LOCAL_DB_STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+      });
+    }
+
+    async function openLocalDbWithStore() {
+      let db = await openLocalDb(1);
+      if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+      const nextVersion = Math.max(2, (db.version || 1) + 1);
+      db.close();
+      db = await openLocalDb(nextVersion);
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+        db.close();
+        throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+      }
+      return db;
+    }
+
+    async function idbGetJson(key) {
+      const db = await openLocalDbWithStore();
+      try {
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(LOCAL_DB_STORE, "readonly");
+          const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error || new Error("indexedDB read failed"));
+          tx.onerror = () => reject(tx.error || new Error("indexedDB tx failed"));
+        });
+      } finally {
+        db.close();
+      }
+    }
+
+    async function loadMasterPackPayload() {
+      try {
+        const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+        if (idbPayload?.sheets && typeof idbPayload === "object") return idbPayload;
+      } catch (_e) {}
+
+      const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed._storage === "indexeddb" && parsed._idbKey === MASTER_PACK_KEY) {
+          return await idbGetJson(MASTER_PACK_KEY);
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
+    }
+
     function sheetToObjects(sheetObj){
       const headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
       const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
@@ -1183,7 +1248,7 @@
         add(r[H.SAN_WEEK], r[H.SAN_DATE]);
       }
       for (const r of (packRows||[])){
-        add(r[H.PACK_WEEK], r[H.DATE] ?? r["Date"] ?? r["Pack Date"] ?? r["Ship Date"] ?? getShippingDateValue(r));
+        add(r[H.PACK_WEEK], r[H.DATE] ?? r["Date"] ?? r["Pack Date"] ?? r["Batch Run Date"]);
       }
 
       const out = {};
@@ -1608,7 +1673,7 @@
         : NaN;
 
       // ---- PACKING (Pack) ----
-      const packDateFields = [H.DATE, "Date", "Pack Date", "Ship Date"];
+      const packDateFields = [H.DATE, "Date", "Pack Date", "Batch Run Date"];
       const packRowsByDate = (packRows||[]).filter(r => packDateFields.some(f => (f in r) && isDate(r[f])));
       const packRowsByWeek = (packRows||[]).filter(r => weekNumFromCell(r[H.PACK_WEEK]) === wkNum);
       const packRowsD = packRowsByDate.length ? packRowsByDate : packRowsByWeek;
@@ -2338,7 +2403,7 @@
         add(r[H.DATE]);
         add(r["Date"]);
         add(r["Pack Date"]);
-        add(r["Ship Date"]);
+        add(r["Batch Run Date"]);
         add(getShippingDateValue(r));
       }
 
@@ -2583,9 +2648,9 @@
       render();
     }
 
-    function loadData(){
+    async function loadData(){
       const grow = loadJson(MASTER_GROW_KEY);
-      const pack = loadJson(MASTER_PACK_KEY);
+      const pack = await loadMasterPackPayload();
 
       const growOk = !!grow?.sheets?.[CANON_GROW_SHEET];
       const packOk = !!pack?.sheets?.[CANON_PACK_SHEET];
@@ -2770,9 +2835,9 @@
     let reloadTimer = null;
     function reloadAll(){
       if (reloadTimer) clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(() => {
+      reloadTimer = setTimeout(async () => {
         reloadTimer = null;
-        loadData();
+        await loadData();
         renderWeekOptions();
         updateViewControls();
 
@@ -2834,9 +2899,9 @@
       }, 1500);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       setupListeners();
-      loadData();
+      await loadData();
       renderWeekOptions();
       updateViewControls();
 
