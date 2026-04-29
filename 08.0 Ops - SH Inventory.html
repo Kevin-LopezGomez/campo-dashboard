@@ -1024,6 +1024,10 @@
     const MASTER_PACK_KEY = "campo_master_pack_v1";
     const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
     const UPDATE_EVENT_TYPE = "MASTER_PACK_UPDATED";
+    // Must match Data Input / Sales dashboards
+    const LOCAL_DB_NAME = "campo_local_cache_v1";
+    const LOCAL_DB_STORE = "datasets";
+    const PACK_INDEXEDDB_MARKER = "indexeddb";
 
     // Pack sheet candidates (same payload; pick first that exists)
     const MASTER_PACK_SHEET_NAME = "Master Pack"; // fallback only
@@ -1263,10 +1267,64 @@
     // ============================================================
     // Load + parse payload
     // ============================================================
-    function loadPayload(){
+    function openLocalDb(version = 1){
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+        const req = indexedDB.open(LOCAL_DB_NAME, version);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) db.createObjectStore(LOCAL_DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+      });
+    }
+
+    async function openLocalDbWithStore(){
+      let db = await openLocalDb(1);
+      if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+      const nextVersion = Math.max(2, (db.version || 1) + 1);
+      db.close();
+      db = await openLocalDb(nextVersion);
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+        db.close();
+        throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+      }
+      return db;
+    }
+
+    async function idbGetJson(key){
+      const db = await openLocalDbWithStore();
+      try {
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(LOCAL_DB_STORE, "readonly");
+          const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error || new Error("indexedDB read failed"));
+          tx.onerror = () => reject(tx.error || new Error("indexedDB tx failed"));
+        });
+      } finally {
+        db.close();
+      }
+    }
+
+    async function loadPayload(){
+      try {
+        const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+        if (idbPayload?.sheets && typeof idbPayload === "object") return idbPayload;
+      } catch (_e) {}
+
       const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
       if (!raw) return null;
-      try { return JSON.parse(raw); } catch { return null; }
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed._storage === PACK_INDEXEDDB_MARKER && parsed._idbKey === MASTER_PACK_KEY) {
+          return await idbGetJson(MASTER_PACK_KEY);
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
     }
 
     function getFirstExistingSheet(payload){
@@ -1855,10 +1913,10 @@
     // ============================================================
     // Main reload/render pipeline
     // ============================================================
-    function reloadAll(){
+    async function reloadAll(){
       setUpdatedChip();
 
-      const payload = loadPayload();
+      const payload = await loadPayload();
       const parsed = parseRows(payload);
 
       if (parsed.missing.length){
