@@ -2012,7 +2012,7 @@
         if (packRaw) {
           try {
             const parsed = JSON.parse(packRaw);
-            if (!isPackIdbPointer(parsed) && !parsed?.sheets?.[CANON_PACK_SHEET]) return false;
+            if (!isPackIdbPointer(parsed)) return false;
           } catch { return false; }
         }
         return true;
@@ -2048,24 +2048,9 @@
         try{
           const packJson = await workerGetJson(WORKER_PACK_URL);
           const normalizedPack = normalizeMasterPayload(packJson, "pack");
-          let cachedPackInIdb = false;
-          try {
-            await idbSetJson(MASTER_PACK_KEY, normalizedPack);
-            cachedPackInIdb = true;
-          } catch (idbErr) {
-            console.warn("Pack cache write failed:", idbErr);
-          }
-
-          const fullPackStr = JSON.stringify(normalizedPack);
-          try {
-            localStorage.removeItem(MASTER_PACK_KEY);
-            localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
-            setPackStorageMode("full-localStorage");
-          } catch (lsErr) {
-            if (!cachedPackInIdb) throw lsErr;
-            localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(normalizedPack, "worker")));
-            setPackStorageMode("indexeddb-pointer-fallback");
-          }
+          await idbSetJson(MASTER_PACK_KEY, normalizedPack);
+          localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(normalizedPack, "worker")));
+          setPackStorageMode("indexeddb-pointer");
           localStorage.setItem(MASTER_PACK_PING, String(now));
           try { window.dispatchEvent(new CustomEvent(MSG_PACK, { detail:{ key: MASTER_PACK_KEY, ts: now } })); } catch {}
           notifyIframes(MSG_PACK);

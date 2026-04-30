@@ -567,6 +567,10 @@ async function readMasterPayload(key){
   if (parsed && parsed._storage === INDEXEDDB_MARKER && parsed._idbKey === key) {
     try { return await idbGetJson(key); } catch { return null; }
   }
+  if (key === MASTER_PACK_KEY) {
+    console.warn("Ignoring legacy full pack payload in localStorage; expected IndexedDB pointer.");
+    return null;
+  }
   return parsed;
 }
 

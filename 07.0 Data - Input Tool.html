@@ -916,17 +916,9 @@ function refreshBadges(){
     } else if(which === "pack"){
       if (!payload?.sheets?.[CANON_PACK_SHEET]) throw new Error(`Pack payload missing sheets["${CANON_PACK_SHEET}"]`);
       await idbSetJson(MASTER_PACK_KEY, payload);
-      const fullPackStr = JSON.stringify(payload);
-      try{
-        // Compatibility path for dashboards that still read full pack from localStorage.
-        localStorage.removeItem(MASTER_PACK_KEY);
-        localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
-        setPackStorageMode("full-localStorage");
-      }catch(_quotaOrWriteErr){
-        const pointer = buildPackPointerPayload(payload, sourceLabel);
-        localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pointer));
-        setPackStorageMode("indexeddb-pointer-fallback");
-      }
+      const pointer = buildPackPointerPayload(payload, sourceLabel);
+      try { localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(pointer)); } catch {}
+      setPackStorageMode("indexeddb-pointer");
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
       saved = true;
@@ -1239,15 +1231,8 @@ function normalizeMasterPayload(raw, kind){
     try{
       const pack = normalizeMasterPayload(await workerGetJson(WORKER_PACK_URL), "pack");
       await idbSetJson(MASTER_PACK_KEY, pack);
-      const fullPackStr = JSON.stringify(pack);
-      try{
-        localStorage.removeItem(MASTER_PACK_KEY);
-        localStorage.setItem(MASTER_PACK_KEY, fullPackStr);
-        setPackStorageMode("full-localStorage");
-      }catch(_quotaOrWriteErr){
-        localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(pack, pack?.sourceLabel || "worker")));
-        setPackStorageMode("indexeddb-pointer-fallback");
-      }
+      localStorage.setItem(MASTER_PACK_KEY, JSON.stringify(buildPackPointerPayload(pack, pack?.sourceLabel || "worker")));
+      setPackStorageMode("indexeddb-pointer");
       localStorage.setItem(MASTER_PACK_PING, now);
       emit(MSG_PACK, MASTER_PACK_KEY);
       gotAny = true;

@@ -1179,7 +1179,8 @@
         if (parsed && parsed._storage === "indexeddb" && parsed._idbKey === MASTER_PACK_KEY) {
           return await idbGetJson(MASTER_PACK_KEY);
         }
-        return parsed;
+        console.warn("Ignoring legacy full pack payload in localStorage; expected IndexedDB pointer.");
+        return null;
       } catch {
         return null;
       }
