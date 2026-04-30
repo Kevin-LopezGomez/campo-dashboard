@@ -752,6 +752,7 @@
       PACK_WEEK: "Pack Week",
       SKU: "SKU Packed",
       CASES: "Quantity of Cases Packed",
+      PACK_WEIGHT: "Total Packed Weight",
 
       LBS_SHIPPED: "# Lbs Shipped",
       LOC_SHIPPED: "Location Shipped",
@@ -821,6 +822,7 @@
       ["sales # of cases", "Sales # of Cases"],
       ["sku packed", H.SKU],
       ["quantity of cases packed", H.CASES],
+      ["total packed weight", H.PACK_WEIGHT],
 
       ["# lbs shipped", H.LBS_SHIPPED],
       ["lbs shipped", H.LBS_SHIPPED],
@@ -1438,7 +1440,7 @@
         const cases = parseNumber(r[H.CASES]);
         if (!t || !cases) continue;
         const units = cases * (PACKS_PER_CASE[t] || 0);
-        const lbs = units * (LB_PER_UNIT[t] || 0);
+        const lbs = parseNumber(r[H.PACK_WEIGHT]);
 
         lbsAll += lbs;
         if (t === "5OZ"){ cases5 += cases; units5 += units; lbs5 += lbs; }
@@ -1689,7 +1691,7 @@
         const cases = parseNumber(r[H.CASES]);
         if (!t || !cases) continue;
         const units = cases * (PACKS_PER_CASE[t] || 0);
-        const lbs = units * (LB_PER_UNIT[t] || 0);
+        const lbs = parseNumber(r[H.PACK_WEIGHT]);
 
         lbsAll += lbs;
         if (t === "5OZ"){ cases5 += cases; units5 += units; lbs5 += lbs; }
