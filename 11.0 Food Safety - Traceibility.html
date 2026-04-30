@@ -833,7 +833,7 @@ function trace(query){
 
       const batchRunCode = safeStr(r?.["Batch Run Code"]);
       const skuPacked = safeStr(r?.["SKU Packed"]);
-      const packDate = shortDate(getVal(r, ["Pack Date", "Packing Date", "Warehouse Pack Date", "Date Packed", "Batch Run Date"]));
+      const packDate = shortDate(r?.["Batch Run Date"]);
       const qtyCasesPacked = safeStr(r?.["Quantity of Cases Packed"]);
       const totalPackedWeightVal = safeStr(r?.["Total Packed Weight"]);
       const lbsPacked = safeStr(r?.["Total Packed Weight"]);
