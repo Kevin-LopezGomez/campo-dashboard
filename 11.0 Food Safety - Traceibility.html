@@ -347,7 +347,7 @@
 <header>
   <div class="title">
     <h1>Batch Trace – Pack ⇄ Grow</h1>
-    <span class="pill">Auto-hydrated from localStorage → search any code (Batch Run Code, W Batch Run Code, SKU, Invoice, Seed Batch)</span>
+    <span class="pill">Auto-hydrated from IndexedDB/localStorage → search any code (Batch Run Code, W Batch Run Code, SKU, Invoice, Seed Batch)</span>
   </div>
 </header>
 
@@ -388,7 +388,7 @@
                   <th>Batch Run Code</th>
                   <th>Matched Seed Batch Code</th>
                   <th>SKU Packed</th>
-                  <th>Batch Run Date</th>
+                  <th>Pack Date</th>
                   <th>Cases Packed</th>
                   <th>Total Packed Weight</th>
                 </tr>
@@ -461,6 +461,9 @@ const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
 
 const GROW_SHEET_NAME = "Master Grow";
 const PACK_SHEET_NAME = "Master Pack";
+const LOCAL_DB_NAME = "campo_local_cache_v1";
+const LOCAL_DB_STORE = "datasets";
+const INDEXEDDB_MARKER = "indexeddb";
 
 // Parent/index message types
 const MSG_GROW = "MASTER_GROW_UPDATED";
@@ -507,10 +510,64 @@ function norm(s){
   return safeStr(s).trim().toUpperCase();
 }
 
-function loadJsonFromStorage(key){
+function parseJsonSafe(raw){
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function openLocalDb(version = 1){
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+    const req = indexedDB.open(LOCAL_DB_NAME, version);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) db.createObjectStore(LOCAL_DB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+  });
+}
+
+async function openLocalDbWithStore(){
+  let db = await openLocalDb(1);
+  if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+  const nextVersion = Math.max(2, (db.version || 1) + 1);
+  db.close();
+  db = await openLocalDb(nextVersion);
+  if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+    db.close();
+    throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+  }
+  return db;
+}
+
+async function idbGetJson(key){
+  const db = await openLocalDbWithStore();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(LOCAL_DB_STORE, "readonly");
+      const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error || new Error("indexedDB read failed"));
+      tx.onerror = () => reject(tx.error || new Error("indexedDB tx failed"));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function readMasterPayload(key){
+  try {
+    const idbPayload = await idbGetJson(key);
+    if (idbPayload?.sheets && typeof idbPayload === "object") return idbPayload;
+  } catch (_e) {}
+
   const raw = (localStorage.getItem(key) || "").trim();
   if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
+  const parsed = parseJsonSafe(raw);
+  if (parsed && parsed._storage === INDEXEDDB_MARKER && parsed._idbKey === key) {
+    try { return await idbGetJson(key); } catch { return null; }
+  }
+  return parsed;
 }
 
 function getSheet(payload, sheetName){
@@ -534,9 +591,11 @@ function sheetToRowObjects(sheetObj){
   return out;
 }
 
-function loadMasterData(){
-  const growPayload = loadJsonFromStorage(MASTER_GROW_KEY);
-  const packPayload = loadJsonFromStorage(MASTER_PACK_KEY);
+async function loadMasterData(){
+  const [growPayload, packPayload] = await Promise.all([
+    readMasterPayload(MASTER_GROW_KEY),
+    readMasterPayload(MASTER_PACK_KEY),
+  ]);
 
   const growSheet = getSheet(growPayload, GROW_SHEET_NAME);
   const packSheet = getSheet(packPayload, PACK_SHEET_NAME);
@@ -670,9 +729,9 @@ function trace(query){
   clearResults();
 
   if(!PACK_ROWS.length || !GROW_ROWS.length){
-    renderEmpty($("packTbody"), "Waiting for Pack + Grow data from localStorage.", 6);
-    renderEmpty($("growTbody"), "Waiting for Pack + Grow data from localStorage.", 9);
-    renderEmpty($("shipTbody"), "Waiting for Pack + Grow data from localStorage.", 6);
+    renderEmpty($("packTbody"), "Waiting for Pack + Grow data from IndexedDB/localStorage.", 6);
+    renderEmpty($("growTbody"), "Waiting for Pack + Grow data from IndexedDB/localStorage.", 9);
+    renderEmpty($("shipTbody"), "Waiting for Pack + Grow data from IndexedDB/localStorage.", 6);
     return;
   }
 
@@ -770,7 +829,7 @@ function trace(query){
 
       const batchRunCode = safeStr(r?.["Batch Run Code"]);
       const skuPacked = safeStr(r?.["SKU Packed"]);
-      const packDate = shortDate(r?.["Batch Run Date"]);
+      const packDate = shortDate(getVal(r, ["Pack Date", "Packing Date", "Warehouse Pack Date", "Date Packed", "Batch Run Date"]));
       const qtyCasesPacked = safeStr(r?.["Quantity of Cases Packed"]);
       const totalPackedWeightVal = safeStr(r?.["Total Packed Weight"]);
       const lbsPacked = safeStr(r?.["Total Packed Weight"]);
@@ -913,15 +972,15 @@ function updateDebug(){
   $("debug").textContent = JSON.stringify(dbg, null, 2);
 }
 
-function rebuildUI(reason){
-  const { growPayload, packPayload, growSheet, packSheet } = loadMasterData();
+async function rebuildUI(reason){
+  const { growPayload, packPayload, growSheet, packSheet } = await loadMasterData();
   GROW_PAYLOAD = growPayload;
   PACK_PAYLOAD = packPayload;
 
   if(!growSheet || !packSheet){
     PACK_ROWS = [];
     GROW_ROWS = [];
-    setStatus("bad", "Waiting for Master Grow + Master Pack from localStorage");
+    setStatus("bad", "Waiting for Master Grow + Master Pack from IndexedDB/localStorage");
     updateDebug();
     trace($("q").value);
     return;
@@ -939,7 +998,10 @@ function reloadAll(reason){
   if(reloadTimer) clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
     reloadTimer = null;
-    rebuildUI(reason);
+    rebuildUI(reason).catch((err) => {
+      console.error("Traceability reload failed:", err);
+      setStatus("bad", "Failed to load Master Grow + Master Pack");
+    });
   }, 60);
 }
 
@@ -968,13 +1030,14 @@ function setupLiveListeners(){
     };
   }
 
-  let lastGrowLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
-  let lastPackLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+  let lastGrowRaw = (localStorage.getItem(MASTER_GROW_KEY) || "");
+  let lastPackRaw = (localStorage.getItem(MASTER_PACK_KEY) || "");
   setInterval(() => {
-    const gLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
-    const pLen = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
-    if (gLen !== lastGrowLen || pLen !== lastPackLen){
-      lastGrowLen = gLen; lastPackLen = pLen;
+    const gRaw = (localStorage.getItem(MASTER_GROW_KEY) || "");
+    const pRaw = (localStorage.getItem(MASTER_PACK_KEY) || "");
+    if (gRaw !== lastGrowRaw || pRaw !== lastPackRaw){
+      lastGrowRaw = gRaw;
+      lastPackRaw = pRaw;
       reloadAll("poll");
     }
   }, 1500);
