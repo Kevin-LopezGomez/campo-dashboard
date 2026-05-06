@@ -4,8 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Seed Inventory</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
 
@@ -45,16 +44,29 @@
       box-shadow: var(--shadow);
     }
     .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .titleBlock { min-width: min(100%, 520px); }
     h1 { margin: 0 0 6px; font-size: 24px; font-family: Poppins, Inter, system-ui; font-weight: 800; }
     .sub { color: var(--sub); font-size: 14px; }
+    .sourceTools {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 100%;
+    }
     .pill {
       border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; color: var(--sub); font-size: 12px;
       background: rgba(2,6,23,.35);
       white-space: nowrap;
     }
+    .pill.stale {
+      border-color: rgba(245,158,11,.55);
+      color: #fed7aa;
+      background: rgba(245,158,11,.10);
+    }
 
-    .controls { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .controls:empty { display: none; margin-top: 0; }
+    .controls { margin-top: 12px; display: grid; grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) minmax(160px, 1fr) auto; gap: 10px; align-items: end; }
     .viewPills { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
     .viewPill {
       border: 1px solid var(--line);
@@ -79,20 +91,32 @@
       border: 1px solid var(--line); border-radius: 12px; background: rgba(2,6,23,.35);
       padding: 10px; display: flex; gap: 8px; align-items: center;
     }
+    .control.stack { align-items: stretch; flex-direction: column; gap: 6px; }
     label { font-size: 12px; color: var(--muted); font-weight: 700; }
     input, select {
       border: 1px solid rgba(148,163,184,.24); border-radius: 10px; background: rgba(2,6,23,.55); color: var(--text);
       padding: 8px 9px; font-size: 14px;
     }
+    input[type="search"] { width: 100%; }
+    .checkControl {
+      min-height: 62px;
+      justify-content: center;
+      color: var(--sub);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkControl input { width: 16px; height: 16px; }
 
-    .grid4 { margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .grid4 { margin-top: 12px; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
     .kpi { border: 1px solid var(--line2); border-radius: 16px; background: rgba(2,6,23,.40); padding: 12px; }
     .kpi .t { font-size: 12px; color: var(--muted); font-weight: 700; }
     .kpi .v { margin-top: 6px; font-size: 26px; font-weight: 900; font-family: Poppins, Inter, system-ui; }
 
-    .grid2 { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+    .grid2 { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: stretch; }
     .card { border: 1px solid var(--line); border-radius: 16px; background: rgba(2,6,23,.40); padding: 12px; }
-    .grid2 > .card { min-width: 0; }
+    .grid2 > .card { min-width: 0; display: flex; flex-direction: column; }
     .card h3 { margin: 0 0 8px; font-size: 15px; font-family: Poppins, Inter, system-ui; }
     .tableHeadRow {
       display: flex;
@@ -122,8 +146,7 @@
       white-space: nowrap;
     }
     .miniBtn:hover { border-color: rgba(107,180,255,.45); }
-    .chartWrap { height: 290px; }
-    .chartWrap canvas { max-width: 100%; }
+    .miniBtn:disabled { cursor: wait; opacity: .58; }
 
     .section { margin-top: 10px; }
     .tableGroup {
@@ -153,6 +176,8 @@
     .tableGroup.exp .tableGroupHead { border-color: rgba(107,180,255,.55); color: #b9dcff; }
     .tableGroup.mix { border-color: rgba(255,179,95,.45); background: rgba(255,179,95,.06); }
     .tableGroup.mix .tableGroupHead { border-color: rgba(255,179,95,.55); color: #ffd8aa; }
+    .tableGroup.usage { border-color: rgba(244,114,182,.45); background: rgba(244,114,182,.06); }
+    .tableGroup.usage .tableGroupHead { border-color: rgba(244,114,182,.55); color: #fbcfe8; }
     .sectionTag {
       margin-top: 10px;
       display: inline-flex;
@@ -166,7 +191,14 @@
       font-weight: 800;
       letter-spacing: .2px;
     }
-    .tableWrap { overflow: auto; border: 1px solid var(--line2); border-radius: 14px; background: rgba(2,6,23,.32); }
+    .tableWrap {
+      overflow: auto;
+      border: 1px solid var(--line2);
+      border-radius: 14px;
+      background: rgba(2,6,23,.32);
+      scrollbar-gutter: stable both-edges;
+    }
+    #topProductionWrap, #topExperimentWrap { flex: 1 1 auto; }
     table { width: 100%; border-collapse: collapse; min-width: 980px; }
     th, td { padding: 10px 9px; border-bottom: 1px solid var(--line2); font-size: 13px; }
     th {
@@ -179,6 +211,19 @@
       z-index: 1;
     }
     th.r, td.r { text-align: right; }
+    #seedInventoryTables table { min-width: 2600px; width: max-content; }
+    #seedInventoryTables th, #seedInventoryTables td { min-width: 140px; white-space: nowrap; }
+    #seedInventoryTables th:nth-child(14), #seedInventoryTables td:nth-child(14),
+    #seedInventoryTables th:last-child, #seedInventoryTables td:last-child {
+      min-width: 240px;
+      white-space: normal;
+    }
+    #seedUsageTable table { min-width: 1160px; }
+    #seedUsageTable th, #seedUsageTable td { min-width: 150px; white-space: nowrap; }
+    #seedUsageTable th:last-child, #seedUsageTable td:last-child {
+      min-width: 260px;
+      white-space: normal;
+    }
     .cellInput {
       width: 130px;
       max-width: 100%;
@@ -223,14 +268,21 @@
     .topProductionTable tbody tr.lowStock:hover td {
       background: rgba(220,38,38,.24) !important;
     }
+    .mutedCell { color: var(--muted); }
     .status { margin-top: 10px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line2); padding-top: 10px; }
 
+    @media (max-width: 1250px) {
+      .grid4 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    }
     @media (max-width: 1100px) {
       .grid4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .grid2 { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
     @media (max-width: 650px) {
       .grid4 { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .sourceTools { justify-content: flex-start; }
     }
   </style>
 </head>
@@ -238,27 +290,59 @@
   <div class="wrap">
     <div class="panel">
       <div class="top">
-        <div>
+        <div class="titleBlock">
           <h1>Seed Inventory</h1>
           <div class="sub">Inventory is organized in 3 datasets: Production Seeds, Experiment Seeds, and Mixed Seeds.</div>
         </div>
-        <div class="pill" id="meta">Rows: —</div>
+        <div class="sourceTools">
+          <button class="miniBtn" id="refreshSupabaseBtn" type="button">Refresh Supabase</button>
+          <button class="miniBtn" id="clearLocalBtn" type="button">Clear Local Cache</button>
+          <button class="miniBtn" id="importSeedJsonBtn" type="button">Import JSON</button>
+          <input id="seedJsonFileInput" type="file" accept=".json,application/json" style="display:none;" />
+          <div class="pill" id="meta">Rows: —</div>
+        </div>
       </div>
 
       <div class="viewPills">
         <button class="viewPill active" id="pillDashboard" type="button">Dashboard</button>
         <button class="viewPill" id="pillTable" type="button">Seed Inventory Table</button>
+        <button class="viewPill" id="pillUsage" type="button">Seed Usage</button>
+      </div>
+
+      <div class="controls">
+        <div class="control stack">
+          <label for="searchInput">Search seeds</label>
+          <input id="searchInput" type="search" placeholder="Variety, type, provider, lot, purpose..." autocomplete="off" />
+        </div>
+        <div class="control stack">
+          <label for="categoryFilter">Dataset</label>
+          <select id="categoryFilter">
+            <option value="all">All datasets</option>
+            <option value="production">Production only</option>
+            <option value="experiment">Experiment only</option>
+            <option value="mixed">Mixed only</option>
+            <option value="usage">Seed usage only</option>
+          </select>
+        </div>
+        <div class="control stack">
+          <label for="typeFilter">Type / Purpose</label>
+          <select id="typeFilter">
+            <option value="all">All types</option>
+          </select>
+        </div>
+        <label class="control checkControl" for="lowStockOnly">
+          <input id="lowStockOnly" type="checkbox" />
+          <span>Low stock only</span>
+        </label>
       </div>
 
       <div id="dashboardView">
-      <div class="controls">
-      </div>
-
       <div class="grid4">
         <div class="kpi"><div class="t">Production Seeds Remaining</div><div class="v" id="kProdRem">—</div></div>
         <div class="kpi"><div class="t">Experiment Seeds Remaining</div><div class="v" id="kExpRem">—</div></div>
         <div class="kpi"><div class="t">Mixed Seeds Remaining</div><div class="v" id="kMixRem">—</div></div>
         <div class="kpi"><div class="t">Total Active Lots</div><div class="v" id="kLots">—</div></div>
+        <div class="kpi"><div class="t">Production Below Min</div><div class="v" id="kLowStock">—</div></div>
       </div>
 
       <div class="grid2">
@@ -281,7 +365,7 @@
           <div class="tableKpiRow"><span>Total Seeds Remaining</span><span class="tableKpiVal" id="kTopProdTotal">—</span></div>
         </div>
         <div class="card">
-          <h3>Seeds Remaining for Expermients</h3>
+          <h3>Seeds Remaining for Experiments</h3>
           <div class="tableWrap" id="topExperimentWrap">
             <table class="topVarietyTable">
               <thead>
@@ -291,18 +375,6 @@
             </table>
           </div>
           <div class="tableKpiRow"><span>Total Seeds Remaining</span><span class="tableKpiVal" id="kTopExpTotal">—</span></div>
-        </div>
-        <div class="card">
-          <h3>Seeds Remaining for Mixed Seeds</h3>
-          <div class="tableWrap" id="topMixedWrap">
-            <table class="topVarietyTable">
-              <thead>
-                <tr><th>Variety</th><th>Purpose</th><th class="r">Quantity Remaining</th></tr>
-              </thead>
-              <tbody id="tbTopMixed"></tbody>
-            </table>
-          </div>
-          <div class="tableKpiRow"><span>Total Seeds Remaining</span><span class="tableKpiVal" id="kTopMixTotal">—</span></div>
         </div>
       </div>
       </div>
@@ -315,8 +387,14 @@
             <table>
               <thead>
                 <tr>
-                  <th>Variety</th><th>Type</th><th>Provider</th><th>Lot</th><th>Date Received</th>
-                  <th class="r">Total Received</th><th class="r">Total Remaining</th><th>Last Inventory</th>
+                  <th>Variety</th><th>Type</th><th>Raw/Pelleted</th><th>Provider</th>
+                  <th>Lot #</th><th class="r">Inventory</th><th>Date Recieved</th><th>Germ Test Date</th>
+                  <th>Expiration Date</th><th>Packed Date</th>
+                  <th class="r">Recieved Qty of Cans</th><th class="r">Can Size</th>
+                  <th class="r">Total Seeds Recieved</th><th class="r">Remaining Qty of Full Cans</th>
+                  <th class="r">Remaining Grams of Seeds in Partial Can</th>
+                  <th class="r">Total Seeds In Inventory</th><th>Date Last Inventoried</th>
+                  <th>Seed Comments</th>
                 </tr>
               </thead>
               <tbody id="tbProduction"></tbody>
@@ -330,8 +408,14 @@
             <table>
               <thead>
                 <tr>
-                  <th>Variety</th><th>Type</th><th>Provider</th><th>Lot</th><th>Date Received</th>
-                  <th class="r">Total Received</th><th class="r">Total Remaining</th><th>Last Inventory</th>
+                  <th>Variety</th><th>Type</th><th>Raw/Pelleted</th><th>Provider</th>
+                  <th>Lot #</th><th class="r">Inventory</th><th>Date Recieved</th><th>Germ Test Date</th>
+                  <th>Expiration Date</th><th>Packed Date</th>
+                  <th class="r">Recieved Qty of Cans</th><th class="r">Can Size Seeds/Can</th>
+                  <th class="r">Total Seeds Recieved</th><th class="r">Remaining Qty of Cans Full</th>
+                  <th class="r">Remaining Grams of Seeds in Partial Can</th>
+                  <th class="r">Total Seeds In Inventory</th><th>Date Last Inventoried</th>
+                  <th>Seed Comments</th>
                 </tr>
               </thead>
               <tbody id="tbExperiment"></tbody>
@@ -345,11 +429,32 @@
             <table>
               <thead>
                 <tr>
-                  <th>Mix Variety</th><th>Purpose</th><th>Seed Varieties In Mix</th><th>Date Mixed</th>
-                  <th class="r">Total Remaining</th><th>Last Inventory</th>
+                  <th>Variety</th><th>Purpose</th><th>New Lot Code</th>
+                  <th>Seed Varieties In Mix</th><th>Lot #1</th><th>Lot #2</th><th>Lot #3</th>
+                  <th>Lot #4</th><th>Lot #5</th><th>Date mixed</th>
+                  <th class="r">Remaining Grams of Seeds in mix</th>
+                  <th class="r">Total Seeds Remaining</th><th>Seeds Last Inventoried</th>
+                  <th>Seeds Comments</th>
                 </tr>
               </thead>
               <tbody id="tbMixed"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section" id="seedUsageTable" style="display:none;">
+        <div class="section tableGroup usage" id="secUsage">
+          <div class="tableGroupHead">Seed Usage</div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lote # Usado</th><th>Variedad Usado</th><th>Dia Usado</th>
+                  <th class="r">Cans Usado</th><th class="r">Grams Usado</th><th class="r">Total Used</th><th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="tbUsage"></tbody>
             </table>
           </div>
         </div>
@@ -374,17 +479,21 @@
     let productionMinimums = loadProductionMinimums();
     let showMinQtyColumn = loadMinQtyColumnVisible();
     let sourceSeedPayload = null;
+    let sourceUpdatedAt = "";
+    let sourceLabel = "";
+    let lastLoadError = "";
 
     function normalizeKey(s) {
       return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     }
     function getNestedRow(rowLike) {
       if (!rowLike || typeof rowLike !== "object") return null;
-      if (rowLike.production || rowLike.experiment || rowLike.mixed) {
+      if (rowLike.production || rowLike.experiment || rowLike.mixed || rowLike.usage) {
         return {
           production: rowLike.production || {},
           experiment: rowLike.experiment || {},
-          mixed: rowLike.mixed || {}
+          mixed: rowLike.mixed || {},
+          usage: rowLike.usage || {}
         };
       }
       return null;
@@ -406,31 +515,68 @@
           production: {
             variety: pick(row, ["productionvariety", "prodvariety", "pvariety"]),
             type: pick(row, ["productiontype", "prodtype", "ptype"]),
+            raw_pelleted: pick(row, ["productionrawpelleted", "prodrawpelleted", "prawpelleted"]),
             provider: pick(row, ["productionprovider", "prodprovider", "pprovider"]),
             lot: pick(row, ["productionlot", "prodlot", "plot"]),
+            inventory: "",
             date_received: pick(row, ["productiondatereceived", "productiondaterecieved", "proddatereceived", "proddaterecieved", "pdatereceived", "pdaterecieved"]),
+            germ_test_date: pick(row, ["productiongermtestdate", "prodgermtestdate", "pgermtestdate"]),
+            expiration_date: pick(row, ["productionexpirationdate", "prodexpirationdate", "pexpirationdate"]),
+            packed_date: pick(row, ["productionpackeddate", "prodpackeddate", "ppackeddate"]),
+            received_qty_of_cans: pick(row, ["productionreceivedqtyofcans", "productionrecievedqtyofcans", "prodreceivedqtyofcans", "prodrecievedqtyofcans", "preceivedqtyofcans", "precievedqtyofcans"]),
+            can_size: pick(row, ["productioncansize", "prodcansize", "pcansize"]),
             total_received: pick(row, ["productiontotalreceived", "productiontotalseedsreceived", "productiontotalseedsrecieved", "prodtotalreceived", "prodtotalseedsreceived", "prodtotalseedsrecieved", "ptotalreceived"]),
-            total_remaining: pick(row, ["productiontotalremaining", "productiontotalseedsremaining", "prodtotalremaining", "prodtotalseedsremaining", "ptotalremaining"]),
+            remaining_qty_full_cans: pick(row, ["productionremainingqtyoffullcans", "prodremainingqtyoffullcans", "premainingqtyoffullcans"]),
+            remaining_grams_partial_can: pick(row, ["productionremaininggramsofseedsinpartialcan", "prodremaininggramsofseedsinpartialcan", "premaininggramsofseedsinpartialcan"]),
+            total_remaining: pick(row, ["productiontotalseedsininventory", "prodtotalseedsininventory", "ptotalseedsininventory", "productiontotalremaining", "productiontotalseedsremaining", "prodtotalremaining", "prodtotalseedsremaining", "ptotalremaining"]),
             minimum_qty_for_production: pick(row, ["productionminimumqtyforproduction", "productionminimumquantityforproduction", "productionminimumquantity", "prodminimumqtyforproduction", "prodminimumquantityforproduction", "prodminimumquantity", "minimumqtyforproduction"]),
-            last_inventory: pick(row, ["productionlastinventory", "productiondatelastinventoried", "prodlastinventory", "proddatelastinventoried", "plastinventory"])
+            last_inventory: pick(row, ["productionlastinventory", "productiondatelastinventoried", "productiondatelastinventoried", "prodlastinventory", "proddatelastinventoried", "proddatelastinventoried", "plastinventory"]),
+            seed_comments: pick(row, ["productionseedcomments", "prodseedcomments", "pseedcomments"])
           },
           experiment: {
             variety: pick(row, ["experimentvariety", "expvariety", "evariety"]),
             type: pick(row, ["experimenttype", "exptype", "etype"]),
+            raw_pelleted: pick(row, ["experimentrawpelleted", "exprawpelleted", "erawpelleted"]),
             provider: pick(row, ["experimentprovider", "expprovider", "eprovider"]),
             lot: pick(row, ["experimentlot", "explot", "elot"]),
+            inventory: "",
             date_received: pick(row, ["experimentdatereceived", "experimentdaterecieved", "expdatereceived", "expdaterecieved", "edatereceived", "edaterecieved"]),
+            germ_test_date: pick(row, ["experimentgermtestdate", "expgermtestdate", "egermtestdate"]),
+            expiration_date: pick(row, ["experimentexpirationdate", "expexpirationdate", "eexpirationdate"]),
+            packed_date: pick(row, ["experimentpackeddate", "exppackeddate", "epackeddate"]),
+            received_qty_of_cans: pick(row, ["experimentreceivedqtyofcans", "experimentrecievedqtyofcans", "expreceivedqtyofcans", "exprecievedqtyofcans", "ereceivedqtyofcans", "erecievedqtyofcans"]),
+            can_size: pick(row, ["experimentcansizeseedscan", "experimentcansize", "expcansizeseedscan", "expcansize", "ecansizeseedscan", "ecansize"]),
             total_received: pick(row, ["experimenttotalreceived", "experimenttotalseedsreceived", "experimenttotalseedsrecieved", "exptotalreceived", "exptotalseedsreceived", "exptotalseedsrecieved", "etotalreceived"]),
-            total_remaining: pick(row, ["experimenttotalremaining", "experimenttotalseedsremaining", "exptotalremaining", "exptotalseedsremaining", "etotalremaining"]),
-            last_inventory: pick(row, ["experimentlastinventory", "experimentdatelastinventoried", "explastinventory", "expdatelastinventoried", "elastinventory"])
+            remaining_qty_full_cans: pick(row, ["experimentremainingqtyofcansfull", "experimentremainingqtyoffullcans", "expremainingqtyofcansfull", "expremainingqtyoffullcans", "eremainingqtyofcansfull", "eremainingqtyoffullcans"]),
+            remaining_grams_partial_can: pick(row, ["experimentremaininggramsofseedsinpartialcan", "expremaininggramsofseedsinpartialcan", "eremaininggramsofseedsinpartialcan"]),
+            total_remaining: pick(row, ["experimenttotalseedsininventory", "exptotalseedsininventory", "etotalseedsininventory", "experimenttotalremaining", "experimenttotalseedsremaining", "exptotalremaining", "exptotalseedsremaining", "etotalremaining"]),
+            last_inventory: pick(row, ["experimentlastinventory", "experimentdatelastinventoried", "experimentdatelastinventoried", "explastinventory", "expdatelastinventoried", "expdatelastinventoried", "elastinventory"]),
+            seed_comments: pick(row, ["experimentseedcomments", "expseedcomments", "eseedcomments"])
           },
           mixed: {
             variety: pick(row, ["mixedvariety", "mixvariety", "mvariety"]),
             purpose: pick(row, ["mixedpurpose", "mixpurpose", "mpurpose"]),
+            new_mix_lot_code: pick(row, ["mixednewmixlotcode", "mixnewmixlotcode", "newmixlotcode", "mnewmixlotcode"]),
             seed_varieties: pick(row, ["mixedseedvarieties", "mixseedvarieties", "mseedvarieties", "seedvarietiesinmix", "seedvarieties"]),
+            lot_1: pick(row, ["mixedlot1", "mixlot1", "lot1", "mlot1"]),
+            lot_2: pick(row, ["mixedlot2", "mixlot2", "lot2", "mlot2"]),
+            lot_3: pick(row, ["mixedlot3", "mixlot3", "lot3", "mlot3"]),
+            lot_4: pick(row, ["mixedlot4", "mixlot4", "lot4", "mlot4"]),
+            lot_5: pick(row, ["mixedlot5", "mixlot5", "lot5", "mlot5"]),
             date_mixed: pick(row, ["mixeddatemixed", "mixdatemixed", "mdatemixed", "datemixed"]),
+            remaining_grams_in_mix: pick(row, ["mixedremaininggramsofseedsinmix", "mixremaininggramsofseedsinmix", "remaininggramsofseedsinmix", "mremaininggramsofseedsinmix"]),
             total_remaining: pick(row, ["mixedtotalseedsremaining", "mixedtotalremaining", "mixtotalseedsremaining", "mixtotalremaining", "mtotalremaining", "totalseedsremaining"]),
-            last_inventory: pick(row, ["mixedseedslastinventoried", "mixedlastinventory", "mixlastinventory", "mlastinventory"])
+            last_inventory: pick(row, ["mixedseedslastinventoried", "mixedlastinventory", "mixlastinventory", "mlastinventory"]),
+            seed_comments: pick(row, ["mixedseedscomments", "mixedseedcomments", "mixseedscomments", "mixseedcomments", "mseedcomments"])
+          },
+          usage: {
+            lot_used: pick(row, ["loteusado", "loteusado", "lotenumberusado", "lotusado", "lotused"]),
+            variety_used: pick(row, ["variedadusado", "varietyused"]),
+            day_used: pick(row, ["diausado", "dayused", "dateused"]),
+            cans_used: pick(row, ["cansusado", "cansused"]),
+            grams_used: pick(row, ["gramsusado", "gramsused"]),
+            total_used: pick(row, ["totalused", "totalusado", "totalseedsused"]),
+            notes: pick(row, ["notes", "usagenotes", "seedusagenotes"])
           }
         };
         out.push(nested);
@@ -450,6 +596,7 @@
       return [];
     }
     async function loadDataRows() {
+      lastLoadError = "";
       try {
         const raw = localStorage.getItem(MASTER_SEED_KEY);
         if (raw) {
@@ -458,25 +605,68 @@
           if (fromLocal.length) {
             dataSource = "localStorage";
             sourceSeedPayload = parsed;
+            sourceUpdatedAt = parsed?.updatedAt || "";
+            sourceLabel = parsed?.sourceLabel || "localStorage";
             return fromLocal;
           }
         }
-      } catch (_e) {}
+      } catch (err) {
+        lastLoadError = `Local cache failed: ${err?.message || err}`;
+      }
       try {
         const res = await fetch(`${PUBLIC_SEED_URL}?ts=${Date.now()}`, { cache: "no-store" });
-        if (res.ok) {
-          const parsed = await res.json();
-          const fromPublic = parseSeedPayload(parsed);
-          if (fromPublic.length) {
-            dataSource = "supabase";
-            sourceSeedPayload = parsed;
-            return fromPublic;
-          }
+        if (!res.ok) throw new Error(`Supabase public JSON failed (${res.status})`);
+        const parsed = await res.json();
+        const fromPublic = parseSeedPayload(parsed);
+        if (fromPublic.length) {
+          dataSource = "supabase";
+          sourceSeedPayload = parsed;
+          sourceUpdatedAt = parsed?.updatedAt || "";
+          sourceLabel = parsed?.sourceLabel || "Supabase public JSON";
+          return fromPublic;
         }
-      } catch (_e) {}
+        throw new Error('Supabase JSON loaded but has no parsable sheets["Seed Inventory"] rows');
+      } catch (err) {
+        lastLoadError = [lastLoadError, `Supabase load failed: ${err?.message || err}`].filter(Boolean).join(" | ");
+      }
       dataSource = "none";
       sourceSeedPayload = null;
+      sourceUpdatedAt = "";
+      sourceLabel = "";
       return [];
+    }
+    async function loadSupabaseRows({ persistLocal = false } = {}) {
+      const res = await fetch(`${PUBLIC_SEED_URL}?ts=${Date.now()}`, { cache: "no-store" });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Supabase load failed (${res.status})${text ? `: ${text}` : ""}`);
+      const parsed = JSON.parse(text);
+      const rows = parseSeedPayload(parsed);
+      if (!rows.length) throw new Error('Supabase JSON has no parsable sheets["Seed Inventory"] rows.');
+      if (persistLocal) {
+        localStorage.setItem(MASTER_SEED_KEY, JSON.stringify(parsed));
+        localStorage.setItem(MASTER_SEED_PING, String(Date.now()));
+        emitSeedUpdated();
+      }
+      dataSource = persistLocal ? "localStorage" : "supabase";
+      sourceSeedPayload = parsed;
+      sourceUpdatedAt = parsed?.updatedAt || "";
+      sourceLabel = parsed?.sourceLabel || "Supabase public JSON";
+      dataRows = rows;
+    }
+    function loadSeedPayloadIntoState(parsed, sourceName, { persistLocal = false } = {}) {
+      const rows = parseSeedPayload(parsed);
+      if (!rows.length) throw new Error('JSON has no parsable sheets["Seed Inventory"] rows.');
+      if (persistLocal) {
+        localStorage.setItem(MASTER_SEED_KEY, JSON.stringify(parsed));
+        localStorage.setItem(MASTER_SEED_PING, String(Date.now()));
+        emitSeedUpdated();
+      }
+      dataRows = rows;
+      sourceSeedPayload = parsed;
+      sourceUpdatedAt = parsed?.updatedAt || new Date().toISOString();
+      sourceLabel = parsed?.sourceLabel || sourceName;
+      dataSource = persistLocal ? "localStorage" : sourceName;
+      lastLoadError = "";
     }
     function emitSeedUpdated() {
       const payload = { type: MSG_SEED, key: MASTER_SEED_KEY, ts: Date.now() };
@@ -520,6 +710,32 @@
         .replace(/\s+/g, " ")
         .trim();
     }
+    function normalizeLotKey(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "")
+        .trim();
+    }
+    function buildUsageTotalsByLot(usageRows) {
+      const totals = new Map();
+      for (const row of usageRows || []) {
+        const key = normalizeLotKey(row?.lot_used || "");
+        if (!key) continue;
+        totals.set(key, (totals.get(key) || 0) + num(row?.total_used));
+      }
+      return totals;
+    }
+    function addCalculatedInventory(rows, usageTotalsByLot) {
+      return (rows || []).map((row) => {
+        const used = usageTotalsByLot.get(normalizeLotKey(row?.lot || "")) || 0;
+        return {
+          ...row,
+          inventory: num(row?.total_remaining) - used
+        };
+      });
+    }
 
     function hasProd(p) {
       return !!(p.variety || p.lot || num(p.total_received) || num(p.total_remaining));
@@ -529,6 +745,9 @@
     }
     function hasMix(m) {
       return !!(m.variety || m.purpose || num(m.total_remaining));
+    }
+    function hasUsage(u) {
+      return !!(u.lot_used || u.variety_used || u.day_used || num(u.cans_used) || num(u.grams_used) || num(u.total_used) || u.notes);
     }
     function loadProductionMinimums() {
       try {
@@ -619,7 +838,8 @@
         return {
           production,
           experiment: { ...(r?.experiment || {}) },
-          mixed: { ...(r?.mixed || {}) }
+          mixed: { ...(r?.mixed || {}) },
+          usage: { ...(r?.usage || {}) }
         };
       });
     }
@@ -662,6 +882,8 @@
 
         sourceSeedPayload = payload;
         dataSource = "localStorage";
+        sourceUpdatedAt = payload.updatedAt;
+        sourceLabel = payload.sourceLabel;
         $("status").textContent = "Seed Inventory saved to Supabase and localStorage.";
       } catch (err) {
         $("status").textContent = `Failed to save Seed Inventory: ${err?.message || err}`;
@@ -674,30 +896,69 @@
       const production = [];
       const experiment = [];
       const mixed = [];
+      const usage = [];
 
       for (const r of dataRows) {
         const p = r.production || {};
         const e = r.experiment || {};
         const m = r.mixed || {};
+        const u = r.usage || {};
         if (hasProd(p)) production.push(p);
         if (hasExp(e)) experiment.push(e);
         if (hasMix(m)) mixed.push(m);
+        if (hasUsage(u)) usage.push(u);
       }
 
-      return { production, experiment, mixed };
+      return { production, experiment, mixed, usage };
     }
 
     function applyFilters(grouped) {
-      return grouped;
+      const q = normalizeSearchText($("searchInput")?.value || "");
+      const category = $("categoryFilter")?.value || "all";
+      const typeValue = $("typeFilter")?.value || "all";
+      const lowOnly = !!$("lowStockOnly")?.checked;
+      const matchesQuery = (r, keys) => {
+        if (!q) return true;
+        return normalizeSearchText(keys.map((k) => r?.[k] || "").join(" ")).includes(q);
+      };
+      const matchesType = (value) => {
+        if (typeValue === "all") return true;
+        return normalizeTypeKey(value || "Unknown") === typeValue;
+      };
+      return {
+        production: currentView === "usage" || category === "experiment" || category === "mixed" || category === "usage" ? [] : grouped.production.filter((r) => {
+          if (!matchesQuery(r, ["variety", "type", "provider", "lot", "date_received", "last_inventory"])) return false;
+          if (!matchesType(r.type)) return false;
+          if (!lowOnly) return true;
+          const min = Number(getEffectiveMinimumForProductionRow(r) || 0);
+          return min > 0 && num(r.total_remaining) < min;
+        }),
+        experiment: currentView === "usage" || category === "production" || category === "mixed" || category === "usage" || lowOnly ? [] : grouped.experiment.filter((r) => (
+          matchesQuery(r, ["variety", "type", "provider", "lot", "date_received", "last_inventory"]) &&
+          matchesType(r.type)
+        )),
+        mixed: currentView === "usage" || category === "production" || category === "experiment" || category === "usage" || lowOnly ? [] : grouped.mixed.filter((r) => (
+          matchesQuery(r, ["variety", "purpose", "seed_varieties", "date_mixed", "last_inventory"]) &&
+          matchesType(r.purpose)
+        )),
+        usage: currentView !== "usage" && category !== "all" && category !== "usage" ? [] : grouped.usage.filter((r) => (
+          !lowOnly &&
+          (currentView === "usage" || typeValue === "all") &&
+          matchesQuery(r, ["lot_used", "variety_used", "day_used", "cans_used", "grams_used", "total_used", "notes"])
+        ))
+      };
     }
 
     let currentView = "dashboard";
 
     function applyView() {
       const showDashboard = currentView === "dashboard";
+      const showInventoryTable = currentView === "table";
+      const showUsage = currentView === "usage";
       $("dashboardView").style.display = showDashboard ? "block" : "none";
-      $("seedInventoryTables").style.display = showDashboard ? "none" : "block";
-      if (showDashboard) {
+      $("seedInventoryTables").style.display = showInventoryTable ? "block" : "none";
+      $("seedUsageTable").style.display = showUsage ? "block" : "none";
+      if (!showInventoryTable) {
         $("secProduction").style.display = "none";
         $("secExperiment").style.display = "none";
         $("secMixed").style.display = "none";
@@ -706,8 +967,10 @@
         $("secExperiment").style.display = "block";
         $("secMixed").style.display = "block";
       }
+      $("secUsage").style.display = showUsage ? "block" : "none";
       $("pillDashboard").classList.toggle("active", showDashboard);
-      $("pillTable").classList.toggle("active", !showDashboard);
+      $("pillTable").classList.toggle("active", showInventoryTable);
+      $("pillUsage").classList.toggle("active", showUsage);
     }
 
     function renderTableRows(rows, cols, tbodyId) {
@@ -729,24 +992,87 @@
         body.innerHTML = `<tr><td colspan="${cols.length}" style="color:#9eb3c4;">No records for current filters.</td></tr>`;
       }
     }
+    function normalizeSearchText(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+    function formatSourceDate(iso) {
+      if (!iso) return "Unknown update time";
+      const d = new Date(iso);
+      if (!Number.isFinite(d.getTime())) return iso;
+      return d.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+    function isLocalSourceStale() {
+      if (dataSource !== "localStorage" || !sourceUpdatedAt) return false;
+      const ageMs = Date.now() - new Date(sourceUpdatedAt).getTime();
+      return Number.isFinite(ageMs) && ageMs > 1000 * 60 * 60 * 24 * 7;
+    }
+    function updateTypeFilterOptions(grouped) {
+      const select = $("typeFilter");
+      if (!select) return;
+      const current = select.value || "all";
+      const category = $("categoryFilter")?.value || "all";
+      const values = new Map();
+      if (category === "all" || category === "production") {
+        grouped.production.forEach((r) => {
+          const label = (r.type || "Unknown").trim() || "Unknown";
+          values.set(normalizeTypeKey(label) || "unknown", label);
+        });
+      }
+      if (category === "all" || category === "experiment") {
+        grouped.experiment.forEach((r) => {
+          const label = (r.type || "Unknown").trim() || "Unknown";
+          values.set(normalizeTypeKey(label) || "unknown", label);
+        });
+      }
+      if (category === "all" || category === "mixed") {
+        grouped.mixed.forEach((r) => {
+          const label = (r.purpose || "Unknown").trim() || "Unknown";
+          values.set(normalizeTypeKey(label) || "unknown", label);
+        });
+      }
+      const options = Array.from(values.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+      select.innerHTML = `<option value="all">All types</option>` + options.map(([value, label]) => (
+        `<option value="${esc(value)}">${esc(label)}</option>`
+      )).join("");
+      select.value = values.has(current) ? current : "all";
+    }
+    function countLowProductionRows(rows) {
+      return rows.reduce((count, r) => {
+        const min = Number(getEffectiveMinimumForProductionRow(r) || 0);
+        return count + (min > 0 && num(r.total_remaining) < min ? 1 : 0);
+      }, 0);
+    }
 
     function render() {
       const grouped = flatten();
+      updateTypeFilterOptions(grouped);
       const filtered = applyFilters(grouped);
+      const usageTotalsByLot = buildUsageTotalsByLot(grouped.usage);
+      const productionRowsWithInventory = addCalculatedInventory(filtered.production, usageTotalsByLot);
+      const experimentRowsWithInventory = addCalculatedInventory(filtered.experiment, usageTotalsByLot);
 
-      const prodRem = filtered.production.reduce((a, r) => a + num(r.total_remaining), 0);
-      const expRem = filtered.experiment.reduce((a, r) => a + num(r.total_remaining), 0);
+      const prodRem = productionRowsWithInventory.reduce((a, r) => a + num(r.inventory), 0);
+      const expRem = experimentRowsWithInventory.reduce((a, r) => a + num(r.inventory), 0);
       const mixRem = filtered.mixed.reduce((a, r) => a + num(r.total_remaining), 0);
 
       $("kProdRem").textContent = fmtInt(prodRem);
       $("kExpRem").textContent = fmtInt(expRem);
       $("kMixRem").textContent = fmtInt(mixRem);
       $("kLots").textContent = fmtInt(filtered.production.length + filtered.experiment.length + filtered.mixed.length);
-      const sourceLabel = dataSource === "localStorage" ? "localStorage (campo_master_seed_inventory_v1)" : (dataSource === "supabase" ? "Supabase public JSON" : "No Seed Inventory data found");
-      $("meta").textContent = `Rows: ${fmtInt(dataRows.length)} | Source: ${sourceLabel}`;
+      $("kLowStock").textContent = fmtInt(countLowProductionRows(filtered.production));
+      const sourceName = dataSource === "localStorage" ? "Local cache" : (dataSource === "supabase" ? "Supabase public JSON" : "No Seed Inventory data found");
+      const meta = $("meta");
+      meta.textContent = `Rows: ${fmtInt(dataRows.length)} | Source: ${sourceName} | Updated: ${formatSourceDate(sourceUpdatedAt)}`;
+      meta.title = sourceLabel ? `Payload source: ${sourceLabel}` : "";
+      meta.classList.toggle("stale", isLocalSourceStale());
 
       const byVariety = new Map();
-      for (const r of filtered.production) {
+      for (const r of productionRowsWithInventory) {
         const variety = (r.variety || "Unknown").trim() || "Unknown";
         const type = (r.type || "").trim() || "Unknown";
         const varietyKey = normalizeVarietyKey(variety) || "unknown";
@@ -754,9 +1080,9 @@
         const key = `${varietyKey}|||${typeKey}`;
         const prev = byVariety.get(key);
         if (!prev) {
-          byVariety.set(key, { variety, type, remaining: num(r.total_remaining) });
+          byVariety.set(key, { variety, type, remaining: num(r.inventory) });
         } else {
-          prev.remaining += num(r.total_remaining);
+          prev.remaining += num(r.inventory);
         }
       }
       const topProd = Array.from(byVariety.entries())
@@ -775,7 +1101,7 @@
       applyMinQtyColumnVisibility();
       $("kTopProdTotal").textContent = fmtInt(topProd.reduce((a, x) => a + num(x.remaining), 0));
       const byVarietyExp = new Map();
-      for (const r of filtered.experiment) {
+      for (const r of experimentRowsWithInventory) {
         const variety = (r.variety || "Unknown").trim() || "Unknown";
         const type = (r.type || "").trim() || "Unknown";
         const varietyKey = normalizeVarietyKey(variety) || "unknown";
@@ -783,9 +1109,9 @@
         const key = `${varietyKey}|||${typeKey}`;
         const prev = byVarietyExp.get(key);
         if (!prev) {
-          byVarietyExp.set(key, { variety, type, remaining: num(r.total_remaining) });
+          byVarietyExp.set(key, { variety, type, remaining: num(r.inventory) });
         } else {
-          prev.remaining += num(r.total_remaining);
+          prev.remaining += num(r.inventory);
         }
       }
       const expAll = Array.from(byVarietyExp.entries())
@@ -798,51 +1124,52 @@
         $("tbTopExperiment").innerHTML = '<tr><td colspan="3" style="color:#9eb3c4;">No records for current filters.</td></tr>';
       }
       $("kTopExpTotal").textContent = fmtInt(expAll.reduce((a, x) => a + num(x.remaining), 0));
-      const byVarietyMix = new Map();
-      for (const r of filtered.mixed) {
-        const variety = (r.variety || "Unknown").trim() || "Unknown";
-        const purpose = (r.purpose || "").trim() || "Unknown";
-        const varietyKey = normalizeVarietyKey(variety) || "unknown";
-        const purposeKey = normalizeTypeKey(purpose) || "unknown";
-        const key = `${varietyKey}|||${purposeKey}`;
-        const prev = byVarietyMix.get(key);
-        if (!prev) {
-          byVarietyMix.set(key, { variety, purpose, remaining: num(r.total_remaining) });
-        } else {
-          prev.remaining += num(r.total_remaining);
-        }
-      }
-      const mixAll = Array.from(byVarietyMix.entries())
-        .map(([, v]) => v)
-        .sort((a, b) => b.remaining - a.remaining);
-      $("tbTopMixed").innerHTML = mixAll.map((x) => (
-        `<tr><td>${esc(x.variety)}</td><td>${esc(x.purpose)}</td><td class="r">${fmtInt(x.remaining)}</td></tr>`
-      )).join("");
-      if (!mixAll.length) {
-        $("tbTopMixed").innerHTML = '<tr><td colspan="3" style="color:#9eb3c4;">No records for current filters.</td></tr>';
-      }
-      $("kTopMixTotal").textContent = fmtInt(mixAll.reduce((a, x) => a + num(x.remaining), 0));
-      const rowsCap = Math.max(1, topProd.length || 1);
+      const typeFilterValue = $("typeFilter")?.value || "all";
+      const rowsCap = typeFilterValue === "all"
+        ? Math.max(1, topProd.length || 1)
+        : Math.max(1, topProd.length, expAll.length);
       const rowPx = 37;
+      $("topProductionWrap").style.maxHeight = `${rowsCap * rowPx}px`;
+      $("topProductionWrap").style.overflowY = "auto";
       $("topExperimentWrap").style.maxHeight = `${rowsCap * rowPx}px`;
       $("topExperimentWrap").style.overflowY = "auto";
-      $("topMixedWrap").style.maxHeight = `${rowsCap * rowPx}px`;
-      $("topMixedWrap").style.overflowY = "auto";
 
-      renderTableRows(filtered.production, [
-        { key: "variety" }, { key: "type" }, { key: "provider" }, { key: "lot" }, { key: "date_received" },
-        { key: "total_received", num: true }, { key: "total_remaining", num: true }, { key: "last_inventory" }
+      renderTableRows(productionRowsWithInventory, [
+        { key: "variety" }, { key: "type" }, { key: "raw_pelleted" }, { key: "provider" },
+        { key: "lot" }, { key: "inventory", num: true }, { key: "date_received" }, { key: "germ_test_date" },
+        { key: "expiration_date" }, { key: "packed_date" },
+        { key: "received_qty_of_cans", tdClass: "r" }, { key: "can_size", tdClass: "r" },
+        { key: "total_received", tdClass: "r" }, { key: "remaining_qty_full_cans", tdClass: "r" },
+        { key: "remaining_grams_partial_can", tdClass: "r" },
+        { key: "total_remaining", tdClass: "r" }, { key: "last_inventory" },
+        { key: "seed_comments" }
       ], "tbProduction");
 
-      renderTableRows(filtered.experiment, [
-        { key: "variety" }, { key: "type" }, { key: "provider" }, { key: "lot" }, { key: "date_received" },
-        { key: "total_received", num: true }, { key: "total_remaining", num: true }, { key: "last_inventory" }
+      renderTableRows(experimentRowsWithInventory, [
+        { key: "variety" }, { key: "type" }, { key: "raw_pelleted" }, { key: "provider" },
+        { key: "lot" }, { key: "inventory", num: true }, { key: "date_received" }, { key: "germ_test_date" },
+        { key: "expiration_date" }, { key: "packed_date" },
+        { key: "received_qty_of_cans", tdClass: "r" }, { key: "can_size", tdClass: "r" },
+        { key: "total_received", tdClass: "r" }, { key: "remaining_qty_full_cans", tdClass: "r" },
+        { key: "remaining_grams_partial_can", tdClass: "r" },
+        { key: "total_remaining", tdClass: "r" }, { key: "last_inventory" },
+        { key: "seed_comments" }
       ], "tbExperiment");
 
       renderTableRows(filtered.mixed, [
-        { key: "variety" }, { key: "purpose" }, { key: "seed_varieties" }, { key: "date_mixed" },
-        { key: "total_remaining", num: true }, { key: "last_inventory" }
+        { key: "variety" }, { key: "purpose" }, { key: "new_mix_lot_code" },
+        { key: "seed_varieties" }, { key: "lot_1" }, { key: "lot_2" }, { key: "lot_3" },
+        { key: "lot_4" }, { key: "lot_5" }, { key: "date_mixed" },
+        { key: "remaining_grams_in_mix", tdClass: "r" },
+        { key: "total_remaining", tdClass: "r" }, { key: "last_inventory" },
+        { key: "seed_comments" }
       ], "tbMixed");
+
+      renderTableRows(filtered.usage, [
+        { key: "lot_used" }, { key: "variety_used" }, { key: "day_used" },
+        { key: "cans_used", tdClass: "r" }, { key: "grams_used", tdClass: "r" },
+        { key: "total_used", tdClass: "r" }, { key: "notes" }
+      ], "tbUsage");
 
       if (currentView === "dashboard") {
         $("secProduction").style.display = "none";
@@ -850,25 +1177,88 @@
         $("secMixed").style.display = "none";
       }
 
-      $("status").textContent = `Filtered rows -> Production: ${filtered.production.length}, Experiment: ${filtered.experiment.length}, Mixed: ${filtered.mixed.length}`;
+      $("status").textContent = lastLoadError
+        ? `Seed Inventory load failed. ${lastLoadError}`
+        : `Filtered rows -> Production: ${filtered.production.length}, Experiment: ${filtered.experiment.length}, Mixed: ${filtered.mixed.length}, Usage: ${filtered.usage.length}`;
     }
 
     $("pillDashboard").addEventListener("click", () => {
       currentView = "dashboard";
       applyView();
+      render();
     });
     $("pillTable").addEventListener("click", () => {
       currentView = "table";
       applyView();
+      render();
+    });
+    $("pillUsage").addEventListener("click", () => {
+      currentView = "usage";
+      applyView();
+      render();
     });
     $("saveSeedBtn").addEventListener("click", () => {
       void saveSeedInventoryToSupabase();
+    });
+    $("refreshSupabaseBtn").addEventListener("click", async () => {
+      const btn = $("refreshSupabaseBtn");
+      if (btn) btn.disabled = true;
+      try {
+        $("status").textContent = "Refreshing Seed Inventory from Supabase...";
+        await loadSupabaseRows({ persistLocal: true });
+        render();
+        $("status").textContent = `Refreshed from Supabase and updated local cache. Rows: ${fmtInt(dataRows.length)}.`;
+      } catch (err) {
+        $("status").textContent = `Failed to refresh Supabase data: ${err?.message || err}`;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+    $("clearLocalBtn").addEventListener("click", async () => {
+      const btn = $("clearLocalBtn");
+      if (btn) btn.disabled = true;
+      try {
+        localStorage.removeItem(MASTER_SEED_KEY);
+        localStorage.removeItem(MASTER_SEED_PING);
+        $("status").textContent = "Local seed inventory cache cleared. Loading Supabase data...";
+        await loadSupabaseRows({ persistLocal: false });
+        render();
+        $("status").textContent = `Local cache cleared. Showing Supabase data. Rows: ${fmtInt(dataRows.length)}.`;
+      } catch (err) {
+        dataRows = await loadDataRows();
+        render();
+        $("status").textContent = `Local cache cleared, but Supabase reload failed: ${err?.message || err}`;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+    $("importSeedJsonBtn").addEventListener("click", () => {
+      $("seedJsonFileInput").click();
+    });
+    $("seedJsonFileInput").addEventListener("change", async (e) => {
+      const file = e.target?.files?.[0];
+      if (!file) return;
+      try {
+        $("status").textContent = `Importing ${file.name}...`;
+        const parsed = JSON.parse(await file.text());
+        loadSeedPayloadIntoState(parsed, `Imported JSON: ${file.name}`, { persistLocal: true });
+        render();
+        $("status").textContent = `Imported ${file.name} into local cache. Rows: ${fmtInt(dataRows.length)}.`;
+      } catch (err) {
+        $("status").textContent = `Failed to import seed JSON: ${err?.message || err}`;
+      } finally {
+        e.target.value = "";
+      }
     });
     $("toggleMinQtyCol").addEventListener("click", () => {
       showMinQtyColumn = !showMinQtyColumn;
       saveMinQtyColumnVisible();
       applyMinQtyColumnVisibility();
     });
+    $("searchInput").addEventListener("input", render);
+    $("categoryFilter").addEventListener("change", render);
+    $("typeFilter").addEventListener("change", render);
+    $("lowStockOnly").addEventListener("change", render);
     $("tbTopProduction").addEventListener("change", (e) => {
       const input = e.target;
       if (!(input instanceof HTMLInputElement)) return;
