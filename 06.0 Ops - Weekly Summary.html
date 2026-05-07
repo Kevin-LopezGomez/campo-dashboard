@@ -65,6 +65,7 @@
     .title-block{flex:1 1 380px;min-width:0;}
     .title{
       display:flex;align-items:center;gap:10px;
+      flex-wrap:wrap;
       margin:0 0 4px;
       font-size:1.55rem;letter-spacing:.01em;
     }
@@ -81,15 +82,23 @@
       text-transform:uppercase;letter-spacing:.18em;
     }
     .subtitle{margin:0;font-size:.96rem;color:var(--muted);line-height:1.45;max-width:760px;}
+    .status-chips{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-left:8px;
+    }
 
     .header-right{
-      display:flex;
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items:center;
-      justify-content:flex-end;
-      gap:10px;
-      flex:1 1 320px;
-      min-width:280px;
-      flex-wrap:wrap;
+      gap:8px;
+      flex:1 1 100%;
+      min-width:0;
+      padding-top:10px;
+      border-top:1px solid rgba(71,85,105,.35);
     }
 
     .chip{
@@ -111,14 +120,18 @@
       padding:10px 12px;
       box-shadow: 0 12px 24px rgba(0,0,0,.25);
     }
-    #viewToggle{
+    #viewToggle,
+    #summaryModeToggle{
+      width:max-content;
+      max-width:100%;
       padding:6px;
       gap:6px;
       background: rgba(2,6,23,.8);
       border:1px solid rgba(74,222,128,.5);
       box-shadow: 0 16px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(34,197,94,.2);
     }
-    #viewToggle .pill{
+    #viewToggle .pill,
+    #summaryModeToggle .pill{
       padding:6px 14px;
       font-size:.76rem;
       letter-spacing:.1em;
@@ -129,13 +142,15 @@
       color:var(--sub);
       box-shadow: inset 0 0 0 1px rgba(15,23,42,.8);
     }
-    #viewToggle .pill.good{
+    #viewToggle .pill.good,
+    #summaryModeToggle .pill.good{
       color:#ecfff4;
       border-color: rgba(74,222,128,.85);
       background: radial-gradient(circle at 30% 25%, rgba(34,197,94,.5), rgba(15,23,42,.95));
       box-shadow: 0 10px 26px rgba(34,197,94,.35), inset 0 0 0 1px rgba(34,197,94,.35);
     }
-    #viewToggle .pill.muted{
+    #viewToggle .pill.muted,
+    #summaryModeToggle .pill.muted{
       opacity:.65;
     }
     .week-label{
@@ -151,6 +166,24 @@
       font-size:.9rem;
       outline:none;
       min-width:160px;
+    }
+
+    @media(min-width:1080px){
+      #weekPicker,
+      #datePicker{
+        justify-self:end;
+      }
+    }
+    @media(max-width:820px){
+      .header-right{
+        grid-template-columns:1fr;
+      }
+      #viewToggle,
+      #summaryModeToggle,
+      #weekPicker,
+      #datePicker{
+        justify-self:start;
+      }
     }
 
     /* ======= HIGHLIGHTS ======= */
@@ -490,21 +523,23 @@
               <span>Summary Dashboard</span>
               <span class="title-sub">LIVE FROM DATA INPUT</span>
             </div>
+            <div class="status-chips">
+              <div class="chip" id="chip-grow"><span class="chip-dot"></span><span>Grow: –</span></div>
+              <div class="chip" id="chip-pack"><span class="chip-dot"></span><span>Pack: –</span></div>
+              <div class="chip" id="chip-warn" style="display:none;"><span class="chip-danger-dot"></span><span>Warnings</span></div>
+            </div>
           </div>
-          <p class="subtitle">
-            Weekly rollup across <b>Grow + Pack</b>. Reads from localStorage (Data Input is the compiler).
-            Select a week to match the “Week ##” summary format.
-          </p>
         </div>
 
         <div class="header-right">
-          <div class="chip" id="chip-grow"><span class="chip-dot"></span><span>Grow: –</span></div>
-          <div class="chip" id="chip-pack"><span class="chip-dot"></span><span>Pack: –</span></div>
-          <div class="chip" id="chip-warn" style="display:none;"><span class="chip-danger-dot"></span><span>Warnings</span></div>
+          <div class="week-picker" id="summaryModeToggle">
+            <button class="pill good" id="toggleProduction" type="button">Production</button>
+            <button class="pill muted" id="toggleExperiments" type="button">With Experiments</button>
+          </div>
 
           <div class="week-picker" id="viewToggle">
-            <button class="pill good" id="toggleWeekly" type="button">Weekly</button>
             <button class="pill muted" id="toggleDaily" type="button">Daily</button>
+            <button class="pill good" id="toggleWeekly" type="button">Weekly</button>
           </div>
 
           <div class="week-picker" id="weekPicker">
@@ -757,6 +792,8 @@
       LBS_SHIPPED: "# Lbs Shipped",
       LOC_SHIPPED: "Location Shipped",
 
+      EXP_PROD: "Experiment or Production",
+
       DATE: "Harvest Date"
     });
 
@@ -817,7 +854,6 @@
       ["shipping date", "Ship Date"],
       ["sales invoice date", "Sales Invoice Date"],
       ["sales week", "Sales Week"],
-      ["sales ship week", "Sales Ship Week"],
       ["sales sku", "Sales SKU"],
       ["sales # of cases", "Sales # of Cases"],
       ["sku packed", H.SKU],
@@ -827,6 +863,13 @@
       ["# lbs shipped", H.LBS_SHIPPED],
       ["lbs shipped", H.LBS_SHIPPED],
       ["location shipped", H.LOC_SHIPPED],
+
+      ["experiment or production", H.EXP_PROD],
+      ["production or experiment", H.EXP_PROD],
+      ["experiment/production", H.EXP_PROD],
+      ["production/experiment", H.EXP_PROD],
+      ["experiment production", H.EXP_PROD],
+      ["production type", H.EXP_PROD],
 
       ["date", H.DATE]
     ]);
@@ -1059,6 +1102,34 @@
       "lot code"
     ]);
 
+    function getProductionBatchValue(row){
+      if (!row || typeof row !== "object") return "";
+      const keys = Object.keys(row);
+      if (!keys.length) return "";
+
+      let fallbackKey = "";
+      for (const k of keys){
+        const nk = normHeader(k);
+        if (BATCH_KEY_EXACT.has(nk)) {
+          const v = String(row[k] ?? "").trim();
+          if (v) return v.toUpperCase();
+        }
+        if (
+          !fallbackKey &&
+          nk.includes("batch") &&
+          !nk.includes("date") &&
+          !nk.includes("week") &&
+          !nk.includes("run")
+        ) fallbackKey = k;
+      }
+
+      if (fallbackKey) {
+        const v = String(row[fallbackKey] ?? "").trim();
+        if (v) return v.toUpperCase();
+      }
+      return "";
+    }
+
     function getBatchValue(row){
       if (!row || typeof row !== "object") return "";
       const keys = Object.keys(row);
@@ -1079,6 +1150,38 @@
         if (v) return v.toUpperCase();
       }
       return "";
+    }
+
+    function getExperimentProductionValue(row){
+      if (!row || typeof row !== "object") return { has:false, value:"" };
+      if (Object.prototype.hasOwnProperty.call(row, H.EXP_PROD)) {
+        return { has:true, value:row[H.EXP_PROD] };
+      }
+      for (const [k, v] of Object.entries(row)){
+        const nk = normHeader(k);
+        if (
+          nk === "experiment or production" ||
+          nk === "production or experiment" ||
+          nk === "experiment/production" ||
+          nk === "production/experiment"
+        ) {
+          return { has:true, value:v };
+        }
+      }
+      return { has:false, value:"" };
+    }
+
+    function isProductionValue(v){
+      const raw = String(v ?? "").trim();
+      if (!raw) return false;
+      const norm = normalizeLocationKey(raw).toLowerCase();
+      if (norm.includes("experiment") || norm.includes("experimental")) return false;
+      return norm.includes("production") || norm === "prod" || norm.includes("prod only");
+    }
+
+    function isProductionRow(row){
+      const info = getExperimentProductionValue(row);
+      return info.has && isProductionValue(info.value);
     }
 
     function sumTransBoardsForHarvestBatches(harvRows, allGrowRows){
@@ -1225,6 +1328,7 @@
       }
       for (const r of (packRows||[])){
         addWeek(r[H.PACK_WEEK]);
+        addWeek(r["Sales Ship Week"]);
       }
 
       const arr = Array.from(weeks);
@@ -1288,7 +1392,7 @@
     // =========================================================
     // COMPUTE WEEK SUMMARY
     // =========================================================
-    function computeWeekSummary(week, growRows, packRows){
+    function computeWeekSummary(week, growRows, packRows, salesTargetRows = packRows){
       const wkNum = weekNumFromCell(week);
       if (!wkNum) {
         return { wkNum:null, empty:true, reason:"Invalid week selection." };
@@ -1468,13 +1572,11 @@
         else if (bucket === "sales") shipSales += lbs;
       }
 
-      // ---- SALES SHIP (Sales Productivity source: Master Pack sales columns) ----
-      const salesRowsW = (packRows||[]).filter(r => weekNumFromCell(r["Sales Ship Week"] ?? r["Sales Week"]) === wkNum);
+      // ---- SALES SHIP TARGET (Master Pack Sales Lbs Eq. by Sales Ship Week) ----
+      const salesRowsW = (salesTargetRows||[]).filter(r => weekNumFromCell(r["Sales Ship Week"]) === wkNum);
       let salesShipLbs = 0;
       for (const r of salesRowsW){
-        const cases = parseNumber(r["Sales # of Cases"]);
-        const lbsPerCase = salesCaseWeightLbs(r["Sales SKU"]);
-        if (cases > 0 && lbsPerCase > 0) salesShipLbs += (cases * lbsPerCase);
+        salesShipLbs += parseNumber(r["Sales Lbs Eq."]);
       }
 
       const hasAny =
@@ -1543,7 +1645,7 @@
       };
     }
 
-    function computeDaySummary(dateISO, growRows, packRows){
+    function computeDaySummary(dateISO, growRows, packRows, salesTargetRows = packRows){
       const dObj = parseISODateLocal(dateISO) || parseAnyDate(dateISO);
       const iso = toISODateStr(dObj);
       const wkNum = getISOWeekFromDate(dObj);
@@ -1721,15 +1823,11 @@
         else if (bucket === "sales") shipSales += lbs;
       }
 
-      // ---- SALES SHIP (Sales Productivity source: Master Pack sales columns) ----
-      const salesRowsByDate = (packRows||[]).filter(r => isDate(r["Sales Invoice Date"]));
-      const salesRowsByWeek = (packRows||[]).filter(r => weekNumFromCell(r["Sales Ship Week"] ?? r["Sales Week"]) === wkNum);
-      const salesRowsD = salesRowsByDate.length ? salesRowsByDate : salesRowsByWeek;
+      // ---- SALES SHIP TARGET (Master Pack Sales Lbs Eq. by Sales Ship Date) ----
+      const salesRowsD = (salesTargetRows||[]).filter(r => isDate(r["Sales Ship Date"]));
       let salesShipLbs = 0;
       for (const r of salesRowsD){
-        const cases = parseNumber(r["Sales # of Cases"]);
-        const lbsPerCase = salesCaseWeightLbs(r["Sales SKU"]);
-        if (cases > 0 && lbsPerCase > 0) salesShipLbs += (cases * lbsPerCase);
+        salesShipLbs += parseNumber(r["Sales Lbs Eq."]);
       }
 
       const hasAny =
@@ -1799,10 +1897,10 @@
           shipRowsByWeekCount: shipRowsByWeek.length,
           shipRowsSelectedCount: shipRowsD.length,
           shipSource: shipRowsByDate.length ? "date" : "week-fallback",
-          salesRowsByDateCount: salesRowsByDate.length,
-          salesRowsByWeekCount: salesRowsByWeek.length,
+          salesRowsByDateCount: salesRowsD.length,
+          salesRowsByWeekCount: 0,
           salesRowsSelectedCount: salesRowsD.length,
-          salesSource: salesRowsByDate.length ? "date" : "week-fallback"
+          salesSource: "sales-ship-date"
         }
       };
     }
@@ -2243,6 +2341,20 @@
         rowStyle: `--system-output-row-bg:${systemOutputRowBg(systemOutputPct)};`
       }, Number.isFinite(systemOutputPct));
 
+      const shippedCompleted = summary.ship?.sales ?? 0;
+      const shippedTarget = summary.salesShipLbs ?? 0;
+      pushIfMeaningful({
+        label:"Shipped",
+        metricLabel:"Shipped",
+        metricKey:"shipped",
+        completed: "—",
+        target: fmtInt(shippedTarget),
+        units:"Lbs",
+        pct: `<span class="pill muted">—</span>`,
+        missed: `<span class="pill muted">—</span>`,
+        missedCount:"—"
+      }, shippedCompleted !== 0 || shippedTarget !== 0);
+
       if (!rows.length){
         const periodLabel = (viewMode === "day") ? `Day ${formatDayPill(selectedDateISO)}` : weekDisplay(summary.wkNum);
         rows.push({
@@ -2302,6 +2414,7 @@
     let DEFAULT_WEEK_YEAR = new Date().getFullYear();
     let selectedWeek = "";
     let viewMode = "week";
+    let summaryMode = "production";
     let selectedDateISO = "";
     let packExpanded = false;
     let transplantExpanded = false;
@@ -2309,6 +2422,29 @@
     let activeTrendMetricKey = "";
     let activeTrendMetricLabel = "";
     let transplantClickTimer = null;
+
+    function getActiveRows(){
+      if (summaryMode !== "production") {
+        return { growRows:GROW_ROWS, packRows:PACK_ROWS };
+      }
+
+      const growRows = GROW_ROWS.filter(isProductionRow);
+      const productionBatches = new Set(
+        growRows
+          .map(getProductionBatchValue)
+          .filter(Boolean)
+      );
+
+      const packRows = PACK_ROWS.filter((r) => {
+        const modeInfo = getExperimentProductionValue(r);
+        if (modeInfo.has) return isProductionValue(modeInfo.value);
+
+        const batch = getProductionBatchValue(r);
+        return !!(batch && productionBatches.has(batch));
+      });
+
+      return { growRows, packRows };
+    }
 
     function missedValue(completed, target){
       if (!(target > 0)) return NaN;
@@ -2360,6 +2496,7 @@
       const wLimitRaw = weekNumFromCell(uptoWeek);
       const wLimit = Number(wLimitRaw);
       if (!Number.isFinite(wLimit)) return [];
+      const { growRows, packRows } = getActiveRows();
       const limitKey = weekOrderKey(wLimitRaw);
       const weeks = getWeekOptions()
         .map(w => weekNumFromCell(w))
@@ -2370,7 +2507,7 @@
         .filter(Number.isFinite);
       const points = [];
       for (const wk of weeks){
-        const s = computeWeekSummary(String(wk), GROW_ROWS, PACK_ROWS);
+        const s = computeWeekSummary(String(wk), growRows, packRows, PACK_ROWS);
         if (!s || !s.wkNum || s.empty) continue;
         const missed = metricMissedPercent(metricKey, s);
         if (!Number.isFinite(missed)) continue;
@@ -2416,13 +2553,14 @@
     function buildMissedSeriesDaily(metricKey, uptoISO){
       const limitISO = normalizeDateISO(uptoISO);
       if (!limitISO) return [];
-      const dayList = collectTrendDateISOs(GROW_ROWS, PACK_ROWS)
+      const { growRows, packRows } = getActiveRows();
+      const dayList = collectTrendDateISOs(growRows, packRows)
         .filter(iso => iso <= limitISO)
         .sort();
 
       const points = [];
       for (const iso of dayList){
-        const s = computeDaySummary(iso, GROW_ROWS, PACK_ROWS);
+        const s = computeDaySummary(iso, growRows, packRows, PACK_ROWS);
         if (!s || !s.wkNum || s.empty) continue;
         const missed = metricMissedPercent(metricKey, s);
         if (!Number.isFinite(missed)) continue;
@@ -2724,15 +2862,17 @@
     }
 
     function setDefaultDateSelection(){
+      const { growRows, packRows } = getActiveRows();
       const todayISO = toISODateStr(new Date());
-      if (hasAnyDataForDateISO(todayISO, GROW_ROWS, PACK_ROWS)) selectedDateISO = todayISO;
-      else selectedDateISO = getMostRecentDataDateISO(GROW_ROWS, PACK_ROWS);
+      if (hasAnyDataForDateISO(todayISO, growRows, packRows)) selectedDateISO = todayISO;
+      else selectedDateISO = getMostRecentDataDateISO(growRows, packRows);
       const dateInput = $("dateSelect");
       if (dateInput) dateInput.value = selectedDateISO || "";
     }
 
     function getWeekOptions(){
-      const weeks = [...WEEKS];
+      const { growRows, packRows } = getActiveRows();
+      const weeks = collectWeeks(growRows, packRows);
       const defaultWeek = getPreviousISOWeek();
       if (defaultWeek && !weeks.includes(defaultWeek)) weeks.push(defaultWeek);
       return weeks.sort((a,b) => weekOrderKey(a) - weekOrderKey(b));
@@ -2770,14 +2910,30 @@
       }
     }
 
+    function updateSummaryModeControls(){
+      const btnProduction = $("toggleProduction");
+      const btnExperiments = $("toggleExperiments");
+      if (btnProduction) {
+        btnProduction.classList.add("pill");
+        btnProduction.classList.toggle("good", summaryMode === "production");
+        btnProduction.classList.toggle("muted", summaryMode !== "production");
+      }
+      if (btnExperiments) {
+        btnExperiments.classList.add("pill");
+        btnExperiments.classList.toggle("good", summaryMode === "experiments");
+        btnExperiments.classList.toggle("muted", summaryMode !== "experiments");
+      }
+    }
+
     function render(){
+      const { growRows, packRows } = getActiveRows();
       const title = $("panelTitle");
       if (viewMode === "day") {
         const dObj = parseISODateLocal(selectedDateISO) || parseAnyDate(selectedDateISO);
         const dayLabel = dObj ? formatDayPill(dObj) : "—";
         if (title) title.textContent = "Day " + dayLabel;
 
-        const summary = computeDaySummary(selectedDateISO, GROW_ROWS, PACK_ROWS);
+        const summary = computeDaySummary(selectedDateISO, growRows, packRows, PACK_ROWS);
         if (!summary || !summary.wkNum){
           renderHighlights({ wkNum:null });
           renderTable({ wkNum:null });
@@ -2793,7 +2949,7 @@
             `Transplant: rows ${summary.aux.transRowsCount.toLocaleString()} • boards ${summary.aux.boardsTrans.toLocaleString()} • expected ${summary.aux.boardsExpected.toLocaleString()} • avg workers ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"} • hours ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
             `Pack: source ${summary.aux.packSource || "date"} • date rows ${(summary.aux.packRowsByDateCount ?? 0).toLocaleString()} • week rows ${(summary.aux.packRowsByWeekCount ?? 0).toLocaleString()} • used ${(summary.aux.packRowsSelectedCount ?? 0).toLocaleString()} • lbs ${(summary.aux.packLbsConfirmed ?? 0).toLocaleString()}\n` +
             `Shipped: source ${summary.aux.shipSource || "date"} • date rows ${(summary.aux.shipRowsByDateCount ?? 0).toLocaleString()} • week rows ${(summary.aux.shipRowsByWeekCount ?? 0).toLocaleString()} • used ${(summary.aux.shipRowsSelectedCount ?? 0).toLocaleString()} • sales ${(summary.ship?.sales ?? 0).toLocaleString()} • wh ${(summary.ship?.received ?? 0).toLocaleString()} • donations ${(summary.ship?.donation ?? 0).toLocaleString()} • basura ${(summary.ship?.waste ?? 0).toLocaleString()}\n` +
-            `Sales ship: source ${summary.aux.salesSource || "date"} • date rows ${(summary.aux.salesRowsByDateCount ?? 0).toLocaleString()} • ship-week rows ${(summary.aux.salesRowsByWeekCount ?? 0).toLocaleString()} • used ${(summary.aux.salesRowsSelectedCount ?? 0).toLocaleString()} • lbs ${(summary.salesShipLbs ?? 0).toLocaleString()}\n` +
+            `Sales ship target: source ${summary.aux.salesSource || "sales-ship-date"} • Sales Ship Date rows ${(summary.aux.salesRowsByDateCount ?? 0).toLocaleString()} • used ${(summary.aux.salesRowsSelectedCount ?? 0).toLocaleString()} • Sales Lbs Eq. ${(summary.salesShipLbs ?? 0).toLocaleString()}\n` +
             `Note: If transplant date is missing, time collapses into one bucket for the day.`
           );
         } else {
@@ -2812,7 +2968,7 @@
         return;
       }
 
-      const summary = computeWeekSummary(wk, GROW_ROWS, PACK_ROWS);
+      const summary = computeWeekSummary(wk, growRows, packRows, PACK_ROWS);
 
       if (title) title.textContent = weekDisplay(wk);
 
@@ -2824,7 +2980,7 @@
           `Transplant: rows ${summary.aux.transRowsCount.toLocaleString()} • boards ${summary.aux.boardsTrans.toLocaleString()} • expected ${summary.aux.boardsExpected.toLocaleString()} • avg workers ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"} • hours ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
           `Pack: week rows ${(summary.aux.packRowsCount ?? 0).toLocaleString()} • confirmed lbs ${(summary.aux.packLbsConfirmed ?? 0).toLocaleString()}\n` +
           `Shipped: week rows ${(summary.aux.shipRowsByGrowWeekCount ?? 0).toLocaleString()} • sales ${(summary.ship?.sales ?? 0).toLocaleString()} • wh ${(summary.ship?.received ?? 0).toLocaleString()} • donations ${(summary.ship?.donation ?? 0).toLocaleString()} • basura ${(summary.ship?.waste ?? 0).toLocaleString()}\n` +
-          `Sales ship: ship-week rows ${(summary.aux.salesRowsByShipWeekCount ?? 0).toLocaleString()} • lbs ${(summary.salesShipLbs ?? 0).toLocaleString()}\n` +
+          `Sales ship target: Sales Ship Week rows ${(summary.aux.salesRowsByShipWeekCount ?? 0).toLocaleString()} • Sales Lbs Eq. ${(summary.salesShipLbs ?? 0).toLocaleString()}\n` +
           `Note: If transplant date is missing, time collapses into one bucket for the week.`
         );
       } else {
@@ -2843,6 +2999,7 @@
         await loadData();
         renderWeekOptions();
         updateViewControls();
+        updateSummaryModeControls();
 
         if (viewMode === "day") {
           const normalized = normalizeDateISO(selectedDateISO);
@@ -2907,6 +3064,7 @@
       await loadData();
       renderWeekOptions();
       updateViewControls();
+      updateSummaryModeControls();
 
       const sel = $("weekSelect");
       sel?.addEventListener("change", () => {
@@ -2924,6 +3082,8 @@
 
       const toggleWeekly = $("toggleWeekly");
       const toggleDaily = $("toggleDaily");
+      const toggleProduction = $("toggleProduction");
+      const toggleExperiments = $("toggleExperiments");
       toggleWeekly?.addEventListener("click", () => {
         viewMode = "week";
         selectedWeek = getDefaultWeekSelection();
@@ -2935,6 +3095,18 @@
         viewMode = "day";
         updateViewControls();
         setDefaultDateSelection();
+        render();
+      });
+      toggleProduction?.addEventListener("click", () => {
+        summaryMode = "production";
+        updateSummaryModeControls();
+        renderWeekOptions();
+        render();
+      });
+      toggleExperiments?.addEventListener("click", () => {
+        summaryMode = "experiments";
+        updateSummaryModeControls();
+        renderWeekOptions();
         render();
       });
 
