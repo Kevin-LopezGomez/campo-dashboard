@@ -751,18 +751,31 @@
       const variety = normalizeVarietyKey(row?.variety || row?.variety_used || "");
       return `${lot}||${variety}`;
     }
+    function getInventoryUsageTargetKey(row) {
+      const lot = normalizeLotKey(row?.lot || "");
+      if (!lot) return "";
+      return [
+        lot,
+        normalizeVarietyKey(row?.variety || ""),
+        normalizeTypeKey(row?.type || ""),
+        String(row?.provider || "").trim().toLowerCase(),
+        String(row?.total_remaining || "").trim()
+      ].join("||");
+    }
     function buildSeedSpecs(productionRows, experimentRows) {
       const byLotAndVariety = new Map();
       const byLot = new Map();
       const add = (row) => {
         const lotKey = normalizeLotKey(row?.lot || "");
         if (!lotKey) return;
+        const inventoryKey = getInventoryUsageTargetKey(row);
         const spec = {
           seeds_per_can: num(row?.seeds_per_can || row?.can_size),
-          seeds_per_gram: seedsPerGramFromLb(row?.seeds_per_lb)
+          seeds_per_gram: seedsPerGramFromLb(row?.seeds_per_lb),
+          inventory_key: inventoryKey
         };
         const varietyKey = getSeedSpecKey(row);
-        if (varietyKey) byLotAndVariety.set(varietyKey, spec);
+        if (varietyKey && !byLotAndVariety.has(varietyKey)) byLotAndVariety.set(varietyKey, spec);
         if (!byLot.has(lotKey)) byLot.set(lotKey, spec);
       };
       (productionRows || []).forEach(add);
@@ -802,6 +815,7 @@
         ...row,
         __usageRowIndex: row?.__usageRowIndex,
         total_used: calculateUsageTotalSeeds(row, specs),
+        usage_inventory_key: findSeedSpecForUsage(row, specs)?.inventory_key || "",
         ignored_for_inventory: isUsageIgnored(row)
       }));
     }
@@ -833,19 +847,19 @@
         .replace(/[^a-z0-9]/g, "")
         .trim();
     }
-    function buildUsageTotalsByLot(usageRows) {
+    function buildUsageTotalsByInventoryKey(usageRows) {
       const totals = new Map();
       for (const row of usageRows || []) {
         if (row?.ignored_for_inventory) continue;
-        const key = normalizeLotKey(row?.lot_used || "");
+        const key = row?.usage_inventory_key || "";
         if (!key) continue;
         totals.set(key, (totals.get(key) || 0) + num(row?.total_used));
       }
       return totals;
     }
-    function addCalculatedInventory(rows, usageTotalsByLot) {
+    function addCalculatedInventory(rows, usageTotalsByInventoryKey) {
       return (rows || []).map((row) => {
-        const used = usageTotalsByLot.get(normalizeLotKey(row?.lot || "")) || 0;
+        const used = usageTotalsByInventoryKey.get(getInventoryUsageTargetKey(row)) || 0;
         return {
           ...row,
           inventory: num(row?.total_remaining) - used
@@ -1218,9 +1232,9 @@
       };
       updateTypeFilterOptions(groupedWithUsageTotals);
       const filtered = applyFilters(groupedWithUsageTotals);
-      const usageTotalsByLot = buildUsageTotalsByLot(groupedWithUsageTotals.usage);
-      const productionRowsWithInventory = addCalculatedInventory(filtered.production, usageTotalsByLot);
-      const experimentRowsWithInventory = addCalculatedInventory(filtered.experiment, usageTotalsByLot);
+      const usageTotalsByInventoryKey = buildUsageTotalsByInventoryKey(groupedWithUsageTotals.usage);
+      const productionRowsWithInventory = addCalculatedInventory(filtered.production, usageTotalsByInventoryKey);
+      const experimentRowsWithInventory = addCalculatedInventory(filtered.experiment, usageTotalsByInventoryKey);
 
       const prodRem = productionRowsWithInventory.reduce((a, r) => a + getCalculatedSeedsAvailable(r), 0);
       const expRem = experimentRowsWithInventory.reduce((a, r) => a + getCalculatedSeedsAvailable(r), 0);
