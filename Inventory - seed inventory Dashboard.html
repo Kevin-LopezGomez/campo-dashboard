@@ -387,10 +387,10 @@
             <table>
               <thead>
                 <tr>
-                  <th>Variety</th><th>Type</th><th>Raw/Pelleted</th><th>Provider</th>
-                  <th>Lot #</th><th class="r">Inventory</th><th>Date Recieved</th><th>Germ Test Date</th>
+                  <th>Variety</th><th>Type</th><th class="r">Calculated Seeds Availabie</th><th>Raw/Pelleted</th><th>Provider</th>
+                  <th>Lot #</th><th>Date Recieved</th><th>Germ Test Date</th>
                   <th>Expiration Date</th><th>Packed Date</th>
-                  <th class="r">Recieved Qty of Cans</th><th class="r">Can Size</th>
+                  <th class="r">Recieved Qty of Cans</th><th class="r">Seeds per Can</th><th class="r">Seeds per Lb.</th><th class="r">Seeds per Gram</th>
                   <th class="r">Total Seeds Recieved</th><th class="r">Remaining Qty of Full Cans</th>
                   <th class="r">Remaining Grams of Seeds in Partial Can</th>
                   <th class="r">Total Seeds In Inventory</th><th>Date Last Inventoried</th>
@@ -408,11 +408,11 @@
             <table>
               <thead>
                 <tr>
-                  <th>Variety</th><th>Type</th><th>Raw/Pelleted</th><th>Provider</th>
-                  <th>Lot #</th><th class="r">Inventory</th><th>Date Recieved</th><th>Germ Test Date</th>
+                  <th>Variety</th><th>Type</th><th class="r">Calculated Seeds Availabie</th><th>Raw/Pelleted</th><th>Provider</th>
+                  <th>Lot #</th><th>Date Recieved</th><th>Germ Test Date</th>
                   <th>Expiration Date</th><th>Packed Date</th>
-                  <th class="r">Recieved Qty of Cans</th><th class="r">Can Size Seeds/Can</th>
-                  <th class="r">Total Seeds Recieved</th><th class="r">Remaining Qty of Cans Full</th>
+                  <th class="r">Recieved Qty of Cans</th><th class="r">Seeds per Can</th>
+                  <th class="r">Total Seeds Recieved</th><th class="r">Seeds per Lb.</th><th class="r">Seeds per Gram</th><th class="r">Remaining Qty of Cans Full</th>
                   <th class="r">Remaining Grams of Seeds in Partial Can</th>
                   <th class="r">Total Seeds In Inventory</th><th>Date Last Inventoried</th>
                   <th>Seed Comments</th>
@@ -429,12 +429,11 @@
             <table>
               <thead>
                 <tr>
-                  <th>Variety</th><th>Purpose</th><th>New Lot Code</th>
-                  <th>Seed Varieties In Mix</th><th>Lot #1</th><th>Lot #2</th><th>Lot #3</th>
-                  <th>Lot #4</th><th>Lot #5</th><th>Date mixed</th>
-                  <th class="r">Remaining Grams of Seeds in mix</th>
-                  <th class="r">Total Seeds Remaining</th><th>Seeds Last Inventoried</th>
-                  <th>Seeds Comments</th>
+                  <th>Variety</th><th>Purpose</th><th>New Mix Lot Code</th>
+                  <th>Lot #1</th><th>Lot #2</th><th>Lot #3</th>
+                  <th>Lot #4</th><th>Lot #5</th><th>Lot #6</th><th>Date mixed</th>
+                  <th>Mixed Seeds Last Inventoried</th><th class="r">Calculated Seeds Availabie</th>
+                  <th>Mixed Seeds Comments</th>
                 </tr>
               </thead>
               <tbody id="tbMixed"></tbody>
@@ -451,7 +450,7 @@
               <thead>
                 <tr>
                   <th>Lote # Usado</th><th>Variedad Usado</th><th>Dia Usado</th>
-                  <th class="r">Cans Usado</th><th class="r">Grams Usado</th><th class="r">Total Used</th><th>Notes</th>
+                  <th class="r">Seeds Used</th><th class="r">Cans Usado</th><th class="r">Grams Usado (g)</th><th class="r">Total Seeds Used</th><th>Notes</th>
                 </tr>
               </thead>
               <tbody id="tbUsage"></tbody>
@@ -515,6 +514,7 @@
           production: {
             variety: pick(row, ["productionvariety", "prodvariety", "pvariety"]),
             type: pick(row, ["productiontype", "prodtype", "ptype"]),
+            calculated_seeds_available: pick(row, ["productioncalculatedseedsavailable", "productioncalculatedseedsavailabie", "prodcalculatedseedsavailable", "prodcalculatedseedsavailabie", "pcalculatedseedsavailable", "pcalculatedseedsavailabie"]),
             raw_pelleted: pick(row, ["productionrawpelleted", "prodrawpelleted", "prawpelleted"]),
             provider: pick(row, ["productionprovider", "prodprovider", "pprovider"]),
             lot: pick(row, ["productionlot", "prodlot", "plot"]),
@@ -524,7 +524,9 @@
             expiration_date: pick(row, ["productionexpirationdate", "prodexpirationdate", "pexpirationdate"]),
             packed_date: pick(row, ["productionpackeddate", "prodpackeddate", "ppackeddate"]),
             received_qty_of_cans: pick(row, ["productionreceivedqtyofcans", "productionrecievedqtyofcans", "prodreceivedqtyofcans", "prodrecievedqtyofcans", "preceivedqtyofcans", "precievedqtyofcans"]),
-            can_size: pick(row, ["productioncansize", "prodcansize", "pcansize"]),
+            seeds_per_can: pick(row, ["productionseedspercan", "prodseedspercan", "pseedspercan", "productioncansize", "prodcansize", "pcansize"]),
+            can_size: pick(row, ["productionseedspercan", "prodseedspercan", "pseedspercan", "productioncansize", "prodcansize", "pcansize"]),
+            seeds_per_lb: pick(row, ["productionseedsperlb", "prodseedsperlb", "pseedsperlb"]),
             total_received: pick(row, ["productiontotalreceived", "productiontotalseedsreceived", "productiontotalseedsrecieved", "prodtotalreceived", "prodtotalseedsreceived", "prodtotalseedsrecieved", "ptotalreceived"]),
             remaining_qty_full_cans: pick(row, ["productionremainingqtyoffullcans", "prodremainingqtyoffullcans", "premainingqtyoffullcans"]),
             remaining_grams_partial_can: pick(row, ["productionremaininggramsofseedsinpartialcan", "prodremaininggramsofseedsinpartialcan", "premaininggramsofseedsinpartialcan"]),
@@ -536,6 +538,7 @@
           experiment: {
             variety: pick(row, ["experimentvariety", "expvariety", "evariety"]),
             type: pick(row, ["experimenttype", "exptype", "etype"]),
+            calculated_seeds_available: pick(row, ["experimentcalculatedseedsavailable", "experimentcalculatedseedsavailabie", "expcalculatedseedsavailable", "expcalculatedseedsavailabie", "ecalculatedseedsavailable", "ecalculatedseedsavailabie"]),
             raw_pelleted: pick(row, ["experimentrawpelleted", "exprawpelleted", "erawpelleted"]),
             provider: pick(row, ["experimentprovider", "expprovider", "eprovider"]),
             lot: pick(row, ["experimentlot", "explot", "elot"]),
@@ -545,8 +548,10 @@
             expiration_date: pick(row, ["experimentexpirationdate", "expexpirationdate", "eexpirationdate"]),
             packed_date: pick(row, ["experimentpackeddate", "exppackeddate", "epackeddate"]),
             received_qty_of_cans: pick(row, ["experimentreceivedqtyofcans", "experimentrecievedqtyofcans", "expreceivedqtyofcans", "exprecievedqtyofcans", "ereceivedqtyofcans", "erecievedqtyofcans"]),
-            can_size: pick(row, ["experimentcansizeseedscan", "experimentcansize", "expcansizeseedscan", "expcansize", "ecansizeseedscan", "ecansize"]),
+            seeds_per_can: pick(row, ["experimentseedspercan", "expseedspercan", "eseedspercan", "experimentcansizeseedscan", "experimentcansize", "expcansizeseedscan", "expcansize", "ecansizeseedscan", "ecansize"]),
+            can_size: pick(row, ["experimentseedspercan", "expseedspercan", "eseedspercan", "experimentcansizeseedscan", "experimentcansize", "expcansizeseedscan", "expcansize", "ecansizeseedscan", "ecansize"]),
             total_received: pick(row, ["experimenttotalreceived", "experimenttotalseedsreceived", "experimenttotalseedsrecieved", "exptotalreceived", "exptotalseedsreceived", "exptotalseedsrecieved", "etotalreceived"]),
+            seeds_per_lb: pick(row, ["experimentseedsperlb", "expseedsperlb", "eseedsperlb"]),
             remaining_qty_full_cans: pick(row, ["experimentremainingqtyofcansfull", "experimentremainingqtyoffullcans", "expremainingqtyofcansfull", "expremainingqtyoffullcans", "eremainingqtyofcansfull", "eremainingqtyoffullcans"]),
             remaining_grams_partial_can: pick(row, ["experimentremaininggramsofseedsinpartialcan", "expremaininggramsofseedsinpartialcan", "eremaininggramsofseedsinpartialcan"]),
             total_remaining: pick(row, ["experimenttotalseedsininventory", "exptotalseedsininventory", "etotalseedsininventory", "experimenttotalremaining", "experimenttotalseedsremaining", "exptotalremaining", "exptotalseedsremaining", "etotalremaining"]),
@@ -563,9 +568,11 @@
             lot_3: pick(row, ["mixedlot3", "mixlot3", "lot3", "mlot3"]),
             lot_4: pick(row, ["mixedlot4", "mixlot4", "lot4", "mlot4"]),
             lot_5: pick(row, ["mixedlot5", "mixlot5", "lot5", "mlot5"]),
+            lot_6: pick(row, ["mixedlot6", "mixlot6", "lot6", "mlot6"]),
             date_mixed: pick(row, ["mixeddatemixed", "mixdatemixed", "mdatemixed", "datemixed"]),
             remaining_grams_in_mix: pick(row, ["mixedremaininggramsofseedsinmix", "mixremaininggramsofseedsinmix", "remaininggramsofseedsinmix", "mremaininggramsofseedsinmix"]),
-            total_remaining: pick(row, ["mixedtotalseedsremaining", "mixedtotalremaining", "mixtotalseedsremaining", "mixtotalremaining", "mtotalremaining", "totalseedsremaining"]),
+            calculated_seeds_available: pick(row, ["mixedcalculatedseedsavailable", "mixedcalculatedseedsavailabie", "mixcalculatedseedsavailable", "mixcalculatedseedsavailabie", "mcalculatedseedsavailable", "mcalculatedseedsavailabie"]),
+            total_remaining: pick(row, ["mixedtotalseedsremaining", "mixedtotalremaining", "mixtotalseedsremaining", "mixtotalremaining", "mtotalremaining", "totalseedsremaining", "mixedcalculatedseedsavailable", "mixedcalculatedseedsavailabie", "mixcalculatedseedsavailable", "mixcalculatedseedsavailabie", "mcalculatedseedsavailable", "mcalculatedseedsavailabie"]),
             last_inventory: pick(row, ["mixedseedslastinventoried", "mixedlastinventory", "mixlastinventory", "mlastinventory"]),
             seed_comments: pick(row, ["mixedseedscomments", "mixedseedcomments", "mixseedscomments", "mixseedcomments", "mseedcomments"])
           },
@@ -573,8 +580,9 @@
             lot_used: pick(row, ["loteusado", "loteusado", "lotenumberusado", "lotusado", "lotused"]),
             variety_used: pick(row, ["variedadusado", "varietyused"]),
             day_used: pick(row, ["diausado", "dayused", "dateused"]),
+            seeds_used: pick(row, ["seedsused", "semillasusado", "semillasused"]),
             cans_used: pick(row, ["cansusado", "cansused"]),
-            grams_used: pick(row, ["gramsusado", "gramsused"]),
+            grams_used: pick(row, ["gramsusado", "gramsusadog", "gramsused", "gramsusedg"]),
             total_used: pick(row, ["totalused", "totalusado", "totalseedsused"]),
             notes: pick(row, ["notes", "usagenotes", "seedusagenotes"])
           }
@@ -686,9 +694,59 @@
       const n = Number(v);
       return Number.isFinite(n) ? Math.round(n).toLocaleString() : "0";
     }
+    function fmtDecimal(v, digits = 2) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: digits }) : "";
+    }
     function num(v) {
       const n = Number(String(v ?? "").replace(/,/g, "").trim());
       return Number.isFinite(n) ? n : 0;
+    }
+    function seedsPerGramFromLb(v) {
+      const seedsPerLb = num(v);
+      return seedsPerLb ? seedsPerLb / 453.59237 : "";
+    }
+    function getSeedSpecKey(row) {
+      const lot = normalizeLotKey(row?.lot || row?.lot_used || "");
+      if (!lot) return "";
+      const variety = normalizeVarietyKey(row?.variety || row?.variety_used || "");
+      return `${lot}||${variety}`;
+    }
+    function buildSeedSpecs(productionRows, experimentRows) {
+      const byLotAndVariety = new Map();
+      const byLot = new Map();
+      const add = (row) => {
+        const lotKey = normalizeLotKey(row?.lot || "");
+        if (!lotKey) return;
+        const spec = {
+          seeds_per_can: num(row?.seeds_per_can || row?.can_size),
+          seeds_per_gram: seedsPerGramFromLb(row?.seeds_per_lb)
+        };
+        const varietyKey = getSeedSpecKey(row);
+        if (varietyKey) byLotAndVariety.set(varietyKey, spec);
+        if (!byLot.has(lotKey)) byLot.set(lotKey, spec);
+      };
+      (productionRows || []).forEach(add);
+      (experimentRows || []).forEach(add);
+      return { byLotAndVariety, byLot };
+    }
+    function findSeedSpecForUsage(row, specs) {
+      const lotKey = normalizeLotKey(row?.lot_used || "");
+      if (!lotKey || !specs) return null;
+      return specs.byLotAndVariety.get(getSeedSpecKey(row)) || specs.byLot.get(lotKey) || null;
+    }
+    function calculateUsageTotalSeeds(row, specs) {
+      const spec = findSeedSpecForUsage(row, specs);
+      const directSeeds = num(row?.seeds_used);
+      const canSeeds = num(row?.cans_used) * num(spec?.seeds_per_can);
+      const gramSeeds = num(row?.grams_used) * num(spec?.seeds_per_gram);
+      return directSeeds + canSeeds + gramSeeds;
+    }
+    function addCalculatedUsageTotals(usageRows, specs) {
+      return (usageRows || []).map((row) => ({
+        ...row,
+        total_used: calculateUsageTotalSeeds(row, specs)
+      }));
     }
     function esc(s) {
       return String(s ?? "").replace(/[&<>\"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;' }[c]));
@@ -715,7 +773,7 @@
         .toLowerCase()
         .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9]/g, "")
         .trim();
     }
     function buildUsageTotalsByLot(usageRows) {
@@ -736,6 +794,10 @@
         };
       });
     }
+    function getCalculatedSeedsAvailable(row) {
+      const parsedValue = String(row?.calculated_seeds_available ?? "").trim();
+      return parsedValue ? num(parsedValue) : num(row?.inventory);
+    }
 
     function hasProd(p) {
       return !!(p.variety || p.lot || num(p.total_received) || num(p.total_remaining));
@@ -747,7 +809,7 @@
       return !!(m.variety || m.purpose || num(m.total_remaining));
     }
     function hasUsage(u) {
-      return !!(u.lot_used || u.variety_used || u.day_used || num(u.cans_used) || num(u.grams_used) || num(u.total_used) || u.notes);
+      return !!(u.lot_used || u.variety_used || u.day_used || num(u.seeds_used) || num(u.cans_used) || num(u.grams_used) || num(u.total_used) || u.notes);
     }
     function loadProductionMinimums() {
       try {
@@ -927,24 +989,24 @@
       };
       return {
         production: currentView === "usage" || category === "experiment" || category === "mixed" || category === "usage" ? [] : grouped.production.filter((r) => {
-          if (!matchesQuery(r, ["variety", "type", "provider", "lot", "date_received", "last_inventory"])) return false;
+          if (!matchesQuery(r, ["variety", "type", "calculated_seeds_available", "raw_pelleted", "provider", "lot", "date_received", "germ_test_date", "expiration_date", "packed_date", "received_qty_of_cans", "seeds_per_can", "seeds_per_lb", "total_received", "remaining_qty_full_cans", "remaining_grams_partial_can", "total_remaining", "last_inventory", "seed_comments"])) return false;
           if (!matchesType(r.type)) return false;
           if (!lowOnly) return true;
           const min = Number(getEffectiveMinimumForProductionRow(r) || 0);
           return min > 0 && num(r.total_remaining) < min;
         }),
         experiment: currentView === "usage" || category === "production" || category === "mixed" || category === "usage" || lowOnly ? [] : grouped.experiment.filter((r) => (
-          matchesQuery(r, ["variety", "type", "provider", "lot", "date_received", "last_inventory"]) &&
+          matchesQuery(r, ["variety", "type", "calculated_seeds_available", "raw_pelleted", "provider", "lot", "date_received", "germ_test_date", "expiration_date", "packed_date", "received_qty_of_cans", "seeds_per_can", "seeds_per_lb", "total_received", "remaining_qty_full_cans", "remaining_grams_partial_can", "total_remaining", "last_inventory", "seed_comments"]) &&
           matchesType(r.type)
         )),
         mixed: currentView === "usage" || category === "production" || category === "experiment" || category === "usage" || lowOnly ? [] : grouped.mixed.filter((r) => (
-          matchesQuery(r, ["variety", "purpose", "seed_varieties", "date_mixed", "last_inventory"]) &&
+          matchesQuery(r, ["variety", "purpose", "new_mix_lot_code", "seed_varieties", "lot_1", "lot_2", "lot_3", "lot_4", "lot_5", "lot_6", "date_mixed", "last_inventory", "calculated_seeds_available", "seed_comments"]) &&
           matchesType(r.purpose)
         )),
         usage: currentView !== "usage" && category !== "all" && category !== "usage" ? [] : grouped.usage.filter((r) => (
           !lowOnly &&
           (currentView === "usage" || typeValue === "all") &&
-          matchesQuery(r, ["lot_used", "variety_used", "day_used", "cans_used", "grams_used", "total_used", "notes"])
+          matchesQuery(r, ["lot_used", "variety_used", "day_used", "seeds_used", "cans_used", "grams_used", "total_used", "notes"])
         ))
       };
     }
@@ -982,8 +1044,8 @@
             const v = sanitizeMinimumValue(r[c.key]);
             return `<td class="${tdClass}"><input class="cellInput" type="number" min="0" step="1" value="${esc(v)}" data-min-row-key="${esc(r.__rowKey || "")}" data-min-key="${esc(c.key)}" /></td>`;
           }
-          const v = r[c.key];
-          const content = c.num ? fmtInt(v) : esc(v || "");
+          const v = c.value ? c.value(r) : r[c.key];
+          const content = c.format ? esc(c.format(v, r)) : (c.num ? fmtInt(v) : esc(v || ""));
           return `<td class="${tdClass}">${content}</td>`;
         }).join("");
         return `<tr>${tds}</tr>`;
@@ -1050,14 +1112,19 @@
 
     function render() {
       const grouped = flatten();
-      updateTypeFilterOptions(grouped);
-      const filtered = applyFilters(grouped);
-      const usageTotalsByLot = buildUsageTotalsByLot(grouped.usage);
+      const seedSpecs = buildSeedSpecs(grouped.production, grouped.experiment);
+      const groupedWithUsageTotals = {
+        ...grouped,
+        usage: addCalculatedUsageTotals(grouped.usage, seedSpecs)
+      };
+      updateTypeFilterOptions(groupedWithUsageTotals);
+      const filtered = applyFilters(groupedWithUsageTotals);
+      const usageTotalsByLot = buildUsageTotalsByLot(groupedWithUsageTotals.usage);
       const productionRowsWithInventory = addCalculatedInventory(filtered.production, usageTotalsByLot);
       const experimentRowsWithInventory = addCalculatedInventory(filtered.experiment, usageTotalsByLot);
 
-      const prodRem = productionRowsWithInventory.reduce((a, r) => a + num(r.inventory), 0);
-      const expRem = experimentRowsWithInventory.reduce((a, r) => a + num(r.inventory), 0);
+      const prodRem = productionRowsWithInventory.reduce((a, r) => a + getCalculatedSeedsAvailable(r), 0);
+      const expRem = experimentRowsWithInventory.reduce((a, r) => a + getCalculatedSeedsAvailable(r), 0);
       const mixRem = filtered.mixed.reduce((a, r) => a + num(r.total_remaining), 0);
 
       $("kProdRem").textContent = fmtInt(prodRem);
@@ -1080,9 +1147,9 @@
         const key = `${varietyKey}|||${typeKey}`;
         const prev = byVariety.get(key);
         if (!prev) {
-          byVariety.set(key, { variety, type, remaining: num(r.inventory) });
+          byVariety.set(key, { variety, type, remaining: getCalculatedSeedsAvailable(r) });
         } else {
-          prev.remaining += num(r.inventory);
+          prev.remaining += getCalculatedSeedsAvailable(r);
         }
       }
       const topProd = Array.from(byVariety.entries())
@@ -1109,9 +1176,9 @@
         const key = `${varietyKey}|||${typeKey}`;
         const prev = byVarietyExp.get(key);
         if (!prev) {
-          byVarietyExp.set(key, { variety, type, remaining: num(r.inventory) });
+          byVarietyExp.set(key, { variety, type, remaining: getCalculatedSeedsAvailable(r) });
         } else {
-          prev.remaining += num(r.inventory);
+          prev.remaining += getCalculatedSeedsAvailable(r);
         }
       }
       const expAll = Array.from(byVarietyExp.entries())
@@ -1135,10 +1202,12 @@
       $("topExperimentWrap").style.overflowY = "auto";
 
       renderTableRows(productionRowsWithInventory, [
-        { key: "variety" }, { key: "type" }, { key: "raw_pelleted" }, { key: "provider" },
-        { key: "lot" }, { key: "inventory", num: true }, { key: "date_received" }, { key: "germ_test_date" },
+        { key: "variety" }, { key: "type" }, { key: "inventory", num: true },
+        { key: "raw_pelleted" }, { key: "provider" },
+        { key: "lot" }, { key: "date_received" }, { key: "germ_test_date" },
         { key: "expiration_date" }, { key: "packed_date" },
-        { key: "received_qty_of_cans", tdClass: "r" }, { key: "can_size", tdClass: "r" },
+        { key: "received_qty_of_cans", tdClass: "r" }, { key: "seeds_per_can", tdClass: "r" },
+        { key: "seeds_per_lb", tdClass: "r" }, { key: "seeds_per_gram", tdClass: "r", value: (r) => seedsPerGramFromLb(r.seeds_per_lb), format: (v) => fmtDecimal(v) },
         { key: "total_received", tdClass: "r" }, { key: "remaining_qty_full_cans", tdClass: "r" },
         { key: "remaining_grams_partial_can", tdClass: "r" },
         { key: "total_remaining", tdClass: "r" }, { key: "last_inventory" },
@@ -1146,11 +1215,14 @@
       ], "tbProduction");
 
       renderTableRows(experimentRowsWithInventory, [
-        { key: "variety" }, { key: "type" }, { key: "raw_pelleted" }, { key: "provider" },
-        { key: "lot" }, { key: "inventory", num: true }, { key: "date_received" }, { key: "germ_test_date" },
+        { key: "variety" }, { key: "type" }, { key: "inventory", num: true },
+        { key: "raw_pelleted" }, { key: "provider" },
+        { key: "lot" }, { key: "date_received" }, { key: "germ_test_date" },
         { key: "expiration_date" }, { key: "packed_date" },
-        { key: "received_qty_of_cans", tdClass: "r" }, { key: "can_size", tdClass: "r" },
-        { key: "total_received", tdClass: "r" }, { key: "remaining_qty_full_cans", tdClass: "r" },
+        { key: "received_qty_of_cans", tdClass: "r" }, { key: "seeds_per_can", tdClass: "r" },
+        { key: "total_received", tdClass: "r" }, { key: "seeds_per_lb", tdClass: "r" },
+        { key: "seeds_per_gram", tdClass: "r", value: (r) => seedsPerGramFromLb(r.seeds_per_lb), format: (v) => fmtDecimal(v) },
+        { key: "remaining_qty_full_cans", tdClass: "r" },
         { key: "remaining_grams_partial_can", tdClass: "r" },
         { key: "total_remaining", tdClass: "r" }, { key: "last_inventory" },
         { key: "seed_comments" }
@@ -1158,17 +1230,16 @@
 
       renderTableRows(filtered.mixed, [
         { key: "variety" }, { key: "purpose" }, { key: "new_mix_lot_code" },
-        { key: "seed_varieties" }, { key: "lot_1" }, { key: "lot_2" }, { key: "lot_3" },
-        { key: "lot_4" }, { key: "lot_5" }, { key: "date_mixed" },
-        { key: "remaining_grams_in_mix", tdClass: "r" },
-        { key: "total_remaining", tdClass: "r" }, { key: "last_inventory" },
+        { key: "lot_1" }, { key: "lot_2" }, { key: "lot_3" },
+        { key: "lot_4" }, { key: "lot_5" }, { key: "lot_6" }, { key: "date_mixed" },
+        { key: "last_inventory" }, { key: "calculated_seeds_available", tdClass: "r" },
         { key: "seed_comments" }
       ], "tbMixed");
 
       renderTableRows(filtered.usage, [
         { key: "lot_used" }, { key: "variety_used" }, { key: "day_used" },
-        { key: "cans_used", tdClass: "r" }, { key: "grams_used", tdClass: "r" },
-        { key: "total_used", tdClass: "r" }, { key: "notes" }
+        { key: "seeds_used", tdClass: "r" }, { key: "cans_used", tdClass: "r" }, { key: "grams_used", tdClass: "r" },
+        { key: "total_used", tdClass: "r", num: true }, { key: "notes" }
       ], "tbUsage");
 
       if (currentView === "dashboard") {
