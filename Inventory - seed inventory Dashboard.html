@@ -218,11 +218,27 @@
       min-width: 240px;
       white-space: normal;
     }
-    #seedUsageTable table { min-width: 1160px; }
+    #seedUsageTable table { min-width: 1230px; }
     #seedUsageTable th, #seedUsageTable td { min-width: 150px; white-space: nowrap; }
-    #seedUsageTable th:last-child, #seedUsageTable td:last-child {
+    #seedUsageTable th:nth-child(8), #seedUsageTable td:nth-child(8) {
       min-width: 260px;
       white-space: normal;
+    }
+    #seedUsageTable th:nth-child(9), #seedUsageTable td:nth-child(9) {
+      min-width: 64px;
+      width: 64px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    #seedUsageTable table.ignoreColHidden th:nth-child(9),
+    #seedUsageTable table.ignoreColHidden td:nth-child(9) {
+      display: none;
+    }
+    .usageIgnoreInput {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--green);
     }
     .cellInput {
       width: 130px;
@@ -444,13 +460,18 @@
 
       <div class="card section" id="seedUsageTable" style="display:none;">
         <div class="section tableGroup usage" id="secUsage">
-          <div class="tableGroupHead">Seed Usage</div>
+          <div class="tableHeadRow">
+            <div class="tableGroupHead">Seed Usage</div>
+            <div class="tableHeadActions">
+              <button class="miniBtn" id="toggleUsageIgnoreCol" type="button">Hide Ignore</button>
+            </div>
+          </div>
           <div class="tableWrap">
-            <table>
+            <table id="seedUsageInnerTable">
               <thead>
                 <tr>
                   <th>Lote # Usado</th><th>Variedad Usado</th><th>Dia Usado</th>
-                  <th class="r">Seeds Used</th><th class="r">Cans Usado</th><th class="r">Grams Usado (g)</th><th class="r">Total Seeds Used</th><th>Notes</th>
+                  <th class="r">Seeds Used</th><th class="r">Cans Usado</th><th class="r">Grams Usado (g)</th><th class="r">Total Seeds Used</th><th>Notes</th><th>Ignore</th>
                 </tr>
               </thead>
               <tbody id="tbUsage"></tbody>
@@ -468,6 +489,8 @@
     const MASTER_SEED_KEY = "campo_master_seed_inventory_v1";
     const PROD_MINIMUMS_KEY = "campo_seed_inventory_prod_minimums_v1";
     const MIN_QTY_COL_VISIBLE_KEY = "campo_seed_inventory_min_qty_column_visible_v1";
+    const USAGE_IGNORE_KEY = "campo_seed_inventory_usage_ignore_v1";
+    const USAGE_IGNORE_COL_VISIBLE_KEY = "campo_seed_inventory_usage_ignore_column_visible_v1";
     const MASTER_SEED_PING = "campo_master_seed_inventory_push_ping_v1";
     const MSG_SEED = "SEED_INVENTORY_UPDATED";
     const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
@@ -477,6 +500,8 @@
     let dataSource = "none";
     let productionMinimums = loadProductionMinimums();
     let showMinQtyColumn = loadMinQtyColumnVisible();
+    let usageIgnoreMap = loadUsageIgnoreMap();
+    let showUsageIgnoreColumn = loadUsageIgnoreColumnVisible();
     let sourceSeedPayload = null;
     let sourceUpdatedAt = "";
     let sourceLabel = "";
@@ -508,7 +533,7 @@
         return "";
       };
       const out = [];
-      for (const raw of rows || []) {
+      for (const [rowIndex, raw] of (rows || []).entries()) {
         const row = Array.isArray(raw) ? raw : [];
         const nested = {
           production: {
@@ -587,20 +612,34 @@
             notes: pick(row, ["notes", "usagenotes", "seedusagenotes"])
           }
         };
+        Object.defineProperty(nested.usage, "__usageRowIndex", {
+          value: rowIndex,
+          enumerable: false
+        });
         out.push(nested);
       }
       return out;
     }
     function parseSeedPayload(payload) {
+      const withUsageIndexes = (rows) => (rows || []).map((row, rowIndex) => {
+        const usage = row?.usage;
+        if (usage && typeof usage === "object" && !Object.prototype.hasOwnProperty.call(usage, "__usageRowIndex")) {
+          Object.defineProperty(usage, "__usageRowIndex", {
+            value: rowIndex,
+            enumerable: false
+          });
+        }
+        return row;
+      });
       if (!payload) return [];
       if (Array.isArray(payload)) {
-        return payload.map(getNestedRow).filter(Boolean);
+        return withUsageIndexes(payload.map(getNestedRow).filter(Boolean));
       }
       const direct = getNestedRow(payload);
-      if (direct) return [direct];
+      if (direct) return withUsageIndexes([direct]);
       const sheet = payload?.sheets?.["Seed Inventory"];
-      if (Array.isArray(sheet)) return sheet.map(getNestedRow).filter(Boolean);
-      if (sheet?.headers && sheet?.rows) return parseSheetRowsToNested(sheet.headers, sheet.rows);
+      if (Array.isArray(sheet)) return withUsageIndexes(sheet.map(getNestedRow).filter(Boolean));
+      if (sheet?.headers && sheet?.rows) return withUsageIndexes(parseSheetRowsToNested(sheet.headers, sheet.rows));
       return [];
     }
     async function loadDataRows() {
@@ -742,10 +781,28 @@
       const gramSeeds = num(row?.grams_used) * num(spec?.seeds_per_gram);
       return directSeeds + canSeeds + gramSeeds;
     }
+    function getUsageIgnoreRowKey(row) {
+      return [
+        String(row?.__usageRowIndex ?? ""),
+        normalizeLotKey(row?.lot_used || ""),
+        normalizeVarietyKey(row?.variety_used || ""),
+        String(row?.day_used || "").trim().toLowerCase(),
+        String(row?.seeds_used || "").trim(),
+        String(row?.cans_used || "").trim(),
+        String(row?.grams_used || "").trim(),
+        String(row?.notes || "").trim().toLowerCase()
+      ].join("||");
+    }
+    function isUsageIgnored(row) {
+      const key = getUsageIgnoreRowKey(row);
+      return !!(key && usageIgnoreMap[key]);
+    }
     function addCalculatedUsageTotals(usageRows, specs) {
       return (usageRows || []).map((row) => ({
         ...row,
-        total_used: calculateUsageTotalSeeds(row, specs)
+        __usageRowIndex: row?.__usageRowIndex,
+        total_used: calculateUsageTotalSeeds(row, specs),
+        ignored_for_inventory: isUsageIgnored(row)
       }));
     }
     function esc(s) {
@@ -779,6 +836,7 @@
     function buildUsageTotalsByLot(usageRows) {
       const totals = new Map();
       for (const row of usageRows || []) {
+        if (row?.ignored_for_inventory) continue;
         const key = normalizeLotKey(row?.lot_used || "");
         if (!key) continue;
         totals.set(key, (totals.get(key) || 0) + num(row?.total_used));
@@ -839,6 +897,42 @@
       try {
         localStorage.setItem(MIN_QTY_COL_VISIBLE_KEY, showMinQtyColumn ? "1" : "0");
       } catch (_e) {}
+    }
+    function loadUsageIgnoreMap() {
+      try {
+        const raw = localStorage.getItem(USAGE_IGNORE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (_e) {
+        return {};
+      }
+    }
+    function saveUsageIgnoreMap() {
+      try {
+        localStorage.setItem(USAGE_IGNORE_KEY, JSON.stringify(usageIgnoreMap));
+      } catch (_e) {}
+    }
+    function loadUsageIgnoreColumnVisible() {
+      try {
+        const raw = localStorage.getItem(USAGE_IGNORE_COL_VISIBLE_KEY);
+        if (raw === null) return true;
+        return raw !== "0";
+      } catch (_e) {
+        return true;
+      }
+    }
+    function saveUsageIgnoreColumnVisible() {
+      try {
+        localStorage.setItem(USAGE_IGNORE_COL_VISIBLE_KEY, showUsageIgnoreColumn ? "1" : "0");
+      } catch (_e) {}
+    }
+    function applyUsageIgnoreColumnVisibility() {
+      const table = $("seedUsageInnerTable");
+      const btn = $("toggleUsageIgnoreCol");
+      if (!table || !btn) return;
+      table.classList.toggle("ignoreColHidden", !showUsageIgnoreColumn);
+      btn.textContent = showUsageIgnoreColumn ? "Hide Ignore" : "Show Ignore";
     }
     function applyMinQtyColumnVisibility() {
       const table = $("topProductionTable");
@@ -1044,6 +1138,11 @@
             const v = sanitizeMinimumValue(r[c.key]);
             return `<td class="${tdClass}"><input class="cellInput" type="number" min="0" step="1" value="${esc(v)}" data-min-row-key="${esc(r.__rowKey || "")}" data-min-key="${esc(c.key)}" /></td>`;
           }
+          if (c.checkbox) {
+            const rowKey = c.rowKey ? c.rowKey(r) : "";
+            const checked = c.checked ? c.checked(r) : !!r[c.key];
+            return `<td class="${tdClass}"><input class="usageIgnoreInput" type="checkbox" ${checked ? "checked" : ""} data-usage-ignore-row-key="${esc(rowKey)}" /></td>`;
+          }
           const v = c.value ? c.value(r) : r[c.key];
           const content = c.format ? esc(c.format(v, r)) : (c.num ? fmtInt(v) : esc(v || ""));
           return `<td class="${tdClass}">${content}</td>`;
@@ -1239,8 +1338,10 @@
       renderTableRows(filtered.usage, [
         { key: "lot_used" }, { key: "variety_used" }, { key: "day_used" },
         { key: "seeds_used", tdClass: "r" }, { key: "cans_used", tdClass: "r" }, { key: "grams_used", tdClass: "r" },
-        { key: "total_used", tdClass: "r", num: true }, { key: "notes" }
+        { key: "total_used", tdClass: "r", num: true }, { key: "notes" },
+        { key: "ignored_for_inventory", checkbox: true, rowKey: getUsageIgnoreRowKey, checked: (r) => !!r.ignored_for_inventory }
       ], "tbUsage");
+      applyUsageIgnoreColumnVisibility();
 
       if (currentView === "dashboard") {
         $("secProduction").style.display = "none";
@@ -1326,6 +1427,11 @@
       saveMinQtyColumnVisible();
       applyMinQtyColumnVisibility();
     });
+    $("toggleUsageIgnoreCol").addEventListener("click", () => {
+      showUsageIgnoreColumn = !showUsageIgnoreColumn;
+      saveUsageIgnoreColumnVisible();
+      applyUsageIgnoreColumnVisibility();
+    });
     $("searchInput").addEventListener("input", render);
     $("categoryFilter").addEventListener("change", render);
     $("typeFilter").addEventListener("change", render);
@@ -1345,10 +1451,25 @@
       input.value = clean;
       render();
     });
+    $("tbUsage").addEventListener("change", (e) => {
+      const input = e.target;
+      if (!(input instanceof HTMLInputElement) || input.type !== "checkbox") return;
+      const rowKey = input.dataset.usageIgnoreRowKey || "";
+      if (!rowKey) return;
+      if (input.checked) {
+        usageIgnoreMap[rowKey] = true;
+      } else {
+        delete usageIgnoreMap[rowKey];
+      }
+      saveUsageIgnoreMap();
+      render();
+    });
 
     async function reloadAndRender() {
       productionMinimums = loadProductionMinimums();
       showMinQtyColumn = loadMinQtyColumnVisible();
+      usageIgnoreMap = loadUsageIgnoreMap();
+      showUsageIgnoreColumn = loadUsageIgnoreColumnVisible();
       dataRows = await loadDataRows();
       render();
     }
@@ -1357,7 +1478,7 @@
       $("status").textContent = `Runtime error: ${e?.message || 'unknown error'}`;
     });
     window.addEventListener("storage", (e) => {
-      if (e?.key === MASTER_SEED_KEY || e?.key === PROD_MINIMUMS_KEY || e?.key === MIN_QTY_COL_VISIBLE_KEY) reloadAndRender();
+      if (e?.key === MASTER_SEED_KEY || e?.key === PROD_MINIMUMS_KEY || e?.key === MIN_QTY_COL_VISIBLE_KEY || e?.key === USAGE_IGNORE_KEY || e?.key === USAGE_IGNORE_COL_VISIBLE_KEY) reloadAndRender();
     });
     window.addEventListener("message", (e) => {
       const type = e?.data?.type;
