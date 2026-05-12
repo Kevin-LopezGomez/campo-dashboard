@@ -178,6 +178,8 @@
     .tableGroup.mix .tableGroupHead { border-color: rgba(255,179,95,.55); color: #ffd8aa; }
     .tableGroup.usage { border-color: rgba(244,114,182,.45); background: rgba(244,114,182,.06); }
     .tableGroup.usage .tableGroupHead { border-color: rgba(244,114,182,.55); color: #fbcfe8; }
+    .tableGroup.minimums { border-color: rgba(45,212,191,.45); background: rgba(45,212,191,.06); }
+    .tableGroup.minimums .tableGroupHead { border-color: rgba(45,212,191,.55); color: #99f6e4; }
     .sectionTag {
       margin-top: 10px;
       display: inline-flex;
@@ -234,6 +236,12 @@
     #seedUsageTable table.ignoreColHidden td:nth-child(9) {
       display: none;
     }
+    #seedUsageTable #seedMinimumsInnerTable {
+      min-width: 520px;
+      table-layout: fixed;
+    }
+    #seedMinimumsInnerTable th:nth-child(1), #seedMinimumsInnerTable td:nth-child(1) { width: 55%; }
+    #seedMinimumsInnerTable th:nth-child(2), #seedMinimumsInnerTable td:nth-child(2) { width: 45%; }
     .usageIgnoreInput {
       width: 18px;
       height: 18px;
@@ -478,6 +486,19 @@
             </table>
           </div>
         </div>
+        <div class="section tableGroup minimums" id="secUsageMinimums">
+          <div class="tableGroupHead">Usage by Veriety</div>
+          <div class="tableWrap">
+            <table id="seedMinimumsInnerTable">
+              <thead>
+                <tr>
+                  <th>Min Veriety</th><th class="r">Min Seed Reorder Level</th>
+                </tr>
+              </thead>
+              <tbody id="tbUsageMinimums"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="status" id="status">Ready</div>
@@ -512,12 +533,13 @@
     }
     function getNestedRow(rowLike) {
       if (!rowLike || typeof rowLike !== "object") return null;
-      if (rowLike.production || rowLike.experiment || rowLike.mixed || rowLike.usage) {
+      if (rowLike.production || rowLike.experiment || rowLike.mixed || rowLike.usage || rowLike.minimums) {
         return {
           production: rowLike.production || {},
           experiment: rowLike.experiment || {},
           mixed: rowLike.mixed || {},
-          usage: rowLike.usage || {}
+          usage: rowLike.usage || {},
+          minimums: rowLike.minimums || {}
         };
       }
       return null;
@@ -610,6 +632,10 @@
             grams_used: pick(row, ["gramsusado", "gramsusadog", "gramsused", "gramsusedg"]),
             total_used: pick(row, ["totalused", "totalusado", "totalseedsused"]),
             notes: pick(row, ["notes", "usagenotes", "seedusagenotes"])
+          },
+          minimums: {
+            min_variety: pick(row, ["minveriety", "minvariety"]),
+            min_seed_reorder_level: pick(row, ["minseedreorderlevel", "minimumseedreorderlevel"])
           }
         };
         Object.defineProperty(nested.usage, "__usageRowIndex", {
@@ -883,6 +909,9 @@
     function hasUsage(u) {
       return !!(u.lot_used || u.variety_used || u.day_used || num(u.seeds_used) || num(u.cans_used) || num(u.grams_used) || num(u.total_used) || u.notes);
     }
+    function hasMinimums(m) {
+      return !!(m.min_variety || num(m.min_seed_reorder_level));
+    }
     function loadProductionMinimums() {
       try {
         const raw = localStorage.getItem(PROD_MINIMUMS_KEY);
@@ -971,6 +1000,19 @@
       if (!Number.isFinite(n) || n < 0) return "";
       return String(Math.round(n));
     }
+    function buildUsageMinimumsByVariety(minimumRows) {
+      const byVariety = new Map();
+      for (const row of minimumRows || []) {
+        const key = normalizeVarietyKey(row?.min_variety || "");
+        const min = sanitizeMinimumValue(row?.min_seed_reorder_level);
+        if (key && min !== "") byVariety.set(key, min);
+      }
+      return byVariety;
+    }
+    function getUsageMinimumForVariety(variety, minimumsByVariety) {
+      const key = normalizeVarietyKey(variety || "");
+      return key && minimumsByVariety ? (minimumsByVariety.get(key) || "") : "";
+    }
     function getProductionMinimumValue(p) {
       const key = getProductionRowKey(p);
       if (key && Object.prototype.hasOwnProperty.call(productionMinimums, key)) {
@@ -985,7 +1027,9 @@
         p?.min_qty
       );
     }
-    function getEffectiveMinimumForProductionRow(p) {
+    function getEffectiveMinimumForProductionRow(p, minimumsByVariety = null) {
+      const usageMin = getUsageMinimumForVariety(p?.variety || "", minimumsByVariety);
+      if (usageMin !== "") return usageMin;
       const directKey = getProductionRowKey(p);
       if (directKey && Object.prototype.hasOwnProperty.call(productionMinimums, directKey)) {
         return sanitizeMinimumValue(productionMinimums[directKey]);
@@ -997,9 +1041,10 @@
       return getProductionMinimumValue(p);
     }
     function buildSeedRowsWithMinimums() {
+      const minimumsByVariety = buildUsageMinimumsByVariety(flatten().minimums);
       return (dataRows || []).map((r) => {
         const production = { ...(r?.production || {}) };
-        const minVal = getEffectiveMinimumForProductionRow(production);
+        const minVal = getEffectiveMinimumForProductionRow(production, minimumsByVariety);
         if (minVal === "") {
           delete production.minimum_qty_for_production;
         } else {
@@ -1009,7 +1054,8 @@
           production,
           experiment: { ...(r?.experiment || {}) },
           mixed: { ...(r?.mixed || {}) },
-          usage: { ...(r?.usage || {}) }
+          usage: { ...(r?.usage || {}) },
+          minimums: { ...(r?.minimums || {}) }
         };
       });
     }
@@ -1067,19 +1113,22 @@
       const experiment = [];
       const mixed = [];
       const usage = [];
+      const minimums = [];
 
       for (const r of dataRows) {
         const p = r.production || {};
         const e = r.experiment || {};
         const m = r.mixed || {};
         const u = r.usage || {};
+        const min = r.minimums || {};
         if (hasProd(p)) production.push(p);
         if (hasExp(e)) experiment.push(e);
         if (hasMix(m)) mixed.push(m);
         if (hasUsage(u)) usage.push(u);
+        if (hasMinimums(min)) minimums.push(min);
       }
 
-      return { production, experiment, mixed, usage };
+      return { production, experiment, mixed, usage, minimums };
     }
 
     function applyFilters(grouped) {
@@ -1095,12 +1144,13 @@
         if (typeValue === "all") return true;
         return normalizeTypeKey(value || "Unknown") === typeValue;
       };
+      const minimumsByVariety = buildUsageMinimumsByVariety(grouped.minimums);
       return {
         production: currentView === "usage" || category === "experiment" || category === "mixed" || category === "usage" ? [] : grouped.production.filter((r) => {
           if (!matchesQuery(r, ["variety", "type", "calculated_seeds_available", "raw_pelleted", "provider", "lot", "date_received", "germ_test_date", "expiration_date", "packed_date", "received_qty_of_cans", "seeds_per_can", "seeds_per_lb", "total_received", "remaining_qty_full_cans", "remaining_grams_partial_can", "total_remaining", "last_inventory", "seed_comments"])) return false;
           if (!matchesType(r.type)) return false;
           if (!lowOnly) return true;
-          const min = Number(getEffectiveMinimumForProductionRow(r) || 0);
+          const min = Number(getEffectiveMinimumForProductionRow(r, minimumsByVariety) || 0);
           return min > 0 && num(r.total_remaining) < min;
         }),
         experiment: currentView === "usage" || category === "production" || category === "mixed" || category === "usage" || lowOnly ? [] : grouped.experiment.filter((r) => (
@@ -1115,6 +1165,11 @@
           !lowOnly &&
           (currentView === "usage" || typeValue === "all") &&
           matchesQuery(r, ["lot_used", "variety_used", "day_used", "seeds_used", "cans_used", "grams_used", "total_used", "notes"])
+        )),
+        minimums: currentView !== "usage" && category !== "all" && category !== "usage" ? [] : grouped.minimums.filter((r) => (
+          !lowOnly &&
+          (currentView === "usage" || typeValue === "all") &&
+          matchesQuery(r, ["min_variety", "min_seed_reorder_level"])
         ))
       };
     }
@@ -1138,6 +1193,7 @@
         $("secMixed").style.display = "block";
       }
       $("secUsage").style.display = showUsage ? "block" : "none";
+      $("secUsageMinimums").style.display = showUsage ? "block" : "none";
       $("pillDashboard").classList.toggle("active", showDashboard);
       $("pillTable").classList.toggle("active", showInventoryTable);
       $("pillUsage").classList.toggle("active", showUsage);
@@ -1216,15 +1272,16 @@
       )).join("");
       select.value = values.has(current) ? current : "all";
     }
-    function countLowProductionRows(rows) {
+    function countLowProductionRows(rows, minimumsByVariety) {
       return rows.reduce((count, r) => {
-        const min = Number(getEffectiveMinimumForProductionRow(r) || 0);
-        return count + (min > 0 && num(r.total_remaining) < min ? 1 : 0);
+        const min = Number(getEffectiveMinimumForProductionRow(r, minimumsByVariety) || 0);
+        return count + (min > 0 && getCalculatedSeedsAvailable(r) < min ? 1 : 0);
       }, 0);
     }
 
     function render() {
       const grouped = flatten();
+      const minimumsByVariety = buildUsageMinimumsByVariety(grouped.minimums);
       const seedSpecs = buildSeedSpecs(grouped.production, grouped.experiment);
       const groupedWithUsageTotals = {
         ...grouped,
@@ -1244,7 +1301,7 @@
       $("kExpRem").textContent = fmtInt(expRem);
       $("kMixRem").textContent = fmtInt(mixRem);
       $("kLots").textContent = fmtInt(filtered.production.length + filtered.experiment.length + filtered.mixed.length);
-      $("kLowStock").textContent = fmtInt(countLowProductionRows(filtered.production));
+      $("kLowStock").textContent = fmtInt(countLowProductionRows(filtered.production, minimumsByVariety));
       const sourceName = dataSource === "localStorage" ? "Local cache" : (dataSource === "supabase" ? "Supabase public JSON" : "No Seed Inventory data found");
       const meta = $("meta");
       meta.textContent = `Rows: ${fmtInt(dataRows.length)} | Source: ${sourceName} | Updated: ${formatSourceDate(sourceUpdatedAt)}`;
@@ -1270,10 +1327,10 @@
         .sort((a, b) => b.remaining - a.remaining);
       $("tbTopProduction").innerHTML = topProd.map((x) => {
         const rowKey = getTopProductionRowKey(x.variety, x.type);
-        const minQtyRaw = sanitizeMinimumValue(productionMinimums[rowKey]);
+        const minQtyRaw = getUsageMinimumForVariety(x.variety, minimumsByVariety) || sanitizeMinimumValue(productionMinimums[rowKey]);
         const minQty = Number(minQtyRaw || 0);
         const lowStockClass = minQty > 0 && num(x.remaining) < minQty ? " class=\"lowStock\"" : "";
-        return `<tr${lowStockClass}><td>${esc(x.variety)}</td><td>${esc(x.type)}</td><td class="r">${fmtInt(x.remaining)}</td><td class="r"><input class="cellInput" type="number" min="0" step="1" value="${esc(minQtyRaw)}" data-min-row-key="${esc(rowKey)}" /></td></tr>`;
+        return `<tr${lowStockClass}><td>${esc(x.variety)}</td><td>${esc(x.type)}</td><td class="r">${fmtInt(x.remaining)}</td><td class="r"><input class="cellInput" type="number" min="0" step="1" value="${esc(minQtyRaw)}" data-min-row-key="${esc(rowKey)}" readonly /></td></tr>`;
       }).join("");
       if (!topProd.length) {
         $("tbTopProduction").innerHTML = `<tr><td colspan="${showMinQtyColumn ? 4 : 3}" style="color:#9eb3c4;">No records for current filters.</td></tr>`;
@@ -1356,6 +1413,10 @@
         { key: "ignored_for_inventory", checkbox: true, rowKey: getUsageIgnoreRowKey, checked: (r) => !!r.ignored_for_inventory }
       ], "tbUsage");
       applyUsageIgnoreColumnVisibility();
+      renderTableRows(filtered.minimums, [
+        { key: "min_variety" },
+        { key: "min_seed_reorder_level", tdClass: "r", format: (v) => String(v ?? "").trim() ? fmtInt(num(v)) : "" }
+      ], "tbUsageMinimums");
 
       if (currentView === "dashboard") {
         $("secProduction").style.display = "none";
@@ -1365,7 +1426,7 @@
 
       $("status").textContent = lastLoadError
         ? `Seed Inventory load failed. ${lastLoadError}`
-        : `Filtered rows -> Production: ${filtered.production.length}, Experiment: ${filtered.experiment.length}, Mixed: ${filtered.mixed.length}, Usage: ${filtered.usage.length}`;
+        : `Filtered rows -> Production: ${filtered.production.length}, Experiment: ${filtered.experiment.length}, Mixed: ${filtered.mixed.length}, Usage: ${filtered.usage.length}, Usage by Veriety: ${filtered.minimums.length}`;
     }
 
     $("pillDashboard").addEventListener("click", () => {
