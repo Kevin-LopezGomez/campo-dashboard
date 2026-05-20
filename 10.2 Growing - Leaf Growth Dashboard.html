@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaf Growth Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2330;
+  --border: #263042;
+  --accent-green: #3fb950;
+  --accent-blue: #58a6ff;
+  --accent-amber: #d29922;
+  --accent-pink: #f778ba;
+  --accent-purple: #bc8cff;
+  --accent-teal: #39d353;
+  --text: #e6edf3;
+  --text-muted: #7d8590;
+  --text-dim: #8b949e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+
+/* HEADER */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #3fb950, #58a6ff); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.logo-text { font-size: 18px; font-weight: 800; }
+.logo-sub { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+#data-status { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; }
+#data-status.loaded { color: var(--accent-green); border-color: rgba(63,185,80,0.3); }
+label.upload-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: transparent; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 600; color: var(--text-dim); transition: all 0.2s; }
+label.upload-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+#csv-upload { display: none; }
+
+/* MAIN */
+main { padding: 24px 28px; max-width: 1700px; margin: 0 auto; }
+
+/* VARIETY QUICK BUTTONS */
+.variety-quickbar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.variety-quickbar label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
+.vbtn {
+  padding: 7px 18px; border-radius: 20px; border: 1.5px solid; cursor: pointer;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  transition: all 0.18s; background: transparent;
+}
+.vbtn.active { color: #0d1117 !important; }
+.vbtn[data-v="Lalique"]  { border-color: #58a6ff; color: #58a6ff; }
+.vbtn[data-v="Lalique"].active  { background: #58a6ff; }
+.vbtn[data-v="SM8"]      { border-color: #3fb950; color: #3fb950; }
+.vbtn[data-v="SM8"].active      { background: #3fb950; }
+.vbtn[data-v="SM-LAAK"]  { border-color: #f778ba; color: #f778ba; }
+.vbtn[data-v="SM-LAAK"].active  { background: #f778ba; }
+.vbtn[data-v="SM8C"]     { border-color: #d29922; color: #d29922; }
+.vbtn[data-v="SM8C"].active     { background: #d29922; }
+.vbtn[data-v="LA"]       { border-color: #bc8cff; color: #bc8cff; }
+.vbtn[data-v="LA"].active       { background: #bc8cff; }
+.vbtn[data-v="all"]      { border-color: var(--text-dim); color: var(--text-dim); }
+.vbtn[data-v="all"].active { background: var(--text-dim); }
+.vbtn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+/* FILTER BAR */
+.filter-bar {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 20px;
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+}
+.fg { display: flex; flex-direction: column; gap: 5px; }
+.fg label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.fg select, .fg input[type=number] {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 7px;
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 7px 10px; outline: none; transition: border-color 0.2s;
+}
+.fg select:focus, .fg input:focus { border-color: var(--accent-blue); }
+.fg select { min-width: 130px; }
+.fg input[type=number] { width: 70px; }
+.day-range { display: flex; gap: 6px; align-items: center; }
+.day-range span { color: var(--text-muted); font-size: 12px; }
+.btn { padding: 7px 16px; border-radius: 7px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.18s; }
+.btn-primary { background: var(--accent-green); color: #0d1117; }
+.btn-primary:hover { background: #52d46e; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+.btn-ghost:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.filter-actions { display: flex; gap: 8px; align-items: flex-end; }
+
+/* GROUPING TOGGLE */
+.group-toggle { display: flex; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.gtbtn { padding: 6px 14px; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; background: transparent; color: var(--text-muted); transition: all 0.15s; }
+.gtbtn.active { background: var(--accent-blue); color: #0d1117; }
+
+/* KPI ROW */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; position: relative; overflow: hidden; }
+.kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.kpi.g::before { background: var(--accent-green); }
+.kpi.b::before { background: var(--accent-blue); }
+.kpi.a::before { background: var(--accent-amber); }
+.kpi.p::before { background: var(--accent-pink); }
+.kpi.v::before { background: var(--accent-purple); }
+.kpi-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.kpi-val { font-size: 26px; font-weight: 800; line-height: 1; }
+.kpi-sub { font-size: 10px; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-top: 5px; }
+
+/* METRIC TOGGLE BUTTONS */
+.metric-toggle { display: flex; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.mtbtn { padding: 6px 14px; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; background: transparent; color: var(--text-muted); transition: all 0.15s; }
+.mtbtn.active { background: var(--accent-green); color: #0d1117; }
+
+/* CHART CARDS */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+.chart-full { grid-column: 1 / -1; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+.chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.chart-title { font-size: 14px; font-weight: 700; }
+.chart-sub { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.chart-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* TRANSPLANT WINDOW */
+.transplant-info {
+  background: linear-gradient(135deg, rgba(63,185,80,0.07), rgba(88,166,255,0.07));
+  border: 1px solid rgba(63,185,80,0.2);
+  border-radius: 12px; padding: 14px 20px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.ti-icon { font-size: 24px; }
+.ti-title { font-size: 13px; font-weight: 700; color: var(--accent-green); }
+.ti-desc { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); margin-top: 2px; }
+.ti-stats { display: flex; gap: 28px; margin-left: auto; flex-wrap: wrap; }
+.ti-stat { text-align: right; }
+.ti-stat-val { font-size: 20px; font-weight: 800; }
+.ti-stat-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); }
+
+/* TABLE */
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'DM Mono', monospace; }
+th { text-align: left; padding: 9px 11px; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; }
+th:hover { color: var(--accent-blue); }
+td { padding: 8px 11px; border-bottom: 1px solid rgba(38,48,66,0.5); color: var(--text-dim); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.vbadge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+.empty .icon { font-size: 40px; margin-bottom: 12px; }
+.empty p { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+/* PER-CHART DAY RANGE */
+.chart-day-range {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px;
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+}
+.chart-day-range span { white-space: nowrap; }
+.chart-day-range input[type=number] {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 3px 6px; width: 52px; outline: none; text-align: center;
+}
+.chart-day-range input[type=number]:focus { border-color: var(--accent-blue); }
+.chart-day-range .apply-day {
+  background: var(--accent-green); color: #0d1117; border: none; border-radius: 5px;
+  padding: 3px 10px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: background 0.15s;
+}
+.chart-day-range .apply-day:hover { background: #52d46e; }
+.day-range-label {
+  font-size: 10px; font-family: 'DM Mono', monospace; color: var(--accent-amber);
+  background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.25);
+  border-radius: 4px; padding: 2px 7px; white-space: nowrap;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+@media (max-width: 860px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  main { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌿</div>
+    <div>
+      <div class="logo-text">Leaf Growth Dashboard</div>
+      <div class="logo-sub">Production Analytics</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="data-status">No data loaded</span>
+    <label class="upload-btn" for="csv-upload">⬆ Upload CSV</label>
+    <input type="file" id="csv-upload" accept=".csv">
+  </div>
+</header>
+
+<main>
+
+  <!-- Variety Quick Select -->
+  <div class="variety-quickbar">
+    <label>Quick select variety:</label>
+    <div class="vbtn-group">
+      <button class="vbtn" data-v="all" onclick="quickVariety('all')">All</button>
+      <button class="vbtn" data-v="Lalique" onclick="quickVariety('Lalique')">Lalique</button>
+      <button class="vbtn" data-v="SM8" onclick="quickVariety('SM8')">SM8</button>
+      <button class="vbtn" data-v="SM-LAAK" onclick="quickVariety('SM-LAAK')">SM-LAAK</button>
+      <button class="vbtn" data-v="SM8C" onclick="quickVariety('SM8C')">SM8C</button>
+      <button class="vbtn" data-v="LA" onclick="quickVariety('LA')">LA</button>
+    </div>
+    <div class="sep"></div>
+    <label style="margin-left:8px;">Group by:</label>
+    <div class="group-toggle">
+      <button class="gtbtn active" id="group-batch" onclick="setGrouping('batch')">Batch</button>
+      <button class="gtbtn" id="group-week" onclick="setGrouping('week')">Week</button>
+      <button class="gtbtn" id="group-variety" onclick="setGrouping('variety')">Variety avg</button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="fg">
+      <label>Variety (multi)</label>
+      <select id="f-variety" multiple size="4" style="min-width:140px; height:80px;"></select>
+    </div>
+    <div class="fg">
+      <label>Date Mode</label>
+      <select id="f-date-mode">
+        <option value="date">Collection Date</option>
+        <option value="week">ISO Week</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Date / Week range</label>
+      <div style="display:flex; gap:6px; flex-direction:column;">
+        <select id="f-date-from" style="min-width:150px;"></select>
+        <select id="f-date-to" style="min-width:150px;"></select>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Days from Seeding</label>
+      <div class="day-range">
+        <input type="number" id="f-day-min" value="12" min="0" max="100">
+        <span>–</span>
+        <input type="number" id="f-day-max" value="18" min="0" max="100">
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-ghost" onclick="resetFilters()">Reset</button>
+      <button class="btn btn-primary" onclick="applyFilters()">Apply</button>
+    </div>
+    <div class="fg" style="margin-left:auto; align-items:flex-end;">
+      <label>Export</label>
+      <button class="btn btn-ghost" style="font-size:11px;" onclick="downloadFiltered()">⬇ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Transplant Info Banner -->
+  <div class="transplant-info" id="transplant-info" style="display:none;">
+    <div class="ti-icon">🔬</div>
+    <div>
+      <div class="ti-title">Transplant Window</div>
+      <div class="ti-desc" id="ti-desc">Days 12–18 from seeding</div>
+    </div>
+    <div class="ti-stats">
+      <div class="ti-stat"><div class="ti-stat-val" id="ti-batches">—</div><div class="ti-stat-label">batches</div></div>
+      <div class="ti-stat"><div class="ti-stat-val" id="ti-leaves">—</div><div class="ti-stat-label">avg leaves</div></div>
+      <div class="ti-stat"><div class="ti-stat-val" id="ti-weight">—</div><div class="ti-stat-label">avg weight (g)</div></div>
+      <div class="ti-stat"><div class="ti-stat-val" id="ti-height">—</div><div class="ti-stat-label">avg height (cm)</div></div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-label">Records</div><div class="kpi-val" id="k-rows">—</div><div class="kpi-sub" id="k-rows-sub">filtered</div></div>
+    <div class="kpi b"><div class="kpi-label">Avg Leaf Number</div><div class="kpi-val" id="k-leaves">—</div><div class="kpi-sub">leaves per plant</div></div>
+    <div class="kpi a"><div class="kpi-label">Avg Weight (g)</div><div class="kpi-val" id="k-weight">—</div><div class="kpi-sub">fresh weight</div></div>
+    <div class="kpi p"><div class="kpi-label">Avg Height (cm)</div><div class="kpi-val" id="k-height">—</div><div class="kpi-sub">leaf height</div></div>
+    <div class="kpi v"><div class="kpi-label">Batches</div><div class="kpi-val" id="k-batches">—</div><div class="kpi-sub" id="k-varieties-sub">varieties</div></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-grid">
+
+    <!-- Main trend chart -->
+    <div class="chart-card chart-full">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Trend Over Time</div>
+          <div class="chart-sub" id="trend-sub">Averaged by selected grouping</div>
+        </div>
+        <div class="chart-controls">
+          <div class="chart-day-range">
+            <span>Days from seeding:</span>
+            <input type="number" id="trend-day-min" value="0" min="0" max="200" title="Min days">
+            <span>–</span>
+            <input type="number" id="trend-day-max" value="999" min="0" max="200" title="Max days">
+            <button class="apply-day" onclick="renderTrendChart()">Apply</button>
+            <span class="day-range-label" id="trend-day-label">All days</span>
+          </div>
+          <div class="metric-toggle" id="trend-metric-toggle">
+            <button class="mtbtn active" data-m="leaf_number" onclick="setTrendMetric('leaf_number',this)">Leaf #</button>
+            <button class="mtbtn" data-m="weight_g" onclick="setTrendMetric('weight_g',this)">Weight (g)</button>
+            <button class="mtbtn" data-m="leaf_height" onclick="setTrendMetric('leaf_height',this)">Height (cm)</button>
+          </div>
+        </div>
+      </div>
+      <canvas id="chart-trend" height="80"></canvas>
+    </div>
+
+    <!-- Transplant window chart -->
+    <div class="chart-card chart-full">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Transplant Window: Weekly Averages</div>
+          <div class="chart-sub">Only batches with data in the selected days range, averaged by collection week</div>
+        </div>
+        <div class="chart-controls">
+          <div class="chart-day-range">
+            <span>Days from seeding:</span>
+            <input type="number" id="tw-day-min" value="12" min="0" max="200" title="Min days">
+            <span>–</span>
+            <input type="number" id="tw-day-max" value="18" min="0" max="200" title="Max days">
+            <button class="apply-day" onclick="renderTransplantWeekChart()">Apply</button>
+            <span class="day-range-label" id="tw-day-label">Days 12–18</span>
+          </div>
+          <div class="metric-toggle">
+            <button class="mtbtn active" onclick="setTransplantMetric('leaf_number',this)">Leaf #</button>
+            <button class="mtbtn" onclick="setTransplantMetric('weight_g',this)">Weight (g)</button>
+            <button class="mtbtn" onclick="setTransplantMetric('leaf_height',this)">Height (cm)</button>
+          </div>
+        </div>
+      </div>
+      <canvas id="chart-transplant-week" height="80"></canvas>
+    </div>
+
+    <!-- By days from seeding -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Growth by Days from Seeding</div>
+          <div class="chart-sub">Average per variety across days</div>
+        </div>
+        <div class="chart-controls">
+          <div class="metric-toggle">
+            <button class="mtbtn active" onclick="setGrowthMetric('leaf_number',this)">Leaf #</button>
+            <button class="mtbtn" onclick="setGrowthMetric('weight_g',this)">Weight</button>
+            <button class="mtbtn" onclick="setGrowthMetric('leaf_height',this)">Height</button>
+          </div>
+        </div>
+      </div>
+      <canvas id="chart-growth" height="130"></canvas>
+    </div>
+
+    <!-- Batch comparison -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Transplant Batch Comparison</div>
+          <div class="chart-sub">Avg metrics per batch (transplant window only)</div>
+        </div>
+        <div class="chart-controls">
+          <div class="metric-toggle">
+            <button class="mtbtn active" onclick="setBatchMetric('leaf_number',this)">Leaf #</button>
+            <button class="mtbtn" onclick="setBatchMetric('weight_g',this)">Weight</button>
+            <button class="mtbtn" onclick="setBatchMetric('leaf_height',this)">Height</button>
+          </div>
+        </div>
+      </div>
+      <canvas id="chart-batch" height="130"></canvas>
+    </div>
+
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="chart-header" style="margin-bottom:14px;">
+      <div>
+        <div class="chart-title">Data Table</div>
+        <div class="chart-sub" id="table-sub">Filtered records</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="tbl-search" placeholder="Search…"
+          style="background:var(--surface2); border:1px solid var(--border); border-radius:7px; color:var(--text); font-family:'DM Mono',monospace; font-size:12px; padding:6px 11px; outline:none; width:180px;"
+          oninput="renderTable()">
+      </div>
+    </div>
+    <div id="table-wrap">
+      <div class="empty"><div class="icon">📋</div><p>Upload a CSV file to begin</p></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+//  VARIETY COLORS
+// ═══════════════════════════════════════════════
+const V_COLOR = {
+  'SM8':     { line:'#3fb950', fill:'rgba(63,185,80,0.13)' },
+  'SM-LAAK': { line:'#f778ba', fill:'rgba(247,120,186,0.13)' },
+  'Lalique': { line:'#58a6ff', fill:'rgba(88,166,255,0.13)' },
+  'SM8C':    { line:'#d29922', fill:'rgba(210,153,34,0.13)' },
+  'LA':      { line:'#bc8cff', fill:'rgba(188,140,255,0.13)' },
+};
+function vColor(v, idx) {
+  if (V_COLOR[v]) return V_COLOR[v];
+  const pal = ['#39d353','#e3b341','#f0883e','#8b949e','#ff7b72'];
+  const c = pal[idx % pal.length];
+  return { line: c, fill: c + '22' };
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let rawData = [];
+let filteredData = [];
+let grouping = 'batch';       // 'batch' | 'week' | 'variety'
+let trendMetric = 'leaf_number';
+let transplantMetric = 'leaf_number';
+let growthMetric = 'leaf_number';
+let batchMetric = 'leaf_number';
+let activeVarietyBtn = 'all';
+let charts = {};
+let sortCol = 'collection_date', sortDir = 1;
+
+const MASTER_LEAF_KEY = 'campo_leaf_growth_v1';
+const MASTER_LEAF_PING = 'campo_leaf_growth_push_ping_v1';
+const CANON_LEAF_SHEET = 'Leaf Growth';
+const MSG_LEAF = 'LEAF_GROWTH_UPDATED';
+const LOCAL_DB_NAME = 'campo_local_cache_v1';
+const LOCAL_DB_STORE = 'datasets';
+const IDB_MARKER = 'indexeddb';
+
+const METRIC_LABEL = {
+  leaf_number: 'Leaf Number',
+  weight_g: 'Weight (g)',
+  leaf_height: 'Leaf Height (cm)',
+};
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('csv-upload').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => loadCSV(ev.target.result, f.name);
+    r.readAsText(f);
+  });
+  document.getElementById('f-date-mode').addEventListener('change', () => {
+    populateDateSelectors();
+  });
+  // Enter key triggers Apply on chart day range inputs
+  ['trend-day-min','trend-day-max'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') renderTrendChart(); });
+  });
+  ['tw-day-min','tw-day-max'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') renderTransplantWeekChart(); });
+  });
+  window.addEventListener('message', event => {
+    const msg = event?.data || {};
+    if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('update');
+  });
+  try {
+    if ('BroadcastChannel' in window) {
+      const bc = new BroadcastChannel('campo_updates_v1');
+      bc.onmessage = ev => {
+        const msg = ev?.data || {};
+        if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('broadcast');
+      };
+    }
+  } catch {}
+  void loadSharedLeafGrowthData('startup');
+});
+
+// ═══════════════════════════════════════════════
+//  CSV LOADING & COLUMN NORMALIZING
+// ═══════════════════════════════════════════════
+function normalizeKey(k) {
+  return k.trim().toLowerCase()
+    .replace(/\s+/g,'_')
+    .replace(/[()]/g,'')
+    .replace(/\./g,'')
+    .replace(/__+/g,'_');
+}
+
+function openLocalDb(version = 1) {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error('indexedDB is not available'));
+    const req = indexedDB.open(LOCAL_DB_NAME, version);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) db.createObjectStore(LOCAL_DB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('indexedDB open failed'));
+  });
+}
+
+async function openLocalDbWithStore() {
+  let db = await openLocalDb(1);
+  if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+  const nextVersion = Math.max(2, (db.version || 1) + 1);
+  db.close();
+  db = await openLocalDb(nextVersion);
+  if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+    db.close();
+    throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+  }
+  return db;
+}
+
+async function idbGetJson(key) {
+  const db = await openLocalDbWithStore();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(LOCAL_DB_STORE, 'readonly');
+      const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error || new Error('indexedDB read failed'));
+      tx.onerror = () => reject(tx.error || new Error('indexedDB tx failed'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+function isLeafIdbPointer(payload) {
+  return !!(payload && typeof payload === 'object' &&
+    payload._storage === IDB_MARKER &&
+    payload._idbKey === MASTER_LEAF_KEY);
+}
+
+async function getStoredLeafPayload() {
+  const raw = (localStorage.getItem(MASTER_LEAF_KEY) || '').trim();
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    if (isLeafIdbPointer(parsed)) return await idbGetJson(MASTER_LEAF_KEY);
+    return parsed;
+  }
+  return await idbGetJson(MASTER_LEAF_KEY);
+}
+
+async function loadSharedLeafGrowthData(reason = 'startup') {
+  try {
+    const payload = await getStoredLeafPayload();
+    const sheet = payload?.sheets?.[CANON_LEAF_SHEET] || null;
+    if (!sheet || !Array.isArray(sheet.headers) || !Array.isArray(sheet.rows)) return;
+    loadHeaderRows(sheet.headers, sheet.rows, payload.sourceLabel || `Shared Leaf Growth (${reason})`);
+  } catch (err) {
+    console.warn('Leaf Growth shared load failed:', err);
+  }
+}
+
+function loadCSV(text, name) {
+  const parsed = Papa.parse(text.trim(), { header: true, skipEmptyLines: true, dynamicTyping: false });
+  if (!parsed.data.length) { alert('Could not parse CSV'); return; }
+
+  const headers = parsed.meta?.fields || Object.keys(parsed.data[0] || {});
+  const rows = parsed.data.map(row => headers.map(h => row[h] ?? ''));
+  loadHeaderRows(headers, rows, name);
+}
+
+function loadHeaderRows(headers, rows, name) {
+  if (!Array.isArray(headers) || !headers.length) { alert('Could not parse Leaf Growth data'); return; }
+
+  // Build normalized key map from first row
+  const firstRow = {};
+  headers.forEach(h => { firstRow[h] = ''; });
+  const keyMap = {};
+  Object.keys(firstRow).forEach(k => { keyMap[k] = normalizeKey(k); });
+
+  rawData = rows.map(values => {
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values?.[i] ?? ''; });
+    const n = {};
+    Object.keys(row).forEach(k => { n[keyMap[k]] = row[k]; });
+    return n;
+  }).map(r => {
+    // Map to standard internal fields
+    return {
+      batch:            String(r.batch_number ?? r.batch_no ?? r.batch ?? '').trim(),
+      variety:          String(r.variety ?? r.var ?? '').trim(),
+      seed_date:        r.seed_date ?? r.seeding_date ?? r.sow_date ?? '',
+      collection_date:  r.data_collection_day ?? r.collection_date ?? r.date ?? '',
+      days:             toNum(r.days_from_seeding ?? r.days_from_seed ?? r.days ?? r.day),
+      leaf_number:      toNum(r.leaf_number ?? r.leaf_no ?? r.leaf_count ?? r.leaves),
+      weight_g:         toNum(r.weight_g ?? r['weight_g'] ?? r.weight ?? r.fresh_weight),
+      leaf_height:      toNum(r['leaf_height_cm'] ?? r.leaf_height ?? r.height_cm ?? r.height),
+      board_weight:     toNum(r.av_board_weight_g ?? r.board_weight ?? null),
+      harvest_weight:   toNum(r.harvest_weight_lb ?? r.harvest_weight ?? null),
+    };
+  }).filter(r => r.batch || r.variety); // drop blank rows
+
+  // Parse dates
+  rawData = rawData.map(r => ({
+    ...r,
+    collection_date: parseDate(r.collection_date),
+    seed_date: parseDate(r.seed_date),
+  })).filter(r => r.collection_date); // must have a collection date
+
+  // Build ISO week for each row
+  rawData = rawData.map(r => ({
+    ...r,
+    iso_week: r.collection_date ? getISOWeek(r.collection_date) : '',
+  }));
+
+  // Remove dates before 2024
+  rawData = rawData.filter(r => {
+    if (!r.collection_date) return true;
+    return new Date(r.collection_date).getFullYear() >= 2024;
+  });
+
+  document.getElementById('data-status').textContent = `${rawData.length} rows · ${name}`;
+  document.getElementById('data-status').classList.add('loaded');
+
+  populateVarietyFilter();
+  populateDateSelectors();
+  applyFilters();
+}
+
+function toNum(v) {
+  if (v === null || v === undefined || v === '' || v === 'N/A' || v === '#N/A') return null;
+  const n = parseFloat(String(v).replace(/,/g,''));
+  return isNaN(n) ? null : n;
+}
+
+function parseDate(val) {
+  if (!val) return null;
+  // Handle M/D/YY, M/D/YYYY, YYYY-MM-DD
+  const s = String(val).trim();
+  if (!s || s.toLowerCase() === 'n/a') return null;
+
+  // ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // M/D/YY or M/D/YYYY
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (mdy) {
+    let [, m, d, y] = mdy;
+    if (y.length === 2) y = '20' + y;
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  return null;
+}
+
+function getISOWeek(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+  const weekOfYear = Math.ceil((dayOfYear + jan4.getDay()) / 7);
+  const y = d.getFullYear();
+  return `${y}-W${String(weekOfYear).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════
+//  FILTER POPULATION
+// ═══════════════════════════════════════════════
+function populateVarietyFilter() {
+  const sel = document.getElementById('f-variety');
+  const varieties = [...new Set(rawData.map(r => r.variety))].filter(Boolean).sort();
+  sel.innerHTML = varieties.map(v => `<option value="${v}" selected>${v}</option>`).join('');
+
+  // Show/hide variety quick buttons based on what exists in data
+  document.querySelectorAll('.vbtn[data-v]').forEach(btn => {
+    const v = btn.dataset.v;
+    if (v === 'all') return;
+    btn.style.display = varieties.includes(v) ? '' : 'none';
+  });
+}
+
+function populateDateSelectors() {
+  const mode = document.getElementById('f-date-mode').value;
+  const selectedVarieties = getSelectedVarieties();
+  const base = selectedVarieties.length ? rawData.filter(r => selectedVarieties.includes(r.variety)) : rawData;
+
+  const field = mode === 'week' ? 'iso_week' : 'collection_date';
+  const dates = [...new Set(base.map(r => r[field]).filter(Boolean))].sort();
+
+  const from = document.getElementById('f-date-from');
+  const to   = document.getElementById('f-date-to');
+
+  from.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+  to.innerHTML   = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+  if (dates.length) to.value = dates[dates.length - 1];
+}
+
+function getSelectedVarieties() {
+  return [...document.getElementById('f-variety').selectedOptions].map(o => o.value);
+}
+
+// ═══════════════════════════════════════════════
+//  QUICK VARIETY BUTTON
+// ═══════════════════════════════════════════════
+function quickVariety(v) {
+  activeVarietyBtn = v;
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.vbtn[data-v="${v}"]`)?.classList.add('active');
+
+  const sel = document.getElementById('f-variety');
+  [...sel.options].forEach(o => {
+    o.selected = v === 'all' ? true : o.value === v;
+  });
+
+  populateDateSelectors();
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════
+//  GROUPING
+// ═══════════════════════════════════════════════
+function setGrouping(g) {
+  grouping = g;
+  document.querySelectorAll('.gtbtn').forEach(b => b.classList.remove('active'));
+  document.getElementById('group-' + g)?.classList.add('active');
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════════════
+function applyFilters() {
+  const varieties = getSelectedVarieties();
+  const mode = document.getElementById('f-date-mode').value;
+  const dateField = mode === 'week' ? 'iso_week' : 'collection_date';
+  const fromVal = document.getElementById('f-date-from').value;
+  const toVal   = document.getElementById('f-date-to').value;
+  const dayMin  = parseFloat(document.getElementById('f-day-min').value) || 0;
+  const dayMax  = parseFloat(document.getElementById('f-day-max').value) || 999;
+
+  filteredData = rawData.filter(r => {
+    if (varieties.length && !varieties.includes(r.variety)) return false;
+    const dval = r[dateField];
+    if (fromVal && dval && dval < fromVal) return false;
+    if (toVal   && dval && dval > toVal)   return false;
+    return true;
+  });
+
+  renderAll();
+  updateTransplantBanner(dayMin, dayMax);
+}
+
+function resetFilters() {
+  // Reset variety to all
+  quickVariety('all');
+  document.getElementById('f-day-min').value = 12;
+  document.getElementById('f-day-max').value = 18;
+  document.getElementById('f-date-mode').value = 'date';
+  populateDateSelectors();
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════
+//  TRANSPLANT BANNER
+// ═══════════════════════════════════════════════
+function updateTransplantBanner(dayMin, dayMax) {
+  // Use the transplant chart's own day range for the banner
+  const twMin = parseFloat(document.getElementById('tw-day-min').value) || 12;
+  const twMax = parseFloat(document.getElementById('tw-day-max').value) || 18;
+  const inW = filteredData.filter(r => r.days !== null && r.days >= twMin && r.days <= twMax);
+  const banner = document.getElementById('transplant-info');
+  if (!inW.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+  document.getElementById('ti-desc').textContent = `Days ${twMin}–${twMax} from seeding · ${inW.length} records`;
+  document.getElementById('ti-batches').textContent = [...new Set(inW.map(r => r.batch))].length;
+  document.getElementById('ti-leaves').textContent = fmtAvg(inW, 'leaf_number', 1);
+  document.getElementById('ti-weight').textContent = fmtAvg(inW, 'weight_g', 2);
+  document.getElementById('ti-height').textContent = fmtAvg(inW, 'leaf_height', 1);
+}
+
+function fmtAvg(arr, key, dp) {
+  const vals = arr.map(r => r[key]).filter(v => v !== null && !isNaN(v));
+  if (!vals.length) return '—';
+  return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(dp);
+}
+
+// ═══════════════════════════════════════════════
+//  KPIs
+// ═══════════════════════════════════════════════
+function renderKPIs() {
+  const d = filteredData;
+  document.getElementById('k-rows').textContent = d.length.toLocaleString();
+  document.getElementById('k-rows-sub').textContent = `of ${rawData.length.toLocaleString()} total`;
+  document.getElementById('k-leaves').textContent = fmtAvg(d, 'leaf_number', 1);
+  document.getElementById('k-weight').textContent = fmtAvg(d, 'weight_g', 2);
+  document.getElementById('k-height').textContent = fmtAvg(d, 'leaf_height', 1);
+  const batches = [...new Set(d.map(r => r.batch))].length;
+  const varieties = [...new Set(d.map(r => r.variety))];
+  document.getElementById('k-batches').textContent = batches;
+  document.getElementById('k-varieties-sub').textContent = varieties.join(', ') || 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════════
+function renderAll() {
+  renderKPIs();
+  renderTrendChart();
+  renderTransplantWeekChart();
+  renderGrowthChart();
+  renderBatchChart();
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════
+//  CHART HELPERS
+// ═══════════════════════════════════════════════
+const BASE_OPTS = {
+  responsive: true, maintainAspectRatio: true,
+  plugins: {
+    legend: { labels: { color: '#8b949e', font: { family: 'DM Mono', size: 11 }, boxWidth: 12, padding: 14 } },
+    tooltip: { backgroundColor: '#1c2330', borderColor: '#263042', borderWidth: 1, titleColor: '#e6edf3', bodyColor: '#8b949e', titleFont: { family: 'Syne', weight: '700' }, bodyFont: { family: 'DM Mono', size: 11 } }
+  },
+  scales: {
+    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7d8590', font: { family: 'DM Mono', size: 10 }, maxRotation: 45 } },
+    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7d8590', font: { family: 'DM Mono', size: 10 } } }
+  }
+};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function avgBy(data, groupKey, metric) {
+  const groups = {};
+  data.forEach(r => {
+    const k = r[groupKey];
+    if (!k) return;
+    const v = r[metric];
+    if (v === null || isNaN(v)) return;
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(v);
+  });
+  const keys = Object.keys(groups).sort();
+  return { keys, values: keys.map(k => groups[k].reduce((a,b)=>a+b,0)/groups[k].length) };
+}
+
+// ═══════════════════════════════════════════════
+//  1. TREND CHART — line per variety over time
+// ═══════════════════════════════════════════════
+function setTrendMetric(m, el) {
+  trendMetric = m;
+  document.querySelectorAll('#trend-metric-toggle .mtbtn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTrendChart();
+}
+
+function getTrendDayRange() {
+  const mn = parseFloat(document.getElementById('trend-day-min').value);
+  const mx = parseFloat(document.getElementById('trend-day-max').value);
+  return {
+    min: isNaN(mn) ? 0   : mn,
+    max: isNaN(mx) ? 999 : mx,
+  };
+}
+
+function renderTrendChart() {
+  destroyChart('trend');
+  const { min: dayMin, max: dayMax } = getTrendDayRange();
+
+  // Update label
+  const lbl = document.getElementById('trend-day-label');
+  if (dayMin === 0 && dayMax >= 999) {
+    lbl.textContent = 'All days';
+    lbl.style.color = '#7d8590';
+  } else {
+    lbl.textContent = `Days ${dayMin}–${dayMax}`;
+    lbl.style.color = '#d29922';
+  }
+
+  // Filter: only keep rows where days is in the range (rows with null days excluded when range is set)
+  const allDaysUnset = dayMin === 0 && dayMax >= 999;
+  const d = allDaysUnset
+    ? filteredData
+    : filteredData.filter(r => r.days !== null && r.days >= dayMin && r.days <= dayMax);
+
+  if (!d.length) {
+    document.getElementById('trend-sub').textContent = 'No data for selected day range';
+    return;
+  }
+
+  const mode = document.getElementById('f-date-mode').value;
+  const timeField = mode === 'week' ? 'iso_week' : 'collection_date';
+
+  // For the time axis: only include time points where at least one batch has
+  // a measurement in the day range. Then average ONLY those qualifying rows.
+  const varieties = [...new Set(d.map(r => r.variety))].sort();
+  const times = [...new Set(d.map(r => r[timeField]).filter(Boolean))].sort();
+
+  const datasets = varieties.map((v, vi) => {
+    const vc = vColor(v, vi);
+    return {
+      label: v,
+      data: times.map(t => {
+        const rows = d.filter(r => r.variety === v && r[timeField] === t);
+        if (!rows.length) return null;
+        const vals = rows.map(r => r[trendMetric]).filter(v => v !== null);
+        return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+      }),
+      borderColor: vc.line, backgroundColor: vc.fill,
+      fill: false, tension: 0.35, pointRadius: 3, borderWidth: 2, spanGaps: true,
+    };
+  });
+
+  const rangeNote = allDaysUnset ? 'all days' : `days ${dayMin}–${dayMax}`;
+  document.getElementById('trend-sub').textContent =
+    `${METRIC_LABEL[trendMetric]} · ${rangeNote} · grouped by ${grouping} · ${d.length} records across ${times.length} time points`;
+
+  const ctx = document.getElementById('chart-trend').getContext('2d');
+  charts['trend'] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: times, datasets },
+    options: { ...BASE_OPTS }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  2. TRANSPLANT WINDOW WEEKLY CHART
+// ═══════════════════════════════════════════════
+function setTransplantMetric(m, el) {
+  transplantMetric = m;
+  el.closest('.metric-toggle').querySelectorAll('.mtbtn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTransplantWeekChart();
+}
+
+function getTransplantDayRange() {
+  const mn = parseFloat(document.getElementById('tw-day-min').value);
+  const mx = parseFloat(document.getElementById('tw-day-max').value);
+  return {
+    min: isNaN(mn) ? 12 : mn,
+    max: isNaN(mx) ? 18 : mx,
+  };
+}
+
+function renderTransplantWeekChart() {
+  destroyChart('transplant-week');
+  const { min: dayMin, max: dayMax } = getTransplantDayRange();
+
+  // Update label
+  document.getElementById('tw-day-label').textContent = `Days ${dayMin}–${dayMax}`;
+
+  // Only rows whose days fall in the window
+  const inW = filteredData.filter(r => r.days !== null && r.days >= dayMin && r.days <= dayMax);
+
+  if (!inW.length) {
+    // Draw empty axes with message
+    const ctx = document.getElementById('chart-transplant-week').getContext('2d');
+    charts['transplant-week'] = new Chart(ctx, {
+      type: 'line', data: { labels: [], datasets: [] },
+      options: { ...BASE_OPTS,
+        plugins: { ...BASE_OPTS.plugins,
+          title: { display: true, text: `No records found for days ${dayMin}–${dayMax}`, color: '#7d8590', font: { family: 'DM Mono', size: 12 } }
+        }
+      }
+    });
+    return;
+  }
+
+  // Average per (variety, week) — only using rows within the day range
+  const varieties = [...new Set(inW.map(r => r.variety))].sort();
+  const weeks = [...new Set(inW.map(r => r.iso_week).filter(Boolean))].sort();
+
+  const datasets = varieties.map((v, vi) => {
+    const vc = vColor(v, vi);
+    return {
+      label: v,
+      data: weeks.map(wk => {
+        const rows = inW.filter(r => r.variety === v && r.iso_week === wk);
+        if (!rows.length) return null;
+        const vals = rows.map(r => r[transplantMetric]).filter(v => v !== null);
+        return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+      }),
+      borderColor: vc.line, backgroundColor: vc.fill,
+      fill: false, tension: 0.35, pointRadius: 4, borderWidth: 2, spanGaps: true,
+    };
+  });
+
+  const ctx = document.getElementById('chart-transplant-week').getContext('2d');
+  charts['transplant-week'] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: weeks, datasets },
+    options: {
+      ...BASE_OPTS,
+      plugins: {
+        ...BASE_OPTS.plugins,
+        tooltip: {
+          ...BASE_OPTS.plugins.tooltip,
+          callbacks: {
+            footer: items => {
+              if (!items.length) return '';
+              const wk = items[0].label;
+              const v = items[0].dataset.label;
+              const rows = inW.filter(r => r.variety === v && r.iso_week === wk);
+              return `n = ${rows.length} records (days ${dayMin}–${dayMax})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ...BASE_OPTS.scales.x, title: { display: true, text: 'Collection Week', color: '#7d8590', font: { family: 'DM Mono', size: 11 } } },
+        y: { ...BASE_OPTS.scales.y, title: { display: true, text: METRIC_LABEL[transplantMetric], color: '#7d8590', font: { family: 'DM Mono', size: 11 } } },
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  3. GROWTH BY DAYS FROM SEEDING
+// ═══════════════════════════════════════════════
+function setGrowthMetric(m, el) {
+  growthMetric = m;
+  el.closest('.metric-toggle').querySelectorAll('.mtbtn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderGrowthChart();
+}
+
+function renderGrowthChart() {
+  destroyChart('growth');
+  const d = filteredData.filter(r => r.days !== null);
+  if (!d.length) return;
+
+  const varieties = [...new Set(d.map(r => r.variety))].sort();
+  const days = [...new Set(d.map(r => r.days))].sort((a,b) => a-b);
+
+  const datasets = varieties.map((v, vi) => {
+    const vc = vColor(v, vi);
+    return {
+      label: v,
+      data: days.map(day => {
+        const rows = d.filter(r => r.variety === v && r.days === day);
+        if (!rows.length) return null;
+        const vals = rows.map(r => r[growthMetric]).filter(v => v !== null);
+        return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+      }),
+      borderColor: vc.line, backgroundColor: vc.fill,
+      fill: false, tension: 0.4, pointRadius: 4, borderWidth: 2, spanGaps: true,
+    };
+  });
+
+  const ctx = document.getElementById('chart-growth').getContext('2d');
+  charts['growth'] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: days, datasets },
+    options: {
+      ...BASE_OPTS,
+      scales: {
+        x: { ...BASE_OPTS.scales.x, title: { display: true, text: 'Days from Seeding', color: '#7d8590', font: { family: 'DM Mono', size: 11 } } },
+        y: { ...BASE_OPTS.scales.y, title: { display: true, text: METRIC_LABEL[growthMetric], color: '#7d8590', font: { family: 'DM Mono', size: 11 } } },
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  4. BATCH COMPARISON (transplant window)
+// ═══════════════════════════════════════════════
+function setBatchMetric(m, el) {
+  batchMetric = m;
+  el.closest('.metric-toggle').querySelectorAll('.mtbtn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderBatchChart();
+}
+
+function renderBatchChart() {
+  destroyChart('batch');
+  const dayMin = parseFloat(document.getElementById('f-day-min').value) || 0;
+  const dayMax = parseFloat(document.getElementById('f-day-max').value) || 999;
+  const inW = filteredData.filter(r => r.days !== null && r.days >= dayMin && r.days <= dayMax);
+  if (!inW.length) return;
+
+  // Average per batch, colored by variety
+  const batches = [...new Set(inW.map(r => r.batch))].sort();
+  const MAX_BATCHES = 60;
+  const shown = batches.slice(-MAX_BATCHES);
+
+  const varieties = [...new Set(inW.map(r => r.variety))].sort();
+
+  // One dataset per variety, one bar per batch
+  const datasets = varieties.map((v, vi) => {
+    const vc = vColor(v, vi);
+    return {
+      label: v,
+      data: shown.map(b => {
+        const rows = inW.filter(r => r.batch === b && r.variety === v);
+        if (!rows.length) return null;
+        const vals = rows.map(r => r[batchMetric]).filter(v => v !== null);
+        return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+      }),
+      backgroundColor: vc.line,
+      borderRadius: 3,
+      borderSkipped: false,
+    };
+  });
+
+  const ctx = document.getElementById('chart-batch').getContext('2d');
+  charts['batch'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: shown, datasets },
+    options: {
+      ...BASE_OPTS,
+      scales: {
+        x: { ...BASE_OPTS.scales.x, stacked: false, ticks: { ...BASE_OPTS.scales.x.ticks, maxRotation: 70, font: { size: 8 } } },
+        y: { ...BASE_OPTS.scales.y, title: { display: true, text: METRIC_LABEL[batchMetric], color: '#7d8590', font: { family: 'DM Mono', size: 11 } } },
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  TABLE
+// ═══════════════════════════════════════════════
+function renderTable() {
+  const search = document.getElementById('tbl-search').value.toLowerCase();
+  let d = filteredData.filter(r =>
+    Object.values(r).some(v => String(v ?? '').toLowerCase().includes(search))
+  );
+
+  d = d.slice().sort((a,b) => {
+    const av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+    return (av < bv ? -1 : av > bv ? 1 : 0) * sortDir;
+  });
+
+  document.getElementById('table-sub').textContent = `${d.length} records`;
+
+  const MAX = 300;
+  const shown = d.slice(0, MAX);
+
+  const cols = [
+    { k:'variety',         l:'Variety' },
+    { k:'batch',           l:'Batch Number' },
+    { k:'seed_date',       l:'Seed Date' },
+    { k:'collection_date', l:'Collection Date' },
+    { k:'iso_week',        l:'ISO Week' },
+    { k:'days',            l:'Days from Seeding' },
+    { k:'leaf_number',     l:'Leaf Number' },
+    { k:'weight_g',        l:'Weight (g)' },
+    { k:'leaf_height',     l:'Height (cm)' },
+  ];
+
+  const allVarieties = [...new Set(rawData.map(r => r.variety))].sort();
+
+  document.getElementById('table-wrap').innerHTML = shown.length ? `
+    <table>
+      <thead><tr>${cols.map(c => `<th onclick="sortTable('${c.k}')">${c.l} ${sortCol===c.k?(sortDir===1?'↑':'↓'):''}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${shown.map(r => {
+          const vi = allVarieties.indexOf(r.variety);
+          const col = vColor(r.variety, vi).line;
+          return `<tr>
+            <td><span class="vbadge" style="background:${col}22;color:${col};border:1px solid ${col}44">${r.variety}</span></td>
+            <td>${r.batch}</td>
+            <td>${r.seed_date ?? '—'}</td>
+            <td style="color:var(--accent-blue)">${r.collection_date ?? '—'}</td>
+            <td style="color:var(--text-muted)">${r.iso_week ?? '—'}</td>
+            <td style="color:var(--accent-blue)">${r.days ?? '—'}</td>
+            <td style="color:var(--accent-green)">${fmt(r.leaf_number, 1)}</td>
+            <td style="color:var(--accent-amber)">${fmt(r.weight_g, 2)}</td>
+            <td style="color:var(--accent-pink)">${fmt(r.leaf_height, 1)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    ${d.length > MAX ? `<div style="text-align:center;padding:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">+ ${d.length-MAX} more rows — export CSV for full data</div>` : ''}
+  ` : `<div class="empty"><div class="icon">🔍</div><p>No records match the current filters</p></div>`;
+}
+
+function fmt(v, dp) {
+  if (v === null || v === undefined) return '—';
+  return Number(v).toFixed(dp);
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════
+function downloadFiltered() {
+  const cols = ['variety','batch','seed_date','collection_date','iso_week','days','leaf_number','weight_g','leaf_height'];
+  const rows = [cols.join(','), ...filteredData.map(r => cols.map(c => r[c] ?? '').join(','))];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
+  a.download = 'leaf_growth_filtered.csv'; a.click();
+}
+</script>
+</body>
+</html>

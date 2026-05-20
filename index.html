@@ -853,7 +853,9 @@
     </div>
     <div class="tabs" id="tabsGrowing" aria-label="Growing Dashboards">
       <button class="tab" data-target="p-expcal">🌿 <span data-i18n="tab.expcal">Experiment Calendar</span></button>
+      <button class="tab" data-target="p-leaf-growth-dashboard">🍃 <span data-i18n="tab.leaf-growth-dashboard">Leaf Growth</span></button>
       <button class="tab" data-target="p-mulders">📊 <span data-i18n="tab.mulders">Mulders Chart</span></button>
+      <button class="tab" data-target="p-grow-harvest-dashboard">✂️ <span data-i18n="tab.grow-harvest-dashboard">Grow Harvest Dashboard</span></button>
     </div>
     <div class="tabs" id="tabsFoodSafety" aria-label="Food Safety and Quality">
       <button class="tab" data-target="p-foodsafety">🧬 <span data-i18n="tab.foodsafety">Food Safety</span></button>
@@ -967,6 +969,7 @@
 
                 <div class="cat-grid" id="homeGrowing" style="display:none;">
                   <button class="tile" data-home-go="p-expcal"><div class="ico">🌿</div><div class="name" data-i18n="tile.expcal.name">Experiment Calendar</div><div class="meta" data-i18n="tile.expcal.meta">TSV paste + filters</div></button>
+                  <button class="tile" data-home-go="p-leaf-growth-dashboard"><div class="ico">🍃</div><div class="name" data-i18n="tile.leaf-growth-dashboard.name">Leaf Growth</div><div class="meta" data-i18n="tile.leaf-growth-dashboard.meta">Leaf growth tracking dashboard</div></button>
                   <button class="tile" data-home-go="p-mulders"><div class="ico">📊</div><div class="name" data-i18n="tile.mulders.name">Mulders Chart</div><div class="meta" data-i18n="tile.mulders.meta">Growing performance chart</div></button>
                   <button class="tile" data-home-go="p-grow-harvest-dashboard"><div class="ico">✂️</div><div class="name" data-i18n="tile.grow-harvest-dashboard.name">Grow Harvest Dashbaord</div><div class="meta" data-i18n="tile.grow-harvest-dashboard.meta">Grow harvest output and timeline dashboard</div></button>
                 </div>
@@ -1174,6 +1177,19 @@
         </div>
       </section>
 
+      <section class="panel" id="p-leaf-growth-dashboard" data-growing="true">
+        <div class="section-head">
+          <div class="head-left">
+            <h2>Leaf Growth</h2>
+            <p>Leaf growth dashboard view (embedded from <code data-file-text="leaf-growth-dashboard"></code>).</p>
+          </div>
+          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="leaf-growth-dashboard"></code></div>
+        </div>
+        <div class="iframe-wrap">
+          <iframe id="ifr-leaf-growth-dashboard" data-file-key="leaf-growth-dashboard"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-board-inventory" data-team="true">
         <div class="section-head">
           <div class="head-left">
@@ -1350,6 +1366,7 @@
 
       <div class="launcher-grid" id="cat-growing" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-expcal"><div class="app-ico">🌿</div><div class="app-name" data-i18n="tile.expcal.name">Experiment Calendar</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-leaf-growth-dashboard"><div class="app-ico">🍃</div><div class="app-name" data-i18n="tile.leaf-growth-dashboard.name">Leaf Growth</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-mulders"><div class="app-ico">📊</div><div class="app-name" data-i18n="tile.mulders.name">Mulders Chart</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-grow-harvest-dashboard"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.grow-harvest-dashboard.name">Grow Harvest Dashbaord</div></button>
       </div>
@@ -1424,7 +1441,9 @@
         "tab.pack-team-performance":"Pack Team Performance",
         "tab.facility-ramp":"Facility Ramp Tracker",
         "tab.expcal":"Experiment Calendar",
+        "tab.leaf-growth-dashboard":"Leaf Growth",
         "tab.mulders":"Mulders Chart",
+        "tab.grow-harvest-dashboard":"Grow Harvest Dashboard",
         "tab.foodsafety":"Food Safety",
         "tab.hr-attendances":"Attendances",
           "tile.weekly.name":"Summary",
@@ -1447,6 +1466,8 @@
           "tile.pack-team-performance.meta":"Employee performance",
           "tile.facility-ramp.name":"Facility Ramp Tracker",
           "tile.facility-ramp.meta":"Facility ramp milestones and readiness",
+          "tile.leaf-growth-dashboard.name":"Leaf Growth",
+          "tile.leaf-growth-dashboard.meta":"Leaf growth tracking dashboard",
           "tile.mulders.name":"Mulders Chart",
           "tile.mulders.meta":"Growing performance chart",
           "tile.grow-harvest-dashboard.name":"Grow Harvest Dashbaord",
@@ -1551,7 +1572,9 @@
         "tab.pack-team-performance":"Rendimiento del equipo de empaque",
         "tab.facility-ramp":"Seguimiento de rampa de facilidades",
         "tab.expcal":"Calendario de experimentos",
+        "tab.leaf-growth-dashboard":"Crecimiento de hojas",
         "tab.mulders":"Gráfico Mulders",
+        "tab.grow-harvest-dashboard":"Panel de cosecha Grow",
         "tab.foodsafety":"Inocuidad alimentaria",
         "tab.hr-attendances":"Asistencias",
           "tile.weekly.name":"Resumen semanal",
@@ -1574,6 +1597,8 @@
           "tile.pack-team-performance.meta":"Rendimiento de empleados",
           "tile.facility-ramp.name":"Seguimiento de rampa de facilidades",
           "tile.facility-ramp.meta":"Hitos de rampa de facilidades y preparación",
+          "tile.leaf-growth-dashboard.name":"Crecimiento de hojas",
+          "tile.leaf-growth-dashboard.meta":"Panel de seguimiento del crecimiento de hojas",
           "tile.mulders.name":"Grafico Mulders",
           "tile.mulders.meta":"Grafico de rendimiento de cultivo",
           "tile.grow-harvest-dashboard.name":"Grow Harvest Dashbaord",
@@ -1641,6 +1666,7 @@
         "proc-open-orders": "14.0 Procurement - Open Orders.html",
         "seed-inventory": "Inventory - seed inventory Dashboard.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
+        "leaf-growth-dashboard": "10.2 Growing - Leaf Growth Dashboard.html",
         "grow-harvest-dashboard": "03.1 Grow - Harvest Dashboard.html",
         "sales-tracking": "13.0 Sales - Productivity Dashboard.html",
         "store-visits": "12.0 Sales - Store Visit.html",
@@ -1682,11 +1708,13 @@
       const WORKER_EXPERIMENTS_URL = `${WORKER_BASE}/data/master/experiments.json`;
       const WORKER_PROCUREMENT_URL = `${WORKER_BASE}/data/master/procurement.json`;
       const WORKER_STORE_VISITS_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
+      const WORKER_LEAF_GROWTH_URL = `${WORKER_BASE}/data/master/Leaf%20Growth.json`;
 
       // Fallback: direct Supabase public URLs (read-only)
       const PUBLIC_EXPERIMENTS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/experiments.json";
       const PUBLIC_PROCUREMENT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/procurement.json";
       const PUBLIC_STORE_VISITS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json";
+      const PUBLIC_LEAF_GROWTH_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json";
 
       const MASTER_GROW_KEY  = "campo_master_grow_v1";
       const MASTER_PACK_KEY  = "campo_master_pack_v1";
@@ -1696,9 +1724,11 @@
       const EXPERIMENTS_KEY = "campo_experiments_v1";
       const PROCUREMENT_KEY = "campo_master_procurement_v1";
       const STORE_VISITS_KEY = "campo_store_visits_v1";
+      const LEAF_GROWTH_KEY = "campo_leaf_growth_v1";
       const EXPERIMENTS_PING = "campo_experiments_push_ping_v1";
       const PROCUREMENT_PING = "campo_master_procurement_push_ping_v1";
       const STORE_VISITS_PING = "campo_store_visits_push_ping_v1";
+      const LEAF_GROWTH_PING = "campo_leaf_growth_push_ping_v1";
       const LEGACY_EXPERIMENTS_KEY = "campo_master_experiments_v1";
       const LEGACY_EXPERIMENTS_PING = "campo_master_experiments_push_ping_v1";
       const LEGACY_STORE_VISITS_KEY = "campo_master_store_visit_v1";
@@ -1707,10 +1737,12 @@
       const LOCAL_DB_STORE = "datasets";
       const PACK_INDEXEDDB_MARKER = "indexeddb";
       const PACK_STORAGE_MODE_KEY = "campo_master_pack_storage_mode_v1";
+      const LEAF_STORAGE_MODE_KEY = "campo_leaf_growth_storage_mode_v1";
 
 
       const CANON_GROW_SHEET = "Master Grow";
       const CANON_PACK_SHEET = "Master Pack";
+      const CANON_LEAF_SHEET = "Leaf Growth";
 
       const MSG_GROW = "MASTER_GROW_UPDATED";
       const MSG_PACK = "MASTER_PACK_UPDATED";
@@ -1718,6 +1750,7 @@
       const MSG_EXPERIMENTS = "EXPERIMENTS_UPDATED";
       const MSG_PROCUREMENT = "PROCUREMENT_UPDATED";
       const MSG_STORE_VISITS = "STORE_VISITS_UPDATED";
+      const MSG_LEAF_GROWTH = "LEAF_GROWTH_UPDATED";
 
 
       const BC_NAMES = ["campo_master_bus_v1", "campo_updates_v1"];
@@ -1815,7 +1848,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-open-orders","ifr-seed-inventory",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-leaf-growth-dashboard","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-open-orders","ifr-seed-inventory",
         "ifr-sales-tracking","ifr-store-visits","ifr-hr-attendances"
       ];
 
@@ -1920,7 +1953,9 @@
 
       function normalizeMasterPayload(raw, kind){
         if (!isObject(raw)) return raw;
-        const want = (kind === "grow") ? CANON_GROW_SHEET : CANON_PACK_SHEET;
+        const want = (kind === "grow") ? CANON_GROW_SHEET :
+          (kind === "pack") ? CANON_PACK_SHEET :
+          CANON_LEAF_SHEET;
 
         if (isObject(raw.sheets) && raw.sheets[want]) return raw;
 
@@ -1931,6 +1966,7 @@
           let match = keys.find(k => String(k).trim().toLowerCase() === wantLower);
           if (!match && kind === "grow") match = keys.find(k => String(k).toLowerCase().includes("grow"));
           if (!match && kind === "pack") match = keys.find(k => String(k).toLowerCase().includes("pack"));
+          if (!match && kind === "leaf") match = keys.find(k => String(k).toLowerCase().includes("leaf"));
 
           if (match) {
             const clone = JSON.parse(JSON.stringify(raw));
@@ -1944,7 +1980,7 @@
           return {
             version: raw.version || "v1",
             updatedAt: raw.updatedAt || new Date().toISOString(),
-            kind: raw.kind || (kind === "grow" ? "grow" : "pack"),
+            kind: raw.kind || kind,
             sourceLabel: raw.sourceLabel || "worker",
             sheets: { [want]: { headers: raw.headers, rows: raw.rows } }
           };
@@ -1959,19 +1995,25 @@
           payload._idbKey === MASTER_PACK_KEY);
       }
 
-      function buildPackPointerPayload(fullPayload, sourceLabel){
-        const packSheet = fullPayload?.sheets?.[CANON_PACK_SHEET] || {};
-        const headerCount = Array.isArray(packSheet.headers) ? packSheet.headers.length : 0;
-        const rowCount = Array.isArray(packSheet.rows) ? packSheet.rows.length : 0;
+      function isLeafIdbPointer(payload){
+        return !!(payload && typeof payload === "object" &&
+          payload._storage === PACK_INDEXEDDB_MARKER &&
+          payload._idbKey === LEAF_GROWTH_KEY);
+      }
+
+      function buildIdbPointerPayload(fullPayload, { kind, canonicalSheetName, storageKey, sourceLabel }){
+        const sheet = fullPayload?.sheets?.[canonicalSheetName] || {};
+        const headerCount = Array.isArray(sheet.headers) ? sheet.headers.length : 0;
+        const rowCount = Array.isArray(sheet.rows) ? sheet.rows.length : 0;
         return {
           version: fullPayload?.version || "v1",
-          kind: "pack",
+          kind,
           updatedAt: fullPayload?.updatedAt || new Date().toISOString(),
           sourceLabel: sourceLabel || fullPayload?.sourceLabel || "",
           _storage: PACK_INDEXEDDB_MARKER,
-          _idbKey: MASTER_PACK_KEY,
+          _idbKey: storageKey,
           sheets: {
-            [CANON_PACK_SHEET]: {
+            [canonicalSheetName]: {
               headers: [],
               rows: [],
               headerCount,
@@ -1981,8 +2023,30 @@
         };
       }
 
+      function buildPackPointerPayload(fullPayload, sourceLabel){
+        return buildIdbPointerPayload(fullPayload, {
+          kind: "pack",
+          canonicalSheetName: CANON_PACK_SHEET,
+          storageKey: MASTER_PACK_KEY,
+          sourceLabel
+        });
+      }
+
+      function buildLeafPointerPayload(fullPayload, sourceLabel){
+        return buildIdbPointerPayload(fullPayload, {
+          kind: "leaf",
+          canonicalSheetName: CANON_LEAF_SHEET,
+          storageKey: LEAF_GROWTH_KEY,
+          sourceLabel
+        });
+      }
+
       function setPackStorageMode(mode){
         try { localStorage.setItem(PACK_STORAGE_MODE_KEY, String(mode || "")); } catch {}
+      }
+
+      function setLeafStorageMode(mode){
+        try { localStorage.setItem(LEAF_STORAGE_MODE_KEY, String(mode || "")); } catch {}
       }
 
       function migrateLegacyDatasetKeys(){
@@ -2013,6 +2077,13 @@
           try {
             const parsed = JSON.parse(packRaw);
             if (!isPackIdbPointer(parsed)) return false;
+          } catch { return false; }
+        }
+        const leafRaw = (localStorage.getItem(LEAF_GROWTH_KEY) || "").trim();
+        if (leafRaw) {
+          try {
+            const parsed = JSON.parse(leafRaw);
+            if (!isLeafIdbPointer(parsed)) return false;
           } catch { return false; }
         }
         return true;
@@ -2057,6 +2128,22 @@
           broadcast(MSG_PACK);
           wroteAny = true;
         } catch(e){ console.warn("Pack load failed:", e); }
+
+        try{
+          let leafJson = null;
+          try { leafJson = await workerGetJson(WORKER_LEAF_GROWTH_URL); }
+          catch { leafJson = await workerGetJson(PUBLIC_LEAF_GROWTH_URL); }
+
+          const normalizedLeaf = normalizeMasterPayload(leafJson, "leaf");
+          await idbSetJson(LEAF_GROWTH_KEY, normalizedLeaf);
+          localStorage.setItem(LEAF_GROWTH_KEY, JSON.stringify(buildLeafPointerPayload(normalizedLeaf, "worker")));
+          setLeafStorageMode("indexeddb-pointer");
+          localStorage.setItem(LEAF_GROWTH_PING, String(now));
+          try { window.dispatchEvent(new CustomEvent(MSG_LEAF_GROWTH, { detail:{ key: LEAF_GROWTH_KEY, ts: now } })); } catch {}
+          notifyIframes(MSG_LEAF_GROWTH);
+          broadcast(MSG_LEAF_GROWTH);
+          wroteAny = true;
+        } catch(e){ console.warn("Leaf Growth load failed:", e); }
 
         // Experiments
         try{
@@ -2104,11 +2191,11 @@
           const ok = storageContractOk();
           showToast(
             "Hydrated from Worker",
-            ok ? "Contract OK (canonical Master Grow/Pack sheets present)" : "⚠️ Contract warning: missing canonical sheet keys",
+            ok ? "Contract OK (canonical hydrated sheets present)" : "⚠️ Contract warning: missing canonical sheet keys",
             ok
           );
         } else {
-          showToast("Worker connected", "No grow/pack loaded (files missing or errors).", false);
+          showToast("Worker connected", "No hydrated datasets loaded (files missing or errors).", false);
         }
       }
 
@@ -2471,6 +2558,9 @@
         if (type === MSG_STORE_VISITS || type === "STORE_VISITS_UPDATED") {
           try { localStorage.setItem(STORE_VISITS_PING, now); } catch {}
         }
+        if (type === MSG_LEAF_GROWTH || type === "LEAF_GROWTH_UPDATED") {
+          try { localStorage.setItem(LEAF_GROWTH_PING, now); } catch {}
+        }
 
       }
 
@@ -2490,7 +2580,7 @@
           }
           return;
         }
-        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED") {
+        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === MSG_LEAF_GROWTH || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED" || msg.type === "LEAF_GROWTH_UPDATED") {
           touchPing(msg.type);
           notifyIframes(msg.type);
           broadcast(msg.type);
@@ -2502,7 +2592,7 @@
         ch.onmessage = (ev) => {
           const msg = ev?.data || {};
           if (!msg.type) return;
-          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED") {
+          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === MSG_LEAF_GROWTH || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED" || msg.type === "LEAF_GROWTH_UPDATED") {
             touchPing(msg.type);
             notifyIframes(msg.type);
             broadcast(msg.type);
@@ -2515,6 +2605,7 @@
       let lastExperimentsPing = localStorage.getItem(EXPERIMENTS_PING) || "";
       let lastProcurementPing = localStorage.getItem(PROCUREMENT_PING) || "";
       let lastStoreVisitsPing = localStorage.getItem(STORE_VISITS_PING) || "";
+      let lastLeafGrowthPing = localStorage.getItem(LEAF_GROWTH_PING) || "";
 
       setInterval(() => {
         const g = localStorage.getItem(MASTER_GROW_PING) || "";
@@ -2522,12 +2613,14 @@
         const e = localStorage.getItem(EXPERIMENTS_PING) || "";
         const pr = localStorage.getItem(PROCUREMENT_PING) || "";
         const sv = localStorage.getItem(STORE_VISITS_PING) || "";
+        const lg = localStorage.getItem(LEAF_GROWTH_PING) || "";
 
         if (g !== lastGrowPing) { lastGrowPing = g; notifyIframes(MSG_GROW); broadcast(MSG_GROW); }
         if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
         if (e !== lastExperimentsPing) { lastExperimentsPing = e; notifyIframes(MSG_EXPERIMENTS); broadcast(MSG_EXPERIMENTS); }
         if (pr !== lastProcurementPing) { lastProcurementPing = pr; notifyIframes(MSG_PROCUREMENT); broadcast(MSG_PROCUREMENT); }
         if (sv !== lastStoreVisitsPing) { lastStoreVisitsPing = sv; notifyIframes(MSG_STORE_VISITS); broadcast(MSG_STORE_VISITS); }
+        if (lg !== lastLeafGrowthPing) { lastLeafGrowthPing = lg; notifyIframes(MSG_LEAF_GROWTH); broadcast(MSG_LEAF_GROWTH); }
       }, 1500);
 
 
