@@ -2230,11 +2230,11 @@
         metricLabel:"Marketable",
         metricKey:"harvest_potential",
         completed: fmtInt(summary.harvestCut),
-        target: Number.isFinite(harvestPotentialTarget) ? fmtInt(harvestPotentialTarget) : "—",
+        target: fmtInt(summary.harvestWithWaste),
         units:"Lbs",
-        pct: pctPill(summary.harvestCut, Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0),
-        missed: missedPill(summary.harvestCut, Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0)
-      }, (summary.counts.harv > 0) || summary.harvestCut !== 0 || (Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget !== 0));
+        pct: pctPill(summary.harvestCut, summary.harvestWithWaste),
+        missed: missedPill(summary.harvestCut, summary.harvestWithWaste)
+      }, (summary.counts.harv > 0) || summary.harvestCut !== 0 || summary.harvestWithWaste !== 0);
 
       pushIfMeaningful({
         label:"Pack Potential After QC",
@@ -2308,8 +2308,8 @@
       const harvestPct = (summary.harvestTargetBoards > 0)
         ? (summary.harvestBoards / summary.harvestTargetBoards)
         : NaN;
-      const harvestPotentialPct = Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget > 0
-        ? (summary.harvestCut / harvestPotentialTarget)
+      const harvestPotentialPct = summary.harvestWithWaste > 0
+        ? (summary.harvestCut / summary.harvestWithWaste)
         : NaN;
       const packAllPct = (summary.harvestCut > 0)
         ? (summary.packAllLbs / summary.harvestCut)
@@ -2459,14 +2459,13 @@
     }
 
     function computeSystemOutputPercent(summary){
-      const harvestPotentialTarget = computeHarvestPotentialTarget(summary);
       const seedPct = (summary.seeding?.target > 0) ? (summary.seeding.completed / summary.seeding.target) : NaN;
       const transBoardsPct = ((summary.aux?.boardsExpected ?? 0) > 0)
         ? ((summary.aux?.boardsTrans ?? 0) / (summary.aux?.boardsExpected ?? 0))
         : NaN;
       const harvestPct = (summary.harvestTargetBoards > 0) ? (summary.harvestBoards / summary.harvestTargetBoards) : NaN;
-      const harvestPotentialPct = Number.isFinite(harvestPotentialTarget) && harvestPotentialTarget > 0
-        ? (summary.harvestCut / harvestPotentialTarget)
+      const harvestPotentialPct = summary.harvestWithWaste > 0
+        ? (summary.harvestCut / summary.harvestWithWaste)
         : NaN;
       const packAllPct = (summary.harvestCut > 0) ? (summary.packAllLbs / summary.harvestCut) : NaN;
       const chainParts = [seedPct, transBoardsPct, harvestPct, harvestPotentialPct, packAllPct].filter(Number.isFinite);
@@ -2483,7 +2482,7 @@
         case "transplant_plugs": return missedValue(summary.transplant.completed, summary.transplant.target);
         case "harvest": return missedValue(summary.harvestBoards, Number.isFinite(summary.harvestTargetBoards) ? summary.harvestTargetBoards : 0);
         case "harvest_forecast": return missedValue(Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0, harvestForecastTarget);
-        case "harvest_potential": return missedValue(summary.harvestCut, Number.isFinite(harvestPotentialTarget) ? harvestPotentialTarget : 0);
+        case "harvest_potential": return missedValue(summary.harvestCut, summary.harvestWithWaste);
         case "pack_all": return missedValue(summary.packAllLbs, summary.harvestCut);
         case "pack_potential_after_qc": return missedValue(summary.packAllLbs, summary.harvestCut);
         case "system_output": return missedValue(computeSystemOutputPercent(summary), 100);
