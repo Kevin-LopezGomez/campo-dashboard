@@ -2212,11 +2212,11 @@
         label:"Harvestable",
         metricLabel:"Harvestable",
         metricKey:"harvest_forecast",
-        completed: fmtInt(summary.harvestWithWaste),
-        target: harvestForecastTarget > 0 ? fmtInt(harvestForecastTarget) : "—",
+        completed: fmtInt(harvestForecastTarget),
+        target: fmtInt(summary.harvestWithWaste),
         units:"Lbs",
-        pct: pctPill(summary.harvestWithWaste, harvestForecastTarget),
-        missed: missedPill(summary.harvestWithWaste, harvestForecastTarget)
+        pct: pctPill(harvestForecastTarget, summary.harvestWithWaste),
+        missed: missedPill(harvestForecastTarget, summary.harvestWithWaste)
       }, (summary.counts.harv > 0) || summary.harvestWithWaste !== 0 || harvestForecastTarget !== 0);
 
       pushIfMeaningful({
@@ -2468,7 +2468,7 @@
         case "transplant_boards": return missedValue(summary.aux?.boardsTrans ?? 0, summary.aux?.boardsExpected ?? 0);
         case "transplant_plugs": return missedValue(summary.transplant.completed, summary.transplant.target);
         case "harvest": return missedValue(summary.harvestBoards, Number.isFinite(summary.harvestTargetBoards) ? summary.harvestTargetBoards : 0);
-        case "harvest_forecast": return missedValue(summary.harvestWithWaste, harvestForecastTarget);
+        case "harvest_forecast": return missedValue(harvestForecastTarget, summary.harvestWithWaste);
         case "harvest_potential": return missedValue(summary.harvestCut, summary.harvestWithWaste);
         case "pack_all": return missedValue(summary.packAllLbs, summary.harvestCut);
         case "pack_potential_after_qc": return missedValue(summary.packAllLbs, summary.harvestCut);
