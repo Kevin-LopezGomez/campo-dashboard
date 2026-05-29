@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campo Caribe — MRP</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg:        #0d0f14;
+    --surface:   #13161e;
+    --surface2:  #1a1e2a;
+    --border:    #242836;
+    --border2:   #2e3447;
+    --text:      #e8eaf0;
+    --muted:     #6b7290;
+    --accent:    #3d9eff;
+    --accent2:   #6ec6ff;
+    --green:     #2ecc71;
+    --green-bg:  rgba(46,204,113,0.08);
+    --yellow:    #f4c542;
+    --yellow-bg: rgba(244,197,66,0.08);
+    --red:       #e74c3c;
+    --red-bg:    rgba(231,76,60,0.08);
+    --orange:    #f39c12;
+    --orange-bg: rgba(243,156,18,0.08);
+    --mono:      'DM Mono', monospace;
+    --sans:      'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    font-family: var(--sans); font-weight: 800; font-size: 15px;
+    letter-spacing: 0.04em; color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .badge {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+    padding: 3px 8px; border-radius: 3px; text-transform: uppercase;
+    background: rgba(61,158,255,0.12); color: var(--accent); border: 1px solid rgba(61,158,255,0.25);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .last-run { color: var(--muted); font-size: 11px; }
+  #run-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 5px;
+    padding: 7px 16px; font-family: var(--mono); font-size: 12px; font-weight: 500;
+    cursor: pointer; letter-spacing: 0.04em; transition: all 0.15s;
+  }
+  #run-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+  /* ── Layout ── */
+  .main { display: flex; height: calc(100vh - 49px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 16px 0;
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-label {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); padding: 6px 16px 4px; font-weight: 500;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px; cursor: pointer; color: var(--muted);
+    font-size: 12px; transition: all 0.12s; border-left: 2px solid transparent;
+  }
+  .sidebar-item:hover { color: var(--text); background: var(--surface2); }
+  .sidebar-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(61,158,255,0.06); }
+  .sidebar-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green  { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-red    { background: var(--red); }
+  .dot-grey   { background: var(--border2); }
+
+  /* ── Content ── */
+  .content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Summary strip ── */
+  .summary-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-card {
+    padding: 18px 24px; border-right: 1px solid var(--border);
+  }
+  .summary-card:last-child { border-right: none; }
+  .summary-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .summary-value { font-family: var(--sans); font-size: 28px; font-weight: 700; line-height: 1; }
+  .summary-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .val-red    { color: var(--red); }
+  .val-yellow { color: var(--yellow); }
+  .val-green  { color: var(--green); }
+  .val-blue   { color: var(--accent); }
+
+  /* ── Filter bar ── */
+  .filterbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .filter-pill {
+    font-size: 11px; padding: 4px 12px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border2); color: var(--muted); transition: all 0.12s;
+    background: transparent;
+  }
+  .filter-pill:hover { color: var(--text); border-color: var(--muted); }
+  .filter-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .search-box {
+    margin-left: auto; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 5px; padding: 5px 10px; color: var(--text); font-family: var(--mono);
+    font-size: 12px; width: 200px; outline: none;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  /* ── Table ── */
+  .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 16px 20px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); text-align: left; padding: 6px 10px;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+    cursor: pointer; user-select: none;
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--border);
+  }
+  thead th:hover { color: var(--text); }
+  thead th .sort-arrow { opacity: 0.3; margin-left: 4px; }
+  thead th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s; cursor: pointer;
+  }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr.selected { background: rgba(61,158,255,0.07); }
+
+  td {
+    padding: 9px 10px; font-size: 12px; vertical-align: middle;
+  }
+  .td-name { font-weight: 500; color: var(--text); max-width: 180px; }
+  .td-name small { display: block; color: var(--muted); font-size: 10px; margin-top: 1px; }
+  .td-mono { font-family: var(--mono); }
+  .td-empty { color: var(--border2); font-style: italic; }
+  .td-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 4px 7px; width: 72px; color: var(--text);
+    font-family: var(--mono); font-size: 12px; outline: none; text-align: right;
+  }
+  .td-input:focus { border-color: var(--accent); }
+  .td-input.needed { border-color: var(--yellow); background: var(--yellow-bg); }
+  .td-calc { color: var(--accent2); font-style: italic; font-size: 11px; }
+
+  /* Status pill */
+  .status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 10px;
+    font-weight: 500; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .status-ok     { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(46,204,113,0.25); }
+  .status-warn   { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(244,197,66,0.25); }
+  .status-order  { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(231,76,60,0.25); }
+  .status-setup  { background: var(--surface2);  color: var(--muted);  border: 1px solid var(--border); }
+  .status-inbound { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(243,156,18,0.25); }
+  .status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ── Side panel (item detail) ── */
+  .panel {
+    width: 340px; min-width: 340px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    display: none;
+  }
+  .panel.open { display: block; }
+  .panel-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .panel-title { font-family: var(--sans); font-size: 16px; font-weight: 700; line-height: 1.2; }
+  .panel-sub { color: var(--muted); font-size: 11px; margin-top: 3px; }
+  .panel-close {
+    background: none; border: none; color: var(--muted); font-size: 18px;
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .panel-close:hover { color: var(--text); }
+  .panel-section { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .panel-section-title {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+  }
+  .panel-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .panel-row-label { color: var(--muted); font-size: 11px; }
+  .panel-row-val { font-size: 12px; font-weight: 500; }
+  .panel-input-group { margin-bottom: 10px; }
+  .panel-input-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .panel-input-label span { color: var(--accent); font-family: var(--mono); }
+  .panel-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 7px 10px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; outline: none;
+  }
+  .panel-input:focus { border-color: var(--accent); }
+  .panel-input.warn { border-color: var(--yellow); }
+  .formula-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 10px 12px; margin-top: 6px;
+  }
+  .formula-line {
+    display: flex; justify-content: space-between;
+    font-size: 11px; margin-bottom: 5px;
+  }
+  .formula-line:last-child { margin-bottom: 0; }
+  .formula-var { color: var(--muted); }
+  .formula-val { color: var(--accent2); }
+  .formula-result { color: var(--text); font-weight: 500; }
+  .formula-sep { border-top: 1px solid var(--border); margin: 6px 0; }
+
+  /* Feedback loop in panel */
+  .loop-step {
+    display: flex; gap: 10px; margin-bottom: 10px;
+  }
+  .loop-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--surface2);
+    border: 1px solid var(--border2); display: flex; align-items: center;
+    justify-content: center; font-size: 10px; flex-shrink: 0; color: var(--muted);
+  }
+  .loop-num.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .loop-num.done   { background: var(--green);  border-color: var(--green);  color: #fff; }
+  .loop-content { font-size: 11px; color: var(--muted); padding-top: 3px; }
+  .loop-content strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 12px; }
+
+  .action-btn {
+    width: 100%; padding: 9px; border-radius: 5px; border: none;
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    cursor: pointer; margin-bottom: 6px; transition: all 0.15s;
+  }
+  .btn-order  { background: var(--red);    color: #fff; }
+  .btn-order:hover  { opacity: 0.85; }
+  .btn-receive { background: var(--green);  color: #fff; }
+  .btn-receive:hover { opacity: 0.85; }
+  .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+  .btn-ghost:hover  { color: var(--text); border-color: var(--muted); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2px 0; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 12px 18px; font-size: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: slideUp 0.2s ease; max-width: 300px;
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.warn    { border-left: 3px solid var(--yellow); }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .td-input.from-file {
+    border-color: var(--orange);
+    background: rgba(243,156,18,0.08);
+    color: var(--orange);
+  }
+  .td-input.from-file:focus { border-color: var(--accent); color: var(--text); background: var(--surface2); }
+  .panel-input.from-file {
+    border-color: var(--orange);
+    background: rgba(243,156,18,0.06);
+  }
+  .panel-input.from-file:focus { border-color: var(--accent); background: var(--surface2); }
+  .ledger-source {
+    font-size: 9px; color: var(--orange); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  /* ── Upload modal ── */
+  .upload-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(13,15,20,0.92);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .upload-overlay.hidden { display: none; }
+  .upload-modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 40px; width: 480px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    text-align: center;
+  }
+  .upload-modal-title {
+    font-family: var(--sans); font-size: 20px; font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .upload-modal-title span { color: var(--accent); }
+  .upload-modal-sub { color: var(--muted); font-size: 12px; margin-bottom: 28px; line-height: 1.6; }
+  .drop-zone {
+    border: 2px dashed var(--border2); border-radius: 8px;
+    padding: 36px 24px; cursor: pointer; transition: all 0.2s;
+    background: var(--surface2);
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent); background: rgba(61,158,255,0.06);
+  }
+  .drop-zone-icon { font-size: 32px; margin-bottom: 10px; }
+  .drop-zone-label { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+  .drop-zone-sub   { font-size: 11px; color: var(--muted); }
+  .upload-file-input { display: none; }
+  .upload-note {
+    margin-top: 20px; font-size: 10px; color: var(--muted);
+    line-height: 1.7; text-align: left; background: var(--bg);
+    border-radius: 6px; padding: 10px 12px; border: 1px solid var(--border);
+  }
+  .upload-note code { color: var(--accent2); font-family: var(--mono); }
+  .skip-link {
+    display: block; margin-top: 16px; color: var(--muted); font-size: 11px;
+    cursor: pointer; text-decoration: underline;
+  }
+  .skip-link:hover { color: var(--text); }
+
+  /* Upload button in topbar */
+  #upload-btn {
+    background: transparent; color: var(--muted); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 7px 12px; font-family: var(--mono);
+    font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  #upload-btn:hover { color: var(--text); border-color: var(--muted); }
+  .file-loaded-badge {
+    font-size: 10px; color: var(--green); background: var(--green-bg);
+    border: 1px solid rgba(46,204,113,0.25); border-radius: 3px;
+    padding: 2px 8px; display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">Campo <span>Caribe</span></div>
+    <div class="badge">MRP</div>
+  </div>
+  <div class="topbar-right">
+    <span class="file-loaded-badge" id="file-badge">✓ file loaded</span>
+    <button id="upload-btn" onclick="showUpload()">⬆ Upload Inventory</button>
+    <span class="last-run" id="last-run-label">Not yet run</span>
+    <button id="run-btn" onclick="runMRP()">▶ Run MRP</button>
+  </div>
+</div>
+
+<!-- Upload modal -->
+<div class="upload-overlay hidden" id="upload-overlay">
+  <div class="upload-modal">
+    <div class="upload-modal-title">Campo <span>Caribe</span> MRP</div>
+    <div class="upload-modal-sub">
+      Upload your <strong>Inventory Table</strong> to load items into the MRP.<br>
+      Supports .xlsx and .csv — Inventory Table tab only.
+    </div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+         ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <div class="drop-zone-icon">📂</div>
+      <div class="drop-zone-label">Drop file here or click to browse</div>
+      <div class="drop-zone-sub">.xlsx or .csv · Inventory Table tab</div>
+    </div>
+    <input type="file" id="file-input" class="upload-file-input" accept=".xlsx,.csv" onchange="handleFileSelect(event)">
+    <div class="upload-note">
+      <strong>Expected columns from Inventory Table:</strong><br>
+      <code>name</code>, <code>invnt_category_id</code>, <code>invnt_subcategory_id</code>,
+      <code>description</code>, <code>manufacturer</code>, <code>c_rate</code>,
+      <code>i_min_weeks</code>, <code>t_lead</code>, <code>is_mrp_active</code>,
+      <code>uom_burn</code>, <code>i_current</code>, <code>i_inbound</code><br><br>
+      <strong>i_current</strong> &amp; <strong>i_inbound</strong> load automatically from the file.
+      If <code>invnt_category_id</code> is blank, the MRP groups by <code>invnt_subcategory_id</code>.
+      Values highlighted in <span style="color:#f39c12">amber</span> = from file · editable.
+      Blank = enter manually before running MRP.
+    </div>
+    <span class="skip-link" onclick="hideUpload()">Skip — use demo data</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Status</div>
+      <div class="sidebar-item active" onclick="setFilter('all',this)">
+        <div class="sidebar-dot dot-grey"></div> All Items
+      </div>
+      <div class="sidebar-item" onclick="setFilter('order',this)">
+        <div class="sidebar-dot dot-red"></div> Order Required
+      </div>
+      <div class="sidebar-item" onclick="setFilter('warn',this)">
+        <div class="sidebar-dot dot-yellow"></div> Watch
+      </div>
+      <div class="sidebar-item" onclick="setFilter('ok',this)">
+        <div class="sidebar-dot dot-green"></div> OK
+      </div>
+      <div class="sidebar-item" onclick="setFilter('setup',this)">
+        <div class="sidebar-dot dot-grey"></div> Setup Needed
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Category</div>
+      <div class="sidebar-item" onclick="setCatFilter('all',this)" id="cat-all" style="border-left-color:transparent">All</div>
+      <div class="sidebar-item" onclick="setCatFilter('Operations',this)" id="cat-Operations">Operations</div>
+      <div class="sidebar-item" onclick="setCatFilter('Seeds ',this)" id="cat-Seeds">Seeds</div>
+      <div class="sidebar-item" onclick="setCatFilter('Media ',this)" id="cat-Media">Media</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Feedback Loop</div>
+      <div style="padding: 6px 16px;">
+        <div class="loop-step">
+          <div class="loop-num active">1</div>
+          <div class="loop-content"><strong>Monitor</strong>Run MRP to recalculate</div>
+        </div>
+        <div class="loop-step">
+          <div class="loop-num" id="loop-2">2</div>
+          <div class="loop-content"><strong>Trigger</strong>T_time ≤ 0 → flag</div>
+        </div>
+        <div class="loop-step">
+          <div class="loop-num" id="loop-3">3</div>
+          <div class="loop-content"><strong>Calculate</strong>Q_order = I_target − I_current − I_inbound</div>
+        </div>
+        <div class="loop-step">
+          <div class="loop-num" id="loop-4">4</div>
+          <div class="loop-content"><strong>Order</strong>Issue PO per item</div>
+        </div>
+        <div class="loop-step">
+          <div class="loop-num" id="loop-5">5</div>
+          <div class="loop-content"><strong>Receive</strong>Update I_current</div>
+        </div>
+        <div class="loop-step">
+          <div class="loop-num" id="loop-6">6</div>
+          <div class="loop-content"><strong>Recalculate</strong>Return to step 1</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="content" id="content-area">
+
+    <!-- Summary strip -->
+    <div class="summary-strip">
+      <div class="summary-card">
+        <div class="summary-label">Order Required</div>
+        <div class="summary-value val-red" id="sum-order">—</div>
+        <div class="summary-sub">items need PO now</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Watch</div>
+        <div class="summary-value val-yellow" id="sum-warn">—</div>
+        <div class="summary-sub">≤ 2 weeks runway</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">OK</div>
+        <div class="summary-value val-green" id="sum-ok">—</div>
+        <div class="summary-sub">within safety stock</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Setup Needed</div>
+        <div class="summary-value val-blue" id="sum-setup">—</div>
+        <div class="summary-sub">missing c_rate or i_min</div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filterbar">
+      <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-pill" onclick="setFilter('order',this)">Order</button>
+      <button class="filter-pill" onclick="setFilter('warn',this)">Watch</button>
+      <button class="filter-pill" onclick="setFilter('ok',this)">OK</button>
+      <button class="filter-pill" onclick="setFilter('setup',this)">Setup</button>
+      <input class="search-box" placeholder="Search items..." oninput="filterTable()" id="search-box">
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table id="mrp-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('name')">Item <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('invnt_category_id')">Category <span class="sort-arrow">↕</span></th>
+            <th title="c_rate (weekly)">C_rate<br><span style="font-weight:400;color:var(--muted);letter-spacing:0">wk</span></th>
+            <th title="i_min">I_min</th>
+            <th title="t_lead (days)">T_lead<br><span style="font-weight:400;color:var(--muted);letter-spacing:0">days</span></th>
+            <th title="I_current — on hand">I_current</th>
+            <th title="I_inbound — on order">I_inbound</th>
+            <th onclick="sortTable('t_before')" title="T_before_inv_min">T_before<br><span style="font-weight:400;color:var(--muted);letter-spacing:0">days</span></th>
+            <th onclick="sortTable('t_time')" title="T_time_at_ordering">T_order<br><span style="font-weight:400;color:var(--muted);letter-spacing:0">days</span></th>
+            <th title="Q_order">Q_order</th>
+            <th onclick="sortTable('status')">Status <span class="sort-arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="mrp-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">No items match the current filter.</div>
+    </div>
+  </div>
+
+  <!-- Side panel -->
+  <div class="panel" id="side-panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title" id="panel-name">—</div>
+        <div class="panel-sub" id="panel-sub">—</div>
+      </div>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Inputs — set per SKU</div>
+      <div class="panel-input-group">
+        <div class="panel-input-label">c_rate <span>(units/week)</span></div>
+        <input class="panel-input" id="pi-crate" type="number" min="0" step="1" oninput="updatePanel()">
+      </div>
+      <div class="panel-input-group">
+        <div class="panel-input-label">i_min_weeks <span>(user-defined safety stock)</span></div>
+        <input class="panel-input" id="pi-iminwk" type="number" min="0" step="0.5" oninput="updatePanel()">
+      </div>
+      <div class="panel-input-group">
+        <div class="panel-input-label">t_lead <span>(days, PO → receipt)</span></div>
+        <input class="panel-input warn" id="pi-tlead" type="number" min="0" step="1" placeholder="⚠ required" oninput="updatePanel()">
+      </div>
+      <div class="panel-input-group">
+        <div class="panel-input-label">I_current <span>(on-hand qty)</span></div>
+        <div class="ledger-source" id="pi-icurr-source" style="display:none">⬛ loaded from Excel · editable</div>
+        <input class="panel-input" id="pi-icurr" type="number" min="0" step="1"
+               placeholder="Enter count after physical inventory" oninput="updatePanel()">
+      </div>
+      <div class="panel-input-group">
+        <div class="panel-input-label">I_inbound <span>(qty on open PO)</span></div>
+        <div class="ledger-source" id="pi-iinbound-source" style="display:none">⬛ loaded from Excel · editable</div>
+        <input class="panel-input" id="pi-iinbound" type="number" min="0" step="1"
+               placeholder="0 — update when PO placed" oninput="updatePanel()">
+      </div>
+      <button class="action-btn btn-ghost" onclick="savePanel()">Save inputs</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Calculations</div>
+      <div class="formula-box" id="panel-calcs">
+        <div class="formula-line"><span class="formula-var">I_min = i_min_weeks × c_rate</span><span class="formula-val" id="pc-imin">—</span></div>
+        <div class="formula-line"><span class="formula-var">I_target = I_min + (c_rate/7 × t_lead)</span><span class="formula-val" id="pc-itarget">—</span></div>
+        <div class="formula-sep"></div>
+        <div class="formula-line"><span class="formula-var">T_before_inv_min (days)</span><span class="formula-val" id="pc-tbefore">—</span></div>
+        <div class="formula-line"><span class="formula-var">T_time_at_ordering (days)</span><span class="formula-val" id="pc-ttime">—</span></div>
+        <div class="formula-sep"></div>
+        <div class="formula-line"><span class="formula-var">Q_order = I_target − I_curr − I_inbound</span><span class="formula-result" id="pc-qorder">—</span></div>
+      </div>
+    </div>
+
+    <div class="panel-section" id="panel-actions">
+      <div class="panel-section-title">Actions</div>
+      <div id="action-buttons"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Item Info</div>
+      <div class="panel-row"><span class="panel-row-label">Manufacturer</span><span class="panel-row-val" id="pi-mfr">—</span></div>
+      <div class="panel-row"><span class="panel-row-label">Description</span><span class="panel-row-val" id="pi-desc">—</span></div>
+      <div class="panel-row"><span class="panel-row-label">Subcategory</span><span class="panel-row-val" id="pi-subcat">—</span></div>
+      <div class="panel-row"><span class="panel-row-label">is_mrp_active</span><span class="panel-row-val" id="pi-active">—</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Initial data from Aloha Inventory Table ───────────────────────────────────
+const RAW_ITEMS = [
+  {name:'Boxes 8/10oz',        category:'Operations', subcat:'Packaging',  desc:'Cardboard Boxes',              mfr:'Smurfit WestRock',       c_rate:100,  i_min_weeks:12, t_lead:null, i_current:3750, i_inbound:0,   mrp_active:false},
+  {name:'Boxes 6/5oz',         category:'Operations', subcat:'Packaging',  desc:'Cardboard Boxes',              mfr:'Smurfit WestRock',       c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Boxes 9/16oz',        category:'Operations', subcat:'Packaging',  desc:'Cardboard Boxes',              mfr:'Smurfit WestRock',       c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Generic Boxes',       category:'Operations', subcat:'Packaging',  desc:'Cardboard Boxes',              mfr:'Smurfit WestRock',       c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Green Harvest Crates',category:'Operations', subcat:'Harvesting', desc:'Harvest Crates',               mfr:'Tranpak',                c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'3lbs Bags',           category:'Operations', subcat:'Packaging',  desc:'3 Pounds Bags',                mfr:'PPCFLEX',                c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Regular Wood Pallets',category:'Operations', subcat:'Packaging',  desc:'Wood Pallets Regular',         mfr:'Demollition Pallets',    c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Wood Chep Pallets',   category:'Operations', subcat:'Packaging',  desc:'Wood Chep Pallets',            mfr:'Demollition Pallets',    c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Crunchy 5oz', category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Crunchy 10oz',category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Crunchy 16oz',category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Crispy 5oz',  category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Crispy 10oz', category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Crispy 16oz', category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Combo 5oz',   category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Combo 10oz',  category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Film — Super Combo 16oz',  category:'Operations',subcat:'Packaging',desc:'Film Roll',                  mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Clamshells 5oz',      category:'Operations', subcat:'Packaging',  desc:'Clamshells',                   mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Clamshells 10oz',     category:'Operations', subcat:'Packaging',  desc:'Clamshells',                   mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Clamshells 16oz',     category:'Operations', subcat:'Packaging',  desc:'Clamshells',                   mfr:'Sonoco (Toppan)',        c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Hand Wrap',           category:'Operations', subcat:'Packaging',  desc:'Hand Wrap',                    mfr:'Caribe Industrial',      c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Lalique',             category:'Seeds',      subcat:'Seeding',    desc:'Lettuce Seed Variety',         mfr:'Rijk Zwaan / Enza Zaden',c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Aquino',              category:'Seeds',      subcat:'Seeding',    desc:'Lettuce Seed Variety',         mfr:'Rijk Zwaan / Enza Zaden',c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Klee',                category:'Seeds',      subcat:'Seeding',    desc:'Lettuce Seed Variety',         mfr:'Rijk Zwaan / Enza Zaden',c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'Azirka',              category:'Seeds',      subcat:'Seeding',    desc:'Lettuce Seed Variety',         mfr:'Rijk Zwaan / Enza Zaden',c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+  {name:'QP Media',            category:'Media',      subcat:'Seeding',    desc:'QuickPlug Grow Media / Peat',  mfr:'QuickPlug',              c_rate:null, i_min_weeks:null,t_lead:null, i_current:null, i_inbound:0,   mrp_active:false},
+];
+
+// State
+let items = RAW_ITEMS.map((d,i) => ({...d, id:i, po_pending:false, po_qty:0}));
+let activeFilter = 'all';
+let activeCat    = 'all';
+let selectedId   = null;
+let sortCol      = null;
+let sortDir      = 1;
+let mrpRun       = false;
+
+// ── MRP calculations ──────────────────────────────────────────────────────────
+function calcItem(item) {
+  const cr   = item.c_rate;          // weekly
+  const crd  = cr ? cr / 7 : null;  // daily
+  const imin = (cr && item.i_min_weeks) ? cr * item.i_min_weeks : null;
+  const tl   = item.t_lead;
+  const ic   = item.i_current ?? 0;
+  const ib   = item.i_inbound ?? 0;
+
+  const itarget   = (imin != null && crd != null && tl != null) ? imin + crd * tl : null;
+  const t_before  = (imin != null && crd != null && ic >= imin) ? (ic - imin) / crd : null;
+  const t_order   = (imin != null && crd != null && tl != null)
+                      ? (ic - imin - crd * tl) / crd : null;
+  const q_order   = (itarget != null) ? Math.max(0, itarget - ic - ib) : null;
+
+  // Status
+  let status = 'setup';
+  if (cr && imin != null && tl != null) {
+    if (item.po_pending) {
+      status = 'inbound';
+    } else if (t_order != null && t_order <= 0) {
+      status = 'order';
+    } else if (t_before != null && t_before <= 14) {
+      status = 'warn';
+    } else {
+      status = 'ok';
+    }
+  }
+
+  return { imin, itarget, t_before, t_order, q_order, status, crd };
+}
+
+function fmt(v, dec=0) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString('en-US', {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec
+  });
+}
+
+// ── Render table ──────────────────────────────────────────────────────────────
+function renderTable() {
+  const search = (document.getElementById('search-box')?.value || '').toLowerCase();
+  let visible = items.filter(item => {
+    const c = calcItem(item);
+    if (activeFilter !== 'all' && c.status !== activeFilter) return false;
+    if (activeCat !== 'all' && !item.category.startsWith(activeCat.trim())) return false;
+    if (search && !item.name.toLowerCase().includes(search) && !item.mfr.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (sortCol) {
+    visible.sort((a,b) => {
+      let av = a[sortCol], bv = b[sortCol];
+      if (sortCol === 'status') { av = calcItem(a).status; bv = calcItem(b).status; }
+      if (sortCol === 't_before') { av = calcItem(a).t_before ?? 9999; bv = calcItem(b).t_before ?? 9999; }
+      if (sortCol === 't_time')   { av = calcItem(a).t_order ?? 9999; bv = calcItem(b).t_order ?? 9999; }
+      if (av < bv) return -sortDir;
+      if (av > bv) return sortDir;
+      return 0;
+    });
+  }
+
+  // Update summaries
+  const all = items.map(calcItem);
+  document.getElementById('sum-order').textContent = all.filter(c=>c.status==='order').length;
+  document.getElementById('sum-warn').textContent  = all.filter(c=>c.status==='warn').length;
+  document.getElementById('sum-ok').textContent    = all.filter(c=>c.status==='ok').length;
+  document.getElementById('sum-setup').textContent = all.filter(c=>c.status==='setup').length;
+
+  // Loop step indicators
+  const orderCount = all.filter(c=>c.status==='order').length;
+  ['2','3','4','5','6'].forEach(n => {
+    const el = document.getElementById('loop-'+n);
+    el.classList.remove('active','done');
+  });
+  if (mrpRun && orderCount > 0) {
+    document.getElementById('loop-2').classList.add('active');
+    document.getElementById('loop-3').classList.add('active');
+  }
+
+  const tbody = document.getElementById('mrp-tbody');
+  tbody.innerHTML = '';
+
+  if (visible.length === 0) {
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+  document.getElementById('empty-state').style.display = 'none';
+
+  visible.forEach(item => {
+    const c = calcItem(item);
+    const sel = item.id === selectedId;
+
+    const statusHTML = {
+      ok:      '<span class="status status-ok">OK</span>',
+      warn:    '<span class="status status-warn">Watch</span>',
+      order:   '<span class="status status-order">Order Now</span>',
+      setup:   '<span class="status status-setup">Setup</span>',
+      inbound: '<span class="status status-inbound">Inbound</span>',
+    }[c.status] || '';
+
+    const inputClass = (v, field) => {
+      if (field === 't_lead' && !v) return 'td-input needed';
+      return 'td-input';
+    };
+
+    const tr = document.createElement('tr');
+    if (sel) tr.classList.add('selected');
+    tr.innerHTML = `
+      <td class="td-name">
+        ${item.name}
+        <small>${item.mfr}</small>
+      </td>
+      <td style="color:var(--muted);font-size:11px">${item.category.trim()}</td>
+      <td><input class="td-input" data-id="${item.id}" data-field="c_rate"
+          value="${item.c_rate == null ? '' : fmt(item.c_rate)}" placeholder="—"
+          onclick="event.stopPropagation()" oninput="inlineEdit(${item.id},'c_rate',this.value)"></td>
+      <td><input class="td-input" data-id="${item.id}" data-field="i_min_weeks"
+          value="${item.i_min_weeks == null ? '' : fmt(item.i_min_weeks)}" placeholder="—"
+          onclick="event.stopPropagation()" oninput="inlineEdit(${item.id},'i_min_weeks',this.value)"></td>
+      <td><input class="${inputClass(item.t_lead,'t_lead')}" data-id="${item.id}" data-field="t_lead"
+          value="${item.t_lead == null ? '' : fmt(item.t_lead)}" placeholder="req."
+          onclick="event.stopPropagation()" oninput="inlineEdit(${item.id},'t_lead',this.value)"></td>
+      <td><input class="td-input${item.from_excel ? ' from-file' : ''}" data-id="${item.id}" data-field="i_current"
+          value="${item.i_current == null ? '' : fmt(item.i_current)}" placeholder="enter count"
+          onclick="event.stopPropagation()" oninput="inlineEdit(${item.id},'i_current',this.value)"></td>
+      <td><input class="td-input${(item.i_inbound > 0) ? ' from-file' : ''}" data-id="${item.id}" data-field="i_inbound"
+          value="${item.i_inbound == null ? '0' : fmt(item.i_inbound)}" placeholder="0"
+          onclick="event.stopPropagation()" oninput="inlineEdit(${item.id},'i_inbound',this.value)"></td>
+      <td class="td-calc">${mrpRun ? fmt(c.t_before,1) : '—'}</td>
+      <td class="td-calc" style="${c.t_order!=null&&c.t_order<=0?'color:var(--red)':''}">${mrpRun ? fmt(c.t_order,1) : '—'}</td>
+      <td class="td-calc" style="${c.q_order>0?'color:var(--red);font-weight:600':''}">
+        ${mrpRun && c.q_order != null ? (c.q_order > 0 ? fmt(c.q_order) : '—') : '—'}
+      </td>
+      <td>${mrpRun ? statusHTML : '<span class="status status-setup">—</span>'}</td>
+    `;
+    tr.addEventListener('click', () => openPanel(item.id));
+    tbody.appendChild(tr);
+  });
+}
+
+function inlineEdit(id, field, val) {
+  const item = items.find(i=>i.id===id);
+  if (!item) return;
+  const num = n(val);
+  item[field] = isNaN(num) ? null : num;
+  // Once user edits i_current manually, clear the from_excel flag
+  if (field === 'i_current') item.from_excel = false;
+  // Update panel if open
+  if (selectedId === id) syncPanelInputs(item);
+  updateSummaries();
+}
+
+function updateSummaries() {
+  const all = items.map(calcItem);
+  document.getElementById('sum-order').textContent = all.filter(c=>c.status==='order').length;
+  document.getElementById('sum-warn').textContent  = all.filter(c=>c.status==='warn').length;
+  document.getElementById('sum-ok').textContent    = all.filter(c=>c.status==='ok').length;
+  document.getElementById('sum-setup').textContent = all.filter(c=>c.status==='setup').length;
+}
+
+// ── Panel ─────────────────────────────────────────────────────────────────────
+function openPanel(id) {
+  selectedId = id;
+  const item = items.find(i=>i.id===id);
+  document.getElementById('side-panel').classList.add('open');
+  document.getElementById('panel-name').textContent = item.name;
+  document.getElementById('panel-sub').textContent  = `${item.category.trim()} · ${item.subcat}`;
+  document.getElementById('pi-mfr').textContent     = item.mfr;
+  document.getElementById('pi-desc').textContent    = item.desc;
+  document.getElementById('pi-subcat').textContent  = item.subcat;
+  document.getElementById('pi-active').textContent  = item.mrp_active ? 'true' : 'false';
+  syncPanelInputs(item);
+  renderTable();
+}
+
+function syncPanelInputs(item) {
+  const icurr    = document.getElementById('pi-icurr');
+  const iinbound = document.getElementById('pi-iinbound');
+  const icSrc    = document.getElementById('pi-icurr-source');
+  const ibSrc    = document.getElementById('pi-iinbound-source');
+
+  icurr.value    = item.i_current ?? '';
+  iinbound.value = item.i_inbound ?? 0;
+  document.getElementById('pi-crate').value    = item.c_rate ?? '';
+  document.getElementById('pi-iminwk').value   = item.i_min_weeks ?? '';
+  document.getElementById('pi-tlead').value    = item.t_lead ?? '';
+
+  // Amber styling + source label when value came from Excel
+  if (item.from_excel && item.i_current !== null) {
+    icurr.classList.add('from-file');
+    icSrc.style.display = 'block';
+    icSrc.textContent = '📄 loaded from Excel · editable';
+  } else {
+    icurr.classList.remove('from-file');
+    icSrc.style.display = 'none';
+  }
+  if (item.i_inbound > 0) {
+    iinbound.classList.add('from-file');
+    ibSrc.style.display = 'block';
+    ibSrc.textContent = '📄 loaded from Excel · editable';
+  } else {
+    iinbound.classList.remove('from-file');
+    ibSrc.style.display = 'none';
+  }
+
+  updatePanel();
+}
+
+function updatePanel() {
+  if (selectedId == null) return;
+  const item = items.find(i=>i.id===selectedId);
+  // Read from panel inputs
+  const cr  = n(document.getElementById('pi-crate').value) || null;
+  const imw = n(document.getElementById('pi-iminwk').value) || null;
+  const tl  = n(document.getElementById('pi-tlead').value) || null;
+  const ic  = n(document.getElementById('pi-icurr').value) ?? 0;
+  const ib  = n(document.getElementById('pi-iinbound').value) ?? 0;
+
+  const crd    = cr ? cr/7 : null;
+  const imin   = (cr && imw) ? cr * imw : null;
+  const itarget= (imin!=null && crd!=null && tl!=null) ? imin + crd*tl : null;
+  const tbefore= (imin!=null && crd!=null && ic>=imin) ? (ic-imin)/crd : null;
+  const ttime  = (imin!=null && crd!=null && tl!=null) ? (ic-imin-crd*tl)/crd : null;
+  const qorder = itarget!=null ? Math.max(0, itarget-ic-ib) : null;
+
+  document.getElementById('pc-imin').textContent    = imin  != null ? fmt(imin)    : '—';
+  document.getElementById('pc-itarget').textContent = itarget!=null ? fmt(itarget) : '—';
+  document.getElementById('pc-tbefore').textContent = tbefore!=null ? fmt(tbefore,1)+' days' : '—';
+  document.getElementById('pc-ttime').textContent   = ttime  !=null ? fmt(ttime,1)+' days'  : '—';
+  document.getElementById('pc-qorder').textContent  = qorder !=null ? (qorder>0?fmt(qorder)+' units':'No order needed') : '—';
+
+  // Actions
+  const ab = document.getElementById('action-buttons');
+  ab.innerHTML = '';
+  if (qorder > 0 && !item.po_pending) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn btn-order';
+    btn.textContent = `Place PO — ${fmt(qorder)} units`;
+    btn.onclick = () => placePO(selectedId, qorder, tl);
+    ab.appendChild(btn);
+  }
+  if (item.po_pending) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn btn-receive';
+    btn.textContent = `Receive inbound (${item.po_qty} units)`;
+    btn.onclick = () => receiveOrder(selectedId);
+    ab.appendChild(btn);
+  }
+  const gb = document.createElement('button');
+  gb.className = 'action-btn btn-ghost';
+  gb.textContent = 'Close';
+  gb.onclick = closePanel;
+  ab.appendChild(gb);
+}
+
+function savePanel() {
+  const item = items.find(i=>i.id===selectedId);
+  if (!item) return;
+  item.c_rate      = n(document.getElementById('pi-crate').value) || null;
+  item.i_min_weeks = n(document.getElementById('pi-iminwk').value) || null;
+  item.t_lead      = n(document.getElementById('pi-tlead').value) || null;
+  item.i_current   = n(document.getElementById('pi-icurr').value) ?? null;
+  item.i_inbound   = n(document.getElementById('pi-iinbound').value) ?? 0;
+  renderTable();
+  toast('Inputs saved for ' + item.name, 'success');
+}
+
+function closePanel() {
+  selectedId = null;
+  document.getElementById('side-panel').classList.remove('open');
+  renderTable();
+}
+
+// ── Feedback loop actions ─────────────────────────────────────────────────────
+function placePO(id, qty, tl) {
+  const item = items.find(i=>i.id===id);
+  item.po_pending = true;
+  item.po_qty     = Math.ceil(qty);
+  item.i_inbound  = (item.i_inbound||0) + Math.ceil(qty);
+  document.getElementById('loop-4').classList.add('active');
+  renderTable();
+  if (selectedId === id) syncPanelInputs(item);
+  toast(`PO placed — ${Math.ceil(qty)} units · T_lead ${tl} days`, 'success');
+}
+
+function receiveOrder(id) {
+  const item = items.find(i=>i.id===id);
+  item.i_current  = (item.i_current||0) + item.po_qty;
+  item.i_inbound  = Math.max(0, (item.i_inbound||0) - item.po_qty);
+  item.po_pending = false;
+  item.po_qty     = 0;
+  document.getElementById('loop-5').classList.add('done');
+  document.getElementById('loop-6').classList.add('active');
+  renderTable();
+  if (selectedId === id) syncPanelInputs(item);
+  toast(`Receipt recorded — I_current updated`, 'success');
+}
+
+// ── Filters & sort ────────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-pill, .sidebar-item').forEach(e => {
+    if (e.classList.contains('filter-pill') || (e.classList.contains('sidebar-item') && !e.id?.startsWith('cat-')))
+      e.classList.remove('active');
+  });
+  el.classList.add('active');
+  renderTable();
+}
+function setCatFilter(cat, el) {
+  activeCat = cat;
+  document.querySelectorAll('[id^=cat-]').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+function filterTable() { renderTable(); }
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+// ── Run MRP ───────────────────────────────────────────────────────────────────
+function runMRP() {
+  mrpRun = true;
+  const now = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('last-run-label').textContent = `Last run: ${now}`;
+  renderTable();
+  const orderCount = items.filter(i => calcItem(i).status === 'order').length;
+  if (orderCount > 0) {
+    toast(`MRP complete — ${orderCount} item${orderCount>1?'s':''} need PO`, 'warn');
+  } else {
+    toast('MRP complete — all items OK', 'success');
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Upload & file parsing ─────────────────────────────────────────────────────
+function showUpload() {
+  document.getElementById('upload-overlay').classList.remove('hidden');
+}
+function hideUpload() {
+  document.getElementById('upload-overlay').classList.add('hidden');
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function handleDragLeave() {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        // Find "Inventory Table" sheet — case-insensitive
+        const sheetName = wb.SheetNames.find(n =>
+          n.toLowerCase().replace(/\s+/g,'') === 'inventorytable'
+        ) || wb.SheetNames[0];
+        const ws   = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: null });
+        loadRows(rows, file.name, sheetName);
+      } catch(err) {
+        toast('Failed to parse xlsx: ' + err.message, 'warn');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else if (ext === 'csv') {
+    reader.onload = e => {
+      try {
+        const wb   = XLSX.read(e.target.result, { type: 'string' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: null });
+        loadRows(rows, file.name, 'CSV');
+      } catch(err) {
+        toast('Failed to parse csv: ' + err.message, 'warn');
+      }
+    };
+    reader.readAsText(file);
+  } else {
+    toast('Unsupported file type. Use .xlsx or .csv', 'warn');
+  }
+}
+
+function n(v) {
+  if (v === null || v === '' || v === undefined) return null;
+  const cleaned = String(v).trim().replace(/,/g, '');
+  const x = parseFloat(cleaned);
+  return isNaN(x) ? null : x;
+}
+
+function bool(v) {
+  if (!v) return false;
+  return String(v).toLowerCase().trim() === 'yes' || String(v).toLowerCase().trim() === 'true';
+}
+
+function str(v) {
+  return v ? String(v).trim() : '';
+}
+
+function loadRows(rows, filename, sheetName) {
+  // Skip header-like rows (the formula variable row 2 has no name)
+  const dataRows = rows.filter(r => {
+    const nameKey = Object.keys(r).find(k => k.toLowerCase().trim() === 'name');
+    return nameKey && str(r[nameKey]);
+  });
+
+  if (dataRows.length === 0) {
+    toast('No data rows found. Check the file has a "name" column.', 'warn');
+    return;
+  }
+
+  const loaded = dataRows.map((r, i) => {
+    // Flexible column name matching (handles case differences)
+    const get = (keys) => {
+      for (const k of keys) {
+        const match = Object.keys(r).find(rk => rk.toLowerCase().trim() === k.toLowerCase());
+        if (match !== undefined) return r[match];
+      }
+      return null;
+    };
+
+    const ic = n(get(['i_current','i current','on_hand','onhand']));
+    const ib = n(get(['i_inbound','i inbound','on_order','inbound']));
+    const category = str(get(['invnt_category_id','category','cat'])) || str(get(['invnt_subcategory_id','subcat','subcategory']));
+    return {
+      id:           i,
+      name:         str(get(['name'])) || `Item ${i+1}`,
+      category,
+      subcat:       str(get(['invnt_subcategory_id','subcat','subcategory'])),
+      desc:         str(get(['description','desc'])),
+      mfr:          str(get(['manufacturer','mfr','vendor','vendor_id'])),
+      c_rate:       n(get(['c_rate','burn_per_week','c rate'])),
+      i_min_weeks:  n(get(['i_min_weeks','cushion_weeks','i min weeks'])),
+      t_lead:       n(get(['t_lead','lead_time_days','t lead'])),
+      mrp_active:   bool(get(['is_mrp_active','is_auto_reorder','mrp_active'])),
+      uom:          str(get(['uom_burn','burn_uom','uom'])),
+      // Read from Excel columns — fall back to null / 0 if not present
+      i_current:    ic !== null ? ic : null,
+      i_inbound:    ib !== null ? ib : 0,
+      from_excel:   ic !== null,   // flag: true = value came from file, false = needs manual entry
+      po_pending:   false,
+      po_qty:       0,
+    };
+  });
+
+  // Build dynamic category list from loaded data
+  const cats = [...new Set(loaded.map(it => it.category).filter(Boolean))];
+  rebuildCategoryFilter(cats);
+
+  items  = loaded;
+  mrpRun = false;
+  document.getElementById('last-run-label').textContent = 'Not yet run';
+  document.getElementById('file-badge').style.display = 'inline';
+  document.getElementById('file-badge').textContent = `✓ ${filename} (${loaded.length} items)`;
+  const withCounts = loaded.filter(it => it.from_excel).length;
+  hideUpload();
+  renderTable();
+  const countNote = withCounts > 0 ? ` · ${withCounts} with i_current from file` : ' · enter i_current counts before running';
+  toast(`Loaded ${loaded.length} items from "${sheetName}"${countNote}`, 'success');
+}
+
+function rebuildCategoryFilter(cats) {
+  // Remove old dynamic cat items
+  document.querySelectorAll('.cat-dynamic').forEach(e => e.remove());
+  const sidebar = document.querySelector('.sidebar-section:nth-child(2)');
+  // Reset all to 'all'
+  document.querySelectorAll('[id^=cat-]').forEach(e => e.classList.remove('active'));
+  document.getElementById('cat-all').classList.add('active');
+  activeCat = 'all';
+
+  cats.forEach(cat => {
+    const safeId = 'cat-' + cat.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+    if (document.getElementById(safeId)) return;
+    const div = document.createElement('div');
+    div.className = 'sidebar-item cat-dynamic';
+    div.id = safeId;
+    div.textContent = cat.trim();
+    div.onclick = () => setCatFilter(cat, div);
+    sidebar.appendChild(div);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderTable();
+</script>
+</body>
+</html>

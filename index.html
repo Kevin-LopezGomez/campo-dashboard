@@ -271,120 +271,16 @@
     }
     .panel.active{ display:flex; flex-direction:column; overflow:hidden; }
 
-    .section-head{
-      padding:16px 18px 12px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      flex-wrap:wrap;
-      border-bottom:1px solid rgba(148,163,184,.14);
-      min-height:82px;
-    }
-    .section-head .head-left{flex:1 1 auto;min-width:320px;}
-    .section-head h2{
-      margin:0;
-      font-size:1.18rem;
-      letter-spacing:.012em;
-      font-weight:950;
-      color: var(--hdr);
-      text-shadow:
-        0 1px 0 rgba(0,0,0,.70),
-        0 0 18px var(--hdr-glow);
-      position:relative;
-    }
-    .section-head h2::after{
-      content:"";
-      display:block;
-      height:2px;
-      width:min(260px, 65%);
-      margin-top:8px;
-      border-radius:999px;
-      background: linear-gradient(90deg, rgba(34,197,94,.55), rgba(34,197,94,.12));
-      opacity:.9;
-    }
-    .section-head p{
-      margin:6px 0 0;
-      color:rgba(226,232,240,.82);
-      font-size:.94rem;
-      line-height:1.3;
-      font-weight:600;
-    }
-
     .iframe-wrap{flex:1 1 auto;overflow:hidden;}
     iframe{width:100%;height:100%;border:0;background: transparent;}
     #p-facility-ramp .iframe-wrap{ overflow-y:auto; overflow-x:hidden; }
 
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
 
-    /* Data Input: hide header when active (tool mode) */
-    .panel.toolmode .section-head{ display:none; }
-    .panel.toolmode .iframe-wrap{ height:100%; }
-
     /* =========================================================
        HOME (default)
        ========================================================= */
     .home-wrap{ height:100%; display:flex; flex-direction:column; }
-    .home-top{
-      padding:18px 18px 12px;
-      border-bottom:1px solid rgba(148,163,184,.14);
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-    .home-top h2{
-      margin:0;
-      font-size:1.22rem;
-      letter-spacing:.012em;
-      font-weight:950;
-      color: var(--hdr);
-      text-shadow:
-        0 1px 0 rgba(0,0,0,.70),
-        0 0 18px var(--hdr-glow);
-      position:relative;
-    }
-    .home-top h2::after{
-      content:"";
-      display:block;
-      height:2px;
-      width:min(220px, 55%);
-      margin-top:10px;
-      border-radius:999px;
-      background: linear-gradient(90deg, rgba(34,197,94,.55), rgba(34,197,94,.12));
-      opacity:.9;
-    }
-    .home-top p{
-      margin:8px 0 0;
-      color:rgba(226,232,240,.82);
-      font-size:.98rem;
-      line-height:1.3;
-      max-width: 980px;
-      font-weight:600;
-    }
-    .home-top strong{
-      color: var(--hdr);
-      font-weight:950;
-      text-shadow: 0 1px 0 rgba(0,0,0,.65);
-    }
-    .home-top .mini-actions{ display:flex; gap:10px; align-items:center; }
-    .mini-btn{
-      border:1px solid rgba(148,163,184,.22);
-      background: rgba(2,6,23,.55);
-      color: var(--text);
-      border-radius:12px;
-      padding:8px 10px;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:44px;
-      user-select:none;
-      -webkit-user-select:none;
-      box-shadow: 0 10px 18px rgba(0,0,0,.35);
-    }
-    .mini-btn:hover{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
 
     .home-body{
       flex:1 1 auto;
@@ -514,24 +410,49 @@
     }
 
     .home-level2{ width:100%; height:100%; display:none; }
-    .home-level2.show{ display:flex; flex-direction:column; gap:12px; }
+    .home-level2.show{ display:flex; flex-direction:column; gap:16px; }
 
     .home-crumb{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
-      color: rgba(226,232,240,.86);
-      font-size:1.0rem;
-      padding: 0 2px;
+      gap:16px;
+      padding:2px 2px 4px;
+      color: rgba(226,232,240,.82);
+      font-size:1rem;
       font-weight:700;
     }
+    .home-crumb > div{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
     .home-crumb strong{
+      display:block;
       color: var(--hdr);
+      font-size:2.35rem;
+      line-height:1;
       font-weight:950;
       text-shadow:
         0 1px 0 rgba(0,0,0,.65),
         0 0 18px var(--hdr-glow);
+    }
+    .home-crumb strong::after{
+      content:"";
+      display:block;
+      width:min(320px, 60%);
+      height:3px;
+      margin-top:12px;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(34,197,94,.72), rgba(56,189,248,.18), transparent);
+    }
+    .home-crumb span{
+      display:block;
+      color:rgba(226,232,240,.80);
+      font-size:1rem;
+      line-height:1.35;
+      max-width:780px;
     }
 
     .home-back{
@@ -545,9 +466,11 @@
       align-items:center;
       justify-content:center;
       gap:8px;
+      white-space:nowrap;
       user-select:none;
       -webkit-user-select:none;
       box-shadow: 0 10px 18px rgba(0,0,0,.35);
+      align-self:center;
     }
     .home-back:hover{
       border-color: rgba(34,197,94,.35);
@@ -558,7 +481,9 @@
       flex:1 1 auto;
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap:12px;
+      grid-auto-rows:minmax(164px, auto);
+      align-content:start;
+      gap:14px;
       overflow:auto;
       padding-right: 6px;
       position:relative;
@@ -569,19 +494,26 @@
     @media (max-width: 640px){
       .cat-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
+    @media (max-width: 520px){
+      .home-crumb{ align-items:flex-start; flex-direction:column; }
+      .home-crumb strong{ font-size:1.8rem; }
+      .cat-grid{ grid-template-columns: 1fr; }
+    }
 
     .tile{
       border:1px solid rgba(148,163,184,.18);
-      background: linear-gradient(135deg, rgba(2,6,23,.55), rgba(15,23,42,.60));
+      background:
+        radial-gradient(circle at 80% 18%, rgba(56,189,248,.08), transparent 42%),
+        linear-gradient(135deg, rgba(2,6,23,.68), rgba(15,23,42,.70));
       border-radius:16px;
-      padding:12px 10px;
+      padding:16px;
       cursor:pointer;
       display:flex;
       flex-direction:column;
-      gap:6px;
+      gap:10px;
       align-items:flex-start;
       justify-content:flex-start;
-      min-height:82px;
+      min-height:164px;
       transition: background .12s ease, border-color .12s ease, transform .08s ease, box-shadow .12s ease;
       user-select:none;
       -webkit-user-select:none;
@@ -593,12 +525,27 @@
     .tile:hover{
       border-color: rgba(56,189,248,.40);
       box-shadow: 0 14px 26px rgba(0,0,0,.42);
-      background: linear-gradient(135deg, rgba(56,189,248,.10), rgba(15,23,42,.65));
+      background:
+        radial-gradient(circle at 80% 18%, rgba(56,189,248,.14), transparent 42%),
+        linear-gradient(135deg, rgba(8,47,73,.42), rgba(15,23,42,.74));
     }
     .tile:active{ transform: translateY(1px); }
-    .tile .ico{ font-size:1.15rem; line-height:1; }
+    .tile .ico{
+      width:38px;
+      height:38px;
+      border:1px solid rgba(148,163,184,.16);
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(2,6,23,.38);
+      font-size:1.28rem;
+      line-height:1;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
     .tile .name{
-      font-size:.98rem;
+      font-size:1.08rem;
+      line-height:1.12;
       font-weight:950;
       letter-spacing:.01em;
       color: var(--hdr);
@@ -607,10 +554,11 @@
         0 0 14px rgba(34,197,94,.12);
     }
     .tile .meta{
-      font-size:.86rem;
-      color: rgba(226,232,240,.82);
-      line-height:1.2;
+      font-size:.9rem;
+      color: rgba(226,232,240,.78);
+      line-height:1.32;
       font-weight:600;
+      max-width:34ch;
     }
 
     .disabled{
@@ -868,16 +816,6 @@
     <div class="main">
       <section class="panel active" id="p-home">
         <div class="home-wrap">
-          <div class="home-top">
-            <div>
-              <h2 data-i18n="home.title">Dashboards</h2>
-              <p data-i18n="home.subtitle">Choose a category to access company dashboards</p>
-            </div>
-            <div class="mini-actions">
-              <button class="mini-btn" id="homeBackBtn" title="Back to categories" aria-label="Back to categories" style="display:none;">←</button>
-            </div>
-          </div>
-
           <div class="home-body">
             <div class="home-stage">
               <div class="home-grid" id="homeLevel1">
@@ -939,7 +877,7 @@
 
               <div class="home-level2" id="homeLevel2">
                 <div class="home-crumb">
-                  <div id="homeCrumb" data-i18n-html="crumb.ops"><strong>Operations</strong> — choose a dashboard</div>
+                  <div id="homeCrumb" data-i18n-html="crumb.ops"><strong>Operations</strong><span>Choose a dashboard</span></div>
                   <button class="home-back" id="homeBackInline" aria-label="Back" data-i18n="home.back">← Back</button>
                 </div>
 
@@ -982,6 +920,7 @@
                   <button class="tile" data-home-go="p-pack-team-performance"><div class="ico">📦</div><div class="name" data-i18n="tile.pack-team-performance.name">Pack Team Performance</div><div class="meta" data-i18n="tile.pack-team-performance.meta">Employee performance</div></button>
                 </div>
                 <div class="cat-grid" id="homeProcurement" style="display:none;">
+                  <button class="tile" data-home-go="p-proc-mrp"><div class="ico">🏭</div><div class="name" data-i18n="tile.proc-mrp.name">MRP</div><div class="meta" data-i18n="tile.proc-mrp.meta">Inventory reorder planning</div></button>
                   <button class="tile" data-home-go="p-proc-open-orders"><div class="ico">🧾</div><div class="name" data-i18n="tile.proc-open-orders.name">Open Orders</div><div class="meta" data-i18n="tile.proc-open-orders.meta">Purchasing workflow</div></button>
                   <button class="tile" data-home-go="p-seed-inventory"><div class="ico">🌱</div><div class="name" data-i18n="tile.seed-inventory.name">Seed Inventory</div><div class="meta" data-i18n="tile.seed-inventory.meta">Production, experiment, and mixed seed stock</div></button>
                 </div>
@@ -992,289 +931,139 @@
         </div>
       </section>
 
-      <section class="panel" id="p-data" data-hidehead="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.data.title">Data Input Dashboard</h2>
-            <p data-i18n="panel.data.desc">Loads the Data Input tool and writes Master Grow / Master Pack to localStorage (and can publish to Supabase via Worker).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="data"></code></div>
-        </div>
+      <section class="panel" id="p-data">
         <div class="iframe-wrap">
           <iframe id="ifr-data" data-file-key="data"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-weekly" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.weekly.title">Summary Dashboard</h2>
-            <p data-i18n-html="panel.weekly.desc">Reads Master Grow + Master Pack from <code>localStorage</code> and builds a weekly summary table (targets + actuals + %).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="weekly"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-weekly" data-file-key="weekly"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-seeding" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.seeding.title">Seeding Dashboard</h2>
-            <p data-i18n-html="panel.seeding.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code> → <code>sheets["Master Grow"]</code>.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="seeding"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-seeding" data-file-key="seeding"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-transplant" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.transplant.title">Transplant Dashboard</h2>
-            <p data-i18n-html="panel.transplant.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="transplant"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-transplant" data-file-key="transplant"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-harvest" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.harvest.title">Harvest Dashboard</h2>
-            <p data-i18n-html="panel.harvest.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="harvest"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-harvest" data-file-key="harvest"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-packing" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.packing.title">Packing Dashboard</h2>
-            <p data-i18n-html="panel.packing.desc">Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets["Master Pack"]</code>.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="packing"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-packing" data-file-key="packing"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-shipments" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.shipments.title">Shipments (Forward Sales) Dashboard</h2>
-            <p data-i18n-html="panel.shipments.desc">Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="shipments"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-shipments" data-file-key="shipments"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-sanitation" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.sanitation.title">Sanitation Dashboard</h2>
-            <p data-i18n-html="panel.sanitation.desc">Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="sanitation"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-sanitation" data-file-key="sanitation"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-proc-open-orders">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.proc-open-orders.title">Open Orders Tracker</h2>
-            <p data-i18n="panel.proc-open-orders.desc">Procurement view for open orders, vendor follow-ups, and department status.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="proc-open-orders"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-proc-open-orders" data-file-key="proc-open-orders"></iframe>
         </div>
       </section>
 
-      <section class="panel" id="p-seed-inventory">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.seed-inventory.title">Seed Inventory</h2>
-            <p data-i18n="panel.seed-inventory.desc">Inventory dashboard for Production, Experiment, and Mixed seeds.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="seed-inventory"></code></div>
+      <section class="panel" id="p-proc-mrp">
+        <div class="iframe-wrap">
+          <iframe id="ifr-proc-mrp" data-file-key="proc-mrp"></iframe>
         </div>
+      </section>
+
+      <section class="panel" id="p-seed-inventory">
         <div class="iframe-wrap">
           <iframe id="ifr-seed-inventory" data-file-key="seed-inventory"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-inventory" data-ops="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.inventory.title">S&amp;H Inventory Dashboard</h2>
-            <p data-i18n-html="panel.inventory.desc">Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="inventory"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-inventory" data-file-key="inventory"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-foodsafety" data-foodsafety="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Food Safety – Traceibility</h2>
-            <p>Reads Master Grow + Master Pack from <code>localStorage</code> and traces batches end-to-end.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;">
-            <span data-i18n="panel.file.prefix">📄 file:</span>
-            <code data-file-code="foodsafety"></code>
-          </div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-foodsafety" data-file-key="foodsafety"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-expcal" data-growing="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Experiment Calendar</h2>
-            <p>Paste TSV → filter → Agenda / Month / Gantt (embedded from <code data-file-text="expcal"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="expcal"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-expcal" data-file-key="expcal"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-grow-harvest-dashboard" data-growing="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Grow Harvest Dashbaord</h2>
-            <p>Grow harvest dashboard view (embedded from <code data-file-text="grow-harvest-dashboard"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="grow-harvest-dashboard"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-grow-harvest-dashboard" data-file-key="grow-harvest-dashboard"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-leaf-growth-dashboard" data-growing="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Leaf Growth</h2>
-            <p>Leaf growth dashboard view (embedded from <code data-file-text="leaf-growth-dashboard"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="leaf-growth-dashboard"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-leaf-growth-dashboard" data-file-key="leaf-growth-dashboard"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-board-inventory" data-team="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Board Inventory</h2>
-            <p>Team view for board counts (embedded from <code data-file-text="board-inventory"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="board-inventory"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-board-inventory" data-file-key="board-inventory"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-pack-team-performance" data-hr="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Pack Team Employee Performance</h2>
-            <p>Team performance dashboard (embedded from <code data-file-text="pack-team-performance"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="pack-team-performance"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-pack-team-performance" data-file-key="pack-team-performance"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-facility-ramp" data-scheduling="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Facility Ramp Tracker</h2>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="facility-ramp"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-facility-ramp" data-file-key="facility-ramp" scrolling="yes"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-mulders" data-growing="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Mulders Chart</h2>
-            <p>Growing performance view (embedded from <code data-file-text="mulders"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="mulders"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-mulders" data-file-key="mulders"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-sales-tracking" data-sales="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Sales Productivity Dashboard</h2>
-            <p>Reads Sales lines from Master Pack (localStorage) and renders KPI + charts.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="sales-tracking"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-sales-tracking" data-file-key="sales-tracking"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-store-visits" data-sales="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2>Store Visits</h2>
-            <p>Management visit logs and follow-ups (embedded from <code data-file-text="store-visits"></code>).</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="store-visits"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-store-visits" data-file-key="store-visits"></iframe>
         </div>
       </section>
 
       <section class="panel" id="p-hr-attendances" data-hr="true">
-        <div class="section-head">
-          <div class="head-left">
-            <h2 data-i18n="panel.hr-attendances.title">HR Attendances</h2>
-            <p data-i18n="panel.hr-attendances.desc">Attendance dashboard for shift presence, punctuality, and daily HR follow-up.</p>
-          </div>
-          <div style="opacity:.9;color:rgba(226,232,240,.70);font-size:.88rem;"><span data-i18n="panel.file.prefix">📄 file:</span> <code data-file-code="hr-attendances"></code></div>
-        </div>
         <div class="iframe-wrap">
           <iframe id="ifr-hr-attendances" data-file-key="hr-attendances"></iframe>
         </div>
@@ -1371,6 +1160,7 @@
         <button class="launch-app" data-action="go-panel" data-target="p-grow-harvest-dashboard"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.grow-harvest-dashboard.name">Grow Harvest Dashbaord</div></button>
       </div>
       <div class="launcher-grid" id="cat-procurement" style="display:none;">
+        <button class="launch-app" data-action="go-panel" data-target="p-proc-mrp"><div class="app-ico">🏭</div><div class="app-name" data-i18n="tile.proc-mrp.name">MRP</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-proc-open-orders"><div class="app-ico">🧾</div><div class="app-name" data-i18n="tile.proc-open-orders.name">Open Orders</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-seed-inventory"><div class="app-ico">🌱</div><div class="app-name" data-i18n="tile.seed-inventory.name">Seed Inventory</div></button>
       </div>
@@ -1392,18 +1182,16 @@
         en: {
           "brand.title":"Company Dashboards",
           "launcher.title":"Dashboards",
-          "home.title":"Dashboards",
-          "home.subtitle":"Choose a category to access company dashboards",
           "home.back":"← Back",
           "launcher.category":"Category",
-          "crumb.ops":"<strong>Operations</strong> — choose a dashboard",
-          "crumb.sales":"<strong>Sales &amp; Marketing</strong> — sales dashboards",
-          "crumb.team":"<strong>Team Tools</strong> — internal utilities",
-          "crumb.scheduling":"<strong>Scheduling</strong> — planning and timeline tools",
-          "crumb.growing":"<strong>Growing</strong> — experiments & calendar",
-          "crumb.foodsafety":"<strong>Food Safety</strong> — batch traceability",
-          "crumb.hr":"<strong>HR</strong> — people operations dashboards",
-          "crumb.procurement":"<strong>Procurement &amp; Inventory</strong> — purchasing dashboards",
+          "crumb.ops":"<strong>Operations</strong><span>Choose a dashboard</span>",
+          "crumb.sales":"<strong>Sales &amp; Marketing</strong><span>Sales performance, customer activity, and demand tools</span>",
+          "crumb.team":"<strong>Team Tools</strong><span>Internal tools for scheduling, coordination, and team workflows</span>",
+          "crumb.scheduling":"<strong>Scheduling</strong><span>Planning, sequencing, and timeline coordination tools</span>",
+          "crumb.growing":"<strong>Growing</strong><span>Experiment calendars, crop planning, and cultivation dashboards</span>",
+          "crumb.foodsafety":"<strong>Food Safety</strong><span>Batch traceability across Grow and Pack data</span>",
+          "crumb.hr":"<strong>HR</strong><span>Attendance tracking, staffing visibility, and people operations tools</span>",
+          "crumb.procurement":"<strong>Procurement &amp; Inventory</strong><span>Open orders and inventory visibility for purchasing</span>",
           "card.ops.title":"Operations",
           "card.ops.meta":"End-to-end operational planning and execution across production, inventory, and fulfillment",
           "card.sales.title":"Sales & Marketing",
@@ -1460,6 +1248,8 @@
           "tile.board-inventory.meta":"Current board counts",
           "tile.proc-open-orders.name":"Open Orders",
           "tile.proc-open-orders.meta":"Purchasing workflow",
+          "tile.proc-mrp.name":"MRP",
+          "tile.proc-mrp.meta":"Inventory reorder planning",
           "tile.seed-inventory.name":"Seed Inventory",
           "tile.seed-inventory.meta":"Production, experiment, and mixed seed stock",
           "tile.pack-team-performance.name":"Pack Team Performance",
@@ -1514,6 +1304,8 @@
           "panel.inventory.desc":"Reads Master Pack (preferred) + Master Grow (fallback) from <code>localStorage</code> keys <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
           "panel.proc-open-orders.title":"Open Orders Tracker",
           "panel.proc-open-orders.desc":"Procurement view for open orders, vendor follow-ups, and department status.",
+          "panel.proc-mrp.title":"MRP",
+          "panel.proc-mrp.desc":"Inventory reorder planning.",
           "panel.seed-inventory.title":"Seed Inventory",
           "panel.seed-inventory.desc":"Inventory dashboard for Production, Experiment, and Mixed seeds.",
           "panel.hr-attendances.title":"HR Attendances",
@@ -1523,18 +1315,16 @@
         es: {
           "brand.title":"Paneles de la empresa",
           "launcher.title":"Paneles",
-          "home.title":"Paneles",
-          "home.subtitle":"Elige una categoría para acceder a los paneles de la empresa",
           "home.back":"← Volver",
           "launcher.category":"Categoría",
-          "crumb.ops":"<strong>Operaciones</strong> — elige un panel",
-          "crumb.sales":"<strong>Ventas y marketing</strong> — paneles de ventas",
-          "crumb.team":"<strong>Herramientas de equipo</strong> — utilidades internas",
-          "crumb.scheduling":"<strong>Programación</strong> — herramientas de planificación y cronograma",
-          "crumb.growing":"<strong>Crecimiento</strong> — experimentos y calendario",
-          "crumb.foodsafety":"<strong>Inocuidad</strong> — trazabilidad de lotes",
-          "crumb.hr":"<strong>Recursos Humanos</strong> — paneles de operaciones de personal",
-          "crumb.procurement":"<strong>Compras e inventario</strong> — paneles de compras",
+          "crumb.ops":"<strong>Operaciones</strong><span>Elige un panel</span>",
+          "crumb.sales":"<strong>Ventas y marketing</strong><span>Herramientas de rendimiento comercial, clientes y demanda</span>",
+          "crumb.team":"<strong>Herramientas de equipo</strong><span>Herramientas internas para programación, coordinación y flujos de equipo</span>",
+          "crumb.scheduling":"<strong>Programación</strong><span>Herramientas de planificación, secuencia y coordinación de cronogramas</span>",
+          "crumb.growing":"<strong>Crecimiento</strong><span>Calendarios de experimentos, planificación de cultivos y paneles de cultivo</span>",
+          "crumb.foodsafety":"<strong>Inocuidad</strong><span>Trazabilidad de lotes entre datos de cultivo y empaque</span>",
+          "crumb.hr":"<strong>Recursos Humanos</strong><span>Asistencia, visibilidad de personal y herramientas de operaciones de personas</span>",
+          "crumb.procurement":"<strong>Compras e inventario</strong><span>Órdenes abiertas y visibilidad de inventario para compras</span>",
           "card.ops.title":"Operaciones",
           "card.ops.meta":"Planificación y ejecución operativa de principio a fin en producción, inventario y cumplimiento",
           "card.sales.title":"Ventas y mercadeo",
@@ -1591,6 +1381,8 @@
           "tile.board-inventory.meta":"Conteos actuales de tablas",
           "tile.proc-open-orders.name":"Órdenes abiertas",
           "tile.proc-open-orders.meta":"Flujo de compras",
+          "tile.proc-mrp.name":"MRP",
+          "tile.proc-mrp.meta":"Planificación de reposición de inventario",
           "tile.seed-inventory.name":"Inventario de semillas",
           "tile.seed-inventory.meta":"Existencias de semillas de producción, experimento y mixtas",
           "tile.pack-team-performance.name":"Rendimiento del equipo de empaque",
@@ -1645,6 +1437,8 @@
           "panel.inventory.desc":"Lee Master Pack (preferido) + Master Grow (alterno) de <code>localStorage</code> claves <code>campo_master_pack_v1</code> / <code>campo_master_grow_v1</code>.",
           "panel.proc-open-orders.title":"Seguimiento de órdenes abiertas",
           "panel.proc-open-orders.desc":"Vista de compras para órdenes abiertas, seguimientos de proveedores y estado por departamento.",
+          "panel.proc-mrp.title":"MRP",
+          "panel.proc-mrp.desc":"Planificación de reposición de inventario.",
           "panel.seed-inventory.title":"Inventario de semillas",
           "panel.seed-inventory.desc":"Panel de inventario para semillas de producción, experimento y mixtas.",
           "panel.hr-attendances.title":"Asistencias de RR. HH.",
@@ -1663,6 +1457,7 @@
         data: "07.0 Data - Input Tool.html",
         inventory: "08.0 Ops - SH Inventory.html",
         shipments: "09.0 Ops - Shipments.html",
+        "proc-mrp": "14.0 Procurement - MRP.html",
         "proc-open-orders": "14.0 Procurement - Open Orders.html",
         "seed-inventory": "Inventory - seed inventory Dashboard.html",
         expcal: "10.0 Growing - Experiment Calendar.html",
@@ -1811,7 +1606,6 @@
       const homeHr = document.getElementById("homeHr");
       const homeCrumb = document.getElementById("homeCrumb");
       const homeBackInline = document.getElementById("homeBackInline");
-      const homeBackBtn = document.getElementById("homeBackBtn");
 
       let toastTimer = null;
       let currentLang = (localStorage.getItem(LANG_KEY) || "en").toLowerCase();
@@ -1848,7 +1642,7 @@
 
       const IFRAME_IDS = [
         "ifr-data","ifr-weekly","ifr-seeding","ifr-transplant","ifr-harvest",
-        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-leaf-growth-dashboard","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-open-orders","ifr-seed-inventory",
+        "ifr-packing","ifr-shipments","ifr-sanitation","ifr-inventory","ifr-foodsafety","ifr-expcal","ifr-grow-harvest-dashboard","ifr-leaf-growth-dashboard","ifr-mulders","ifr-board-inventory","ifr-pack-team-performance","ifr-facility-ramp","ifr-proc-mrp","ifr-proc-open-orders","ifr-seed-inventory",
         "ifr-sales-tracking","ifr-store-visits","ifr-hr-attendances"
       ];
 
@@ -2260,10 +2054,6 @@
         const panel = document.getElementById(panelId);
         if (!panel) return;
 
-        const hideHead = panel.getAttribute("data-hidehead") === "true";
-        panels.forEach(p => p.classList.remove("toolmode"));
-        if (hideHead) panel.classList.add("toolmode");
-
         const isOps = panel.getAttribute("data-ops") === "true";
         const isSales = panel.getAttribute("data-sales") === "true";
         const isTeam = panel.getAttribute("data-team") === "true";
@@ -2353,7 +2143,6 @@
       function homeShowLevel1(){
         homeLevel1.style.display = "grid";
         homeLevel2.classList.remove("show");
-        homeBackBtn.style.display = "none";
       }
 
       function homeShowCategory(cat){
@@ -2394,7 +2183,6 @@
 
         homeLevel1.style.display = "none";
         homeLevel2.classList.add("show");
-        homeBackBtn.style.display = "inline-flex";
       }
 
       function handleHomeClick(e){
@@ -2413,7 +2201,6 @@
       homeLevel2.addEventListener("click", handleHomeClick);
 
       homeBackInline.addEventListener("click", homeShowLevel1);
-      homeBackBtn.addEventListener("click", homeShowLevel1);
 
       // ========= Launcher (Google style) =========
       let launcherScreen = "home";

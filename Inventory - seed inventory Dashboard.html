@@ -668,24 +668,20 @@
       if (sheet?.headers && sheet?.rows) return withUsageIndexes(parseSheetRowsToNested(sheet.headers, sheet.rows));
       return [];
     }
+    function loadLocalSeedRows() {
+      const raw = localStorage.getItem(MASTER_SEED_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      const rows = parseSeedPayload(parsed);
+      if (!rows.length) return [];
+      dataSource = "localStorage";
+      sourceSeedPayload = parsed;
+      sourceUpdatedAt = parsed?.updatedAt || "";
+      sourceLabel = parsed?.sourceLabel || "localStorage fallback";
+      return rows;
+    }
     async function loadDataRows() {
       lastLoadError = "";
-      try {
-        const raw = localStorage.getItem(MASTER_SEED_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const fromLocal = parseSeedPayload(parsed);
-          if (fromLocal.length) {
-            dataSource = "localStorage";
-            sourceSeedPayload = parsed;
-            sourceUpdatedAt = parsed?.updatedAt || "";
-            sourceLabel = parsed?.sourceLabel || "localStorage";
-            return fromLocal;
-          }
-        }
-      } catch (err) {
-        lastLoadError = `Local cache failed: ${err?.message || err}`;
-      }
       try {
         const res = await fetch(`${PUBLIC_SEED_URL}?ts=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) throw new Error(`Supabase public JSON failed (${res.status})`);
@@ -700,7 +696,13 @@
         }
         throw new Error('Supabase JSON loaded but has no parsable sheets["Seed Inventory"] rows');
       } catch (err) {
-        lastLoadError = [lastLoadError, `Supabase load failed: ${err?.message || err}`].filter(Boolean).join(" | ");
+        lastLoadError = `Supabase load failed: ${err?.message || err}`;
+      }
+      try {
+        const fromLocal = loadLocalSeedRows();
+        if (fromLocal.length) return fromLocal;
+      } catch (err) {
+        lastLoadError = [lastLoadError, `Local fallback failed: ${err?.message || err}`].filter(Boolean).join(" | ");
       }
       dataSource = "none";
       sourceSeedPayload = null;
@@ -720,7 +722,7 @@
         localStorage.setItem(MASTER_SEED_PING, String(Date.now()));
         emitSeedUpdated();
       }
-      dataSource = persistLocal ? "localStorage" : "supabase";
+      dataSource = "supabase";
       sourceSeedPayload = parsed;
       sourceUpdatedAt = parsed?.updatedAt || "";
       sourceLabel = parsed?.sourceLabel || "Supabase public JSON";
@@ -1083,10 +1085,6 @@
       if (btn) btn.disabled = true;
       try {
         const payload = buildSeedPayloadForPublish();
-        localStorage.setItem(MASTER_SEED_KEY, JSON.stringify(payload));
-        localStorage.setItem(MASTER_SEED_PING, String(Date.now()));
-        emitSeedUpdated();
-
         $("status").textContent = "Saving Seed Inventory to Supabase...";
         const res = await fetch(WORKER_SEED_URL, {
           method: "PUT",
@@ -1097,10 +1095,14 @@
         if (!res.ok) throw new Error(`Save failed (${res.status})${text ? `: ${text}` : ""}`);
 
         sourceSeedPayload = payload;
-        dataSource = "localStorage";
+        dataSource = "supabase";
         sourceUpdatedAt = payload.updatedAt;
         sourceLabel = payload.sourceLabel;
-        $("status").textContent = "Seed Inventory saved to Supabase and localStorage.";
+        try {
+          localStorage.setItem(MASTER_SEED_PING, String(Date.now()));
+          emitSeedUpdated();
+        } catch (_e) {}
+        $("status").textContent = "Seed Inventory saved to Supabase.";
       } catch (err) {
         $("status").textContent = `Failed to save Seed Inventory: ${err?.message || err}`;
       } finally {
@@ -1452,9 +1454,9 @@
       if (btn) btn.disabled = true;
       try {
         $("status").textContent = "Refreshing Seed Inventory from Supabase...";
-        await loadSupabaseRows({ persistLocal: true });
+        await loadSupabaseRows({ persistLocal: false });
         render();
-        $("status").textContent = `Refreshed from Supabase and updated local cache. Rows: ${fmtInt(dataRows.length)}.`;
+        $("status").textContent = `Refreshed directly from Supabase. Rows: ${fmtInt(dataRows.length)}.`;
       } catch (err) {
         $("status").textContent = `Failed to refresh Supabase data: ${err?.message || err}`;
       } finally {
@@ -1488,9 +1490,9 @@
       try {
         $("status").textContent = `Importing ${file.name}...`;
         const parsed = JSON.parse(await file.text());
-        loadSeedPayloadIntoState(parsed, `Imported JSON: ${file.name}`, { persistLocal: true });
+        loadSeedPayloadIntoState(parsed, `Imported JSON: ${file.name}`, { persistLocal: false });
         render();
-        $("status").textContent = `Imported ${file.name} into local cache. Rows: ${fmtInt(dataRows.length)}.`;
+        $("status").textContent = `Imported ${file.name} for this session. Rows: ${fmtInt(dataRows.length)}.`;
       } catch (err) {
         $("status").textContent = `Failed to import seed JSON: ${err?.message || err}`;
       } finally {
