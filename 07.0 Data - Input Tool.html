@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Data Input – Grow / Pack / Experiments / Procurement / Store Visit / Seed Inventory</title>
+  <title>Data Input – Grow / Pack / Experiments / Procurement / MRP / Store Visit / Seed Inventory</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- SheetJS (Excel reader) -->
@@ -251,9 +251,9 @@
 
 <body>
 <div class="wrap">
-  <h1>Data Input – Grow / Pack / Experiments / Procurement / Store Visit / Seed Inventory / Leaf Growth</h1>
+  <h1>Data Input – Grow / Pack / Experiments / Procurement / MRP / Store Visit / Seed Inventory / Leaf Growth</h1>
   <p>
-    Supported: <b>1 XLSX</b> (multiple sheets) or <b>separate CSVs</b> for <b>Grow</b>, <b>Pack</b>, <b>Current Experiments</b>, <b>Procurement</b>, <b>Store Visit</b>, <b>Seed Inventory</b>, and <b>Leaf Growth</b>. Uploading a new file will <b>overwrite</b> only that dataset’s stored JSON.
+    Supported: <b>1 XLSX</b> (multiple sheets) or <b>separate CSVs</b> for <b>Grow</b>, <b>Pack</b>, <b>Current Experiments</b>, <b>Procurement</b>, <b>MRP</b>, <b>Store Visit</b>, <b>Seed Inventory</b>, and <b>Leaf Growth</b>. Uploading a new file will <b>overwrite</b> only that dataset’s stored JSON.
   </p>
 
   <div class="panel">
@@ -282,6 +282,7 @@
               <option value="pack">Master Pack</option>
               <option value="exp">Current Experiments</option>
               <option value="proc">Procurement</option>
+              <option value="mrp">MRP</option>
               <option value="store">Store Visit</option>
               <option value="seed">Seed Inventory</option>
               <option value="leaf">Leaf Growth</option>
@@ -301,15 +302,15 @@
         <div class="hint small">
           <b>Bulletproof contract:</b> this tool always saves Excel/CSV into:
           <br>
-          <code>payload.sheets["Master Grow"]</code>, <code>payload.sheets["Master Pack"]</code>, <code>payload.sheets["Current Experiments"]</code>, <code>payload.sheets["Procurement"]</code>, <code>payload.sheets["Store Visit"]</code>, <code>payload.sheets["Seed Inventory"]</code>, and <code>payload.sheets["Leaf Growth"]</code>
+          <code>payload.sheets["Master Grow"]</code>, <code>payload.sheets["Master Pack"]</code>, <code>payload.sheets["Current Experiments"]</code>, <code>payload.sheets["Procurement"]</code>, <code>payload.sheets["MRP"]</code>, <code>payload.sheets["Store Visit"]</code>, <code>payload.sheets["Seed Inventory"]</code>, and <code>payload.sheets["Leaf Growth"]</code>
           <br><br>
           Uploads save JSON locally so dashboards read immediately (<code>Master Pack</code> and <code>Leaf Growth</code> use IndexedDB cache; other datasets use <code>localStorage</code>).
           “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
           <br><br>
           Worker endpoints:
-          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>, <code>GET /data/master/Store%20Visits.json</code>, <code>GET /data/master/Seed%20Inventory.json</code>, <code>GET /data/master/Leaf%20Growth.json</code>,
+          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>, <code>GET /data/master/test.json</code>, <code>GET /data/master/Store%20Visits.json</code>, <code>GET /data/master/Seed%20Inventory.json</code>, <code>GET /data/master/Leaf%20Growth.json</code>,
           <br>
-          <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>, <code>PUT /data/master/Store%20Visits.json</code>, <code>PUT /data/master/Seed%20Inventory.json</code>, <code>PUT /data/master/Leaf%20Growth.json</code>.
+          <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>, <code>PUT /data/master/test.json</code>, <code>PUT /data/master/Store%20Visits.json</code>, <code>PUT /data/master/Seed%20Inventory.json</code>, <code>PUT /data/master/Leaf%20Growth.json</code>.
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
@@ -321,6 +322,7 @@
         <div class="kv"><span>Master Pack</span><span class="kvRight"><button class="iconBtn" id="packDlBtn" type="button" title="Download pack.json" disabled>⬇</button><span class="tag" id="packTag"><span class="dot bad"></span>Missing</span></span></div>
         <div class="kv"><span>Current Experiments</span><span class="kvRight"><button class="iconBtn" id="expDlBtn" type="button" title="Download experiments.json" disabled>⬇</button><span class="tag" id="expTag"><span class="dot bad"></span>Missing</span></span></div>
         <div class="kv"><span>Procurement</span><span class="kvRight"><button class="iconBtn" id="procDlBtn" type="button" title="Download procurement.json" disabled>⬇</button><span class="tag" id="procTag"><span class="dot bad"></span>Missing</span></span></div>
+        <div class="kv"><span>MRP</span><span class="kvRight"><button class="iconBtn" id="mrpDlBtn" type="button" title="Download mrp.json" disabled>⬇</button><span class="tag" id="mrpTag"><span class="dot bad"></span>Missing</span></span></div>
         <div class="kv"><span>Store Visit</span><span class="kvRight"><button class="iconBtn" id="storeDlBtn" type="button" title="Download store-visit.json" disabled>⬇</button><span class="tag" id="storeTag"><span class="dot bad"></span>Missing</span></span></div>
         <div class="kv"><span>Seed Inventory</span><span class="kvRight"><button class="iconBtn" id="seedDlBtn" type="button" title="Download seed-inventory.json" disabled>⬇</button><span class="tag" id="seedTag"><span class="dot bad"></span>Missing</span></span></div>
         <div class="kv"><span>Leaf Growth</span><span class="kvRight"><button class="iconBtn" id="leafDlBtn" type="button" title="Download leaf-growth.json" disabled>⬇</button><span class="tag" id="leafTag"><span class="dot bad"></span>Missing</span></span></div>
@@ -328,6 +330,7 @@
         <div class="kv"><span>Pack updated</span><b id="packUpdated">–</b></div>
         <div class="kv"><span>Experiments updated</span><b id="expUpdated">–</b></div>
         <div class="kv"><span>Procurement updated</span><b id="procUpdated">–</b></div>
+        <div class="kv"><span>MRP updated</span><b id="mrpUpdated">–</b></div>
         <div class="kv"><span>Store Visit updated</span><b id="storeUpdated">–</b></div>
         <div class="kv"><span>Seed Inventory updated</span><b id="seedUpdated">–</b></div>
         <div class="kv"><span>Leaf Growth updated</span><b id="leafUpdated">–</b></div>
@@ -352,10 +355,12 @@ const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
 const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 const WORKER_EXP_URL  = `${WORKER_BASE}/data/master/experiments.json`;
 const WORKER_PROC_URL = `${WORKER_BASE}/data/master/procurement.json`;
+const WORKER_MRP_URL = `${WORKER_BASE}/data/master/test.json`;
 const WORKER_STORE_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
 const WORKER_STORE_GET_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
 const WORKER_SEED_URL = `${WORKER_BASE}/data/master/Seed%20Inventory.json`;
 const WORKER_LEAF_URL = `${WORKER_BASE}/data/master/Leaf%20Growth.json`;
+const PUBLIC_MRP_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/test.json";
 const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json";
 const PUBLIC_SEED_INVENTORY_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Seed%20Inventory.json";
 const PUBLIC_LEAF_GROWTH_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json";
@@ -366,6 +371,7 @@ const MASTER_GROW_KEY = "campo_master_grow_v1";
 const MASTER_PACK_KEY = "campo_master_pack_v1";
 const MASTER_EXP_KEY  = "campo_experiments_v1";
 const MASTER_PROC_KEY = "campo_master_procurement_v1";
+const MASTER_MRP_KEY = "campo_master_mrp_v1";
 const MASTER_STORE_KEY = "campo_store_visits_v1";
 const MASTER_SEED_KEY = "campo_master_seed_inventory_v1";
 const MASTER_LEAF_KEY = "campo_leaf_growth_v1";
@@ -377,6 +383,7 @@ const MASTER_GROW_PING = "campo_master_grow_push_ping_v1";
 const MASTER_PACK_PING = "campo_master_pack_push_ping_v1";
 const MASTER_EXP_PING  = "campo_experiments_push_ping_v1";
 const MASTER_PROC_PING = "campo_master_procurement_push_ping_v1";
+const MASTER_MRP_PING = "campo_master_mrp_push_ping_v1";
 const MASTER_STORE_PING = "campo_store_visits_push_ping_v1";
 const MASTER_SEED_PING = "campo_master_seed_inventory_push_ping_v1";
 const MASTER_LEAF_PING = "campo_leaf_growth_push_ping_v1";
@@ -391,6 +398,7 @@ const CANON_GROW_SHEET = "Master Grow";
 const CANON_PACK_SHEET = "Master Pack";
 const CANON_EXP_SHEET  = "Current Experiments";
 const CANON_PROC_SHEET = "Procurement";
+const CANON_MRP_SHEET = "MRP";
 const CANON_STORE_SHEET = "Store Visit";
 const CANON_SEED_SHEET = "Seed Inventory";
 const CANON_LEAF_SHEET = "Leaf Growth";
@@ -401,6 +409,7 @@ const MSG_GROW = "MASTER_GROW_UPDATED";
 const MSG_PACK = "MASTER_PACK_UPDATED";
 const MSG_EXP  = "EXPERIMENTS_UPDATED";
 const MSG_PROC = "PROCUREMENT_UPDATED";
+const MSG_MRP = "MRP_UPDATED";
 const MSG_STORE = "STORE_VISITS_UPDATED";
 const MSG_SEED = "SEED_INVENTORY_UPDATED";
 const MSG_LEAF = "LEAF_GROWTH_UPDATED";
@@ -559,6 +568,7 @@ const clearBtn = document.getElementById("clearBtn");
   const packTag = document.getElementById("packTag");
 const expTag  = document.getElementById("expTag");
 const procTag = document.getElementById("procTag");
+const mrpTag = document.getElementById("mrpTag");
 const storeTag = document.getElementById("storeTag");
 const seedTag = document.getElementById("seedTag");
 const leafTag = document.getElementById("leafTag");
@@ -566,6 +576,7 @@ const growDlBtn = document.getElementById("growDlBtn");
 const packDlBtn = document.getElementById("packDlBtn");
 const expDlBtn  = document.getElementById("expDlBtn");
 const procDlBtn = document.getElementById("procDlBtn");
+const mrpDlBtn = document.getElementById("mrpDlBtn");
 const storeDlBtn = document.getElementById("storeDlBtn");
 const seedDlBtn = document.getElementById("seedDlBtn");
 const leafDlBtn = document.getElementById("leafDlBtn");
@@ -573,6 +584,7 @@ const growUpdated = document.getElementById("growUpdated");
 const packUpdated = document.getElementById("packUpdated");
 const expUpdated  = document.getElementById("expUpdated");
 const procUpdated = document.getElementById("procUpdated");
+const mrpUpdated = document.getElementById("mrpUpdated");
 const storeUpdated = document.getElementById("storeUpdated");
 const seedUpdated = document.getElementById("seedUpdated");
 const leafUpdated = document.getElementById("leafUpdated");
@@ -623,6 +635,7 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
     pack: "Master Pack",
     exp: "Current Experiments",
     proc: "Procurement",
+    mrp: "MRP",
     store: "Store Visit",
     seed: "Seed Inventory",
     leaf: "Leaf Growth"
@@ -687,6 +700,7 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
 
   function detectCsvKind(fileName){
     const n = norm(fileName);
+    if(n.includes("mrp")) return { kind:"mrp", confidence:"high" };
     if(n.includes("store") && n.includes("visit")) return { kind:"store", confidence:"high" };
     if(n.includes("seed") && n.includes("inventory")) return { kind:"seed", confidence:"high" };
     if(n.includes("leaf") || n.includes("forecasting") || n.includes("production data")) return { kind:"leaf", confidence:"high" };
@@ -720,6 +734,7 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
         ["pack","Master Pack"],
         ["exp","Current Experiments"],
         ["proc","Procurement"],
+        ["mrp","MRP"],
         ["store","Store Visit"],
         ["seed","Seed Inventory"],
         ["leaf","Leaf Growth"]
@@ -802,6 +817,7 @@ function validateStorageContract(){
     checkOne(MASTER_PACK_KEY, CANON_PACK_SHEET, "Pack"),
     checkOne(MASTER_EXP_KEY,  CANON_EXP_SHEET,  "Experiments"),
     checkOne(MASTER_PROC_KEY, CANON_PROC_SHEET, "Procurement"),
+    checkOne(MASTER_MRP_KEY, CANON_MRP_SHEET, "MRP"),
     checkOne(MASTER_STORE_KEY, CANON_STORE_SHEET, "Store Visit"),
     checkOne(MASTER_SEED_KEY, CANON_SEED_SHEET, "Seed Inventory"),
     checkOne(MASTER_LEAF_KEY, CANON_LEAF_SHEET, "Leaf Growth"),
@@ -816,6 +832,7 @@ function refreshBadges(){
   const hasPack = safeHasJson(MASTER_PACK_KEY);
   const hasExp  = safeHasJson(MASTER_EXP_KEY);
   const hasProc = safeHasJson(MASTER_PROC_KEY);
+  const hasMrp = safeHasJson(MASTER_MRP_KEY);
   const hasStore = safeHasJson(MASTER_STORE_KEY);
   const hasSeed = safeHasJson(MASTER_SEED_KEY);
   const hasLeaf = safeHasJson(MASTER_LEAF_KEY);
@@ -824,6 +841,7 @@ function refreshBadges(){
   setTag(packTag, hasPack);
   setTag(expTag,  hasExp);
   setTag(procTag, hasProc);
+  setTag(mrpTag, hasMrp);
   setTag(storeTag, hasStore);
   setTag(seedTag, hasSeed);
   setTag(leafTag, hasLeaf);
@@ -831,6 +849,7 @@ function refreshBadges(){
   if(packDlBtn) packDlBtn.disabled = !hasPack;
   if(expDlBtn) expDlBtn.disabled = !hasExp;
   if(procDlBtn) procDlBtn.disabled = !hasProc;
+  if(mrpDlBtn) mrpDlBtn.disabled = !hasMrp;
   if(storeDlBtn) storeDlBtn.disabled = !hasStore;
   if(seedDlBtn) seedDlBtn.disabled = !hasSeed;
   if(leafDlBtn) leafDlBtn.disabled = !hasLeaf;
@@ -839,6 +858,7 @@ function refreshBadges(){
   packUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PACK_PING));
   expUpdated.textContent  = fmtTs(localStorage.getItem(MASTER_EXP_PING));
   procUpdated.textContent = fmtTs(localStorage.getItem(MASTER_PROC_PING));
+  mrpUpdated.textContent = fmtTs(localStorage.getItem(MASTER_MRP_PING));
   storeUpdated.textContent = fmtTs(localStorage.getItem(MASTER_STORE_PING));
   seedUpdated.textContent = fmtTs(localStorage.getItem(MASTER_SEED_PING));
   leafUpdated.textContent = fmtTs(localStorage.getItem(MASTER_LEAF_PING));
@@ -1011,6 +1031,13 @@ function refreshBadges(){
       emit(MSG_PROC, MASTER_PROC_KEY);
       saved = true;
       setStatus(`Saved Procurement (JSON overwritten): ${sourceLabel}`);
+    } else if(which === "mrp"){
+      if (!payload?.sheets?.[CANON_MRP_SHEET]) throw new Error(`MRP payload missing sheets["${CANON_MRP_SHEET}"]`);
+      localStorage.setItem(MASTER_MRP_KEY, JSON.stringify(payload));
+      localStorage.setItem(MASTER_MRP_PING, now);
+      emit(MSG_MRP, MASTER_MRP_KEY);
+      saved = true;
+      setStatus(`Saved MRP (JSON overwritten): ${sourceLabel}`);
     } else if(which === "store"){
       if (!payload?.sheets?.[CANON_STORE_SHEET]) throw new Error(`Store Visit payload missing sheets["${CANON_STORE_SHEET}"]`);
       localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(payload));
@@ -1123,6 +1150,7 @@ function refreshBadges(){
     const packSheet = pickSheetByName(wb, ["master pack","master_pack","pack","mp","04","4"]);
 const expSheet  = pickSheetByName(wb, ["current experiments","experiments","experiment","exp"]);
 const procSheet = pickSheetByName(wb, ["procurement","procure","purchasing","purchase","vendor","supplies"]);
+const mrpSheet = pickSheetByName(wb, ["mrp","material requirements","materials requirement","inventory planning"]);
 const storeSheet = pickSheetByName(wb, ["store visit","store_visit","store","visit"]);
 const seedSheet = pickSheetByName(wb, ["seed inventory","seed_inventory","production seeds","experiment seeds","mixed seeds"]);
 const leafSheet = pickSheetByName(wb, ["leaf growth","leaf_growth","forecasting data","production data","leaf"]);
@@ -1138,12 +1166,13 @@ const plans = [];
     toPlan("pack", packSheet);
     toPlan("exp", expSheet);
     toPlan("proc", procSheet);
+    toPlan("mrp", mrpSheet);
     toPlan("store", storeSheet);
     toPlan("seed", seedSheet);
     toPlan("leaf", leafSheet);
 
 // Preview: whichever is present, otherwise first sheet
-    const previewName = growSheet || packSheet || expSheet || procSheet || storeSheet || seedSheet || leafSheet || pickFallbackSheet(wb);
+    const previewName = growSheet || packSheet || expSheet || procSheet || mrpSheet || storeSheet || seedSheet || leafSheet || pickFallbackSheet(wb);
     if(previewName){
       const ws = wb.Sheets[previewName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows:false, raw:false });
@@ -1277,6 +1306,31 @@ const plans = [];
   
 function isObject(x){ return x && typeof x === "object" && !Array.isArray(x); }
 
+function recordsToHeaderRows(records){
+  const rows = Array.isArray(records) ? records : [];
+  if(!rows.length) return { headers: [], rows: [] };
+  if(rows.every(Array.isArray)) return rowsToHeaderRows(rows);
+
+  const headers = [];
+  for(const row of rows){
+    if(!isObject(row)) continue;
+    for(const key of Object.keys(row)){
+      if(!headers.includes(key)) headers.push(key);
+    }
+  }
+  return {
+    headers,
+    rows: rows.map(row => headers.map(h => isObject(row) ? (row[h] ?? "") : row))
+  };
+}
+
+function buildPayloadFromRawRecords(records, canonicalSheetName, kind, sourceLabel){
+  return buildPayloadSingleCanonical(canonicalSheetName, recordsToHeaderRows(records), {
+    kind,
+    sourceLabel: sourceLabel || "worker"
+  });
+}
+
 function normalizeMasterPayload(raw, kind){
   // Ensures canonical sheet keys exist so dashboards never break.
   const want =
@@ -1284,14 +1338,27 @@ function normalizeMasterPayload(raw, kind){
     (kind === "pack")  ? CANON_PACK_SHEET :
     (kind === "exp")   ? CANON_EXP_SHEET  :
     (kind === "proc")  ? CANON_PROC_SHEET :
+    (kind === "mrp")   ? CANON_MRP_SHEET :
     (kind === "store") ? CANON_STORE_SHEET :
     (kind === "seed")  ? CANON_SEED_SHEET :
     (kind === "leaf")  ? CANON_LEAF_SHEET :
     CANON_PROC_SHEET;
 
+  if (Array.isArray(raw)) {
+    return buildPayloadFromRawRecords(raw, want, kind, "worker");
+  }
+
   if (!isObject(raw)) return raw;
 
   if (isObject(raw.sheets) && raw.sheets[want]) return raw;
+
+  if (Array.isArray(raw.data)) {
+    return buildPayloadFromRawRecords(raw.data, want, kind, raw.sourceLabel || "worker");
+  }
+
+  if (Array.isArray(raw.items)) {
+    return buildPayloadFromRawRecords(raw.items, want, kind, raw.sourceLabel || "worker");
+  }
 
   if (isObject(raw.sheets)) {
     const keys = Object.keys(raw.sheets);
@@ -1302,6 +1369,7 @@ function normalizeMasterPayload(raw, kind){
     if (!match && kind === "pack") match = keys.find(k => String(k).toLowerCase().includes("pack"));
     if (!match && kind === "exp")  match = keys.find(k => String(k).toLowerCase().includes("experiment"));
     if (!match && kind === "proc") match = keys.find(k => String(k).toLowerCase().includes("procure"));
+    if (!match && kind === "mrp") match = keys.find(k => String(k).toLowerCase().includes("mrp"));
     if (!match && kind === "store") match = keys.find(k => String(k).toLowerCase().includes("store") || String(k).toLowerCase().includes("visit"));
     if (!match && kind === "seed") match = keys.find(k => String(k).toLowerCase().includes("seed"));
     if (!match && kind === "leaf") match = keys.find(k => String(k).toLowerCase().includes("leaf"));
@@ -1384,6 +1452,18 @@ function normalizeMasterPayload(raw, kind){
     }catch(e){ console.warn("Procurement pull failed:", e); }
 
     try{
+      let mrpRaw = null;
+      try { mrpRaw = await workerGetJson(WORKER_MRP_URL); }
+      catch { mrpRaw = await workerGetJson(PUBLIC_MRP_URL); }
+
+      const mrp = normalizeMasterPayload(mrpRaw, "mrp");
+      localStorage.setItem(MASTER_MRP_KEY, JSON.stringify(mrp));
+      localStorage.setItem(MASTER_MRP_PING, now);
+      emit(MSG_MRP, MASTER_MRP_KEY);
+      gotAny = true;
+    }catch(e){ console.warn("MRP pull failed:", e); }
+
+    try{
       const store = normalizeMasterPayload(await workerGetJson(WORKER_STORE_GET_URL), "store");
       localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(store));
       localStorage.setItem(MASTER_STORE_PING, now);
@@ -1433,12 +1513,13 @@ async function publishToSupabase(){
     let packStr = localStorage.getItem(MASTER_PACK_KEY);
     const expStr  = localStorage.getItem(MASTER_EXP_KEY);
     const procStr = localStorage.getItem(MASTER_PROC_KEY);
+    const mrpStr = localStorage.getItem(MASTER_MRP_KEY);
     const storeStr = localStorage.getItem(MASTER_STORE_KEY);
     const seedStr = localStorage.getItem(MASTER_SEED_KEY);
     let leafStr = localStorage.getItem(MASTER_LEAF_KEY);
 
-    if(!growStr && !packStr && !expStr && !procStr && !storeStr && !seedStr && !leafStr){
-      setStatus("Nothing to publish (Grow / Pack / Exp / Procurement / Store Visit / Seed Inventory / Leaf Growth).");
+    if(!growStr && !packStr && !expStr && !procStr && !mrpStr && !storeStr && !seedStr && !leafStr){
+      setStatus("Nothing to publish (Grow / Pack / Exp / Procurement / MRP / Store Visit / Seed Inventory / Leaf Growth).");
       return;
     }
 
@@ -1458,6 +1539,7 @@ async function publishToSupabase(){
     }
     try { if(expStr)  JSON.parse(expStr);  } catch { return setStatus("Experiments JSON is invalid (cannot publish)."); }
     try { if(procStr) JSON.parse(procStr); } catch { return setStatus("Procurement JSON is invalid (cannot publish)."); }
+    try { if(mrpStr) JSON.parse(mrpStr); } catch { return setStatus("MRP JSON is invalid (cannot publish)."); }
     try { if(storeStr) JSON.parse(storeStr); } catch { return setStatus("Store Visit JSON is invalid (cannot publish)."); }
     try { if(seedStr) JSON.parse(seedStr); } catch { return setStatus("Seed Inventory JSON is invalid (cannot publish)."); }
     try {
@@ -1527,6 +1609,17 @@ async function publishToSupabase(){
         results.push("procurement.json");
       }
 
+      if(mrpStr){
+        const res = await fetch(WORKER_MRP_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: mrpStr
+        });
+        const text = await res.text().catch(() => "");
+        if(!res.ok) throw new Error(`MRP publish failed (${res.status}): ${text}`);
+        results.push("test.json");
+      }
+
       if(storeStr){
         const res = await fetch(WORKER_STORE_URL, {
           method: "PUT",
@@ -1593,6 +1686,7 @@ async function publishToSupabase(){
     else if(target === "pack") ok = await saveSource("pack", buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel }), sourceLabel);
     else if(target === "exp") ok = await saveSource("exp", buildPayloadSingleCanonical(CANON_EXP_SHEET, hr, { kind: "exp", sourceLabel }), sourceLabel);
     else if(target === "proc") ok = await saveSource("proc", buildPayloadSingleCanonical(CANON_PROC_SHEET, hr, { kind: "proc", sourceLabel }), sourceLabel);
+    else if(target === "mrp") ok = await saveSource("mrp", buildPayloadSingleCanonical(CANON_MRP_SHEET, hr, { kind: "mrp", sourceLabel }), sourceLabel);
     else if(target === "store") ok = await saveSource("store", buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel }), sourceLabel);
     else if(target === "seed") ok = await saveSource("seed", buildPayloadSingleCanonical(CANON_SEED_SHEET, hr, { kind: "seed", sourceLabel }), sourceLabel);
     else if(target === "leaf") ok = await saveSource("leaf", buildPayloadSingleCanonical(CANON_LEAF_SHEET, hr, { kind: "leaf", sourceLabel }), sourceLabel);
@@ -1621,6 +1715,7 @@ async function publishToSupabase(){
         target === "pack" ? CANON_PACK_SHEET :
         target === "exp" ? CANON_EXP_SHEET :
         target === "proc" ? CANON_PROC_SHEET :
+        target === "mrp" ? CANON_MRP_SHEET :
         target === "store" ? CANON_STORE_SHEET :
         target === "seed" ? CANON_SEED_SHEET :
         CANON_LEAF_SHEET;
@@ -1654,6 +1749,7 @@ async function publishToSupabase(){
   localStorage.removeItem(MASTER_PACK_KEY);
   localStorage.removeItem(MASTER_EXP_KEY);
   localStorage.removeItem(MASTER_PROC_KEY);
+  localStorage.removeItem(MASTER_MRP_KEY);
   localStorage.removeItem(MASTER_STORE_KEY);
   localStorage.removeItem(MASTER_SEED_KEY);
   localStorage.removeItem(MASTER_LEAF_KEY);
@@ -1663,6 +1759,7 @@ async function publishToSupabase(){
   localStorage.removeItem(MASTER_PACK_PING);
   localStorage.removeItem(MASTER_EXP_PING);
   localStorage.removeItem(MASTER_PROC_PING);
+  localStorage.removeItem(MASTER_MRP_PING);
   localStorage.removeItem(MASTER_STORE_PING);
   localStorage.removeItem(MASTER_SEED_PING);
   localStorage.removeItem(MASTER_LEAF_PING);
@@ -1679,6 +1776,7 @@ async function publishToSupabase(){
     emit(MSG_PACK, MASTER_PACK_KEY);
     emit(MSG_EXP, MASTER_EXP_KEY);
     emit(MSG_PROC, MASTER_PROC_KEY);
+    emit(MSG_MRP, MASTER_MRP_KEY);
     emit(MSG_STORE, MASTER_STORE_KEY);
     emit(MSG_SEED, MASTER_SEED_KEY);
     emit(MSG_LEAF, MASTER_LEAF_KEY);
@@ -1694,6 +1792,7 @@ async function publishToSupabase(){
   packDlBtn.addEventListener("click", () => { downloadPackJson(); });
   expDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_EXP_KEY, "experiments.json"));
   procDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_PROC_KEY, "procurement.json"));
+  mrpDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_MRP_KEY, "mrp.json"));
   storeDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_STORE_KEY, "store-visit.json"));
   seedDlBtn.addEventListener("click", () => downloadJsonFromLocalStorage(MASTER_SEED_KEY, "seed-inventory.json"));
   leafDlBtn.addEventListener("click", () => downloadIdbBackedJson(MASTER_LEAF_KEY, isLeafIdbPointer, "leaf-growth.json"));
@@ -1722,7 +1821,7 @@ async function publishToSupabase(){
   // Keep badges fresh if something else updates localStorage
   window.addEventListener("storage", (e) => {
     if (!e) return;
-    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_STORE_KEY, MASTER_SEED_KEY, MASTER_LEAF_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_STORE_PING, MASTER_SEED_PING, MASTER_LEAF_PING, LEGACY_MASTER_EXP_KEY, LEGACY_MASTER_STORE_KEY, LEGACY_MASTER_EXP_PING, LEGACY_MASTER_STORE_PING, LAST_ASSIGN_META_KEY].includes(e.key)) {
+    if ([MASTER_GROW_KEY, MASTER_PACK_KEY, MASTER_EXP_KEY, MASTER_PROC_KEY, MASTER_MRP_KEY, MASTER_STORE_KEY, MASTER_SEED_KEY, MASTER_LEAF_KEY, MASTER_GROW_PING, MASTER_PACK_PING, MASTER_EXP_PING, MASTER_PROC_PING, MASTER_MRP_PING, MASTER_STORE_PING, MASTER_SEED_PING, MASTER_LEAF_PING, LEGACY_MASTER_EXP_KEY, LEGACY_MASTER_STORE_KEY, LEGACY_MASTER_EXP_PING, LEGACY_MASTER_STORE_PING, LAST_ASSIGN_META_KEY].includes(e.key)) {
       migrateLegacyStorageKeys();
       refreshBadges();
     }
