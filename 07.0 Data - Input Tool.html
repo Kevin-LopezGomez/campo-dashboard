@@ -308,9 +308,9 @@
           “Publish / Pull” uses your Cloudflare Worker as the Supabase gateway.
           <br><br>
           Worker endpoints:
-          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>, <code>GET /data/master/test.json</code>, <code>GET /data/master/Store%20Visits.json</code>, <code>GET /data/master/Seed%20Inventory.json</code>, <code>GET /data/master/Leaf%20Growth.json</code>,
+          <code>GET /data/master/grow.json</code>, <code>GET /data/master/pack.json</code>, <code>GET /data/master/experiments.json</code>, <code>GET /data/master/procurement.json</code>, <code>GET /data/master/MRP.json</code>, <code>GET /data/master/Store%20Visits.json</code>, <code>GET /data/master/Seed%20Inventory.json</code>, <code>GET /data/master/Leaf%20Growth.json</code>,
           <br>
-          <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>, <code>PUT /data/master/test.json</code>, <code>PUT /data/master/Store%20Visits.json</code>, <code>PUT /data/master/Seed%20Inventory.json</code>, <code>PUT /data/master/Leaf%20Growth.json</code>.
+          <code>PUT /data/master/grow.json</code>, <code>PUT /data/master/pack.json</code>, <code>PUT /data/master/experiments.json</code>, <code>PUT /data/master/procurement.json</code>, <code>PUT /data/master/MRP.json</code>, <code>PUT /data/master/Store%20Visits.json</code>, <code>PUT /data/master/Seed%20Inventory.json</code>, <code>PUT /data/master/Leaf%20Growth.json</code>.
         </div>
 
         <div id="status" class="small">Waiting for file…</div>
@@ -355,12 +355,12 @@ const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
 const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
 const WORKER_EXP_URL  = `${WORKER_BASE}/data/master/experiments.json`;
 const WORKER_PROC_URL = `${WORKER_BASE}/data/master/procurement.json`;
-const WORKER_MRP_URL = `${WORKER_BASE}/data/master/test.json`;
+const WORKER_MRP_URL = `${WORKER_BASE}/data/master/MRP.json`;
 const WORKER_STORE_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
 const WORKER_STORE_GET_URL = `${WORKER_BASE}/data/master/Store%20Visits.json`;
 const WORKER_SEED_URL = `${WORKER_BASE}/data/master/Seed%20Inventory.json`;
 const WORKER_LEAF_URL = `${WORKER_BASE}/data/master/Leaf%20Growth.json`;
-const PUBLIC_MRP_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/test.json";
+const PUBLIC_MRP_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/MRP.json";
 const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json";
 const PUBLIC_SEED_INVENTORY_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Seed%20Inventory.json";
 const PUBLIC_LEAF_GROWTH_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json";
@@ -1617,7 +1617,7 @@ async function publishToSupabase(){
         });
         const text = await res.text().catch(() => "");
         if(!res.ok) throw new Error(`MRP publish failed (${res.status}): ${text}`);
-        results.push("test.json");
+        results.push("MRP.json");
       }
 
       if(storeStr){

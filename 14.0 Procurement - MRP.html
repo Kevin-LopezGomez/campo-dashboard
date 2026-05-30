@@ -627,8 +627,10 @@ const RAW_ITEMS = [
 
 // State
 const MASTER_MRP_KEY = 'campo_master_mrp_v1';
+const MASTER_MRP_PING = 'campo_master_mrp_push_ping_v1';
 const MSG_MRP = 'MRP_UPDATED';
 const BC_NAME = 'campo_updates_v1';
+const PUBLIC_MRP_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/MRP.json';
 let items = RAW_ITEMS.map((d,i) => ({...d, id:i, po_pending:false, po_qty:0}));
 let activeFilter = 'all';
 let activeCat    = 'all';
@@ -1099,6 +1101,35 @@ function loadStoredMRP(options={}) {
   }
 }
 
+async function loadSupabaseMRP(options={}) {
+  const res = await fetch(`${PUBLIC_MRP_URL}?ts=${Date.now()}`, { cache: 'no-store' });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`MRP.json load failed (${res.status})${text ? `: ${text}` : ''}`);
+  const payload = JSON.parse(text);
+  const rows = payloadToRows(payload);
+  if (!rows.length) throw new Error('MRP.json has no parsable rows.');
+
+  localStorage.setItem(MASTER_MRP_KEY, JSON.stringify(payload));
+  localStorage.setItem(MASTER_MRP_PING, String(Date.now()));
+  loadRows(rows, payload?.sourceLabel || 'Supabase MRP.json', 'MRP.json', options);
+  return true;
+}
+
+async function hydrateMRP(options={}) {
+  try {
+    await loadSupabaseMRP(options);
+    return;
+  } catch(err) {
+    console.warn('Supabase MRP load failed:', err);
+    if (loadStoredMRP({ silent: true })) {
+      if (!options.silent) toast('MRP.json unavailable; showing local cache', 'warn');
+      return;
+    }
+    renderTable();
+    if (!options.silent) toast(err?.message || 'MRP.json could not be loaded', 'warn');
+  }
+}
+
 function loadRows(rows, filename, sheetName, options={}) {
   // Skip header-like rows (the formula variable row 2 has no name)
   const dataRows = rows.filter(r => {
@@ -1188,19 +1219,19 @@ window.addEventListener('storage', (event) => {
 });
 
 window.addEventListener('message', (event) => {
-  if (event?.data?.type === MSG_MRP) loadStoredMRP();
+  if (event?.data?.type === MSG_MRP) void hydrateMRP();
 });
 
 try {
   if ('BroadcastChannel' in window) {
     const bc = new BroadcastChannel(BC_NAME);
     bc.onmessage = (event) => {
-      if (event?.data?.type === MSG_MRP) loadStoredMRP();
+      if (event?.data?.type === MSG_MRP) void hydrateMRP();
     };
   }
 } catch {}
 
-if (!loadStoredMRP({ silent: true })) renderTable();
+void hydrateMRP({ silent: true });
 </script>
 </body>
 </html>
