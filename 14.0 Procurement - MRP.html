@@ -1105,7 +1105,6 @@ async function loadSupabaseMRP(options={}) {
   if (!rows.length) throw new Error('MRP.json has no parsable rows.');
 
   localStorage.setItem(MASTER_MRP_KEY, JSON.stringify(payload));
-  localStorage.setItem(MASTER_MRP_PING, String(Date.now()));
   loadRows(rows, payload?.sourceLabel || 'Supabase MRP.json', 'MRP.json', options);
   return true;
 }
@@ -1211,18 +1210,18 @@ function rebuildCategoryFilter(cats) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('storage', (event) => {
-  if (event.key === MASTER_MRP_KEY) loadStoredMRP();
+  if (event.key === MASTER_MRP_KEY) loadStoredMRP({ silent: true });
 });
 
 window.addEventListener('message', (event) => {
-  if (event?.data?.type === MSG_MRP) void hydrateMRP();
+  if (event?.data?.type === MSG_MRP) void hydrateMRP({ silent: true });
 });
 
 try {
   if ('BroadcastChannel' in window) {
     const bc = new BroadcastChannel(BC_NAME);
     bc.onmessage = (event) => {
-      if (event?.data?.type === MSG_MRP) void hydrateMRP();
+      if (event?.data?.type === MSG_MRP) void hydrateMRP({ silent: true });
     };
   }
 } catch {}
