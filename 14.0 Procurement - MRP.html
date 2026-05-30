@@ -369,9 +369,7 @@
   </div>
   <div class="topbar-right">
     <span class="file-loaded-badge" id="file-badge">✓ file loaded</span>
-    <button id="upload-btn" onclick="showUpload()">⬆ Upload Inventory</button>
-    <span class="last-run" id="last-run-label">Not yet run</span>
-    <button id="run-btn" onclick="runMRP()">▶ Run MRP</button>
+    <span class="last-run" id="last-run-label">Loading MRP.json...</span>
   </div>
 </div>
 
@@ -430,16 +428,13 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Category</div>
       <div class="sidebar-item" onclick="setCatFilter('all',this)" id="cat-all" style="border-left-color:transparent">All</div>
-      <div class="sidebar-item" onclick="setCatFilter('Operations',this)" id="cat-Operations">Operations</div>
-      <div class="sidebar-item" onclick="setCatFilter('Seeds ',this)" id="cat-Seeds">Seeds</div>
-      <div class="sidebar-item" onclick="setCatFilter('Media ',this)" id="cat-Media">Media</div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Feedback Loop</div>
       <div style="padding: 6px 16px;">
         <div class="loop-step">
           <div class="loop-num active">1</div>
-          <div class="loop-content"><strong>Monitor</strong>Run MRP to recalculate</div>
+          <div class="loop-content"><strong>Monitor</strong>MRP data refreshes from Supabase</div>
         </div>
         <div class="loop-step">
           <div class="loop-num" id="loop-2">2</div>
@@ -1181,8 +1176,9 @@ function loadRows(rows, filename, sheetName, options={}) {
   rebuildCategoryFilter(cats);
 
   items  = loaded;
-  mrpRun = false;
-  document.getElementById('last-run-label').textContent = 'Not yet run';
+  mrpRun = true;
+  const loadedAt = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('last-run-label').textContent = `Loaded: ${loadedAt}`;
   document.getElementById('file-badge').style.display = 'inline';
   document.getElementById('file-badge').textContent = `✓ ${filename} (${loaded.length} items)`;
   const withCounts = loaded.filter(it => it.from_excel).length;
