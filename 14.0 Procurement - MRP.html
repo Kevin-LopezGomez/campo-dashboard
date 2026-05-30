@@ -626,6 +626,9 @@ const RAW_ITEMS = [
 ];
 
 // State
+const MASTER_MRP_KEY = 'campo_master_mrp_v1';
+const MSG_MRP = 'MRP_UPDATED';
+const BC_NAME = 'campo_updates_v1';
 let items = RAW_ITEMS.map((d,i) => ({...d, id:i, po_pending:false, po_qty:0}));
 let activeFilter = 'all';
 let activeCat    = 'all';
@@ -1059,7 +1062,44 @@ function str(v) {
   return v ? String(v).trim() : '';
 }
 
-function loadRows(rows, filename, sheetName) {
+function payloadToRows(payload) {
+  if (Array.isArray(payload)) return payload;
+
+  const sheet = payload?.sheets?.MRP || payload?.sheets?.mrp || payload?.sheets?.['Inventory Table'];
+  if (sheet?.headers && Array.isArray(sheet?.rows)) {
+    return sheet.rows.map(row => {
+      const out = {};
+      sheet.headers.forEach((header, i) => {
+        out[String(header || '').trim()] = Array.isArray(row) ? row[i] : '';
+      });
+      return out;
+    });
+  }
+
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+}
+
+function loadStoredMRP(options={}) {
+  const raw = (localStorage.getItem(MASTER_MRP_KEY) || '').trim();
+  if (!raw) return false;
+
+  try {
+    const payload = JSON.parse(raw);
+    const rows = payloadToRows(payload);
+    if (!rows.length) return false;
+    const label = payload?.sourceLabel || 'Supabase MRP';
+    loadRows(rows, label, 'MRP', options);
+    return true;
+  } catch(err) {
+    console.warn('Stored MRP load failed:', err);
+    if (!options.silent) toast('Stored MRP JSON could not be loaded', 'warn');
+    return false;
+  }
+}
+
+function loadRows(rows, filename, sheetName, options={}) {
   // Skip header-like rows (the formula variable row 2 has no name)
   const dataRows = rows.filter(r => {
     const nameKey = Object.keys(r).find(k => k.toLowerCase().trim() === 'name');
@@ -1067,7 +1107,7 @@ function loadRows(rows, filename, sheetName) {
   });
 
   if (dataRows.length === 0) {
-    toast('No data rows found. Check the file has a "name" column.', 'warn');
+    if (!options.silent) toast('No data rows found. Check the file has a "name" column.', 'warn');
     return;
   }
 
@@ -1118,7 +1158,7 @@ function loadRows(rows, filename, sheetName) {
   hideUpload();
   renderTable();
   const countNote = withCounts > 0 ? ` · ${withCounts} with i_current from file` : ' · enter i_current counts before running';
-  toast(`Loaded ${loaded.length} items from "${sheetName}"${countNote}`, 'success');
+  if (!options.silent) toast(`Loaded ${loaded.length} items from "${sheetName}"${countNote}`, 'success');
 }
 
 function rebuildCategoryFilter(cats) {
@@ -1143,7 +1183,24 @@ function rebuildCategoryFilter(cats) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-renderTable();
+window.addEventListener('storage', (event) => {
+  if (event.key === MASTER_MRP_KEY) loadStoredMRP();
+});
+
+window.addEventListener('message', (event) => {
+  if (event?.data?.type === MSG_MRP) loadStoredMRP();
+});
+
+try {
+  if ('BroadcastChannel' in window) {
+    const bc = new BroadcastChannel(BC_NAME);
+    bc.onmessage = (event) => {
+      if (event?.data?.type === MSG_MRP) loadStoredMRP();
+    };
+  }
+} catch {}
+
+if (!loadStoredMRP({ silent: true })) renderTable();
 </script>
 </body>
 </html>

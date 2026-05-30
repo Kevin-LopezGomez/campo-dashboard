@@ -1523,6 +1523,7 @@
       const EXPERIMENTS_PING = "campo_experiments_push_ping_v1";
       const PROCUREMENT_PING = "campo_master_procurement_push_ping_v1";
       const STORE_VISITS_PING = "campo_store_visits_push_ping_v1";
+      const MRP_PING = "campo_master_mrp_push_ping_v1";
       const LEAF_GROWTH_PING = "campo_leaf_growth_push_ping_v1";
       const LEGACY_EXPERIMENTS_KEY = "campo_master_experiments_v1";
       const LEGACY_EXPERIMENTS_PING = "campo_master_experiments_push_ping_v1";
@@ -1544,6 +1545,7 @@
 
       const MSG_EXPERIMENTS = "EXPERIMENTS_UPDATED";
       const MSG_PROCUREMENT = "PROCUREMENT_UPDATED";
+      const MSG_MRP = "MRP_UPDATED";
       const MSG_STORE_VISITS = "STORE_VISITS_UPDATED";
       const MSG_LEAF_GROWTH = "LEAF_GROWTH_UPDATED";
 
@@ -2342,6 +2344,9 @@
         if (type === MSG_PROCUREMENT || type === "PROCUREMENT_UPDATED") {
           try { localStorage.setItem(PROCUREMENT_PING, now); } catch {}
         }
+        if (type === MSG_MRP || type === "MRP_UPDATED") {
+          try { localStorage.setItem(MRP_PING, now); } catch {}
+        }
         if (type === MSG_STORE_VISITS || type === "STORE_VISITS_UPDATED") {
           try { localStorage.setItem(STORE_VISITS_PING, now); } catch {}
         }
@@ -2367,7 +2372,7 @@
           }
           return;
         }
-        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === MSG_LEAF_GROWTH || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED" || msg.type === "LEAF_GROWTH_UPDATED") {
+        if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_MRP || msg.type === MSG_STORE_VISITS || msg.type === MSG_LEAF_GROWTH || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "MRP_UPDATED" || msg.type === "STORE_VISITS_UPDATED" || msg.type === "LEAF_GROWTH_UPDATED") {
           touchPing(msg.type);
           notifyIframes(msg.type);
           broadcast(msg.type);
@@ -2379,7 +2384,7 @@
         ch.onmessage = (ev) => {
           const msg = ev?.data || {};
           if (!msg.type) return;
-          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_STORE_VISITS || msg.type === MSG_LEAF_GROWTH || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "STORE_VISITS_UPDATED" || msg.type === "LEAF_GROWTH_UPDATED") {
+          if (msg.type === MSG_GROW || msg.type === MSG_PACK || msg.type === MSG_EXPERIMENTS || msg.type === MSG_PROCUREMENT || msg.type === MSG_MRP || msg.type === MSG_STORE_VISITS || msg.type === MSG_LEAF_GROWTH || msg.type === "MASTER_GROW_UPDATED" || msg.type === "MASTER_PACK_UPDATED" || msg.type === "EXPERIMENTS_UPDATED" || msg.type === "PROCUREMENT_UPDATED" || msg.type === "MRP_UPDATED" || msg.type === "STORE_VISITS_UPDATED" || msg.type === "LEAF_GROWTH_UPDATED") {
             touchPing(msg.type);
             notifyIframes(msg.type);
             broadcast(msg.type);
@@ -2391,6 +2396,7 @@
       let lastPackPing = localStorage.getItem(MASTER_PACK_PING) || "";
       let lastExperimentsPing = localStorage.getItem(EXPERIMENTS_PING) || "";
       let lastProcurementPing = localStorage.getItem(PROCUREMENT_PING) || "";
+      let lastMrpPing = localStorage.getItem(MRP_PING) || "";
       let lastStoreVisitsPing = localStorage.getItem(STORE_VISITS_PING) || "";
       let lastLeafGrowthPing = localStorage.getItem(LEAF_GROWTH_PING) || "";
 
@@ -2399,6 +2405,7 @@
         const p = localStorage.getItem(MASTER_PACK_PING) || "";
         const e = localStorage.getItem(EXPERIMENTS_PING) || "";
         const pr = localStorage.getItem(PROCUREMENT_PING) || "";
+        const mrp = localStorage.getItem(MRP_PING) || "";
         const sv = localStorage.getItem(STORE_VISITS_PING) || "";
         const lg = localStorage.getItem(LEAF_GROWTH_PING) || "";
 
@@ -2406,6 +2413,7 @@
         if (p !== lastPackPing) { lastPackPing = p; notifyIframes(MSG_PACK); broadcast(MSG_PACK); }
         if (e !== lastExperimentsPing) { lastExperimentsPing = e; notifyIframes(MSG_EXPERIMENTS); broadcast(MSG_EXPERIMENTS); }
         if (pr !== lastProcurementPing) { lastProcurementPing = pr; notifyIframes(MSG_PROCUREMENT); broadcast(MSG_PROCUREMENT); }
+        if (mrp !== lastMrpPing) { lastMrpPing = mrp; notifyIframes(MSG_MRP); broadcast(MSG_MRP); }
         if (sv !== lastStoreVisitsPing) { lastStoreVisitsPing = sv; notifyIframes(MSG_STORE_VISITS); broadcast(MSG_STORE_VISITS); }
         if (lg !== lastLeafGrowthPing) { lastLeafGrowthPing = lg; notifyIframes(MSG_LEAF_GROWTH); broadcast(MSG_LEAF_GROWTH); }
       }, 1500);
