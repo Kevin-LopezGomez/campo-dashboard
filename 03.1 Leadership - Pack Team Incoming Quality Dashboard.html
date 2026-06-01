@@ -827,6 +827,7 @@
 
     const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
     const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
+    const PUBLIC_PACK_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/pack.json";
     const MASTER_PACK_SHEET_NAME = "Master Pack";
     const MSG_PACK = "MASTER_PACK_UPDATED";
     const UI_STATE_KEY = "pack_quality_dashboard_ui_state_v1";
@@ -1036,13 +1037,29 @@
       return "All";
     }
 
-    async function fetchPayload() {
+    async function fetchJsonWithTimeout(url, timeoutMs = 15000) {
       const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(WORKER_PACK_URL, { cache: "no-store", signal: controller.signal });
-      clearTimeout(t);
-      if (!res.ok) throw new Error(`Failed (${res.status})`);
-      return res.json();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+      const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}ts=${Date.now()}`;
+      try {
+        const res = await fetch(cacheBustedUrl, { cache: "no-store", signal: controller.signal });
+        if (!res.ok) throw new Error(`Failed (${res.status})`);
+        return res.json();
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    async function fetchPayload() {
+      try {
+        return await fetchJsonWithTimeout(PUBLIC_PACK_URL);
+      } catch (publicErr) {
+        try {
+          return await fetchJsonWithTimeout(WORKER_PACK_URL);
+        } catch (workerErr) {
+          throw new Error(`Supabase load failed: ${publicErr?.message || String(publicErr)}; Worker fallback failed: ${workerErr?.message || String(workerErr)}`);
+        }
+      }
     }
 
     function headerMap(headers) {
