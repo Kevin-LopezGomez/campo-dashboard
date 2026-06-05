@@ -2398,6 +2398,32 @@
         : chartMode === "week"
           ? "Blade Height weighted avg per week"
           : "Blade Height weighted avg per day";
+      const bladeHeightDataset = shouldOverlayBladeHeight ? {
+        type: "line",
+        label: bladeHeightLabel,
+        data: bladeHeightValues,
+        yAxisID: "yBlade",
+        borderWidth: 2.2,
+        tension: 0.35,
+        pointRadius: isBatchMode ? 2.5 : 2.8,
+        pointHoverRadius: 4,
+        spanGaps: true,
+        fill: false,
+        borderColor: "rgba(96, 165, 250, 0.98)",
+        backgroundColor: "rgba(96, 165, 250, 0.22)"
+      } : null;
+      const bladeHeightAxis = shouldOverlayBladeHeight ? {
+        yBlade: {
+          position: "right",
+          grid: { drawOnChartArea: false },
+          ticks: {
+            color: "rgba(147, 197, 253, 0.98)",
+            font: axisTickFont,
+            callback: (v) => fmtTick(v, 1)
+          },
+          title: { display: true, text: "BLADE HEIGHT", color: "rgba(191, 219, 254, 0.98)", font: axisTitleFont }
+        }
+      } : {};
       if (isHarvestable) {
         if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Grow Frecasted`;
         if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Actual Harvested`;
@@ -2452,20 +2478,7 @@
                   borderColor: "rgba(52, 211, 153, 0.98)",
                   backgroundColor: "rgba(52, 211, 153, 0.85)"
                 },
-                ...(shouldOverlayBladeHeight ? [{
-                  type: "line",
-                  label: bladeHeightLabel,
-                  data: bladeHeightValues,
-                  yAxisID: "yBlade",
-                  borderWidth: 2.2,
-                  tension: 0.35,
-                  pointRadius: isBatchMode ? 2.5 : 2.8,
-                  pointHoverRadius: 4,
-                  spanGaps: true,
-                  fill: false,
-                  borderColor: "rgba(96, 165, 250, 0.98)",
-                  backgroundColor: "rgba(96, 165, 250, 0.22)"
-                }] : [])
+                ...(bladeHeightDataset ? [bladeHeightDataset] : [])
               ]
         },
         options: {
@@ -2517,18 +2530,7 @@
               },
               title: { display: true, text: isHarvestable ? "GROW FORECASTED WEIGHT LBS / WITH WASTE" : topYAxisTitle, color: axisTitleColor, font: axisTitleFont }
             },
-            ...(shouldOverlayBladeHeight ? {
-              yBlade: {
-                position: "right",
-                grid: { drawOnChartArea: false },
-                ticks: {
-                  color: "rgba(147, 197, 253, 0.98)",
-                  font: axisTickFont,
-                  callback: (v) => fmtTick(v, 1)
-                },
-                title: { display: true, text: "BLADE HEIGHT", color: "rgba(191, 219, 254, 0.98)", font: axisTitleFont }
-              }
-            } : {})
+            ...bladeHeightAxis
           }
         }
       });
@@ -2541,23 +2543,36 @@
         type: isBatchMode ? "bar" : "line",
         data: {
           labels,
-          datasets: [{
-            label: middleLabel,
-            data: middleValues,
-            tension: isBatchMode ? 0 : 0.35,
-            borderWidth: isBatchMode ? 0 : 2.2,
-            borderRadius: isBatchMode ? 4 : 0,
-            pointRadius: isBatchMode ? 0 : 2.8,
-            fill: false,
-            borderColor: "rgba(234, 179, 8, 0.95)",
-            backgroundColor: "rgba(234, 179, 8, 0.95)"
-          }]
+          datasets: [
+            {
+              label: middleLabel,
+              data: middleValues,
+              yAxisID: "y",
+              tension: isBatchMode ? 0 : 0.35,
+              borderWidth: isBatchMode ? 0 : 2.2,
+              borderRadius: isBatchMode ? 4 : 0,
+              pointRadius: isBatchMode ? 0 : 2.8,
+              fill: false,
+              borderColor: "rgba(234, 179, 8, 0.95)",
+              backgroundColor: "rgba(234, 179, 8, 0.95)"
+            },
+            ...(bladeHeightDataset ? [{ ...bladeHeightDataset }] : [])
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: shouldOverlayBladeHeight,
+              position: "top",
+              labels: {
+                color: "rgba(248, 250, 252, 0.96)",
+                boxWidth: 16,
+                boxHeight: 10,
+                font: { size: 12, weight: "600" }
+              }
+            },
             tooltip: {
               callbacks: {
                 title: (items) => {
@@ -2592,7 +2607,8 @@
                 callback: (v) => fmtTick(v, 2)
               },
               title: { display: true, text: middleYAxisTitle, color: axisTitleColor, font: axisTitleFont }
-            }
+            },
+            ...bladeHeightAxis
           }
         }
       });
