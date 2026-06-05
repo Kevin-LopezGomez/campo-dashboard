@@ -712,6 +712,7 @@
                     <th class="harvestable-col">Grow Forecasted Weight Lbs</th>
                     <th>Harvest Date</th>
                     <th>Harvest Week</th>
+                    <th>Blade Height</th>
                     <th># of Boards Cut</th>
                     <th>With Waste</th>
                     <th>LBS/BOARD W/ WASTE</th>
@@ -724,7 +725,7 @@
                 <tbody id="harvest-tbody-weekly" class="hidden"></tbody>
                 <tfoot>
                   <tr>
-                    <td>Grand Total</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="harvestable-col">0</td><td>–</td><td>–</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
+                    <td>Grand Total</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="harvestable-col">0</td><td>–</td><td>–</td><td>–</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
                   </tr>
                 </tfoot>
               </table>
@@ -797,6 +798,7 @@
       PROPAGATION_DAYS: "Propagation Days",
       PRODUCTION_DAYS: "Production Days",
       GROW_FORECASTED_WEIGHT_LBS: "Grow Forecasted Weight Lbs",
+      BLADE_HEIGHT: "Blade Height",
       DATE: "Harvest Date",
       WEEK: "Harvest Week",
       START: "Harvest Start",
@@ -828,6 +830,12 @@
       ["propagation days", H.PROPAGATION_DAYS],
       ["production days", H.PRODUCTION_DAYS],
       ["grow forecasted weight lbs", H.GROW_FORECASTED_WEIGHT_LBS],
+      ["blade height", H.BLADE_HEIGHT],
+      ["blade height cm", H.BLADE_HEIGHT],
+      ["blade height (cm)", H.BLADE_HEIGHT],
+      ["harvest blade height", H.BLADE_HEIGHT],
+      ["avg blade height", H.BLADE_HEIGHT],
+      ["average blade height", H.BLADE_HEIGHT],
 
       // Date
       ["harvest date", H.DATE],
@@ -1324,6 +1332,8 @@
             propagationDaysCount: 0,
             productionDaysSum: 0,
             productionDaysCount: 0,
+            bladeHeightSum: 0,
+            bladeHeightCount: 0,
             growForecastedWeightLbs: 0
           });
         }
@@ -1348,6 +1358,10 @@
         if (Number.isFinite(d.productionDays) && d.productionDays > 0) {
           w.productionDaysSum += d.productionDays;
           w.productionDaysCount += 1;
+        }
+        if (Number.isFinite(d.bladeHeight) && d.bladeHeight > 0) {
+          w.bladeHeightSum += d.bladeHeight;
+          w.bladeHeightCount += 1;
         }
         w.growForecastedWeightLbs += (Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0);
       }
@@ -1384,6 +1398,7 @@
           harvestDaysToHarvest: w.harvestDaysToHarvestCount > 0 ? (w.harvestDaysToHarvestSum / w.harvestDaysToHarvestCount) : 0,
           propagationDays: w.propagationDaysCount > 0 ? (w.propagationDaysSum / w.propagationDaysCount) : 0,
           productionDays: w.productionDaysCount > 0 ? (w.productionDaysSum / w.productionDaysCount) : 0,
+          bladeHeight: w.bladeHeightCount > 0 ? (w.bladeHeightSum / w.bladeHeightCount) : 0,
           growForecastedWeightLbs: w.growForecastedWeightLbs
         };
       });
@@ -1841,6 +1856,7 @@
         const propagationDays = parseNumber(r[H.PROPAGATION_DAYS]);
         const productionDays = parseNumber(r[H.PRODUCTION_DAYS]);
         const growForecastedWeightLbs = parseNumber(r[H.GROW_FORECASTED_WEIGHT_LBS]);
+        const bladeHeight = parseNumber(r[H.BLADE_HEIGHT]);
 
         const allBlank =
           !week &&
@@ -1876,6 +1892,7 @@
           harvestDaysToHarvest,
           propagationDays,
           productionDays,
+          bladeHeight,
           growForecastedWeightLbs
         });
       }
@@ -1908,6 +1925,8 @@
             propagationDaysCount: 0,
             productionDaysSum: 0,
             productionDaysCount: 0,
+            bladeHeightSum: 0,
+            bladeHeightCount: 0,
             growForecastedWeightLbs: 0
           });
         }
@@ -1937,6 +1956,10 @@
         if (Number.isFinite(c.productionDays) && c.productionDays > 0) {
           d.productionDaysSum += c.productionDays;
           d.productionDaysCount += 1;
+        }
+        if (Number.isFinite(c.bladeHeight) && c.bladeHeight > 0) {
+          d.bladeHeightSum += c.bladeHeight;
+          d.bladeHeightCount += 1;
         }
         d.growForecastedWeightLbs += (Number.isFinite(c.growForecastedWeightLbs) ? c.growForecastedWeightLbs : 0);
         if (!d.weekGuess && c.week) d.weekGuess = c.week;
@@ -1969,6 +1992,7 @@
             harvestDaysToHarvest: d.harvestDaysToHarvestCount > 0 ? (d.harvestDaysToHarvestSum / d.harvestDaysToHarvestCount) : 0,
             propagationDays: d.propagationDaysCount > 0 ? (d.propagationDaysSum / d.propagationDaysCount) : 0,
             productionDays: d.productionDaysCount > 0 ? (d.productionDaysSum / d.productionDaysCount) : 0,
+            bladeHeight: d.bladeHeightCount > 0 ? (d.bladeHeightSum / d.bladeHeightCount) : 0,
             growForecastedWeightLbs: d.growForecastedWeightLbs
           };
         });
@@ -2019,13 +2043,14 @@
         const tfootRow = document.querySelector("#harvest-table tfoot tr");
         if (tfootRow) {
           const tds = tfootRow.querySelectorAll("td");
-          if (tds.length >= 12) {
+          if (tds.length >= 13) {
             tds[4].textContent = "0";
-            tds[7].textContent = "0";
+            tds[7].textContent = "–";
             tds[8].textContent = "0";
-            tds[9].textContent = "0.0";
+            tds[9].textContent = "0";
             tds[10].textContent = "0.0";
-            tds[11].textContent = "0%";
+            tds[11].textContent = "0.0";
+            tds[12].textContent = "0%";
           }
         }
         return;
@@ -2035,6 +2060,10 @@
       const totalCut = days.reduce((s,d)=>s+d.cut,0);
       const totalWithWaste = days.reduce((s,d)=>s+d.withWaste,0);
       const totalGrowForecastedWeightLbs = days.reduce((s,d)=>s+(Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0),0);
+      const daysWithBladeHeight = days.filter(d => Number.isFinite(d.bladeHeight) && d.bladeHeight > 0);
+      const avgBladeHeight = daysWithBladeHeight.length
+        ? daysWithBladeHeight.reduce((s,d)=>s+d.bladeHeight,0) / daysWithBladeHeight.length
+        : 0;
       const daysWithLsy = days.filter(d => Number.isFinite(d.lsy));
       const avgLsy = daysWithLsy.length
         ? daysWithLsy.reduce((s,d)=>s+d.lsy,0) / daysWithLsy.length
@@ -2079,13 +2108,14 @@
       const tfootRow = document.querySelector("#harvest-table tfoot tr");
       if (tfootRow) {
         const tds = tfootRow.querySelectorAll("td");
-        if (tds.length >= 12) {
+        if (tds.length >= 13) {
           tds[4].textContent = fmtInt(totalGrowForecastedWeightLbs);
-          tds[7].textContent = fmtInt(totalBoards);
-          tds[8].textContent = fmtInt(totalWithWaste);
-          tds[9].textContent = fmt1(avgWithWastePerBoard);
-          tds[10].textContent = fmt1(avgLsy);
-          tds[11].textContent = fmt1(overallPotential) + "%";
+          tds[7].textContent = avgBladeHeight > 0 ? fmt1(avgBladeHeight) : "–";
+          tds[8].textContent = fmtInt(totalBoards);
+          tds[9].textContent = fmtInt(totalWithWaste);
+          tds[10].textContent = fmt1(avgWithWastePerBoard);
+          tds[11].textContent = fmt1(avgLsy);
+          tds[12].textContent = fmt1(overallPotential) + "%";
         }
       }
     }
@@ -2124,6 +2154,7 @@
           <td class="harvestable-col">${fmtInt(c.growForecastedWeightLbs || 0)}</td>
           <td>${c.date || "–"}</td>
           <td>${c.week || "–"}</td>
+          <td>${c.bladeHeight ? fmt1(c.bladeHeight) : "–"}</td>
           <td>${fmtInt(c.boards)}</td>
           <td>${fmtInt(c.withWaste)}</td>
           <td>${fmt1(withWastePerBoard)}</td>
@@ -2148,6 +2179,7 @@
           <td class="harvestable-col">${fmtInt(d.growForecastedWeightLbs || 0)}</td>
           <td>${d.date}</td>
           <td>${d.week || isoWeekFromUTC(d.dateObj) || "–"}</td>
+          <td>${d.bladeHeight ? fmt1(d.bladeHeight) : "–"}</td>
           <td>${fmtInt(d.boards)}</td>
           <td>${fmtInt(d.withWaste)}</td>
           <td>${fmt1(withWastePerBoard)}</td>
@@ -2170,6 +2202,7 @@
           <td class="harvestable-col">${fmtInt(w.growForecastedWeightLbs || 0)}</td>
           <td>${w.label}</td>
           <td>${w.week}</td>
+          <td>${w.bladeHeight ? fmt1(w.bladeHeight) : "–"}</td>
           <td>${fmtInt(w.boards)}</td>
           <td>${fmtInt(w.withWaste)}</td>
           <td>${fmt1(withWastePerBoard)}</td>
