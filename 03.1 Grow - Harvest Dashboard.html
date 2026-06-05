@@ -304,6 +304,24 @@
       box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.45) inset;
     }
 
+    .blade-height-toggle {
+      border: 1px solid rgba(96, 165, 250, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: rgba(191, 219, 254, 0.92);
+      padding: 6px 12px;
+    }
+
+    .blade-height-toggle.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.4), rgba(96, 165, 250, 0.22));
+      color: #dbeafe;
+      box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.55) inset;
+    }
+
+    .blade-height-toggle:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
     .trend-toggle {
       display: inline-flex;
       align-items: center;
@@ -650,6 +668,7 @@
               <button id="middle-view-harvestable" class="view-toggle-btn" type="button">Harvestable</button>
               <button id="middle-view-table" class="view-toggle-btn" type="button">Table</button>
             </div>
+            <button id="blade-height-toggle" class="view-toggle-btn blade-height-toggle" type="button" aria-pressed="false">Blade Height</button>
           </div>
           <div class="date-range-controls">
             <label for="global-date-start">From</label>
@@ -954,6 +973,7 @@
     let tableMode = "cut";    // "cut" | "daily" | "weekly"
     let middleViewMode = "output"; // "output" | "timeline" | "harvestable" | "table"
     let harvestLogOpen = false;
+    let bladeHeightOverlay = false;
     let pillStates = {};
     let LAST_HYDRATE_REASON = "";
 
@@ -1076,12 +1096,31 @@
         tableMode,
         startYmd: RANGE_START_YMD,
         endYmd: RANGE_END_YMD,
-        logOpen: harvestLogOpen
+        logOpen: harvestLogOpen,
+        bladeHeightOverlay
       });
       if (persist) {
         persistLogOpen(harvestLogOpen);
         persistPillStates();
       }
+    }
+
+    function syncBladeHeightToggle() {
+      const btn = document.getElementById("blade-height-toggle");
+      if (!btn) return;
+      const enabled = middleViewMode === "output";
+      btn.disabled = !enabled;
+      btn.classList.toggle("active", enabled && bladeHeightOverlay);
+      btn.setAttribute("aria-pressed", enabled && bladeHeightOverlay ? "true" : "false");
+      btn.title = enabled ? "Toggle Blade Height overlay" : "Blade Height overlay is available in Output mode";
+    }
+
+    function setBladeHeightOverlay(on, opts = {}) {
+      const { persist = true } = opts;
+      bladeHeightOverlay = !!on;
+      syncBladeHeightToggle();
+      renderCharts();
+      if (persist) saveActivePillState();
     }
 
     function getDefaultPillState(seed = {}) {
@@ -1093,7 +1132,8 @@
         tableMode: sanitizeTableMode(seed.tableMode) || chartModeToTableMode(mode),
         startYmd: start,
         endYmd: end,
-        logOpen: !!seed.logOpen
+        logOpen: !!seed.logOpen,
+        bladeHeightOverlay: !!seed.bladeHeightOverlay
       };
     }
 
@@ -1137,7 +1177,8 @@
         tableMode,
         startYmd: RANGE_START_YMD,
         endYmd: RANGE_END_YMD,
-        logOpen: harvestLogOpen
+        logOpen: harvestLogOpen,
+        bladeHeightOverlay
       });
       persistPillStates();
     }
@@ -1150,6 +1191,7 @@
       RANGE_START_YMD = state.startYmd;
       RANGE_END_YMD = state.endYmd;
       harvestLogOpen = !!state.logOpen;
+      bladeHeightOverlay = !!state.bladeHeightOverlay;
     }
 
     function parseNumber(v) {
@@ -1332,8 +1374,8 @@
             propagationDaysCount: 0,
             productionDaysSum: 0,
             productionDaysCount: 0,
-            bladeHeightSum: 0,
-            bladeHeightCount: 0,
+            bladeHeightWeightedSum: 0,
+            bladeHeightWeight: 0,
             growForecastedWeightLbs: 0
           });
         }
@@ -1359,9 +1401,11 @@
           w.productionDaysSum += d.productionDays;
           w.productionDaysCount += 1;
         }
-        if (Number.isFinite(d.bladeHeight) && d.bladeHeight > 0) {
-          w.bladeHeightSum += d.bladeHeight;
-          w.bladeHeightCount += 1;
+        // Roll up the original weighted components, not the daily average:
+        // weekly blade height = sum(batch blade height * boards) / sum(batch boards).
+        if (Number.isFinite(d.bladeHeightWeightedSum) && d.bladeHeightWeightedSum > 0 && Number.isFinite(d.bladeHeightWeight) && d.bladeHeightWeight > 0) {
+          w.bladeHeightWeightedSum += d.bladeHeightWeightedSum;
+          w.bladeHeightWeight += d.bladeHeightWeight;
         }
         w.growForecastedWeightLbs += (Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0);
       }
@@ -1398,7 +1442,9 @@
           harvestDaysToHarvest: w.harvestDaysToHarvestCount > 0 ? (w.harvestDaysToHarvestSum / w.harvestDaysToHarvestCount) : 0,
           propagationDays: w.propagationDaysCount > 0 ? (w.propagationDaysSum / w.propagationDaysCount) : 0,
           productionDays: w.productionDaysCount > 0 ? (w.productionDaysSum / w.productionDaysCount) : 0,
-          bladeHeight: w.bladeHeightCount > 0 ? (w.bladeHeightSum / w.bladeHeightCount) : 0,
+          bladeHeight: w.bladeHeightWeight > 0 ? (w.bladeHeightWeightedSum / w.bladeHeightWeight) : 0,
+          bladeHeightWeightedSum: w.bladeHeightWeightedSum,
+          bladeHeightWeight: w.bladeHeightWeight,
           growForecastedWeightLbs: w.growForecastedWeightLbs
         };
       });
@@ -1925,8 +1971,8 @@
             propagationDaysCount: 0,
             productionDaysSum: 0,
             productionDaysCount: 0,
-            bladeHeightSum: 0,
-            bladeHeightCount: 0,
+            bladeHeightWeightedSum: 0,
+            bladeHeightWeight: 0,
             growForecastedWeightLbs: 0
           });
         }
@@ -1957,9 +2003,9 @@
           d.productionDaysSum += c.productionDays;
           d.productionDaysCount += 1;
         }
-        if (Number.isFinite(c.bladeHeight) && c.bladeHeight > 0) {
-          d.bladeHeightSum += c.bladeHeight;
-          d.bladeHeightCount += 1;
+        if (Number.isFinite(c.bladeHeight) && c.bladeHeight > 0 && c.boards > 0) {
+          d.bladeHeightWeightedSum += c.bladeHeight * c.boards;
+          d.bladeHeightWeight += c.boards;
         }
         d.growForecastedWeightLbs += (Number.isFinite(c.growForecastedWeightLbs) ? c.growForecastedWeightLbs : 0);
         if (!d.weekGuess && c.week) d.weekGuess = c.week;
@@ -1992,7 +2038,9 @@
             harvestDaysToHarvest: d.harvestDaysToHarvestCount > 0 ? (d.harvestDaysToHarvestSum / d.harvestDaysToHarvestCount) : 0,
             propagationDays: d.propagationDaysCount > 0 ? (d.propagationDaysSum / d.propagationDaysCount) : 0,
             productionDays: d.productionDaysCount > 0 ? (d.productionDaysSum / d.productionDaysCount) : 0,
-            bladeHeight: d.bladeHeightCount > 0 ? (d.bladeHeightSum / d.bladeHeightCount) : 0,
+            bladeHeight: d.bladeHeightWeight > 0 ? (d.bladeHeightWeightedSum / d.bladeHeightWeight) : 0,
+            bladeHeightWeightedSum: d.bladeHeightWeightedSum,
+            bladeHeightWeight: d.bladeHeightWeight,
             growForecastedWeightLbs: d.growForecastedWeightLbs
           };
         });
@@ -2060,10 +2108,9 @@
       const totalCut = days.reduce((s,d)=>s+d.cut,0);
       const totalWithWaste = days.reduce((s,d)=>s+d.withWaste,0);
       const totalGrowForecastedWeightLbs = days.reduce((s,d)=>s+(Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0),0);
-      const daysWithBladeHeight = days.filter(d => Number.isFinite(d.bladeHeight) && d.bladeHeight > 0);
-      const avgBladeHeight = daysWithBladeHeight.length
-        ? daysWithBladeHeight.reduce((s,d)=>s+d.bladeHeight,0) / daysWithBladeHeight.length
-        : 0;
+      const totalBladeHeightWeighted = days.reduce((s,d)=>s+(Number.isFinite(d.bladeHeightWeightedSum) ? d.bladeHeightWeightedSum : 0),0);
+      const totalBladeHeightWeight = days.reduce((s,d)=>s+(Number.isFinite(d.bladeHeightWeight) ? d.bladeHeightWeight : 0),0);
+      const avgBladeHeight = totalBladeHeightWeight > 0 ? totalBladeHeightWeighted / totalBladeHeightWeight : 0;
       const daysWithLsy = days.filter(d => Number.isFinite(d.lsy));
       const avgLsy = daysWithLsy.length
         ? daysWithLsy.reduce((s,d)=>s+d.lsy,0) / daysWithLsy.length
@@ -2223,6 +2270,7 @@
 
       const isTimeline = middleViewMode === "timeline";
       const isHarvestable = middleViewMode === "harvestable";
+      const isBladeHeightOverlayVisible = !isTimeline && !isHarvestable && bladeHeightOverlay;
       const boardsRow = document.getElementById("chart-row-boards");
       const weightRow = document.getElementById("chart-row-weight");
       const thirdRow = document.getElementById("chart-row-production");
@@ -2232,7 +2280,7 @@
       boardsRow?.classList.remove("hidden");
       weightRow?.classList.toggle("hidden", isHarvestable);
       thirdRow?.classList.toggle("hidden", !isTimeline);
-      legendBottom?.classList.toggle("hidden", !isTimeline);
+      legendBottom?.classList.toggle("hidden", !isTimeline && !isBladeHeightOverlayVisible);
 
       const labelsCut = cutsVisible.map((_, i) => String(i + 1));
       const batchTooltipTitles = cutsVisible.map((c, i) => {
@@ -2247,6 +2295,7 @@
       const harvestDaysByCut = cutsVisible.map(c => Number.isFinite(c.harvestDaysToHarvest) ? c.harvestDaysToHarvest : 0);
       const propagationDaysByCut = cutsVisible.map(c => Number.isFinite(c.propagationDays) ? c.propagationDays : 0);
       const productionDaysByCut = cutsVisible.map(c => Number.isFinite(c.productionDays) ? c.productionDays : 0);
+      const bladeHeightByCut = cutsVisible.map(c => Number.isFinite(c.bladeHeight) && c.bladeHeight > 0 ? c.bladeHeight : null);
 
       // --- FIX: always force daily chart data to be chronological (oldest -> newest)
       const dailyChrono = [...dailyVisible].sort((a,b) => a.dateObj - b.dateObj);
@@ -2258,6 +2307,7 @@
       const harvestDaysByDate = dailyChrono.map(d => Number.isFinite(d.harvestDaysToHarvest) ? d.harvestDaysToHarvest : 0);
       const propagationDaysByDate = dailyChrono.map(d => Number.isFinite(d.propagationDays) ? d.propagationDays : 0);
       const productionDaysByDate = dailyChrono.map(d => Number.isFinite(d.productionDays) ? d.productionDays : 0);
+      const bladeHeightByDate = dailyChrono.map(d => Number.isFinite(d.bladeHeight) && d.bladeHeight > 0 ? d.bladeHeight : null);
 
       const labelsByWeek = weeklyVisible.map(w => w.label);
       const lsyByWeek = weeklyVisible.map(w => Number.isFinite(w.lsy) ? w.lsy : 0);
@@ -2267,10 +2317,12 @@
       const harvestDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.harvestDaysToHarvest) ? w.harvestDaysToHarvest : 0);
       const propagationDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.propagationDays) ? w.propagationDays : 0);
       const productionDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.productionDays) ? w.productionDays : 0);
+      const bladeHeightByWeek = weeklyVisible.map(w => Number.isFinite(w.bladeHeight) && w.bladeHeight > 0 ? w.bladeHeight : null);
 
-      let labels, topValues, middleValues, bottomValues, forecastValues, withWasteValues;
+      let labels, topValues, middleValues, bottomValues, forecastValues, withWasteValues, bladeHeightValues;
       if (chartMode === "cut") {
         labels = labelsCut;
+        bladeHeightValues = bladeHeightByCut;
         if (isTimeline) {
           topValues = harvestDaysByCut;
           middleValues = propagationDaysByCut;
@@ -2284,6 +2336,7 @@
         }
       } else if (chartMode === "week") {
         labels = labelsByWeek;
+        bladeHeightValues = bladeHeightByWeek;
         if (isTimeline) {
           topValues = harvestDaysByWeek;
           middleValues = propagationDaysByWeek;
@@ -2297,6 +2350,7 @@
         }
       } else {
         labels = labelsByDate;
+        bladeHeightValues = bladeHeightByDate;
         if (isTimeline) {
           topValues = harvestDaysByDate;
           middleValues = propagationDaysByDate;
@@ -2338,6 +2392,12 @@
       const middleLabel = isTimeline ? "Propagation Days" : "Harvest Cut Lbs/Board w/ waste";
       const topYAxisTitle = isTimeline ? "HARVEST DAYS TO HARVEST" : "LSY (lbs/sqft/yr)";
       const middleYAxisTitle = isTimeline ? "PROPAGATION DAYS" : "Harvest Cut Lbs/Board w/ waste";
+      const shouldOverlayBladeHeight = isBladeHeightOverlayVisible;
+      const bladeHeightLabel = chartMode === "cut"
+        ? "Blade Height per batch"
+        : chartMode === "week"
+          ? "Blade Height weighted avg per week"
+          : "Blade Height weighted avg per day";
       if (isHarvestable) {
         if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Grow Frecasted`;
         if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Actual Harvested`;
@@ -2345,7 +2405,9 @@
       } else {
         if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Top: ${isTimeline ? "Harvest Days to Harvest" : "LSY (lbs/sqft/yr)"}`;
         if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Middle: ${isTimeline ? "Propagation Days" : "Harvest Cut Lbs/Board w/ waste"}`;
-        if (legendBottom) legendBottom.innerHTML = `<span class="legend-box boards"></span> Bottom: Production Days`;
+        if (legendBottom) legendBottom.innerHTML = shouldOverlayBladeHeight
+          ? `<span class="legend-box boards"></span> Overlay: Blade Height`
+          : `<span class="legend-box boards"></span> Bottom: Production Days`;
       }
 
       boardsChart = new Chart(ctxBoards, {
@@ -2377,24 +2439,41 @@
                   backgroundColor: "rgba(234, 179, 8, 0.92)"
                 }
               ]
-            : [{
-                label: topLabel,
-                data: topValues,
-                borderWidth: isBatchMode ? 0 : 2.2,
-                borderRadius: isBatchMode ? 4 : 0,
-                tension: isBatchMode ? 0 : 0.35,
-                pointRadius: isBatchMode ? 0 : 2.8,
-                fill: false,
-                borderColor: "rgba(52, 211, 153, 0.98)",
-                backgroundColor: "rgba(52, 211, 153, 0.85)"
-              }]
+            : [
+                {
+                  label: topLabel,
+                  data: topValues,
+                  yAxisID: "y",
+                  borderWidth: isBatchMode ? 0 : 2.2,
+                  borderRadius: isBatchMode ? 4 : 0,
+                  tension: isBatchMode ? 0 : 0.35,
+                  pointRadius: isBatchMode ? 0 : 2.8,
+                  fill: false,
+                  borderColor: "rgba(52, 211, 153, 0.98)",
+                  backgroundColor: "rgba(52, 211, 153, 0.85)"
+                },
+                ...(shouldOverlayBladeHeight ? [{
+                  type: "line",
+                  label: bladeHeightLabel,
+                  data: bladeHeightValues,
+                  yAxisID: "yBlade",
+                  borderWidth: 2.2,
+                  tension: 0.35,
+                  pointRadius: isBatchMode ? 2.5 : 2.8,
+                  pointHoverRadius: 4,
+                  spanGaps: true,
+                  fill: false,
+                  borderColor: "rgba(96, 165, 250, 0.98)",
+                  backgroundColor: "rgba(96, 165, 250, 0.22)"
+                }] : [])
+              ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: isHarvestable,
+              display: isHarvestable || shouldOverlayBladeHeight,
               position: "top",
               labels: {
                 color: "rgba(248, 250, 252, 0.96)",
@@ -2437,7 +2516,19 @@
                 callback: (v) => fmtTick(v, 1)
               },
               title: { display: true, text: isHarvestable ? "GROW FORECASTED WEIGHT LBS / WITH WASTE" : topYAxisTitle, color: axisTitleColor, font: axisTitleFont }
-            }
+            },
+            ...(shouldOverlayBladeHeight ? {
+              yBlade: {
+                position: "right",
+                grid: { drawOnChartArea: false },
+                ticks: {
+                  color: "rgba(147, 197, 253, 0.98)",
+                  font: axisTickFont,
+                  callback: (v) => fmtTick(v, 1)
+                },
+                title: { display: true, text: "BLADE HEIGHT", color: "rgba(191, 219, 254, 0.98)", font: axisTitleFont }
+              }
+            } : {})
           }
         }
       });
@@ -2658,6 +2749,7 @@
       const endInput = document.getElementById("global-date-end");
       if (startInput) startInput.value = RANGE_START_YMD;
       if (endInput) endInput.value = RANGE_END_YMD;
+      syncBladeHeightToggle();
       setChartMode(chartMode);
       setTableMode(tableMode, { fromChart: true });
       setHarvestLogOpen(harvestLogOpen, { persist: false });
@@ -2716,6 +2808,10 @@
       document.getElementById("middle-view-harvestable")?.addEventListener("click", () => setMiddleView("harvestable"));
       document.getElementById("middle-view-table")?.addEventListener("click", () => setMiddleView("table"));
       document.getElementById("harvest-log-toggle")?.addEventListener("click", () => setHarvestLogOpen(!harvestLogOpen));
+      document.getElementById("blade-height-toggle")?.addEventListener("click", () => {
+        if (middleViewMode !== "output") return;
+        setBladeHeightOverlay(!bladeHeightOverlay);
+      });
 
       const onRangeChange = () => {
         let start = String(startInput?.value || "");
@@ -2740,6 +2836,7 @@
       setTableMode(tableMode);
       setMiddleView(middleViewMode);
       setHarvestLogOpen(harvestLogOpen, { persist: false });
+      syncBladeHeightToggle();
       saveActivePillState();
     }
 
