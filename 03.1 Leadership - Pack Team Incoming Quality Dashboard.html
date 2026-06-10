@@ -624,6 +624,13 @@
           <button class="qualityPill" type="button" data-quality="bad">Bad</button>
           <button class="qualityPill" type="button" data-quality="very_bad">Very Bad</button>
         </div>
+        <div class="qualityRow" role="group" aria-label="Graph period">
+          <span class="qualityLabel">Graphs</span>
+          <div class="projectionToggle">
+            <button class="projectionBtn active" id="graphPeriodDaily" type="button">Daily</button>
+            <button class="projectionBtn" id="graphPeriodWeekly" type="button">Weekly</button>
+          </div>
+        </div>
         <div class="packageSizeRow hidden" id="yamatoPackageSizeRow" role="group" aria-label="Package Size">
           <span class="qualityLabel">Package Size</span>
           <div class="projectionToggle yamatoFilterToggle" id="yamatoClamshellFilters"></div>
@@ -790,14 +797,10 @@
         </div>
         <div class="grid2 yamatoChartsStack">
           <div class="card">
-            <h3 class="performanceTitle">Hourly Throughput</h3>
+            <h3 class="performanceTitle" id="yamatoThroughputTitle">Daily Hourly Throughput</h3>
             <div class="chartWrap"><canvas id="chartYamatoDaily"></canvas></div>
           </div>
           <div class="card projectionCard">
-            <div class="projectionToggle">
-              <button class="projectionBtn active" id="yamatoProjDay" type="button">Daily</button>
-              <button class="projectionBtn" id="yamatoProjWeek" type="button">Weekly</button>
-            </div>
             <div class="yamatoValueToggle" role="group" aria-label="Projection units">
               <button class="projectionBtn active" id="yamatoValUnits" type="button">Units</button>
               <button class="projectionBtn" id="yamatoValLbs" type="button">Lbs</button>
@@ -947,9 +950,15 @@
     function fmt1(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "0.0"; }
     function toISO(d) { return d.toISOString().slice(0, 10); }
     function fmt2(v) { return Number.isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"; }
-    const CHART_DATE_LABEL_FORMATTER = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
+    const CHART_DATE_LABEL_FORMATTER = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
     function formatChartDateLabel(input) {
-      const date = input instanceof Date ? input : new Date(String(input ?? ""));
+      const raw = String(input ?? "").trim();
+      const isoDay = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      const date = input instanceof Date
+        ? input
+        : isoDay
+          ? new Date(Date.UTC(Number(isoDay[1]), Number(isoDay[2]) - 1, Number(isoDay[3])))
+          : new Date(raw);
       if (!(date instanceof Date) || Number.isNaN(date.getTime())) return String(input ?? "");
       return CHART_DATE_LABEL_FORMATTER.format(date);
     }
@@ -1481,6 +1490,7 @@
         .map(([dateISO, v]) => ({
           dateISO,
           dumps: v.dumps,
+          duration: v.duration,
           dumpsPerHour: v.duration > 0 ? (v.dumps / v.duration) : NaN
         }))
         .sort((a, b) => a.dateISO.localeCompare(b.dateISO));
@@ -2093,7 +2103,8 @@
       const missing = Array.isArray(missingHeaders) ? missingHeaders : [];
       const shiftLength = Math.max(Number(opts.shiftLength) || 0, 0);
       const daysPerWeek = Math.max(Number(opts.daysPerWeek) || 0, 0);
-      const isWeek = ACTIVE_YAMATO_PROJECTION_MODE === "week";
+      const yamatoPeriodMode = ACTIVE_GRAPH_PERIOD === "weekly" ? "week" : "day";
+      const isWeek = yamatoPeriodMode === "week";
       const metricLabel = yamatoValueLabel(ACTIVE_YAMATO_VALUE_MODE, isWeek);
       if (missing.length) {
         $("kYRuns").textContent = "0";
@@ -2141,18 +2152,24 @@
       if (chartYamatoDaily) {
         const selectedType = ACTIVE_YAMATO_CLAMSHELL;
         const dailyAgg = aggregateYamato(rows);
-        const labels = formatChartDateLabels(dailyAgg.daily.map((d) => d.dateISO));
-        const vals = dailyAgg.daily.map((d) => Number.isFinite(d.dumpsPerHour) ? Number(d.dumpsPerHour.toFixed(2)) : null);
+        const trend = buildYamatoThroughputTrend(dailyAgg.daily, yamatoPeriodMode);
+        const labels = trend.map((d) => d.label || formatChartDateLabel(d.dateISO));
+        const vals = trend.map((d) => Number.isFinite(d.rate) ? Number(d.rate.toFixed(2)) : null);
         const last5 = vals.filter((v) => Number.isFinite(v)).slice(-5);
         const avg5 = last5.length ? (last5.reduce((acc, v) => acc + v, 0) / last5.length) : NaN;
+        const periodLabel = yamatoPeriodMode === "week" ? "Weekly Weighted" : "Daily";
+        if ($("yamatoThroughputTitle")) $("yamatoThroughputTitle").textContent = `${periodLabel} Hourly Throughput`;
         chartYamatoDaily.data.labels = labels;
         chartYamatoDaily.data.datasets[0].data = vals;
-        chartYamatoDaily.data.datasets[0].label = selectedType === "__all__" ? "Hourly Throughput" : `Hourly Throughput (${selectedType})`;
+        chartYamatoDaily.data.datasets[0].label = selectedType === "__all__" ? `${periodLabel} Hourly Throughput` : `${periodLabel} Hourly Throughput (${selectedType})`;
         chartYamatoDaily.data.datasets[1].data = labels.map(() => Number.isFinite(avg5) ? Number(avg5.toFixed(2)) : null);
+        if (chartYamatoDaily.options?.scales?.x?.title) {
+          chartYamatoDaily.options.scales.x.title.text = yamatoPeriodMode === "week" ? "Week" : "Date";
+        }
         chartYamatoDaily.update();
       }
       if (chartYamatoType) {
-        const projected = computeYamatoProjectedByType(baseRows, shiftLength, daysPerWeek, ACTIVE_YAMATO_PROJECTION_MODE, ACTIVE_YAMATO_VALUE_MODE);
+        const projected = computeYamatoProjectedByType(rows, shiftLength, daysPerWeek, yamatoPeriodMode, ACTIVE_YAMATO_VALUE_MODE);
         if ($("yamatoProjectionTitle")) $("yamatoProjectionTitle").textContent = metricLabel;
         chartYamatoType.data.labels = projected.map((d) => d.clamshellType);
         chartYamatoType.data.datasets[0].label = metricLabel;
@@ -2194,7 +2211,89 @@
 
     function buildDailyTrend(dailyRows) {
       return dailyRows
-        .map((d) => ({ dateISO: d.dateISO, rate: d.slot > 0 ? (d.canastas / d.slot) : NaN }))
+        .map((d) => ({
+          dateISO: d.dateISO,
+          label: formatChartDateLabel(d.dateISO),
+          canastas: d.canastas,
+          slot: d.slot,
+          rate: d.slot > 0 ? (d.canastas / d.slot) : NaN
+        }))
+        .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
+    }
+
+    function getISOWeekInfo(dateISO) {
+      const raw = String(dateISO ?? "").trim();
+      const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      const date = m
+        ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+        : new Date(raw);
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return { key: raw, label: raw };
+      }
+      const day = date.getUTCDay() || 7;
+      date.setUTCDate(date.getUTCDate() + 4 - day);
+      const weekYear = date.getUTCFullYear();
+      const yearStart = new Date(Date.UTC(weekYear, 0, 1));
+      const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+      const key = `${weekYear}-W${String(week).padStart(2, "0")}`;
+      return { key, label: `Week ${week} (${weekYear})` };
+    }
+
+    function buildPerformanceTrend(dailyRows, period) {
+      if (period !== "weekly") return buildDailyTrend(dailyRows);
+      const byWeek = new Map();
+      for (const d of Array.isArray(dailyRows) ? dailyRows : []) {
+        const week = getISOWeekInfo(d.dateISO);
+        if (!byWeek.has(week.key)) {
+          byWeek.set(week.key, { key: week.key, label: week.label, canastas: 0, slot: 0 });
+        }
+        const bucket = byWeek.get(week.key);
+        bucket.canastas += Number.isFinite(d.canastas) ? d.canastas : 0;
+        bucket.slot += Number.isFinite(d.slot) ? d.slot : 0;
+      }
+      return Array.from(byWeek.values())
+        .sort((a, b) => String(a.key).localeCompare(String(b.key)))
+        .map((d) => ({
+          dateISO: d.key,
+          label: d.label,
+          canastas: d.canastas,
+          slot: d.slot,
+          rate: d.slot > 0 ? (d.canastas / d.slot) : NaN
+        }))
+        .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
+    }
+
+    function buildYamatoThroughputTrend(dailyRows, mode) {
+      if (mode !== "week") {
+        return (Array.isArray(dailyRows) ? dailyRows : [])
+          .map((d) => ({
+            dateISO: d.dateISO,
+            label: formatChartDateLabel(d.dateISO),
+            dumps: d.dumps,
+            duration: d.duration,
+            rate: Number.isFinite(d.dumpsPerHour) ? d.dumpsPerHour : NaN
+          }))
+          .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
+      }
+      const byWeek = new Map();
+      for (const d of Array.isArray(dailyRows) ? dailyRows : []) {
+        const week = getISOWeekInfo(d.dateISO);
+        if (!byWeek.has(week.key)) {
+          byWeek.set(week.key, { key: week.key, label: week.label, dumps: 0, duration: 0 });
+        }
+        const bucket = byWeek.get(week.key);
+        bucket.dumps += Number.isFinite(d.dumps) ? d.dumps : 0;
+        bucket.duration += Number.isFinite(d.duration) ? d.duration : 0;
+      }
+      return Array.from(byWeek.values())
+        .sort((a, b) => String(a.key).localeCompare(String(b.key)))
+        .map((d) => ({
+          dateISO: d.key,
+          label: d.label,
+          dumps: d.dumps,
+          duration: d.duration,
+          rate: d.duration > 0 ? (d.dumps / d.duration) : NaN
+        }))
         .filter((d) => Number.isFinite(d.rate) && d.rate > 0);
     }
 
@@ -2203,8 +2302,8 @@
     let ACTIVE_EMPLOYEE = "";
     let ACTIVE_SUMMARY_QUALITY = "all";
     let ACTIVE_VIEW = "dashboard";
+    let ACTIVE_GRAPH_PERIOD = "daily";
     let ACTIVE_PROJECTION_MODE = "shift";
-    let ACTIVE_YAMATO_PROJECTION_MODE = "day";
     let ACTIVE_YAMATO_VALUE_MODE = "units";
     let ACTIVE_YAMATO_CLAMSHELL = "__all__";
     let RENDER_TIMER = 0;
@@ -2221,8 +2320,8 @@
       return {
         activeView: ACTIVE_VIEW,
         summaryQuality: ACTIVE_SUMMARY_QUALITY,
+        graphPeriod: ACTIVE_GRAPH_PERIOD,
         projectionMode: ACTIVE_PROJECTION_MODE,
-        yamatoProjectionMode: ACTIVE_YAMATO_PROJECTION_MODE,
         yamatoValueMode: ACTIVE_YAMATO_VALUE_MODE,
         yamatoClamshell: ACTIVE_YAMATO_CLAMSHELL,
         scrollX: window.scrollX || 0,
@@ -2252,11 +2351,11 @@
         if (typeof s.summaryQuality === "string" && s.summaryQuality) {
           ACTIVE_SUMMARY_QUALITY = s.summaryQuality;
         }
+        if (s.graphPeriod === "daily" || s.graphPeriod === "weekly") {
+          ACTIVE_GRAPH_PERIOD = s.graphPeriod;
+        }
         if (s.projectionMode === "shift" || s.projectionMode === "week") {
           ACTIVE_PROJECTION_MODE = s.projectionMode;
-        }
-        if (s.yamatoProjectionMode === "day" || s.yamatoProjectionMode === "week") {
-          ACTIVE_YAMATO_PROJECTION_MODE = s.yamatoProjectionMode;
         }
         if (s.yamatoValueMode === "units" || s.yamatoValueMode === "lbs") {
           ACTIVE_YAMATO_VALUE_MODE = s.yamatoValueMode;
@@ -2268,8 +2367,8 @@
         if (activeBtn) {
           document.querySelectorAll(".qualityPill").forEach((b) => b.classList.toggle("active", b === activeBtn));
         }
+        updateGraphPeriodUI();
         updateProjectionModeUI();
-        updateYamatoProjectionModeUI();
         updateYamatoValueModeUI();
         requestAnimationFrame(() => {
           window.scrollTo(Number(s.scrollX) || 0, Number(s.scrollY) || 0);
@@ -2376,38 +2475,48 @@
       if ($("yamatoTopPill")) $("yamatoTopPill").title = `Yamato Total Dumps: ${fmtInt(yamatoAgg.totalDumps)}`;
 
       if (chartDaily) {
-        const dailyTrend = buildDailyTrend(a2.daily);
-        const labels = formatChartDateLabels(dailyTrend.map((d) => d.dateISO));
+        const dailyTrend = buildPerformanceTrend(a2.daily, ACTIVE_GRAPH_PERIOD);
+        const labels = dailyTrend.map((d) => d.label || formatChartDateLabel(d.dateISO));
         const vals = dailyTrend.map((d) => Number(d.rate.toFixed(2)));
         const last5 = vals.slice(-5).filter((v) => Number.isFinite(v));
         const avg5 = last5.length ? (last5.reduce((a, b) => a + b, 0) / last5.length) : NaN;
         const targetScore = targetQualityScore(qualityFilter, scale);
+        const periodLabel = ACTIVE_GRAPH_PERIOD === "weekly" ? "Weekly Weighted" : "Daily";
         chartDaily.data.labels = labels;
+        chartDaily.data.datasets[0].label = `${periodLabel} Avg Cans/Person/Hr`;
         chartDaily.data.datasets[0].data = vals;
         chartDaily.data.datasets[1].data = labels.map(() => Number.isFinite(avg5) ? Number(avg5.toFixed(2)) : null);
         chartDaily.data.datasets[2].data = labels.map(() => Number.isFinite(targetScore) ? Number(targetScore.toFixed(2)) : null);
         chartDaily.data.datasets[2].label = Number.isFinite(targetScore)
           ? `Target Quality Score (${qualityFilterLabel(qualityFilter)}: ${targetScore.toFixed(2)})`
           : "Target Quality Score (select a quality filter)";
+        if (chartDaily.options?.scales?.x?.title) {
+          chartDaily.options.scales.x.title.text = ACTIVE_GRAPH_PERIOD === "weekly" ? "Week" : "Date";
+        }
         chartDaily.update();
       }
       let avg5Qc = NaN;
       if (chartDailyQc) {
-        const dailyTrendQc = buildDailyTrend(a2.daily);
-        const labelsQc = formatChartDateLabels(dailyTrendQc.map((d) => d.dateISO));
+        const dailyTrendQc = buildPerformanceTrend(a2.daily, ACTIVE_GRAPH_PERIOD);
+        const labelsQc = dailyTrendQc.map((d) => d.label || formatChartDateLabel(d.dateISO));
         const valsQc = dailyTrendQc.map((d) => Number((d.rate * avgCanastaWeight).toFixed(2)));
         const targetScore = targetQualityScore(qualityFilter, scale);
         const targetLbsPerHour = Number.isFinite(targetScore) ? Number((targetScore * avgCanastaWeight).toFixed(2)) : NaN;
         const qualityScoreQc = labelsQc.map(() => Number.isFinite(targetLbsPerHour) ? targetLbsPerHour : null);
         const last5Qc = valsQc.slice(-5).filter((v) => Number.isFinite(v));
         avg5Qc = last5Qc.length ? (last5Qc.reduce((a, b) => a + b, 0) / last5Qc.length) : NaN;
+        const periodLabelQc = ACTIVE_GRAPH_PERIOD === "weekly" ? "Weekly Weighted" : "Daily";
         chartDailyQc.data.labels = labelsQc;
+        chartDailyQc.data.datasets[0].label = `${periodLabelQc} Avg Lbs/Person/Hr`;
         chartDailyQc.data.datasets[0].data = valsQc;
         chartDailyQc.data.datasets[1].data = labelsQc.map(() => Number.isFinite(avg5Qc) ? Number(avg5Qc.toFixed(2)) : null);
         chartDailyQc.data.datasets[2].data = qualityScoreQc;
         chartDailyQc.data.datasets[2].label = Number.isFinite(targetLbsPerHour)
           ? `Target Lbs/Person/Hr (${qualityFilterLabel(qualityFilter)}: ${targetScore.toFixed(2)} x ${avgCanastaWeight.toFixed(2)} = ${targetLbsPerHour.toFixed(2)})`
           : "Target Lbs/Person/Hr (select a quality filter)";
+        if (chartDailyQc.options?.scales?.x?.title) {
+          chartDailyQc.options.scales.x.title.text = ACTIVE_GRAPH_PERIOD === "weekly" ? "Week" : "Date";
+        }
         chartDailyQc.update();
       }
 
@@ -2480,9 +2589,9 @@
       if ($("projModeWeek")) $("projModeWeek").classList.toggle("active", ACTIVE_PROJECTION_MODE === "week");
     }
 
-    function updateYamatoProjectionModeUI() {
-      if ($("yamatoProjDay")) $("yamatoProjDay").classList.toggle("active", ACTIVE_YAMATO_PROJECTION_MODE === "day");
-      if ($("yamatoProjWeek")) $("yamatoProjWeek").classList.toggle("active", ACTIVE_YAMATO_PROJECTION_MODE === "week");
+    function updateGraphPeriodUI() {
+      if ($("graphPeriodDaily")) $("graphPeriodDaily").classList.toggle("active", ACTIVE_GRAPH_PERIOD === "daily");
+      if ($("graphPeriodWeekly")) $("graphPeriodWeekly").classList.toggle("active", ACTIVE_GRAPH_PERIOD === "weekly");
     }
 
     function updateYamatoValueModeUI() {
@@ -2640,6 +2749,23 @@
           });
           document.body.dataset.projectionTogglesBound = "1";
         }
+        if (!document.body.dataset.graphPeriodTogglesBound) {
+          $("graphPeriodDaily").addEventListener("click", () => {
+            if (ACTIVE_GRAPH_PERIOD === "daily") return;
+            ACTIVE_GRAPH_PERIOD = "daily";
+            updateGraphPeriodUI();
+            scheduleRender(0);
+            persistUIState();
+          });
+          $("graphPeriodWeekly").addEventListener("click", () => {
+            if (ACTIVE_GRAPH_PERIOD === "weekly") return;
+            ACTIVE_GRAPH_PERIOD = "weekly";
+            updateGraphPeriodUI();
+            scheduleRender(0);
+            persistUIState();
+          });
+          document.body.dataset.graphPeriodTogglesBound = "1";
+        }
         if (!document.body.dataset.qualityPillsBound) {
           document.querySelectorAll(".qualityPill").forEach((btn) => {
             btn.addEventListener("click", () => {
@@ -2721,23 +2847,6 @@
           });
           $("yamatoClamshellFilters").dataset.bound = "1";
         }
-        if ($("yamatoProjDay") && $("yamatoProjWeek") && !$("yamatoProjDay").dataset.bound) {
-          $("yamatoProjDay").addEventListener("click", () => {
-            if (ACTIVE_YAMATO_PROJECTION_MODE === "day") return;
-            ACTIVE_YAMATO_PROJECTION_MODE = "day";
-            updateYamatoProjectionModeUI();
-            scheduleRender(0);
-            persistUIState();
-          });
-          $("yamatoProjWeek").addEventListener("click", () => {
-            if (ACTIVE_YAMATO_PROJECTION_MODE === "week") return;
-            ACTIVE_YAMATO_PROJECTION_MODE = "week";
-            updateYamatoProjectionModeUI();
-            scheduleRender(0);
-            persistUIState();
-          });
-          $("yamatoProjDay").dataset.bound = "1";
-        }
         if ($("yamatoValUnits") && $("yamatoValLbs") && !$("yamatoValUnits").dataset.bound) {
           $("yamatoValUnits").addEventListener("click", () => {
             if (ACTIVE_YAMATO_VALUE_MODE === "units") return;
@@ -2760,7 +2869,7 @@
           $("saveSupabaseBtn").dataset.bound = "1";
         }
         setActiveView(ACTIVE_VIEW);
-        updateYamatoProjectionModeUI();
+        updateGraphPeriodUI();
         updateYamatoValueModeUI();
 
         render(ALL_ROWS);
