@@ -51,10 +51,20 @@
     }
 
     .header-row {
+      position: sticky;
+      top: 0;
+      z-index: 20;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
+      margin: -16px -20px 0;
+      padding: 16px 20px 12px;
+      border-radius: 32px 32px 0 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.94));
+      box-shadow: 0 14px 34px rgba(2, 6, 23, 0.36);
+      backdrop-filter: blur(14px);
     }
 
     .title-block h1 {
@@ -286,10 +296,13 @@
       scrollbar-gutter: stable both-edges;
       max-height: 320px; /* overridden dynamically */
     }
-    .table-wrapper table { width: 100%; min-width: 1440px; table-layout: fixed; border-collapse: collapse; font-size: 0.75rem; }
-    thead { background: linear-gradient(to right,#050b1a,#020617); position: sticky; top: 0; z-index: 1; }
+    .table-wrapper table { width: 100%; min-width: 1440px; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; }
+    thead { background: linear-gradient(to right,#050b1a,#020617); }
     th, td { padding: 8px 8px; text-align: left; border-bottom: 1px solid rgba(31,41,55,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
       font-weight: 800;
       color: #dbeafe;
       text-transform: uppercase;
@@ -306,16 +319,42 @@
       position: sticky;
       z-index: 2;
       background: #050b1a;
+      background-clip: padding-box;
       box-shadow: 1px 0 0 rgba(55,65,81,0.9);
     }
     .sticky-col-1 { left: 0; }
     .sticky-col-2 { left: 95px; }
-    thead .sticky-col { z-index: 4; }
+    thead .sticky-col {
+      top: 0;
+      z-index: 7;
+      background: #050b1a;
+      box-shadow:
+        1px 0 0 rgba(55,65,81,0.9),
+        0 1px 0 rgba(31,41,55,0.95);
+    }
     tbody .sticky-col { background: #020617; }
     tbody tr:nth-child(even) .sticky-col { background: #111827; }
     tbody tr:hover .sticky-col { background: #1e3a8a; }
     tbody tr:nth-child(even) { background: rgba(15, 23, 42, 0.8); }
     tbody tr:hover { background: rgba(30, 64, 175, 0.4); }
+    .invoice-detail-btn {
+      border: none;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: rgba(96,165,250,0.55);
+      text-underline-offset: 3px;
+    }
+    .invoice-detail-btn:hover,
+    .invoice-detail-btn:focus-visible {
+      color: #93c5fd;
+      outline: none;
+      text-decoration-color: #93c5fd;
+    }
     .status-check-cell,
     .status-name-cell {
       text-align: center;
@@ -353,9 +392,14 @@
     .status-check.prep:checked { background: #facc15; }
     .status-check.complete:checked { background: #22c55e; }
     .status-check.shipped:checked { background: #60a5fa; }
-    .status-name-input {
+    .status-name-stack {
+      display: grid;
+      gap: 5px;
+      min-width: 116px;
+    }
+    .status-name-input,
+    .status-name-select {
       width: 100%;
-      min-width: 88px;
       border: 1px solid rgba(55, 65, 81, 0.85);
       border-radius: 8px;
       background: rgba(15, 23, 42, 0.9);
@@ -365,7 +409,15 @@
       text-align: center;
       outline: none;
     }
-    .status-name-input:focus {
+    .status-name-select {
+      cursor: pointer;
+      text-align-last: center;
+    }
+    .status-name-input.hidden {
+      display: none;
+    }
+    .status-name-input:focus,
+    .status-name-select:focus {
       border-color: rgba(34,197,94,0.75);
       box-shadow: 0 0 0 2px rgba(34,197,94,0.16);
     }
@@ -426,9 +478,205 @@
       font-size: 0.78rem;
       outline: none;
     }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(10px);
+    }
+    .modal-backdrop.open { display: flex; }
+    .invoice-modal {
+      width: min(980px, 100%);
+      max-height: min(720px, calc(100vh - 36px));
+      overflow: auto;
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98)),
+        radial-gradient(circle at 12% 0%, rgba(34,197,94,0.16), transparent 34%);
+      box-shadow: 0 30px 110px rgba(0, 0, 0, 0.62);
+      padding: 0;
+    }
+    .invoice-modal-header {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(55,65,81,0.82);
+      background:
+        linear-gradient(135deg, rgba(15,23,42,0.98), rgba(2,6,23,0.96)),
+        radial-gradient(circle at left top, rgba(34,197,94,0.18), transparent 40%);
+    }
+    .invoice-modal-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.2rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .invoice-modal-sub {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .modal-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background: rgba(15, 23, 42, 0.92);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+    .modal-close-btn:hover,
+    .modal-close-btn:focus-visible {
+      border-color: rgba(96,165,250,0.7);
+      color: #93c5fd;
+      outline: none;
+    }
+    #invoiceDetailBody { padding: 16px 18px 18px; }
+    .invoice-ticket-topline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .invoice-ticket-field,
+    .invoice-detail-stat {
+      border: 1px solid rgba(55,65,81,0.85);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.72);
+      padding: 8px 10px;
+      min-width: 0;
+    }
+    .invoice-ticket-field {
+      min-height: 58px;
+    }
+    .invoice-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .invoice-detail-stat {
+      position: relative;
+      overflow: hidden;
+      padding: 12px 12px;
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(2, 6, 23, 0.72)),
+        radial-gradient(circle at top left, rgba(34,197,94,0.18), transparent 46%);
+    }
+    .invoice-detail-stat::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: linear-gradient(#22c55e, #60a5fa);
+    }
+    .invoice-detail-label,
+    .invoice-ticket-label {
+      color: var(--muted);
+      font-size: 0.66rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .invoice-detail-value,
+    .invoice-ticket-value {
+      margin-top: 4px;
+      color: var(--text);
+      font-size: 0.92rem;
+      font-weight: 650;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .invoice-detail-stat .invoice-detail-value {
+      font-size: 1.22rem;
+      letter-spacing: 0.01em;
+    }
+    .invoice-section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin: 2px 0 8px;
+      color: var(--sub);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .invoice-section-title span:last-child {
+      color: var(--muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+    }
+    .invoice-lines-wrapper {
+      border: 1px solid rgba(55,65,81,0.85);
+      border-radius: 16px;
+      overflow: auto;
+      background: rgba(2, 6, 23, 0.7);
+    }
+    .invoice-lines-table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.75rem;
+    }
+    .invoice-lines-table th,
+    .invoice-lines-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(31,41,55,0.9);
+      text-align: left;
+      white-space: nowrap;
+    }
+    .invoice-lines-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #050b1a;
+      color: #dbeafe;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .invoice-lines-table tbody tr:nth-child(even) { background: rgba(15, 23, 42, 0.58); }
+    .invoice-lines-table tbody tr:hover { background: rgba(30, 64, 175, 0.24); }
+    .invoice-lines-table tfoot td {
+      position: sticky;
+      bottom: 0;
+      z-index: 1;
+      border-top: 1px solid rgba(96,165,250,0.35);
+      border-bottom: none;
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-weight: 750;
+    }
+    .invoice-lines-table tr:last-child td { border-bottom: none; }
+    .invoice-lines-table .text-right { text-align: right !important; }
 
     @media (max-width: 960px) {
       .dashboard { padding: 16px; border-radius: 24px; }
+      .header-row {
+        margin: -16px -16px 0;
+        padding: 16px 16px 12px;
+        border-radius: 24px 24px 0 0;
+      }
       .layout { grid-template-columns: minmax(0,1fr); }
       .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .log-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -439,6 +687,8 @@
       .header-row { flex-direction: column; align-items: flex-start; }
       .badge-row { justify-content: flex-start; }
       .table-wrapper table { min-width: 1440px; }
+      .invoice-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .invoice-ticket-topline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -545,6 +795,19 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="invoiceDetailModal" aria-hidden="true">
+    <div class="invoice-modal" role="dialog" aria-modal="true" aria-labelledby="invoiceDetailTitle">
+      <div class="invoice-modal-header">
+        <div>
+          <h2 class="invoice-modal-title" id="invoiceDetailTitle">Invoice details</h2>
+          <div class="invoice-modal-sub" id="invoiceDetailSub">Pack list by SKU</div>
+        </div>
+        <button class="modal-close-btn" id="invoiceDetailCloseBtn" type="button" aria-label="Close invoice details">×</button>
+      </div>
+      <div id="invoiceDetailBody"></div>
+    </div>
+  </div>
+
   <script>
     // =========================================================
     // SAMPLE DATA (fallback)
@@ -572,6 +835,7 @@
       { flag: "orderComplete", name: "orderCompleteName", flagColumn: "Order Complete", nameColumn: "Order Complete Name", className: "complete" },
       { flag: "orderShipped", name: "orderShippedName", flagColumn: "Order Shipped", nameColumn: "Order Shipped Name", className: "shipped" }
     ];
+    const STATUS_NAME_OPTIONS = ["Brian", "Nahomi", "William", "Joel", "Fernando"];
 
     const BC_NAME = "campo_master_bus_v1";
     const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
@@ -943,6 +1207,45 @@
 
     const currentInvoiceLogRows = new Map();
 
+    function isPresetStatusName(value) {
+      return STATUS_NAME_OPTIONS.includes(String(value || "").trim());
+    }
+
+    function renderStatusNameControl(stage, row, key) {
+      const currentValue = String(row[stage.name] || "").trim();
+      const isOther = currentValue && !isPresetStatusName(currentValue);
+      const selectValue = isOther ? "__other__" : currentValue;
+      const optionsHtml = [
+        `<option value="">Name</option>`,
+        ...STATUS_NAME_OPTIONS.map(name => `<option value="${escapeHtml(name)}" ${selectValue === name ? "selected" : ""}>${escapeHtml(name)}</option>`),
+        `<option value="__other__" ${isOther ? "selected" : ""}>Other</option>`
+      ].join("");
+
+      return `
+        <div class="status-name-stack">
+          <select
+            class="status-name-select"
+            data-status-key="${escapeHtml(encodeURIComponent(key))}"
+            data-row-ids="${escapeHtml((row.rowIds || []).join(","))}"
+            data-field="${stage.name}"
+            data-column="${escapeHtml(stage.nameColumn)}"
+            aria-label="Name"
+          >${optionsHtml}</select>
+          <input
+            class="status-name-input ${isOther ? "" : "hidden"}"
+            type="text"
+            value="${escapeHtml(isOther ? currentValue : "")}"
+            placeholder="Enter name"
+            data-status-key="${escapeHtml(encodeURIComponent(key))}"
+            data-row-ids="${escapeHtml((row.rowIds || []).join(","))}"
+            data-field="${stage.name}"
+            data-column="${escapeHtml(stage.nameColumn)}"
+            aria-label="Other name"
+          />
+        </div>
+      `;
+    }
+
     // NORMALIZE (table objects or pasted raw row arrays)
     // =========================================================
     function normalizeData(rawRows) {
@@ -1020,6 +1323,11 @@
     const dataInputStatus = document.getElementById("dataInputStatus");
 
     const forwardLogWrapper = document.getElementById("forwardLogWrapper");
+    const invoiceDetailModal = document.getElementById("invoiceDetailModal");
+    const invoiceDetailTitle = document.getElementById("invoiceDetailTitle");
+    const invoiceDetailSub = document.getElementById("invoiceDetailSub");
+    const invoiceDetailBody = document.getElementById("invoiceDetailBody");
+    const invoiceDetailCloseBtn = document.getElementById("invoiceDetailCloseBtn");
 
     // =========================================================
     // WEEKLY LOG SCOPE (MONDAY-SUNDAY)
@@ -1220,20 +1528,18 @@
             />
           </td>
           <td class="status-name-cell">
-            <input
-              class="status-name-input"
-              type="text"
-              value="${escapeHtml(status[stage.name] || "")}"
-              data-status-key="${escapeHtml(encodeURIComponent(key))}"
-              data-row-ids="${escapeHtml((r.rowIds || []).join(","))}"
-              data-field="${stage.name}"
-              data-column="${escapeHtml(stage.nameColumn)}"
-              aria-label="Name"
-            />
+            ${renderStatusNameControl(stage, r, key)}
           </td>
         `).join("");
         tr.innerHTML = `
-          <td class="sticky-col sticky-col-1">${escapeHtml(r.invoiceNo || "–")}</td>
+          <td class="sticky-col sticky-col-1">
+            <button
+              class="invoice-detail-btn"
+              type="button"
+              data-invoice-key="${escapeHtml(encodeURIComponent(key))}"
+              aria-label="Show pack details for invoice ${escapeHtml(r.invoiceNo || "unknown")}"
+            >${escapeHtml(r.invoiceNo || "–")}</button>
+          </td>
           <td class="sticky-col sticky-col-2">${escapeHtml(r.customer || "–")}</td>
           <td>${r.invoiceDateObj ? formatDateShort(r.invoiceDateObj) : "–"}</td>
           ${statusCells}
@@ -1243,6 +1549,170 @@
       });
 
       salesTableBody.appendChild(frag);
+    }
+
+    function buildInvoicePackLines(invoiceKey) {
+      const lines = salesData
+        .filter(record => getInvoiceLogKey(record) === invoiceKey)
+        .sort((a, b) => String(a.sku || "").localeCompare(String(b.sku || "")));
+      const bySku = new Map();
+
+      lines.forEach(line => {
+        const key = line.sku || "Unspecified SKU";
+        if (!bySku.has(key)) {
+          bySku.set(key, {
+            sku: key,
+            cases: 0,
+            units: 0,
+            pounds: 0,
+            lbsPerCase: line.lbsPerCase,
+            destinations: new Set(),
+            extras: new Set()
+          });
+        }
+        const item = bySku.get(key);
+        item.cases += line.cases;
+        item.units += getUnitCount(line);
+        item.pounds += getUnits(line, "pounds");
+        if (line.destination) item.destinations.add(line.destination);
+        if (line.extra) item.extras.add(line.extra);
+      });
+
+      return { lines, packLines: [...bySku.values()] };
+    }
+
+    function renderInvoiceDetail(invoiceKey) {
+      const logRow = getSalesLogEntry(invoiceKey);
+      const { lines, packLines } = buildInvoicePackLines(invoiceKey);
+      if (!lines.length) return false;
+
+      const invoiceNo = logRow.invoiceNo || lines[0].invoiceNo || "-";
+      const customer = logRow.customer || lines[0].customer || "-";
+      const shipDateObj = logRow.shipDateObj || lines[0].shipDateObj;
+      const invoiceDateObj = logRow.invoiceDateObj || lines[0].invoiceDateObj;
+      const cases = lines.reduce((sum, line) => sum + line.cases, 0);
+      const units = lines.reduce((sum, line) => sum + getUnitCount(line), 0);
+      const pounds = lines.reduce((sum, line) => sum + getUnits(line, "pounds"), 0);
+      const shipVia = [...new Set(lines.map(line => line.shipVia).filter(Boolean))].join(", ") || "-";
+      const term = [...new Set(lines.map(line => line.term).filter(Boolean))].join(", ") || "-";
+
+      invoiceDetailTitle.textContent = `Invoice ${invoiceNo}`;
+      invoiceDetailSub.textContent = `${customer} - ${packLines.length} SKU${packLines.length === 1 ? "" : "s"} to pack`;
+
+      const rowsHtml = packLines.map(item => `
+        <tr>
+          <td>${escapeHtml(item.sku)}</td>
+          <td class="text-right">${formatNumber(item.cases)}</td>
+          <td class="text-right">${formatNumber(item.units)}</td>
+          <td class="text-right">${formatNumber(item.pounds)}</td>
+          <td class="text-right">${formatNumber(item.lbsPerCase)}</td>
+          <td>${escapeHtml([...item.destinations].join(", ") || "-")}</td>
+          <td>${escapeHtml([...item.extras].join(", ") || "-")}</td>
+        </tr>
+      `).join("");
+
+      invoiceDetailBody.innerHTML = `
+        <div class="invoice-ticket-topline">
+          <div class="invoice-ticket-field">
+            <div class="invoice-ticket-label">Customer</div>
+            <div class="invoice-ticket-value">${escapeHtml(customer)}</div>
+          </div>
+          <div class="invoice-ticket-field">
+            <div class="invoice-ticket-label">Invoice Date</div>
+            <div class="invoice-ticket-value">${invoiceDateObj ? formatDateShort(invoiceDateObj) : "-"}</div>
+          </div>
+          <div class="invoice-ticket-field">
+            <div class="invoice-ticket-label">Ship Date</div>
+            <div class="invoice-ticket-value">${shipDateObj ? formatDateShort(shipDateObj) : "-"}</div>
+          </div>
+          <div class="invoice-ticket-field">
+            <div class="invoice-ticket-label">Ship Via</div>
+            <div class="invoice-ticket-value">${escapeHtml(shipVia)}</div>
+          </div>
+        </div>
+        <div class="invoice-detail-grid">
+          <div class="invoice-detail-stat">
+            <div class="invoice-detail-label">Total Cases</div>
+            <div class="invoice-detail-value">${formatNumber(cases)}</div>
+          </div>
+          <div class="invoice-detail-stat">
+            <div class="invoice-detail-label">Est. Units</div>
+            <div class="invoice-detail-value">${formatNumber(units)}</div>
+          </div>
+          <div class="invoice-detail-stat">
+            <div class="invoice-detail-label">Est. Pounds</div>
+            <div class="invoice-detail-value">${formatNumber(pounds)}</div>
+          </div>
+          <div class="invoice-detail-stat">
+            <div class="invoice-detail-label">Terms</div>
+            <div class="invoice-detail-value">${escapeHtml(term)}</div>
+          </div>
+        </div>
+        <div class="invoice-section-title">
+          <span>Pack List</span>
+          <span>${formatNumber(lines.length)} source line${lines.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="invoice-lines-wrapper">
+          <table class="invoice-lines-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th class="text-right">Cases</th>
+                <th class="text-right">Units</th>
+                <th class="text-right">Pounds</th>
+                <th class="text-right">Lbs / Case</th>
+                <th>Destination</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td>
+                <td class="text-right">${formatNumber(cases)}</td>
+                <td class="text-right">${formatNumber(units)}</td>
+                <td class="text-right">${formatNumber(pounds)}</td>
+                <td class="text-right">-</td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      `;
+      return true;
+    }
+
+    function openInvoiceDetail(invoiceKey) {
+      if (!renderInvoiceDetail(invoiceKey)) return;
+      invoiceDetailModal.classList.add("open");
+      invoiceDetailModal.setAttribute("aria-hidden", "false");
+      invoiceDetailCloseBtn?.focus();
+    }
+
+    function closeInvoiceDetail() {
+      invoiceDetailModal.classList.remove("open");
+      invoiceDetailModal.setAttribute("aria-hidden", "true");
+    }
+
+    function initInvoiceDetails() {
+      salesTableBody.addEventListener("click", (event) => {
+        const btn = event.target?.closest?.(".invoice-detail-btn");
+        if (!btn) return;
+        const invoiceKey = decodeURIComponent(btn.dataset.invoiceKey || "");
+        if (!invoiceKey) return;
+        openInvoiceDetail(invoiceKey);
+      });
+
+      invoiceDetailCloseBtn?.addEventListener("click", closeInvoiceDetail);
+      invoiceDetailModal?.addEventListener("click", (event) => {
+        if (event.target === invoiceDetailModal) closeInvoiceDetail();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && invoiceDetailModal?.classList.contains("open")) {
+          closeInvoiceDetail();
+        }
+      });
     }
 
     function initSalesLogStatusInputs() {
@@ -1269,23 +1739,46 @@
         }
       });
 
-      salesTableBody.addEventListener("change", async (event) => {
-        const target = event.target;
-        if (!target?.classList?.contains("status-name-input")) return;
+      async function saveStatusName(target, value) {
         const key = decodeURIComponent(target.dataset.statusKey || "");
         const field = target.dataset.field || "";
         const column = target.dataset.column || "";
         const rowIds = String(target.dataset.rowIds || "").split(",").filter(Boolean);
-        if (!key || !field || !column) return;
+        if (!key || !field || !column) return false;
 
         const row = getSalesLogEntry(key);
-        row[field] = target.value;
-        applySalesStatusToLocalRows(rowIds, field, target.value);
+        row[field] = value;
+        applySalesStatusToLocalRows(rowIds, field, value);
         try {
-          await patchSalesTableRowsByIds(rowIds, { [column]: target.value.trim() || null });
+          await patchSalesTableRowsByIds(rowIds, { [column]: String(value || "").trim() || null });
         } catch (err) {
           console.error(err);
           dataInputStatus.textContent = err.message;
+        }
+        return true;
+      }
+
+      salesTableBody.addEventListener("change", async (event) => {
+        const target = event.target;
+
+        if (target?.classList?.contains("status-name-select")) {
+          const stack = target.closest(".status-name-stack");
+          const otherInput = stack?.querySelector(".status-name-input");
+          const isOther = target.value === "__other__";
+          if (otherInput) {
+            otherInput.classList.toggle("hidden", !isOther);
+            if (!isOther) otherInput.value = "";
+          }
+          if (isOther) {
+            if (otherInput) otherInput.focus();
+            return;
+          }
+          await saveStatusName(target, target.value);
+          return;
+        }
+
+        if (target?.classList?.contains("status-name-input")) {
+          await saveStatusName(target, target.value);
         }
       });
     }
@@ -1402,6 +1895,7 @@
     // =========================================================
     initToggles();
     initWeekControls();
+    initInvoiceDetails();
     initSalesLogStatusInputs();
     setupLiveListeners();
 
