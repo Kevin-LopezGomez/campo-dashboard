@@ -364,6 +364,9 @@ const PUBLIC_MRP_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/obje
 const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Store%20Visits.json";
 const PUBLIC_SEED_INVENTORY_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Seed%20Inventory.json";
 const PUBLIC_LEAF_GROWTH_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json";
+const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
+const SUPABASE_SALES_TABLE = "sales_forward_look";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
 
 
   // Storage keys (must match dashboards)
@@ -413,6 +416,53 @@ const MSG_MRP = "MRP_UPDATED";
 const MSG_STORE = "STORE_VISITS_UPDATED";
 const MSG_SEED = "SEED_INVENTORY_UPDATED";
 const MSG_LEAF = "LEAF_GROWTH_UPDATED";
+const MSG_SALES = "SALES_TABLE_UPDATED";
+
+const SALES_FORWARD_HEADERS = [
+  "Sales Invoice Date",
+  "Sale PO Date",
+  "Sales Ship Via",
+  "Sales Week",
+  "Sales Ship Week",
+  "Sales Ship Date",
+  "Sales Invoice No.",
+  "Sales SKU",
+  "Sales # of Cases",
+  "Sales Lbs. Per Case",
+  "Sales Lbs Eq.",
+  "Sales Destination",
+  "Sales Customer",
+  "Sales Term",
+  "Sales Extra"
+];
+const SALES_FORWARD_DATE_HEADERS = new Set([
+  "Sales Invoice Date",
+  "Sale PO Date",
+  "Sales Ship Date"
+]);
+const SALES_FORWARD_NUMBER_HEADERS = new Set([
+  "Sales Week",
+  "Sales Ship Week",
+  "Sales # of Cases",
+  "Sales Lbs. Per Case",
+  "Sales Lbs Eq."
+]);
+const SALES_FORWARD_STATUS_HEADERS = [
+  "Order Received",
+  "Order Received Name",
+  "Pack Preparations",
+  "Pack Preparations Name",
+  "Order Complete",
+  "Order Complete Name",
+  "Order Shipped",
+  "Order Shipped Name"
+];
+const SALES_FORWARD_STATUS_BOOLEAN_HEADERS = new Set([
+  "Order Received",
+  "Pack Preparations",
+  "Order Complete",
+  "Order Shipped"
+]);
 
   // IndexedDB cache (Pack-only migration)
 const LOCAL_DB_NAME = "campo_local_cache_v1";
@@ -992,6 +1042,212 @@ function refreshBadges(){
     return !!(hasAnyHeader && hasAnyRow);
   }
 
+  function normSalesHeader(value){
+    return String(value ?? "")
+      .replace(/[_-]+/g, " ")
+      .replace(/[.]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  const SALES_FORWARD_HEADER_LOOKUP = (() => {
+    const lookup = new Map();
+    SALES_FORWARD_HEADERS.forEach(header => lookup.set(normSalesHeader(header), header));
+    lookup.set("sale invoice date", "Sales Invoice Date");
+    lookup.set("sales po date", "Sale PO Date");
+    lookup.set("sales po", "Sale PO Date");
+    lookup.set("sales shipvia", "Sales Ship Via");
+    lookup.set("sales invoice no", "Sales Invoice No.");
+    lookup.set("sales invoice number", "Sales Invoice No.");
+    lookup.set("sales number of cases", "Sales # of Cases");
+    lookup.set("sales cases", "Sales # of Cases");
+    lookup.set("sales lbs per case", "Sales Lbs. Per Case");
+    lookup.set("sales lbs eq", "Sales Lbs Eq.");
+    lookup.set("sales lbs equivalent", "Sales Lbs Eq.");
+    return lookup;
+  })();
+
+  function parseSalesNumber(value){
+    if(value === null || value === undefined || value === "") return null;
+    if(typeof value === "number") return Number.isFinite(value) ? value : null;
+    const cleaned = String(value).replace(/[$,%]/g, "").replace(/,/g, "").trim();
+    if(!cleaned) return null;
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function pad2(value){
+    return String(value).padStart(2, "0");
+  }
+
+  function formatLocalDateForSql(date){
+    if(!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  }
+
+  function excelSerialToSqlDate(serial){
+    const n = Number(serial);
+    if(!Number.isFinite(n) || n <= 0) return null;
+    const utc = Math.round((n - 25569) * 86400 * 1000);
+    const d = new Date(utc);
+    if(Number.isNaN(d.getTime())) return null;
+    return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+  }
+
+  function parseSalesDate(value){
+    if(value === null || value === undefined || value === "") return null;
+    if(value instanceof Date) return formatLocalDateForSql(value);
+    if(typeof value === "number") return excelSerialToSqlDate(value);
+
+    let text = String(value).trim();
+    if(!text) return null;
+    if(/^\d+(\.\d+)?$/.test(text)) return excelSerialToSqlDate(text);
+    if(/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+
+    const slash = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if(slash){
+      const month = Number(slash[1]);
+      const day = Number(slash[2]);
+      let year = Number(slash[3]);
+      if(year < 100) year += 2000;
+      if(month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return `${year}-${pad2(month)}-${pad2(day)}`;
+      }
+    }
+
+    text = text.replace(/^[A-Za-z]+,\s*/, "");
+    const parsed = new Date(text);
+    return formatLocalDateForSql(parsed);
+  }
+
+  function buildSalesForwardRowsFromPackPayload(payload){
+    const sheet = payload?.sheets?.[CANON_PACK_SHEET];
+    const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
+    const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
+    if(!headers.length || !rows.length) return [];
+
+    const headerToIndex = new Map();
+    headers.forEach((header, index) => {
+      const canonical = SALES_FORWARD_HEADER_LOOKUP.get(normSalesHeader(header));
+      if(canonical && !headerToIndex.has(canonical)) headerToIndex.set(canonical, index);
+    });
+
+    return rows.map(row => {
+      const out = {};
+      SALES_FORWARD_HEADERS.forEach(header => {
+        const index = headerToIndex.get(header);
+        const raw = index === undefined ? "" : row?.[index];
+        let value = raw;
+        if(SALES_FORWARD_DATE_HEADERS.has(header)) value = parseSalesDate(raw);
+        else if(SALES_FORWARD_NUMBER_HEADERS.has(header)) value = parseSalesNumber(raw);
+        else {
+          value = String(raw ?? "").trim();
+          if(!value) value = null;
+        }
+        out[header] = value;
+      });
+      return out;
+    }).filter(row => (
+      row["Sales Ship Date"] ||
+      row["Sales SKU"] ||
+      row["Sales # of Cases"] ||
+      row["Sales Customer"] ||
+      row["Sales Destination"]
+    ));
+  }
+
+  async function fetchSalesForwardTable(path, options = {}){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        ...(options.headers || {})
+      }
+    });
+    const text = await res.text().catch(() => "");
+    if(!res.ok) throw new Error(`Sales table ${options.method || "GET"} failed (${res.status}): ${text || res.statusText}`);
+    return text;
+  }
+
+  function salesForwardStatusKey(row){
+    return [
+      row?.["Sales Invoice No."] || "",
+      row?.["Sales Customer"] || "",
+      row?.["Sales Invoice Date"] || "",
+      row?.["Sales Ship Date"] || ""
+    ].map(v => String(v ?? "").trim()).join("|");
+  }
+
+  async function loadExistingSalesForwardStatuses(){
+    const table = encodeURIComponent(SUPABASE_SALES_TABLE);
+    const text = await fetchSalesForwardTable(`${table}?select=*`);
+    const rows = JSON.parse(text || "[]");
+    const statuses = new Map();
+
+    rows.forEach(row => {
+      const key = salesForwardStatusKey(row);
+      if(!key.replace(/\|/g, "")) return;
+      const current = statuses.get(key) || {};
+      SALES_FORWARD_STATUS_HEADERS.forEach(header => {
+        const value = row?.[header];
+        if(SALES_FORWARD_STATUS_BOOLEAN_HEADERS.has(header)) {
+          current[header] = Boolean(current[header] || value);
+        } else if(!current[header] && String(value ?? "").trim()) {
+          current[header] = String(value).trim();
+        }
+      });
+      statuses.set(key, current);
+    });
+    return statuses;
+  }
+
+  function applySalesForwardStatuses(rows, statuses){
+    rows.forEach(row => {
+      const status = statuses.get(salesForwardStatusKey(row)) || {};
+      SALES_FORWARD_STATUS_HEADERS.forEach(header => {
+        if(SALES_FORWARD_STATUS_BOOLEAN_HEADERS.has(header)) row[header] = Boolean(status[header]);
+        else row[header] = String(status[header] || "").trim() || null;
+      });
+    });
+    return rows;
+  }
+
+  async function replaceSalesForwardTable(rows){
+    const table = encodeURIComponent(SUPABASE_SALES_TABLE);
+    let existingStatuses = new Map();
+    try {
+      existingStatuses = await loadExistingSalesForwardStatuses();
+    } catch (err) {
+      console.warn("Could not preserve existing sales status columns:", err);
+    }
+    applySalesForwardStatuses(rows, existingStatuses);
+
+    await fetchSalesForwardTable(`${table}?id=gte.0`, { method: "DELETE" });
+
+    const chunkSize = 500;
+    for(let i = 0; i < rows.length; i += chunkSize){
+      const chunk = rows.slice(i, i + chunkSize);
+      await fetchSalesForwardTable(table, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify(chunk)
+      });
+    }
+    return rows.length;
+  }
+
+  async function syncSalesForwardTableFromPackPayload(payload){
+    const rows = buildSalesForwardRowsFromPackPayload(payload);
+    const count = await replaceSalesForwardTable(rows);
+    emit(MSG_SALES, SUPABASE_SALES_TABLE);
+    return count;
+  }
+
   // =========================================================
   // SAVE (overwrite) with contract guarantees + update signals
   // =========================================================
@@ -1016,7 +1272,15 @@ function refreshBadges(){
       emit(MSG_PACK, MASTER_PACK_KEY);
       saved = true;
       const mode = localStorage.getItem(PACK_STORAGE_MODE_KEY) || "unknown";
-      setStatus(`Saved Master Pack (${mode}): ${sourceLabel}`);
+      let salesSyncMsg = "";
+      try{
+        const salesRows = await syncSalesForwardTableFromPackPayload(payload);
+        salesSyncMsg = ` | Sales table: ${salesRows.toLocaleString()} rows`;
+      }catch(salesErr){
+        console.warn("Sales table sync failed:", salesErr);
+        salesSyncMsg = ` | Sales table sync failed: ${salesErr.message}`;
+      }
+      setStatus(`Saved Master Pack (${mode}): ${sourceLabel}${salesSyncMsg}`);
     } else if(which === "exp"){
       if (!payload?.sheets?.[CANON_EXP_SHEET]) throw new Error(`Experiments payload missing sheets["${CANON_EXP_SHEET}"]`);
       localStorage.setItem(MASTER_EXP_KEY, JSON.stringify(payload));
@@ -1511,6 +1775,7 @@ function normalizeMasterPayload(raw, kind){
 async function publishToSupabase(){
     const growStr = localStorage.getItem(MASTER_GROW_KEY);
     let packStr = localStorage.getItem(MASTER_PACK_KEY);
+    let packPayloadForPublish = null;
     const expStr  = localStorage.getItem(MASTER_EXP_KEY);
     const procStr = localStorage.getItem(MASTER_PROC_KEY);
     const mrpStr = localStorage.getItem(MASTER_MRP_KEY);
@@ -1531,7 +1796,10 @@ async function publishToSupabase(){
         if (isPackIdbPointer(parsedPack)) {
           const fullPack = await idbGetJson(MASTER_PACK_KEY);
           if (!fullPack) return setStatus("Pack cache missing in IndexedDB (cannot publish).");
+          packPayloadForPublish = fullPack;
           packStr = JSON.stringify(fullPack);
+        } else {
+          packPayloadForPublish = parsedPack;
         }
       }
     } catch {
@@ -1585,6 +1853,11 @@ async function publishToSupabase(){
         const text = await res.text().catch(() => "");
         if(!res.ok) throw new Error(`Pack publish failed (${res.status}): ${text}`);
         results.push("pack.json");
+
+        if(packPayloadForPublish){
+          const salesRows = await syncSalesForwardTableFromPackPayload(packPayloadForPublish);
+          results.push(`${SUPABASE_SALES_TABLE} (${salesRows.toLocaleString()} rows)`);
+        }
       }
 
       if(expStr){
