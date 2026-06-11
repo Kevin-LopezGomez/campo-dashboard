@@ -785,7 +785,7 @@
       <button class="tab" data-target="p-transplant">🪴 <span data-i18n="tab.transplant">Transplant</span></button>
       <button class="tab" data-target="p-harvest">✂️ <span data-i18n="tab.harvest">Harvest</span></button>
       <button class="tab" data-target="p-packing">📦 <span data-i18n="tab.packing">Packing</span></button>
-      <button class="tab" data-target="p-shipments">🚚 <span data-i18n="tab.shipments">Shipments</span></button>
+      <button class="tab" data-target="p-shipments">🚚 <span data-i18n="tab.shipments">Pack to Sales</span></button>
       <button class="tab" data-target="p-sanitation">🧼 <span data-i18n="tab.sanitation">Sanitation</span></button>
       <button class="tab" data-target="p-inventory">📦 <span data-i18n="tab.inventory">S&amp;H Inventory</span></button>
     </div>
@@ -888,7 +888,7 @@
                   <button class="tile" data-home-go="p-harvest"><div class="ico">✂️</div><div class="name" data-i18n="tile.harvest.name">Harvest</div><div class="meta" data-i18n="tile.harvest.meta">Cut plans</div></button>
                   <button class="tile" data-home-go="p-packing"><div class="ico">📦</div><div class="name" data-i18n="tile.packing.name">Packing</div><div class="meta" data-i18n="tile.packing.meta">Pack plan</div></button>
                   <button class="tile" data-home-go="p-inventory"><div class="ico">📦</div><div class="name" data-i18n="tile.inventory.name">S&amp;H Inventory</div><div class="meta" data-i18n="tile.inventory.meta">Stock view</div></button>
-                  <button class="tile" data-home-go="p-shipments"><div class="ico">🚚</div><div class="name" data-i18n="tile.shipments.name">Shipments</div><div class="meta" data-i18n="tile.shipments.meta">Forward sales</div></button>
+                  <button class="tile" data-home-go="p-shipments"><div class="ico">🚚</div><div class="name" data-i18n="tile.shipments.name">Pack to Sales</div><div class="meta" data-i18n="tile.shipments.meta">Weekly order flow</div></button>
                   <button class="tile" data-home-go="p-sanitation"><div class="ico">🧼</div><div class="name" data-i18n="tile.sanitation.name">Sanitation</div><div class="meta" data-i18n="tile.sanitation.meta">Checklists</div></button>
                 </div>
 
@@ -1137,7 +1137,7 @@
         <button class="launch-app" data-action="go-panel" data-target="p-harvest"><div class="app-ico">✂️</div><div class="app-name" data-i18n="tile.harvest.name">Harvest</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-packing"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.packing.name">Packing</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-inventory"><div class="app-ico">📦</div><div class="app-name" data-i18n="tile.inventory.name">S&amp;H Inventory</div></button>
-        <button class="launch-app" data-action="go-panel" data-target="p-shipments"><div class="app-ico">🚚</div><div class="app-name" data-i18n="tile.shipments.name">Shipments</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-shipments"><div class="app-ico">🚚</div><div class="app-name" data-i18n="tile.shipments.name">Pack to Sales</div></button>
         <button class="launch-app" data-action="go-panel" data-target="p-sanitation"><div class="app-ico">🧼</div><div class="app-name" data-i18n="tile.sanitation.name">Sanitation</div></button>
       </div>
 
@@ -1219,7 +1219,7 @@
           "tab.transplant":"Transplant",
           "tab.harvest":"Harvest",
           "tab.packing":"Packing",
-          "tab.shipments":"Shipments",
+          "tab.shipments":"Pack to Sales",
         "tab.sanitation":"Sanitation",
         "tab.inventory":"S&H Inventory",
         "tab.sales-tracking":"Sales Productivity",
@@ -1269,8 +1269,8 @@
           "tile.packing.meta":"Pack plan",
           "tile.inventory.name":"S&H Inventory",
           "tile.inventory.meta":"Stock view",
-          "tile.shipments.name":"Shipments",
-          "tile.shipments.meta":"Forward sales",
+          "tile.shipments.name":"Pack to Sales",
+          "tile.shipments.meta":"Weekly order flow",
           "tile.sanitation.name":"Sanitation",
           "tile.sanitation.meta":"Checklists",
           "tile.sales-overview.name":"Sales Overview",
@@ -1296,8 +1296,8 @@
           "panel.harvest.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
           "panel.packing.title":"Packing Dashboard",
           "panel.packing.desc":"Reads Master Pack from <code>localStorage</code> key <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
-          "panel.shipments.title":"Shipments (Forward Sales) Dashboard",
-          "panel.shipments.desc":"Reads Sales lines from the Packing upload (<code>campo_master_pack_v1</code>) and shows what ships on/after the anchor date (inclusive).",
+          "panel.shipments.title":"Pack to Sales Dashboard",
+          "panel.shipments.desc":"Reads the Supabase sales table and tracks weekly order status from packing through shipment.",
           "panel.sanitation.title":"Sanitation Dashboard",
           "panel.sanitation.desc":"Reads Master Grow from <code>localStorage</code> key <code>campo_master_grow_v1</code>.",
           "panel.inventory.title":"S&H Inventory Dashboard",
@@ -1352,7 +1352,7 @@
           "tab.transplant":"Trasplante",
           "tab.harvest":"Cosecha",
           "tab.packing":"Empaque",
-          "tab.shipments":"Despachos",
+          "tab.shipments":"Empaque a ventas",
         "tab.sanitation":"Sanidad",
         "tab.inventory":"Inventario S&H",
         "tab.sales-tracking":"Productividad de ventas",
@@ -1402,8 +1402,8 @@
           "tile.packing.meta":"Plan de empaque",
           "tile.inventory.name":"Inventario S&H",
           "tile.inventory.meta":"Vista de existencias",
-          "tile.shipments.name":"Despachos",
-          "tile.shipments.meta":"Ventas futuras",
+          "tile.shipments.name":"Empaque a ventas",
+          "tile.shipments.meta":"Flujo semanal de órdenes",
           "tile.sanitation.name":"Sanidad",
           "tile.sanitation.meta":"Listas de verificación",
           "tile.sales-overview.name":"Resumen de ventas",
@@ -1429,8 +1429,8 @@
           "panel.harvest.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
           "panel.packing.title":"Panel de empaque",
           "panel.packing.desc":"Lee Master Pack de <code>localStorage</code> clave <code>campo_master_pack_v1</code> → <code>sheets[\"Master Pack\"]</code>.",
-          "panel.shipments.title":"Panel de despachos (ventas futuras)",
-          "panel.shipments.desc":"Lee líneas de ventas de la carga de Empaque (<code>campo_master_pack_v1</code>) y muestra lo que se despacha en o después de la fecha ancla (incluida).",
+          "panel.shipments.title":"Panel de empaque a ventas",
+          "panel.shipments.desc":"Lee la tabla de ventas en Supabase y da seguimiento semanal al estado de órdenes desde empaque hasta despacho.",
           "panel.sanitation.title":"Panel de sanidad",
           "panel.sanitation.desc":"Lee Master Grow de <code>localStorage</code> clave <code>campo_master_grow_v1</code>.",
           "panel.inventory.title":"Panel de inventario S&H",
