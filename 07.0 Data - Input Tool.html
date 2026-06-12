@@ -1130,8 +1130,8 @@ function refreshBadges(){
     return rows.map(row => {
       const out = {};
       headers.forEach((rawHeader, index) => {
-        const header = String(rawHeader ?? "");
-        if(!header.trim()) return;
+        const header = String(rawHeader ?? "").trim();
+        if(!header) return;
         const raw = row?.[index];
         let value = raw;
         if(SALES_FORWARD_DATE_HEADERS.has(header)) value = parseSalesDate(raw);
@@ -1203,6 +1203,17 @@ function refreshBadges(){
     return rows;
   }
 
+  async function assertSalesForwardColumnsExist(rows){
+    const sample = rows.find(row => row && typeof row === "object") || {};
+    const columns = [...new Set(Object.keys(sample).filter(Boolean))];
+    const table = encodeURIComponent(SUPABASE_SALES_TABLE);
+
+    for(const column of columns){
+      const select = encodeURIComponent(`"${String(column).replace(/"/g, '""')}"`);
+      await fetchSalesForwardTable(`${table}?select=${select}&limit=0`);
+    }
+  }
+
   async function replaceSalesForwardTable(rows){
     const table = encodeURIComponent(SUPABASE_SALES_TABLE);
     let existingStatuses = new Map();
@@ -1212,6 +1223,7 @@ function refreshBadges(){
       console.warn("Could not preserve existing sales status columns:", err);
     }
     applySalesForwardStatuses(rows, existingStatuses);
+    await assertSalesForwardColumnsExist(rows);
 
     await fetchSalesForwardTable(`${table}?id=gte.0`, { method: "DELETE" });
 

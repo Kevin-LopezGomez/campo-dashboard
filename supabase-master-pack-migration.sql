@@ -1,7 +1,8 @@
 -- Supabase migration for Campo Master Pack table.
 -- Run this in the Supabase SQL Editor with table-owner privileges.
--- It preserves the existing sales_forward_look data/status columns, then adds all CSV headers from:
+-- It preserves the existing sales_forward_look data/status columns, then adds all trimmed CSV headers from:
 -- 0.0 Campo Caribe Data V5 10.01-36.csv
+-- Note: duplicate CSV headers collapse to one database column.
 
 do $$
 begin
@@ -29,7 +30,7 @@ alter table public.master_pack add column if not exists "Pack Run #1 Final" text
 alter table public.master_pack add column if not exists "Pack # de Personas Run #2" text;
 alter table public.master_pack add column if not exists "Pack Run #2 Inico" text;
 alter table public.master_pack add column if not exists "Pack Run #2 Final" text;
-alter table public.master_pack add column if not exists " Packing Down Time" text;
+alter table public.master_pack add column if not exists "Packing Down Time" text;
 alter table public.master_pack add column if not exists "Packing Porque DownTime" text;
 alter table public.master_pack add column if not exists "Total Pack Tiempo Transcurido" text;
 alter table public.master_pack add column if not exists "Total # de personas Pack" text;
@@ -38,7 +39,7 @@ alter table public.master_pack add column if not exists "Quantity of Cases Packe
 alter table public.master_pack add column if not exists "Total Packed Weight" text;
 alter table public.master_pack add column if not exists "Packed Case Size" text;
 alter table public.master_pack add column if not exists "Total # de Personas" text;
-alter table public.master_pack add column if not exists "Ronda 1 # of People QC " text;
+alter table public.master_pack add column if not exists "Ronda 1 # of People QC" text;
 alter table public.master_pack add column if not exists "Ronda #1 QC Inicio" text;
 alter table public.master_pack add column if not exists "Ronda #1 QC End" text;
 alter table public.master_pack add column if not exists "Ronda #2  of People QC" text;
@@ -51,7 +52,7 @@ alter table public.master_pack add column if not exists "Pack Reason for Waste" 
 alter table public.master_pack add column if not exists "Pack Quality/Calidad" text;
 alter table public.master_pack add column if not exists "Pack Multivac Waste" text;
 alter table public.master_pack add column if not exists "Pack Temperatura del cuarto *F" text;
-alter table public.master_pack add column if not exists "Pack Cleaning Start " text;
+alter table public.master_pack add column if not exists "Pack Cleaning Start" text;
 alter table public.master_pack add column if not exists "Pack Cleaning Finish" text;
 alter table public.master_pack add column if not exists "Pack Prep start" text;
 alter table public.master_pack add column if not exists "Pack Prep Finish" text;
@@ -71,7 +72,7 @@ alter table public.master_pack add column if not exists "Shipping Date" text;
 alter table public.master_pack add column if not exists "Run Batch Shipped/Received" text;
 alter table public.master_pack add column if not exists "Shipped or Received" text;
 alter table public.master_pack add column if not exists "Shipping SKU" text;
-alter table public.master_pack add column if not exists "Location Shipped " text;
+alter table public.master_pack add column if not exists "Location Shipped" text;
 alter table public.master_pack add column if not exists "Si Basura, Porque?" text;
 alter table public.master_pack add column if not exists "# of Cases Shipped" text;
 alter table public.master_pack add column if not exists "# Lbs Shipped" text;
@@ -172,9 +173,6 @@ alter table public.master_pack add column if not exists "H2 8:00-9:00" text;
 alter table public.master_pack add column if not exists "H3 9:00-10:00" text;
 alter table public.master_pack add column if not exists "H4 10:00-11:00" text;
 alter table public.master_pack add column if not exists "H5 11:00-12:00" text;
-alter table public.master_pack add column if not exists "H6 12:30-1:30" text;
-alter table public.master_pack add column if not exists "H7 1:30-2:30" text;
-alter table public.master_pack add column if not exists "H8 2:30-3:30" text;
 alter table public.master_pack add column if not exists "Total Canastas por hora" text;
 alter table public.master_pack add column if not exists "Sanitation Quimicos Fecha" text;
 alter table public.master_pack add column if not exists "Nombre" text;
