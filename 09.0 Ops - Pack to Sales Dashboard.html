@@ -961,9 +961,9 @@
     }
 
     // =========================================================
-    // ONLY exclude non-ship operational rows (donations INCLUDED)
+    // ONLY exclude non-ship operational rows (samples and donations INCLUDED)
     // =========================================================
-    const excludedCustomers = new Set(["warehouse","samples"]);
+    const excludedCustomers = new Set(["warehouse"]);
     function isExcludedCustomer(name = "") {
       const n = String(name).trim().toLowerCase();
       return excludedCustomers.has(n);
