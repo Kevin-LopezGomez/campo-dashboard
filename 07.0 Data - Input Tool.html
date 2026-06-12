@@ -365,7 +365,7 @@ const PUBLIC_STORE_VISIT_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage
 const PUBLIC_SEED_INVENTORY_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Seed%20Inventory.json";
 const PUBLIC_LEAF_GROWTH_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json";
 const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
-const SUPABASE_SALES_TABLE = "sales_forward_look";
+const SUPABASE_SALES_TABLE = "master_pack";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
 
 
@@ -1127,34 +1127,23 @@ function refreshBadges(){
     const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
     if(!headers.length || !rows.length) return [];
 
-    const headerToIndex = new Map();
-    headers.forEach((header, index) => {
-      const canonical = SALES_FORWARD_HEADER_LOOKUP.get(normSalesHeader(header));
-      if(canonical && !headerToIndex.has(canonical)) headerToIndex.set(canonical, index);
-    });
-
     return rows.map(row => {
       const out = {};
-      SALES_FORWARD_HEADERS.forEach(header => {
-        const index = headerToIndex.get(header);
-        const raw = index === undefined ? "" : row?.[index];
+      headers.forEach((rawHeader, index) => {
+        const header = String(rawHeader ?? "");
+        if(!header.trim()) return;
+        const raw = row?.[index];
         let value = raw;
         if(SALES_FORWARD_DATE_HEADERS.has(header)) value = parseSalesDate(raw);
         else if(SALES_FORWARD_NUMBER_HEADERS.has(header)) value = parseSalesNumber(raw);
         else {
-          value = String(raw ?? "").trim();
+          value = raw instanceof Date ? formatLocalDateForSql(raw) : String(raw ?? "").trim();
           if(!value) value = null;
         }
         out[header] = value;
       });
       return out;
-    }).filter(row => (
-      row["Sales Ship Date"] ||
-      row["Sales SKU"] ||
-      row["Sales # of Cases"] ||
-      row["Sales Customer"] ||
-      row["Sales Destination"]
-    ));
+    }).filter(row => Object.values(row).some(value => value !== null && value !== ""));
   }
 
   async function fetchSalesForwardTable(path, options = {}){
