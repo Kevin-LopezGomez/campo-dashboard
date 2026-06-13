@@ -1040,7 +1040,7 @@
           <div class="title-sub">
             Daily / weekly sales by SKU, customer, and destination. Toggle between Sales # of Cases and Sales Lbs Eq.
           </div>
-          <div class="title-sub" id="dataInputStatus">Waiting for Master Pack in localStorage.</div>
+          <div class="title-sub" id="dataInputStatus">Loading Sales data from Supabase.</div>
         </div>
         <div class="badge-row">
           <div class="pill-badge">
@@ -1297,6 +1297,10 @@
     const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BC_NAME) : null;
     const LOCAL_DB_NAME = "campo_local_cache_v1";
     const LOCAL_DB_STORE = "datasets";
+    const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
+    const SUPABASE_SALES_SOURCE = "sales_productivity_view";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
+    const SUPABASE_PAGE_SIZE = 1000;
 
     function openLocalDb(version = 1) {
       return new Promise((resolve, reject) => {
@@ -1378,10 +1382,13 @@
       ["sale po date", SALES.PO_DATE], ["sales po date", SALES.PO_DATE], ["po date", SALES.PO_DATE],
       ["sales ship via", SALES.SHIP_VIA], ["ship via", SALES.SHIP_VIA], ["via", SALES.SHIP_VIA],
       ["sales destination", SALES.DESTINATION], ["destination", SALES.DESTINATION],
+      ["sales week", SALES.WEEK], ["week", SALES.WEEK],
+      ["sales ship week", SALES.SHIP_WEEK], ["ship week", SALES.SHIP_WEEK],
       ["sales ship date", SALES.SHIP_DATE], ["ship date", SALES.SHIP_DATE],
       ["sales invoice no.", SALES.INVOICE_NO], ["sales invoice no", SALES.INVOICE_NO], ["invoice no.", SALES.INVOICE_NO], ["invoice #", SALES.INVOICE_NO], ["invoice no", SALES.INVOICE_NO],
       ["sales sku", SALES.SKU], ["sku", SALES.SKU],
       ["sales # of cases", SALES.CASES], ["# of cases", SALES.CASES], ["cases", SALES.CASES],
+      ["sales lbs eq.", SALES.LBS_EQ], ["sales lbs eq", SALES.LBS_EQ], ["lbs eq.", SALES.LBS_EQ], ["lbs eq", SALES.LBS_EQ],
       ["sales customer", SALES.CUSTOMER], ["customer", SALES.CUSTOMER],
       ["sales term", SALES.TERM], ["term", SALES.TERM],
       ["sales extra", SALES.EXTRA], ["extra", SALES.EXTRA]
@@ -1602,6 +1609,64 @@ const excludedCustomers = new Set([
       }
     }
 
+    async function fetchSupabaseJson(path, options = {}, timeoutMs = 18000) {
+      if (!SUPABASE_ANON_KEY) {
+        throw new Error("Missing Supabase anon key.");
+      }
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            ...(options.headers || {})
+          }
+        });
+        const text = await res.text();
+        let json = null;
+        if (text) {
+          try {
+            json = JSON.parse(text);
+          } catch {
+            json = text;
+          }
+        }
+        if (!res.ok) {
+          const detail = json?.message || json?.error || text || res.statusText;
+          throw new Error(`Supabase ${res.status}: ${detail}`);
+        }
+        return json;
+      } finally {
+        window.clearTimeout(timer);
+      }
+    }
+
+    async function loadMasterPackTableRows() {
+      const encodedTable = encodeURIComponent(SUPABASE_SALES_SOURCE);
+      const selectedColumns = Object.values(SALES)
+        .map(col => `"${String(col).replace(/"/g, '""')}"`)
+        .join(",");
+      const selectParam = encodeURIComponent(selectedColumns);
+      const out = [];
+      for (let offset = 0; offset < 100000; offset += SUPABASE_PAGE_SIZE) {
+        const page = await fetchSupabaseJson(`${encodedTable}?select=${selectParam}`, {
+          headers: {
+            "Range-Unit": "items",
+            Range: `${offset}-${offset + SUPABASE_PAGE_SIZE - 1}`
+          }
+        });
+        if (!Array.isArray(page)) {
+          throw new Error(`Unexpected response from ${SUPABASE_SALES_SOURCE}.`);
+        }
+        out.push(...page);
+        if (page.length < SUPABASE_PAGE_SIZE) break;
+      }
+      return out;
+    }
+
     function canonicalizeHeaderList(headersRaw) {
       return (Array.isArray(headersRaw) ? headersRaw : []).map(h => {
         const raw = String(h ?? "").trim();
@@ -1655,16 +1720,19 @@ const excludedCustomers = new Set([
       return out;
     }
 
-    function parseSalesFromMasterPack(payload) {
-      const picked = pickSalesSheet(payload);
-      const sheet = picked.sheet;
-      if (!sheet) return { rows: [], missing: REQUIRED_SALES_HEADERS.slice(), sourceSheet: picked.name };
-      const headers = canonicalizeHeaderList(sheet.headers);
-      const headerSet = new Set(headers);
-      const missing = getMissingSalesHeaders(headerSet);
-      if (missing.length) return { rows: [], missing, sourceSheet: picked.name };
+    function canonicalizeRowObject(row) {
+      const out = {};
+      if (!row || typeof row !== "object") return out;
+      for (const [key, value] of Object.entries(row)) {
+        const raw = String(key ?? "").trim();
+        if (!raw) continue;
+        const canon = SALES_HEADER_ALIASES.get(normHeader(raw)) || raw;
+        if (out[canon] === undefined) out[canon] = value;
+      }
+      return out;
+    }
 
-      const rowObjs = sheetToRowObjects(sheet);
+    function parseSalesRowsFromObjects(rowObjs) {
       const out = [];
 
       for (const r of rowObjs) {
@@ -1702,7 +1770,35 @@ const excludedCustomers = new Set([
         ]);
       }
 
-      return { rows: out, missing: [], sourceSheet: picked.name };
+      return out;
+    }
+
+    function parseSalesFromMasterPackTableRows(tableRows) {
+      const rowObjs = (Array.isArray(tableRows) ? tableRows : []).map(canonicalizeRowObject);
+      const headerSet = new Set();
+      for (const row of rowObjs) {
+        for (const key of Object.keys(row)) headerSet.add(key);
+      }
+      const missing = getMissingSalesHeaders(headerSet);
+      if (missing.length) return { rows: [], missing, sourceSheet: SUPABASE_SALES_SOURCE };
+      return {
+        rows: parseSalesRowsFromObjects(rowObjs),
+        missing: [],
+        sourceSheet: SUPABASE_SALES_SOURCE
+      };
+    }
+
+    function parseSalesFromMasterPack(payload) {
+      const picked = pickSalesSheet(payload);
+      const sheet = picked.sheet;
+      if (!sheet) return { rows: [], missing: REQUIRED_SALES_HEADERS.slice(), sourceSheet: picked.name };
+      const headers = canonicalizeHeaderList(sheet.headers);
+      const headerSet = new Set(headers);
+      const missing = getMissingSalesHeaders(headerSet);
+      if (missing.length) return { rows: [], missing, sourceSheet: picked.name };
+
+      const rowObjs = sheetToRowObjects(sheet);
+      return { rows: parseSalesRowsFromObjects(rowObjs), missing: [], sourceSheet: picked.name };
     }
 
     let hydrateRunId = 0;
@@ -1722,36 +1818,35 @@ const excludedCustomers = new Set([
 
     async function hydrateFromMasterPack(reason) {
       const runId = ++hydrateRunId;
-      const payload = await loadMasterPackPayload();
-      if (runId !== hydrateRunId) return;
-      if (!payload) {
-        salesData = [];
-        initFilters();
-        refreshDashboard();
-        if (dataInputStatus) {
-          dataInputStatus.textContent = "Waiting for Master Pack in local cache.";
-        }
-        return;
-      }
-
-      const parsed = parseSalesFromMasterPack(payload);
-      if (parsed.missing.length) {
-        salesData = [];
-        initFilters();
-        refreshDashboard();
-        if (dataInputStatus) {
-          const from = parsed.sourceSheet ? ` in sheet "${parsed.sourceSheet}"` : "";
-          dataInputStatus.textContent = `Missing Sales columns${from}: ${parsed.missing.join(", ")}`;
-        }
-        return;
-      }
-
-      salesData = normalizeData(parsed.rows);
+      salesData = [];
       initFilters();
       refreshDashboard();
       if (dataInputStatus) {
-        const from = parsed.sourceSheet ? ` from "${parsed.sourceSheet}"` : "";
-        dataInputStatus.textContent = `Loaded ${salesData.length} sales rows${from}.`;
+        dataInputStatus.textContent = `Loading Sales data from Supabase view "${SUPABASE_SALES_SOURCE}"...`;
+      }
+
+      try {
+        const tableRows = await loadMasterPackTableRows();
+        if (runId !== hydrateRunId) return;
+        if (tableRows.length) {
+          const parsed = parseSalesFromMasterPackTableRows(tableRows);
+          if (parsed.missing.length) {
+            throw new Error(`Missing Sales columns in ${SUPABASE_SALES_SOURCE}: ${parsed.missing.join(", ")}`);
+          }
+          salesData = normalizeData(parsed.rows);
+          initFilters();
+          refreshDashboard();
+          if (dataInputStatus) {
+            dataInputStatus.textContent = `Loaded ${salesData.length} sales rows from Supabase view "${SUPABASE_SALES_SOURCE}" (${tableRows.length.toLocaleString()} source rows).`;
+          }
+          return;
+        }
+        throw new Error(`Supabase view "${SUPABASE_SALES_SOURCE}" returned 0 rows.`);
+      } catch (err) {
+        console.warn("Supabase sales view load failed.", err);
+        if (dataInputStatus) {
+          dataInputStatus.textContent = `Unable to load Sales data from Supabase: ${err.message}`;
+        }
       }
     }
 
@@ -3477,13 +3572,6 @@ const excludedCustomers = new Set([
     }
 
     function setupLiveListeners() {
-      window.addEventListener("storage", (e) => {
-        if (!e) return;
-        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) {
-          scheduleHydrateFromMasterPack("storage");
-        }
-      });
-
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (msg?.type === MSG_PACK) scheduleHydrateFromMasterPack("message");
@@ -3497,18 +3585,6 @@ const excludedCustomers = new Set([
           if (msg?.type === MSG_PACK) scheduleHydrateFromMasterPack("broadcast");
         };
       }
-
-      let lastPackRaw = (localStorage.getItem(MASTER_PACK_KEY) || "");
-      let lastPackPing = (localStorage.getItem(MASTER_PACK_PING_KEY) || "");
-      setInterval(() => {
-        const curRaw = (localStorage.getItem(MASTER_PACK_KEY) || "");
-        const curPing = (localStorage.getItem(MASTER_PACK_PING_KEY) || "");
-        if (curRaw !== lastPackRaw || curPing !== lastPackPing) {
-          lastPackRaw = curRaw;
-          lastPackPing = curPing;
-          scheduleHydrateFromMasterPack("poll");
-        }
-      }, 1500);
     }
 
     // INIT

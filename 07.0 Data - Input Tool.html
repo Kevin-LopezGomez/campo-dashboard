@@ -1273,15 +1273,7 @@ function refreshBadges(){
       emit(MSG_PACK, MASTER_PACK_KEY);
       saved = true;
       const mode = localStorage.getItem(PACK_STORAGE_MODE_KEY) || "unknown";
-      let salesSyncMsg = "";
-      try{
-        const salesRows = await syncSalesForwardTableFromPackPayload(payload);
-        salesSyncMsg = ` | Sales table: ${salesRows.toLocaleString()} rows`;
-      }catch(salesErr){
-        console.warn("Sales table sync failed:", salesErr);
-        salesSyncMsg = ` | Sales table sync failed: ${salesErr.message}`;
-      }
-      setStatus(`Saved Master Pack (${mode}): ${sourceLabel}${salesSyncMsg}`);
+      setStatus(`Saved Master Pack (${mode}): ${sourceLabel}. Click Publish to Supabase to update master_pack.`);
     } else if(which === "exp"){
       if (!payload?.sheets?.[CANON_EXP_SHEET]) throw new Error(`Experiments payload missing sheets["${CANON_EXP_SHEET}"]`);
       localStorage.setItem(MASTER_EXP_KEY, JSON.stringify(payload));
@@ -1955,6 +1947,7 @@ async function publishToSupabase(){
     }
     const hr = rowsToHeaderRows(stagedUpload.rows || []);
     const sourceLabel = `CSV: ${stagedUpload.fileName}`;
+    setStatus(`Saving ${KIND_LABEL[target] || target} locally…`);
     let ok = false;
     if(target === "grow") ok = await saveSource("grow", buildPayloadSingleCanonical(CANON_GROW_SHEET, hr, { kind: "grow", sourceLabel }), sourceLabel);
     else if(target === "pack") ok = await saveSource("pack", buildPayloadSingleCanonical(CANON_PACK_SHEET, hr, { kind: "pack", sourceLabel }), sourceLabel);
@@ -1964,8 +1957,10 @@ async function publishToSupabase(){
     else if(target === "store") ok = await saveSource("store", buildPayloadSingleCanonical(CANON_STORE_SHEET, hr, { kind: "store", sourceLabel }), sourceLabel);
     else if(target === "seed") ok = await saveSource("seed", buildPayloadSingleCanonical(CANON_SEED_SHEET, hr, { kind: "seed", sourceLabel }), sourceLabel);
     else if(target === "leaf") ok = await saveSource("leaf", buildPayloadSingleCanonical(CANON_LEAF_SHEET, hr, { kind: "leaf", sourceLabel }), sourceLabel);
-    clearWizard();
-    if (ok) setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}.`);
+    if (ok) {
+      clearWizard();
+      setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}. Click Publish to Supabase when ready.`);
+    }
   });
 
   wizConfirmXlsxBtn.addEventListener("click", async () => {
