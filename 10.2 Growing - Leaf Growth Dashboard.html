@@ -451,14 +451,23 @@ let charts = {};
 let sortCol = 'collection_date', sortDir = 1;
 
 const PUBLIC_LEAF_GROWTH_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json';
+const PUBLIC_PACK_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/pack.json';
+const MASTER_PACK_KEY = 'campo_master_pack_v1';
+const MASTER_PACK_PING_KEY = 'campo_master_pack_push_ping_v1';
+const LOCAL_DB_NAME = 'campo_local_cache_v1';
+const LOCAL_DB_STORE = 'datasets';
 const CANON_LEAF_SHEET = 'Leaf Growth';
+const CANON_PACK_SHEET = 'Master Pack';
 const MSG_LEAF = 'LEAF_GROWTH_UPDATED';
+const MSG_PACK = 'MASTER_PACK_UPDATED';
 
 const METRIC_LABEL = {
   leaf_number: 'Leaf Number',
   weight_g: 'Weight (g)',
   leaf_height: 'Leaf Height (cm)',
 };
+
+let packQualityByBatch = new Map();
 
 // ═══════════════════════════════════════════════
 //  INIT
@@ -467,7 +476,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('csv-upload').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = ev => loadCSV(ev.target.result, f.name);
+    r.onload = async ev => {
+      await refreshPackQualityMap();
+      loadCSV(ev.target.result, f.name);
+    };
     r.readAsText(f);
   });
   document.getElementById('f-date-mode').addEventListener('change', () => {
@@ -483,6 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', event => {
     const msg = event?.data || {};
     if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('update');
+    if (msg.type === MSG_PACK || msg.type === 'MASTER_PACK_UPDATED') void refreshPackQualityAndRender();
   });
   try {
     if ('BroadcastChannel' in window) {
@@ -490,9 +503,13 @@ document.addEventListener('DOMContentLoaded', () => {
       bc.onmessage = ev => {
         const msg = ev?.data || {};
         if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('broadcast');
+        if (msg.type === MSG_PACK || msg.type === 'MASTER_PACK_UPDATED') void refreshPackQualityAndRender();
       };
     }
   } catch {}
+  window.addEventListener('storage', e => {
+    if ([MASTER_PACK_KEY, MASTER_PACK_PING_KEY].includes(e.key)) void refreshPackQualityAndRender();
+  });
   void loadSharedLeafGrowthData('startup');
 });
 
@@ -507,13 +524,164 @@ function normalizeKey(k) {
     .replace(/__+/g,'_');
 }
 
+function normalizeHeaderLabel(k) {
+  return String(k ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function normalizeBatchCode(v) {
+  return String(v ?? '').trim().toUpperCase();
+}
+
+function openLocalDb(version = 1) {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error('indexedDB is not available'));
+    const req = indexedDB.open(LOCAL_DB_NAME, version);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) db.createObjectStore(LOCAL_DB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('indexedDB open failed'));
+  });
+}
+
+async function openLocalDbWithStore() {
+  let db = await openLocalDb(1);
+  if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+  const nextVersion = Math.max(2, (db.version || 1) + 1);
+  db.close();
+  db = await openLocalDb(nextVersion);
+  if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+    db.close();
+    throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+  }
+  return db;
+}
+
+async function idbGetJson(key) {
+  const db = await openLocalDbWithStore();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(LOCAL_DB_STORE, 'readonly');
+      const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error || new Error('indexedDB read failed'));
+      tx.onerror = () => reject(tx.error || new Error('indexedDB tx failed'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function loadMasterPackPayload() {
+  try {
+    const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+    if (idbPayload?.sheets && typeof idbPayload === 'object') return idbPayload;
+  } catch (_e) {}
+
+  const raw = (localStorage.getItem(MASTER_PACK_KEY) || '').trim();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed._storage === 'indexeddb' && parsed._idbKey === MASTER_PACK_KEY) {
+        const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+        if (idbPayload?.sheets) return idbPayload;
+      } else if (parsed?.sheets) {
+        return parsed;
+      }
+    } catch (_e) {}
+  }
+
+  const res = await fetch(`${PUBLIC_PACK_URL}?ts=${Date.now()}`, { cache: 'no-store' });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Pack public JSON failed (${res.status})${text ? `: ${text}` : ''}`);
+  return JSON.parse(text);
+}
+
+function sheetToObjects(sheetObj) {
+  const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+  const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+  return rows
+    .filter(Array.isArray)
+    .map(values => {
+      const row = {};
+      headers.forEach((h, i) => {
+        const key = String(h ?? '').trim();
+        if (key) row[key] = values?.[i] ?? '';
+      });
+      return row;
+    });
+}
+
+function firstValueByHeader(row, headerNames) {
+  const wanted = new Set(headerNames.map(normalizeHeaderLabel));
+  for (const [k, v] of Object.entries(row || {})) {
+    if (wanted.has(normalizeHeaderLabel(k)) && String(v ?? '').trim()) return v;
+  }
+  return '';
+}
+
+function buildPackQualityMap(packPayload) {
+  const sheet = packPayload?.sheets?.[CANON_PACK_SHEET];
+  const map = new Map();
+  if (!sheet) return map;
+
+  for (const row of sheetToObjects(sheet)) {
+    const quality = String(firstValueByHeader(row, [
+      'Pack Quality/Calidad',
+      'Pack Quality / Calidad',
+      'Pack Quality',
+      'Calidad'
+    ]) ?? '').trim();
+    if (!quality) continue;
+
+    ['Seed Batch Code 1', 'Seed Batch Code 2', 'Seed Batch Code 3'].forEach(col => {
+      const batch = normalizeBatchCode(firstValueByHeader(row, [col]));
+      if (!batch) return;
+      if (!map.has(batch)) map.set(batch, new Set());
+      map.get(batch).add(quality);
+    });
+  }
+
+  const out = new Map();
+  for (const [batch, values] of map.entries()) {
+    out.set(batch, Array.from(values).sort().join(', '));
+  }
+  return out;
+}
+
+async function refreshPackQualityMap() {
+  try {
+    packQualityByBatch = buildPackQualityMap(await loadMasterPackPayload());
+  } catch (err) {
+    console.warn('Master Pack quality load failed:', err);
+    packQualityByBatch = new Map();
+  }
+}
+
+function applyPackQualityToRawData() {
+  rawData = rawData.map(r => ({
+    ...r,
+    pack_quality: packQualityByBatch.get(normalizeBatchCode(r.batch)) || ''
+  }));
+}
+
+async function refreshPackQualityAndRender() {
+  await refreshPackQualityMap();
+  applyPackQualityToRawData();
+  applyFilters();
+}
+
 async function loadSharedLeafGrowthData(reason = 'startup') {
   const status = document.getElementById('data-status');
   status.textContent = 'Loading Supabase…';
   status.classList.remove('loaded');
 
   try {
-    const res = await fetch(`${PUBLIC_LEAF_GROWTH_URL}?ts=${Date.now()}`, { cache: 'no-store' });
+    const [res] = await Promise.all([
+      fetch(`${PUBLIC_LEAF_GROWTH_URL}?ts=${Date.now()}`, { cache: 'no-store' }),
+      refreshPackQualityMap()
+    ]);
     const text = await res.text();
     if (!res.ok) throw new Error(`Supabase public JSON failed (${res.status})${text ? `: ${text}` : ''}`);
 
@@ -567,6 +735,7 @@ function loadHeaderRows(headers, rows, name) {
       leaf_height:      toNum(r['leaf_height_cm'] ?? r.leaf_height ?? r.height_cm ?? r.height),
       board_weight:     toNum(r.av_board_weight_g ?? r.board_weight ?? null),
       harvest_weight:   toNum(r.harvest_weight_lb ?? r.harvest_weight ?? null),
+      pack_quality:     packQualityByBatch.get(normalizeBatchCode(r.batch_number ?? r.batch_no ?? r.batch ?? '')) || '',
     };
   }).filter(r => r.batch || r.variety); // drop blank rows
 
@@ -1106,6 +1275,7 @@ function renderTable() {
   const cols = [
     { k:'variety',         l:'Variety' },
     { k:'batch',           l:'Batch Number' },
+    { k:'pack_quality',    l:'Pack Quality/Calidad' },
     { k:'seed_date',       l:'Seed Date' },
     { k:'collection_date', l:'Collection Date' },
     { k:'iso_week',        l:'ISO Week' },
@@ -1127,6 +1297,7 @@ function renderTable() {
           return `<tr>
             <td><span class="vbadge" style="background:${col}22;color:${col};border:1px solid ${col}44">${r.variety}</span></td>
             <td>${r.batch}</td>
+            <td style="color:var(--accent-purple)">${r.pack_quality || '—'}</td>
             <td>${r.seed_date ?? '—'}</td>
             <td style="color:var(--accent-blue)">${r.collection_date ?? '—'}</td>
             <td style="color:var(--text-muted)">${r.iso_week ?? '—'}</td>
@@ -1156,7 +1327,7 @@ function sortTable(col) {
 //  EXPORT
 // ═══════════════════════════════════════════════
 function downloadFiltered() {
-  const cols = ['variety','batch','seed_date','collection_date','iso_week','days','leaf_number','weight_g','leaf_height'];
+  const cols = ['variety','batch','pack_quality','seed_date','collection_date','iso_week','days','leaf_number','weight_g','leaf_height'];
   const rows = [cols.join(','), ...filteredData.map(r => cols.map(c => r[c] ?? '').join(','))];
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));

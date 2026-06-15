@@ -411,6 +411,25 @@
       font-family: inherit;
     }
 
+    .harvest-search-input {
+      border: 1px solid rgba(100, 116, 139, 0.95);
+      background: rgba(2, 6, 23, 0.98);
+      color: rgba(248, 250, 252, 0.98);
+      border-radius: 999px;
+      padding: 7px 12px;
+      min-width: 210px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .harvest-search-input::placeholder { color: rgba(148, 163, 184, 0.78); }
+    .harvest-search-input:focus {
+      border-color: rgba(74, 222, 128, 0.78);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+    }
+
     @media (max-width: 960px) {
       .layout-main { grid-template-columns: minmax(0, 1fr); }
     }
@@ -714,6 +733,7 @@
               <div class="panel-subtitle" id="harvest-source-line">Source: waiting for data…</div>
             </div>
             <div class="panel-header-right">
+              <input id="harvest-batch-search" class="harvest-search-input" type="search" placeholder="Search batches..." autocomplete="off" />
               <button id="harvest-log-toggle" class="header-pill-btn" type="button" aria-expanded="false">Open log</button>
               <span id="harvest-table-hint">Scroll to see all batches</span>
             </div>
@@ -725,6 +745,7 @@
                 <thead>
                   <tr>
                     <th>Batch Code</th>
+                    <th>Pack Quality/Calidad</th>
                     <th class="timeline-col">Harvest Days to Harvest</th>
                     <th class="timeline-col">Propagation Days</th>
                     <th class="timeline-col">Production Days</th>
@@ -744,7 +765,7 @@
                 <tbody id="harvest-tbody-weekly" class="hidden"></tbody>
                 <tfoot>
                   <tr>
-                    <td>Grand Total</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="harvestable-col">0</td><td>–</td><td>–</td><td>–</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
+                    <td>Grand Total</td><td>–</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="timeline-col">–</td><td class="harvestable-col">0</td><td>–</td><td>–</td><td>–</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
                   </tr>
                 </tfoot>
               </table>
@@ -772,7 +793,11 @@
     // STORAGE CONTRACT
     // =========================================================
     const MASTER_GROW_KEY = "campo_master_grow_v1";
+    const MASTER_PACK_KEY = "campo_master_pack_v1";
     const MASTER_GROW_PING_KEY = "campo_master_grow_push_ping_v1";
+    const MASTER_PACK_PING_KEY = "campo_master_pack_push_ping_v1";
+    const LOCAL_DB_NAME = "campo_local_cache_v1";
+    const LOCAL_DB_STORE = "datasets";
     const HARVEST_VIEW_MODE_KEY = "campo_harvest_view_mode_v1";
     const HARVEST_VIEW_MODE_KEY_SS = "campo_harvest_view_mode_ss_v1";
     const HARVEST_DATE_START_KEY = "campo_harvest_date_start_v1";
@@ -786,8 +811,11 @@
     const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
     const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
     const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
+    const WORKER_PACK_URL = `${WORKER_BASE}/data/master/pack.json`;
     const PUBLIC_GROW_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/grow.json";
+    const PUBLIC_PACK_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/pack.json";
     const CANON_GROW_SHEET = "Master Grow";
+    const CANON_PACK_SHEET = "Master Pack";
 
     // IMPORTANT: We accept multiple possible sheet names (bulletproof),
     // but prefer "Master Grow" as the canonical name.
@@ -803,6 +831,7 @@
 
     // Parent/index message types
     const MSG_GROW = "MASTER_GROW_UPDATED";
+    const MSG_PACK = "MASTER_PACK_UPDATED";
 
     // BroadcastChannel (same-origin only; harmless if unsupported)
     const BC_NAME = "campo_master_bus_v1";
@@ -980,6 +1009,7 @@
     let CUTS = [];
     let DAILY = [];
     let WEEKLY = [];
+    let PACK_QUALITY_BY_BATCH = new Map();
     let RANGE_START_YMD = "";
     let RANGE_END_YMD = "";
 
@@ -1542,6 +1572,156 @@
       return raw;
     }
 
+    function normalizePackBatchCode(v){
+      return String(v ?? "").trim().toUpperCase();
+    }
+
+    function addPackQuality(map, batch, quality) {
+      const key = normalizePackBatchCode(batch);
+      if (!key) return;
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key).add(quality);
+    }
+
+    function getPackQualityForBatch(batch) {
+      return PACK_QUALITY_BY_BATCH.get(normalizePackBatchCode(batch)) || "";
+    }
+
+    function normalizePackHeaderLabel(v){
+      return String(v ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    function openLocalDb(version = 1) {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("indexedDB is not available"));
+        const req = indexedDB.open(LOCAL_DB_NAME, version);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) db.createObjectStore(LOCAL_DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("indexedDB open failed"));
+      });
+    }
+
+    async function openLocalDbWithStore() {
+      let db = await openLocalDb(1);
+      if (db.objectStoreNames.contains(LOCAL_DB_STORE)) return db;
+      const nextVersion = Math.max(2, (db.version || 1) + 1);
+      db.close();
+      db = await openLocalDb(nextVersion);
+      if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+        db.close();
+        throw new Error(`indexedDB store "${LOCAL_DB_STORE}" is unavailable`);
+      }
+      return db;
+    }
+
+    async function idbGetJson(key) {
+      const db = await openLocalDbWithStore();
+      try {
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(LOCAL_DB_STORE, "readonly");
+          const req = tx.objectStore(LOCAL_DB_STORE).get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error || new Error("indexedDB read failed"));
+          tx.onerror = () => reject(tx.error || new Error("indexedDB tx failed"));
+        });
+      } finally {
+        db.close();
+      }
+    }
+
+    async function loadMasterPackPayload() {
+      try {
+        const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+        if (idbPayload?.sheets && typeof idbPayload === "object") return idbPayload;
+      } catch (_e) {}
+
+      const raw = (localStorage.getItem(MASTER_PACK_KEY) || "").trim();
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed._storage === "indexeddb" && parsed._idbKey === MASTER_PACK_KEY) {
+            const idbPayload = await idbGetJson(MASTER_PACK_KEY);
+            if (idbPayload?.sheets) return idbPayload;
+          } else if (parsed?.sheets) {
+            return parsed;
+          }
+        } catch (_e) {}
+      }
+
+      const urls = [WORKER_PACK_URL, PUBLIC_PACK_URL];
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          return await workerGetJson(url);
+        } catch (err) {
+          lastErr = err;
+          console.warn("Pack quality load failed for", url, err);
+        }
+      }
+      throw lastErr || new Error("Master Pack unavailable");
+    }
+
+    function rawSheetToObjects(sheetObj) {
+      const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+      return rows
+        .filter(Array.isArray)
+        .map(values => {
+          const row = {};
+          headers.forEach((h, i) => {
+            const key = String(h ?? "").trim();
+            if (key) row[key] = values?.[i] ?? "";
+          });
+          return row;
+        });
+    }
+
+    function firstPackValueByHeader(row, headerNames) {
+      const wanted = new Set(headerNames.map(normalizePackHeaderLabel));
+      for (const [k, v] of Object.entries(row || {})) {
+        if (wanted.has(normalizePackHeaderLabel(k)) && String(v ?? "").trim()) return v;
+      }
+      return "";
+    }
+
+    function buildPackQualityMap(packPayload) {
+      const sheet = packPayload?.sheets?.[CANON_PACK_SHEET];
+      const map = new Map();
+      if (!sheet) return map;
+
+      for (const row of rawSheetToObjects(sheet)) {
+        const quality = String(firstPackValueByHeader(row, [
+          "Pack Quality/Calidad",
+          "Pack Quality / Calidad",
+          "Pack Quality",
+          "Calidad"
+        ]) ?? "").trim();
+        if (!quality) continue;
+
+        ["Seed Batch Code 1", "Seed Batch Code 2", "Seed Batch Code 3"].forEach(col => {
+          const batch = normalizePackBatchCode(firstPackValueByHeader(row, [col]));
+          if (!batch) return;
+          addPackQuality(map, batch, quality);
+        });
+      }
+
+      const out = new Map();
+      for (const [batch, values] of map.entries()) out.set(batch, Array.from(values).sort().join(", "));
+      return out;
+    }
+
+    async function refreshPackQualityMap() {
+      try {
+        PACK_QUALITY_BY_BATCH = buildPackQualityMap(await loadMasterPackPayload());
+      } catch (err) {
+        console.warn("Master Pack quality lookup unavailable:", err);
+        PACK_QUALITY_BY_BATCH = new Map();
+      }
+    }
+
     async function tryHydrateGrowFromWorker(){
       // If local payload already looks usable, keep it.
       const currentRaw = (localStorage.getItem(MASTER_GROW_KEY) || "").trim();
@@ -1921,6 +2101,7 @@
 
         cuts.push({
           batchCode,
+          packQuality: getPackQualityForBatch(batchCode),
           dateObj,
           date,
           week,
@@ -1977,6 +2158,10 @@
           });
         }
         const d = dayMap.get(key);
+        if (!d.packQualitySet) d.packQualitySet = new Set();
+        if (c.packQuality) {
+          String(c.packQuality).split(",").map(v => v.trim()).filter(Boolean).forEach(v => d.packQualitySet.add(v));
+        }
 
         if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
         if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
@@ -2041,7 +2226,8 @@
             bladeHeight: d.bladeHeightWeight > 0 ? (d.bladeHeightWeightedSum / d.bladeHeightWeight) : 0,
             bladeHeightWeightedSum: d.bladeHeightWeightedSum,
             bladeHeightWeight: d.bladeHeightWeight,
-            growForecastedWeightLbs: d.growForecastedWeightLbs
+            growForecastedWeightLbs: d.growForecastedWeightLbs,
+            packQuality: d.packQualitySet ? Array.from(d.packQualitySet).sort().join(", ") : ""
           };
         });
 
@@ -2091,14 +2277,14 @@
         const tfootRow = document.querySelector("#harvest-table tfoot tr");
         if (tfootRow) {
           const tds = tfootRow.querySelectorAll("td");
-          if (tds.length >= 13) {
-            tds[4].textContent = "0";
-            tds[7].textContent = "–";
-            tds[8].textContent = "0";
+          if (tds.length >= 14) {
+            tds[5].textContent = "0";
+            tds[8].textContent = "–";
             tds[9].textContent = "0";
-            tds[10].textContent = "0.0";
+            tds[10].textContent = "0";
             tds[11].textContent = "0.0";
-            tds[12].textContent = "0%";
+            tds[12].textContent = "0.0";
+            tds[13].textContent = "0%";
           }
         }
         return;
@@ -2155,14 +2341,14 @@
       const tfootRow = document.querySelector("#harvest-table tfoot tr");
       if (tfootRow) {
         const tds = tfootRow.querySelectorAll("td");
-        if (tds.length >= 13) {
-          tds[4].textContent = fmtInt(totalGrowForecastedWeightLbs);
-          tds[7].textContent = avgBladeHeight > 0 ? fmt1(avgBladeHeight) : "–";
-          tds[8].textContent = fmtInt(totalBoards);
-          tds[9].textContent = fmtInt(totalWithWaste);
-          tds[10].textContent = fmt1(avgWithWastePerBoard);
-          tds[11].textContent = fmt1(avgLsy);
-          tds[12].textContent = fmt1(overallPotential) + "%";
+        if (tds.length >= 14) {
+          tds[5].textContent = fmtInt(totalGrowForecastedWeightLbs);
+          tds[8].textContent = avgBladeHeight > 0 ? fmt1(avgBladeHeight) : "–";
+          tds[9].textContent = fmtInt(totalBoards);
+          tds[10].textContent = fmtInt(totalWithWaste);
+          tds[11].textContent = fmt1(avgWithWastePerBoard);
+          tds[12].textContent = fmt1(avgLsy);
+          tds[13].textContent = fmt1(overallPotential) + "%";
         }
       }
     }
@@ -2181,6 +2367,21 @@
       const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
       const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
       const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
+      const batchSearch = String(document.getElementById("harvest-batch-search")?.value || "").trim().toLowerCase();
+      const cutMatchesSearch = (c) => {
+        if (!batchSearch) return true;
+        return [
+          c.batchCode,
+          c.packQuality,
+          c.date,
+          c.week,
+          c.boards,
+          c.cut,
+          c.withWaste,
+          c.lsy
+        ].some(v => String(v ?? "").toLowerCase().includes(batchSearch));
+      };
+      const cutsFiltered = cutsVisible.filter(cutMatchesSearch);
 
       function pctClass(p) {
         if (p >= 95) return "cell-percent-good";
@@ -2188,13 +2389,27 @@
         return "cell-percent-warn";
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
       cutBody.innerHTML = "";
-      cutsVisible.forEach(c => {
+      if (!cutsFiltered.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="14" class="hint-empty">No batch-level harvest rows match "${escapeHtml(batchSearch || "current filters")}".</td>`;
+        cutBody.appendChild(tr);
+      }
+      cutsFiltered.forEach(c => {
         const p = c.potential || 0;
         const tr = document.createElement("tr");
         const withWastePerBoard = c.boards > 0 ? (c.withWaste / c.boards) : 0;
         tr.innerHTML = `
           <td>${c.batchCode || "–"}</td>
+          <td>${c.packQuality || "–"}</td>
           <td class="timeline-col">${fmt1(c.harvestDaysToHarvest || 0)}</td>
           <td class="timeline-col">${fmt1(c.propagationDays || 0)}</td>
           <td class="timeline-col">${fmt1(c.productionDays || 0)}</td>
@@ -2220,6 +2435,7 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>–</td>
+          <td>${d.packQuality || "–"}</td>
           <td class="timeline-col">${fmt1(d.harvestDaysToHarvest || 0)}</td>
           <td class="timeline-col">${fmt1(d.propagationDays || 0)}</td>
           <td class="timeline-col">${fmt1(d.productionDays || 0)}</td>
@@ -2242,6 +2458,7 @@
         const withWastePerBoard = w.boards > 0 ? (w.withWaste / w.boards) : 0;
         const tr = document.createElement("tr");
         tr.innerHTML = `
+          <td>–</td>
           <td>–</td>
           <td class="timeline-col">${fmt1(w.harvestDaysToHarvest || 0)}</td>
           <td class="timeline-col">${fmt1(w.propagationDays || 0)}</td>
@@ -2715,6 +2932,7 @@
       const subEl = document.getElementById("harvest-table-subtitle");
       const hintEl = document.getElementById("harvest-table-hint");
       const tableEl = document.getElementById("harvest-table");
+      const searchEl = document.getElementById("harvest-batch-search");
 
       if (titleEl) titleEl.textContent = isCut ? "Batch-level harvest log" : isDaily ? "Daily harvest summary" : "Weekly harvest summary";
       if (subEl) subEl.textContent = isCut
@@ -2723,6 +2941,7 @@
           ? "Daily totals aggregated from cuts (span uses earliest start → latest finish per day)."
           : "Aggregated by week (built from daily totals).";
       if (hintEl) hintEl.textContent = isCut ? "Scroll to see all batches" : isDaily ? "Scroll to see all days" : "Scroll to see all weeks";
+      searchEl?.classList.toggle("hidden", !isCut);
       tableEl?.classList.toggle("daily-mode", isDaily);
       tableEl?.classList.toggle("week-mode", isWeekly);
 
@@ -2824,6 +3043,7 @@
       document.getElementById("middle-view-harvestable")?.addEventListener("click", () => setMiddleView("harvestable"));
       document.getElementById("middle-view-table")?.addEventListener("click", () => setMiddleView("table"));
       document.getElementById("harvest-log-toggle")?.addEventListener("click", () => setHarvestLogOpen(!harvestLogOpen));
+      document.getElementById("harvest-batch-search")?.addEventListener("input", () => renderTable());
       document.getElementById("blade-height-toggle")?.addEventListener("click", () => {
         if (middleViewMode !== "output") return;
         setBladeHeightOverlay(!bladeHeightOverlay);
@@ -2860,10 +3080,11 @@
     // LIVE REFRESH (bulletproof: debounce + poll + bc + message)
     // =========================================================
     let reloadTimer = null;
-    function reloadAll(reason){
+    function reloadAll(reason, opts = {}){
       if (reloadTimer) clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(() => {
+      reloadTimer = setTimeout(async () => {
         reloadTimer = null;
+        if (opts.refreshPackQuality) await refreshPackQualityMap();
         buildModels();
         renderKPIs();
         renderTable();
@@ -2877,17 +3098,21 @@
       window.addEventListener("storage", (e) => {
         if (!e) return;
         if (e.key === MASTER_GROW_KEY || e.key === MASTER_GROW_PING_KEY) reloadAll("storage");
+        if (e.key === MASTER_PACK_KEY || e.key === MASTER_PACK_PING_KEY) reloadAll("storage-pack", { refreshPackQuality: true });
       });
 
       // 2) CustomEvent (same frame)
       window.addEventListener(MSG_GROW, () => reloadAll("customevent"));
       document.addEventListener(MSG_GROW, () => reloadAll("customevent-doc"));
+      window.addEventListener(MSG_PACK, () => reloadAll("customevent-pack", { refreshPackQuality: true }));
+      document.addEventListener(MSG_PACK, () => reloadAll("customevent-doc-pack", { refreshPackQuality: true }));
 
       // 3) postMessage from index/data input
       window.addEventListener("message", (event) => {
         const msg = event?.data;
         if (!msg || typeof msg !== "object") return;
         if (msg.type === MSG_GROW || msg.type === "MASTER_GROW_UPDATED") reloadAll("message");
+        if (msg.type === MSG_PACK || msg.type === "MASTER_PACK_UPDATED") reloadAll("message-pack", { refreshPackQuality: true });
       });
 
       // 4) BroadcastChannel
@@ -2895,19 +3120,29 @@
         bc.onmessage = (ev) => {
           const msg = ev?.data;
           if (msg?.type === MSG_GROW) reloadAll("broadcast");
+          if (msg?.type === MSG_PACK) reloadAll("broadcast-pack", { refreshPackQuality: true });
         };
       }
 
       // 5) Safety poll (Safari iframe oddities)
       let lastLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
       let lastPing = String(localStorage.getItem(MASTER_GROW_PING_KEY) || "");
+      let lastPackRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+      let lastPackPing = String(localStorage.getItem(MASTER_PACK_PING_KEY) || "");
       setInterval(() => {
         const curLen = (localStorage.getItem(MASTER_GROW_KEY) || "").length;
         const curPing = String(localStorage.getItem(MASTER_GROW_PING_KEY) || "");
+        const curPackRaw = (localStorage.getItem(MASTER_PACK_KEY) || "").length;
+        const curPackPing = String(localStorage.getItem(MASTER_PACK_PING_KEY) || "");
         if (curLen !== lastLen || curPing !== lastPing) {
           lastLen = curLen;
           lastPing = curPing;
           reloadAll("poll");
+        }
+        if (curPackRaw !== lastPackRaw || curPackPing !== lastPackPing) {
+          lastPackRaw = curPackRaw;
+          lastPackPing = curPackPing;
+          reloadAll("poll-pack", { refreshPackQuality: true });
         }
       }, 1500);
     }
@@ -2916,7 +3151,10 @@
       setupUI();
       setupListeners();
       (async () => {
-        const hydrated = await tryHydrateGrowFromWorker();
+        const [hydrated] = await Promise.all([
+          tryHydrateGrowFromWorker(),
+          refreshPackQualityMap()
+        ]);
         if (!hydrated?.ok) {
           LAST_HYDRATE_REASON = `hydrate failed: ${hydrated?.reason || "unknown"}`;
           setSourceLine(`Source: none (${LAST_HYDRATE_REASON})`);
