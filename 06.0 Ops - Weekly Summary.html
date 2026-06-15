@@ -1173,15 +1173,15 @@
 
     function isProductionValue(v){
       const raw = String(v ?? "").trim();
-      if (!raw) return false;
+      if (!raw) return true;
       const norm = normalizeLocationKey(raw).toLowerCase();
       if (norm.includes("experiment") || norm.includes("experimental")) return false;
-      return norm.includes("production") || norm === "prod" || norm.includes("prod only");
+      return true;
     }
 
     function isProductionRow(row){
       const info = getExperimentProductionValue(row);
-      return info.has && isProductionValue(info.value);
+      return !info.has || isProductionValue(info.value);
     }
 
     function sumTransBoardsForHarvestBatches(harvRows, allGrowRows){
@@ -1491,9 +1491,13 @@
       for (const r of harvRows) considerMax(parseAnyDate(r[H.DATE]));
 
       if (!weekEnd) {
-        for (const r of growRows) considerMax(parseAnyDate(r[H.SAN_DATE]));
-        for (const r of growRows) considerMax(parseAnyDate(r[H.TRANS_DATE]));
-        for (const r of growRows) considerMax(parseAnyDate(r[H.DATE]));
+        const selectedPackRows = (packRows||[]).filter(r => isWeek(r[H.PACK_WEEK]));
+        const packDateFields = [H.DATE, "Date", "Pack Date", "Batch Run Date"];
+        for (const r of selectedPackRows){
+          for (const f of packDateFields){
+            if (f in r) considerMax(parseAnyDate(r[f]));
+          }
+        }
       }
 
       const inRange = (d) => {
@@ -1515,7 +1519,7 @@
         .reduce((s,r)=> s + parseNumber(r[H.HARV_BROKEN]), 0);
 
       const brokenSinceBaseline = brokenSanSince + brokenTransSince + brokenHarvSince;
-      const boardInvRemaining = Math.max(0, BOARD_INV_BASE_COUNT - brokenSinceBaseline);
+      const boardInvRemaining = weekEnd ? Math.max(0, BOARD_INV_BASE_COUNT - brokenSinceBaseline) : NaN;
 
       // ---- AVG BROKEN (Last 5 weeks, excludes current week) ----
       const wkN = parseInt(wkNum, 10);
@@ -1636,7 +1640,10 @@
           avgWorkers,
           boardsTrans,
           boardsExpected,
+          seedRowsCount: seedRows.length,
           transRowsCount: transRows.length,
+          harvRowsCount: harvRows.length,
+          sanRowsCount: sanRows.length,
           packRowsCount: packRowsW.length,
           packLbsConfirmed: lbsAll,
           salesRowsByShipWeekCount: salesRowsW.length,
@@ -2044,12 +2051,13 @@
       safeText("hi-worst-label", worst ? worst.label : "—");
 
       // Inventory KPI (cumulative up to selected week end)
-      safeText("inv-left", fmtInt(summary.boardInv?.remaining ?? 0));
+      const invRemaining = summary.boardInv?.remaining;
+      safeText("inv-left", Number.isFinite(invRemaining) ? fmtInt(invRemaining) : "—");
       const b = summary.boardInv?.brokenSinceBreakdown || {sanitation:0, transplant:0, harvest:0};
       const asOf = summary.boardInv?.weekEnd ? formatMMDDYYYY(summary.boardInv.weekEnd) : "—";
       safeText(
         "inv-sub",
-        `${baseLine} • As of: ${asOf} • Broken since: ${fmtInt(summary.boardInv?.brokenSinceBaseline ?? 0)} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)}) • This week: ${fmtInt(summary.brokenBoards ?? 0)}`
+        `${baseLine} • As of: ${asOf} • Broken since: ${Number.isFinite(invRemaining) ? fmtInt(summary.boardInv?.brokenSinceBaseline ?? 0) : "—"} (San ${fmtInt(b.sanitation)} + Trans ${fmtInt(b.transplant)} + Harv ${fmtInt(b.harvest)}) • This week: ${fmtInt(summary.brokenBoards ?? 0)}`
       );
 
       // Avg broken last 5
@@ -2093,6 +2101,15 @@
       }
 
       const items = [];
+      const growRowCount = (summary.counts?.seed || 0) + (summary.counts?.trans || 0) + (summary.counts?.harv || 0) + (summary.counts?.san || 0);
+      const packRowCount = summary.counts?.pack || 0;
+
+      if (growRowCount === 0 && packRowCount > 0){
+        items.push({
+          cls:"warn",
+          text:`${periodLabel}: Pack rows found, but no grow activity rows found in ${summaryMode === "production" ? "Production" : "With Experiments"} mode.`
+        });
+      }
 
       if (summary.seeding.target > 0){
         const p = (summary.seeding.completed/summary.seeding.target)*100;
@@ -2112,7 +2129,7 @@
         });
       }
 
-      if (summary.boardInv?.remaining || summary.boardInv?.remaining === 0){
+      if (Number.isFinite(summary.boardInv?.remaining)){
         items.push({ cls:"", text:`Board inventory (est): ${fmtInt(summary.boardInv.remaining)} remaining` });
       }
 
@@ -2163,7 +2180,7 @@
         units: summary.seeding.unit,
         pct: pctPill(summary.seeding.completed, summary.seeding.target),
         missed: missedPill(summary.seeding.completed, summary.seeding.target)
-      }, (summary.counts.seed > 0) || (summary.seeding.completed !== 0) || (summary.seeding.target !== 0));
+      }, true);
 
       pushIfMeaningful({
         label:"Transplanted",
@@ -2174,7 +2191,7 @@
         units: "Boards",
         pct: pctPill(summary.aux?.boardsTrans ?? 0, summary.aux?.boardsExpected ?? 0),
         missed: missedPill(summary.aux?.boardsTrans ?? 0, summary.aux?.boardsExpected ?? 0)
-      }, (summary.counts.trans > 0) || ((summary.aux?.boardsTrans ?? 0) !== 0) || ((summary.aux?.boardsExpected ?? 0) !== 0));
+      }, true);
 
       const transplantPlugsMeaningful =
         (summary.counts.trans > 0) ||
@@ -2204,7 +2221,7 @@
         units:"Boards",
         pct: pctPill(summary.harvestBoards, harvestTarget),
         missed: missedPill(summary.harvestBoards, harvestTarget)
-      }, (summary.counts.harv > 0) || summary.harvestBoards !== 0 || (Number.isFinite(summary.harvestTargetBoards) && summary.harvestTargetBoards !== 0));
+      }, true);
 
       const harvestForecastTarget = Number.isFinite(summary.harvestForecastTarget) ? summary.harvestForecastTarget : 0;
 
@@ -2217,7 +2234,7 @@
         units:"Lbs",
         pct: pctPill(summary.harvestWithWaste, harvestForecastTarget),
         missed: missedPill(summary.harvestWithWaste, harvestForecastTarget)
-      }, (summary.counts.harv > 0) || summary.harvestWithWaste !== 0 || harvestForecastTarget !== 0);
+      }, true);
 
       pushIfMeaningful({
         label:`<span title="Completed excludes waste; target includes waste.">Marketable</span>`,
@@ -2228,7 +2245,7 @@
         units:"Lbs",
         pct: pctPill(summary.harvestCut, summary.harvestWithWaste),
         missed: missedPill(summary.harvestCut, summary.harvestWithWaste)
-      }, (summary.counts.harv > 0) || summary.harvestCut !== 0 || summary.harvestWithWaste !== 0);
+      }, true);
 
       pushIfMeaningful({
         label:"Pack Potential After QC",
@@ -2237,7 +2254,7 @@
         units:"Lbs",
         pct: `<span class="pill muted">—</span>`,
         missed: `<span class="pill muted">—</span>`
-      }, (summary.counts.pack > 0) || summary.packAllLbs !== 0);
+      }, true);
 
       pushIfMeaningful({
         label:`<button type="button" class="pill muted" onclick="togglePackExpanded()" aria-expanded="${packExpanded ? "true" : "false"}">${packExpanded ? "▾" : "▸"} Pack - All</button>`,
@@ -2248,7 +2265,7 @@
         units:"Lbs",
         pct:pctPill(summary.packAllLbs, summary.harvestCut),
         missed:missedPill(summary.packAllLbs, summary.harvestCut)
-      }, (summary.counts.pack > 0) || summary.packAllLbs !== 0);
+      }, true);
 
       const packChildrenMeaningful =
         (summary.counts.pack > 0) ||
@@ -2434,7 +2451,8 @@
         if (modeInfo.has) return isProductionValue(modeInfo.value);
 
         const batch = getProductionBatchValue(r);
-        return !!(batch && productionBatches.has(batch));
+        if (batch) return productionBatches.size ? productionBatches.has(batch) : true;
+        return true;
       });
 
       return { growRows, packRows };
@@ -2860,14 +2878,14 @@
       const { growRows, packRows } = getActiveRows();
       const weeks = collectWeeks(growRows, packRows);
       const defaultWeek = getPreviousISOWeek();
-      if (defaultWeek && !weeks.includes(defaultWeek)) weeks.push(defaultWeek);
+      if (!weeks.length && defaultWeek) weeks.push(defaultWeek);
       return weeks.sort((a,b) => weekOrderKey(a) - weekOrderKey(b));
     }
 
     function getDefaultWeekSelection(){
-      const previousWeek = getPreviousISOWeek();
-      if (previousWeek) return previousWeek;
       const options = getWeekOptions();
+      const previousWeek = getPreviousISOWeek();
+      if (previousWeek && options.includes(previousWeek)) return previousWeek;
       return options[options.length-1] || "";
     }
 
@@ -2955,6 +2973,9 @@
       }
 
       const summary = computeWeekSummary(wk, growRows, packRows, PACK_ROWS);
+      const rawSummary = summaryMode === "production"
+        ? computeWeekSummary(wk, GROW_ROWS, PACK_ROWS, PACK_ROWS)
+        : null;
 
       if (title) title.textContent = weekDisplay(wk);
 
@@ -2962,7 +2983,14 @@
       renderTable(summary);
 
       if (!summary.empty){
+        const activeCounts =
+          `Rows used: seed ${(summary.aux.seedRowsCount ?? 0).toLocaleString()} • trans ${summary.aux.transRowsCount.toLocaleString()} • harv ${(summary.aux.harvRowsCount ?? 0).toLocaleString()} • san ${(summary.aux.sanRowsCount ?? 0).toLocaleString()} • pack ${(summary.aux.packRowsCount ?? 0).toLocaleString()}\n`;
+        const rawCounts = rawSummary
+          ? `Raw rows: seed ${(rawSummary.aux.seedRowsCount ?? 0).toLocaleString()} • trans ${rawSummary.aux.transRowsCount.toLocaleString()} • harv ${(rawSummary.aux.harvRowsCount ?? 0).toLocaleString()} • san ${(rawSummary.aux.sanRowsCount ?? 0).toLocaleString()} • pack ${(rawSummary.aux.packRowsCount ?? 0).toLocaleString()}\n`
+          : "";
         setDebug(
+          activeCounts +
+          rawCounts +
           `Transplant: rows ${summary.aux.transRowsCount.toLocaleString()} • boards ${summary.aux.boardsTrans.toLocaleString()} • expected ${summary.aux.boardsExpected.toLocaleString()} • avg workers ${summary.aux.avgWorkers ? summary.aux.avgWorkers.toFixed(2) : "0"} • hours ${summary.aux.weekHours ? summary.aux.weekHours.toFixed(2) : "0"}\n` +
           `Pack: week rows ${(summary.aux.packRowsCount ?? 0).toLocaleString()} • confirmed lbs ${(summary.aux.packLbsConfirmed ?? 0).toLocaleString()}\n` +
           `Shipped: week rows ${(summary.aux.shipRowsByGrowWeekCount ?? 0).toLocaleString()} • sales ${(summary.ship?.sales ?? 0).toLocaleString()} • wh ${(summary.ship?.received ?? 0).toLocaleString()} • donations ${(summary.ship?.donation ?? 0).toLocaleString()} • basura ${(summary.ship?.waste ?? 0).toLocaleString()}\n` +
