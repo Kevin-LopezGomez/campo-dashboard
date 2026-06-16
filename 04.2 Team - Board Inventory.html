@@ -57,6 +57,8 @@
     .btn:hover{border-color:var(--border-subtle);}
     .btn.active{border-color: rgba(96,165,250,.7);background: rgba(96,165,250,.10);}
     .btn.ghost{color:var(--sub);}
+    .btn.primary{border-color: rgba(34,197,94,.7);background: rgba(34,197,94,.10);}
+    .btn:disabled{cursor:not-allowed;opacity:.55;}
 
     .input{
       padding:9px 10px;border-radius:12px;border:1px solid var(--border);
@@ -67,6 +69,7 @@
 
     .hint{color:var(--sub);font-size:12px;line-height:1.35}
     .muted{color:var(--muted)}
+    .syncPill{min-width:150px;text-align:center;}
 
     .chipBarWrap{
       border:1px solid var(--border);
@@ -238,6 +241,9 @@
           <span class="pill muted" id="inputsMini">—</span>
         </div>
         <div class="sumMeta">
+          <span class="pill muted syncPill" id="syncStatus">Not saved</span>
+          <button class="btn ghost" id="btnLoadLatestTop" type="button" title="Load latest saved inputs">Load latest</button>
+          <button class="btn primary" id="btnSaveInputsTop" type="button" title="Save inputs">Save inputs</button>
           <button class="btn" id="btnRecalcTop" type="button" title="Recalculate">Recalculate</button>
         </div>
       </summary>
@@ -288,6 +294,8 @@
         </div>
 
         <div class="actionsRow">
+          <button class="btn ghost" id="btnLoadLatest" type="button">Load latest</button>
+          <button class="btn primary" id="btnSaveInputs" type="button">Save inputs</button>
           <button class="btn" id="btnRecalc" type="button">Recalculate</button>
         </div>
       </div>
@@ -343,6 +351,9 @@
   // ===== CONFIG =====
   const POND_OPTIONS = [8,9,10,11,12,13,14];
   const PRESET_WEEKS = { "3m": 13, "6m": 26, "1y": 52, "2y": 104 };
+  const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
+  const SUPABASE_BOARD_TABLE = "board_inventory_runway_inputs";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
 
   // Fixed, deterministic colors for safety lines (and table swatches)
   const POND_COLORS = {
@@ -365,6 +376,8 @@
   let viewStart = null;        // Date
   let viewEnd = null;          // Date
   let chart = null;
+  let currentScenarioId = null;
+  let isSyncing = false;
 
   // ===== HELPERS =====
   function fmtInt(n){ return Number.isFinite(n) ? Math.round(n).toLocaleString() : "—"; }
@@ -394,6 +407,194 @@
     return `${y}-${m}-${d}`;
   }
   function diffDays(a, b){ return (b.getTime() - a.getTime()) / 86400000; }
+
+  function setSyncStatus(text, tone = "muted"){
+    const el = document.getElementById("syncStatus");
+    if(!el) return;
+    el.textContent = text;
+    el.classList.toggle("muted", tone !== "ok" && tone !== "error");
+    el.style.color = tone === "ok" ? "#86efac" : tone === "error" ? "#fca5a5" : "";
+    el.style.borderColor = tone === "ok"
+      ? "rgba(34,197,94,.45)"
+      : tone === "error"
+        ? "rgba(248,113,113,.45)"
+        : "";
+  }
+
+  function setSyncButtonsDisabled(disabled){
+    ["btnSaveInputsTop","btnSaveInputs","btnLoadLatestTop","btnLoadLatest"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.disabled = disabled;
+    });
+  }
+
+  function markInputsUnsaved(){
+    if(!isSyncing) setSyncStatus("Unsaved changes");
+  }
+
+  function getSelectedPondsArray(){
+    return Array.from(selectedPonds)
+      .map(Number)
+      .filter(p => POND_OPTIONS.includes(p))
+      .sort((a,b)=>a-b);
+  }
+
+  function readNumberInput(id, { integer = false, min = null } = {}){
+    const el = document.getElementById(id);
+    const value = Number(el.value);
+    if(!Number.isFinite(value)) throw new Error(`Invalid value for ${id}.`);
+    const normalized = integer ? Math.round(value) : value;
+    if(min !== null && normalized < min) throw new Error(`Invalid value for ${id}.`);
+    return normalized;
+  }
+
+  function getInputPayload(){
+    const startDate = document.getElementById("startDate").value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) throw new Error("Start date is required.");
+
+    const startingInventory = readNumberInput("startInventory", { integer: true, min: 0 });
+    const boardsPerPond = readNumberInput("boardsPerPond", { integer: true, min: 1 });
+    const brokenBest = readNumberInput("brokenBest", { integer: true, min: 0 });
+    const brokenWorst = readNumberInput("brokenWorst", { integer: true, min: 0 });
+    const bufferDays = readNumberInput("bufferDays", { min: 0 });
+    const horizonWeeks = readNumberInput("horizonWeeks", { integer: true, min: 4 });
+
+    if(brokenWorst < brokenBest){
+      throw new Error("Worst-case broken boards/week must be greater than or equal to best-case.");
+    }
+
+    return {
+      scenario_name: "Board Inventory Runway",
+      start_date: startDate,
+      starting_inventory: startingInventory,
+      boards_per_pond: boardsPerPond,
+      broken_boards_per_week_best: brokenBest,
+      broken_boards_per_week_worst: brokenWorst,
+      buffer_days: bufferDays,
+      horizon_weeks: horizonWeeks,
+      selected_ponds: getSelectedPondsArray(),
+      timeline_mode: controlMode,
+      active_preset: activePreset
+    };
+  }
+
+  function applyInputPayload(row){
+    if(!row || typeof row !== "object") return;
+    if(row.id) currentScenarioId = row.id;
+
+    document.getElementById("startDate").value = row.start_date || "";
+    document.getElementById("startInventory").value = row.starting_inventory ?? "";
+    document.getElementById("boardsPerPond").value = row.boards_per_pond ?? "";
+    document.getElementById("brokenBest").value = row.broken_boards_per_week_best ?? "";
+    document.getElementById("brokenWorst").value = row.broken_boards_per_week_worst ?? "";
+    document.getElementById("bufferDays").value = row.buffer_days ?? 0;
+    document.getElementById("horizonWeeks").value = row.horizon_weeks ?? 52;
+
+    const rowPonds = Array.isArray(row.selected_ponds) ? row.selected_ponds.map(Number) : [];
+    selectedPonds = new Set(rowPonds.filter(p => POND_OPTIONS.includes(p)));
+    controlMode = row.timeline_mode === "horizon" ? "horizon" : "presets";
+    activePreset = ["3m","6m","1y","2y","all"].includes(row.active_preset) ? row.active_preset : "1y";
+
+    renderPondChips();
+    setControlMode(controlMode);
+    recalcAll({ preserveView: false });
+  }
+
+  async function supabaseRequest(path, options = {}){
+    if(!SUPABASE_ANON_KEY) throw new Error("Missing Supabase anon key.");
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+    if(!res.ok){
+      const message = await res.text().catch(() => "");
+      throw new Error(message || `Supabase request failed (${res.status}).`);
+    }
+    if(res.status === 204) return null;
+    return res.json();
+  }
+
+  async function saveInputsToSupabase(){
+    if(isSyncing) return;
+    isSyncing = true;
+    setSyncButtonsDisabled(true);
+    setSyncStatus("Saving...");
+    try{
+      const payload = getInputPayload();
+      const table = encodeURIComponent(SUPABASE_BOARD_TABLE);
+      const path = currentScenarioId
+        ? `${table}?id=eq.${encodeURIComponent(currentScenarioId)}`
+        : table;
+      const method = currentScenarioId ? "PATCH" : "POST";
+      const rows = await supabaseRequest(path, {
+        method,
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(payload)
+      });
+      const saved = Array.isArray(rows) ? rows[0] : null;
+      if(!saved) throw new Error("Supabase did not return the saved row.");
+      if(saved?.id) currentScenarioId = saved.id;
+      const stamp = saved?.updated_at || saved?.created_at;
+      setSyncStatus(stamp ? `Saved ${new Date(stamp).toLocaleString()}` : "Saved", "ok");
+    } catch(err){
+      console.error(err);
+      setSyncStatus("Save failed", "error");
+      alert(`Could not save board inventory inputs.\n\n${err.message || err}`);
+    } finally {
+      isSyncing = false;
+      setSyncButtonsDisabled(false);
+    }
+  }
+
+  async function loadLatestInputsFromSupabase({ quiet = false } = {}){
+    if(isSyncing) return false;
+    isSyncing = true;
+    setSyncButtonsDisabled(true);
+    if(!quiet) setSyncStatus("Loading...");
+    try{
+      const table = encodeURIComponent(SUPABASE_BOARD_TABLE);
+      const select = [
+        "id",
+        "start_date",
+        "starting_inventory",
+        "boards_per_pond",
+        "broken_boards_per_week_best",
+        "broken_boards_per_week_worst",
+        "buffer_days",
+        "horizon_weeks",
+        "selected_ponds",
+        "timeline_mode",
+        "active_preset",
+        "created_at",
+        "updated_at"
+      ].join(",");
+      const rows = await supabaseRequest(`${table}?select=${select}&order=updated_at.desc&limit=1`, {
+        method: "GET",
+        headers: { Prefer: "return=representation" }
+      });
+      if(!Array.isArray(rows) || !rows.length){
+        setSyncStatus(quiet ? "Not saved" : "No saved inputs");
+        return false;
+      }
+      applyInputPayload(rows[0]);
+      const stamp = rows[0].updated_at || rows[0].created_at;
+      setSyncStatus(stamp ? `Loaded ${new Date(stamp).toLocaleString()}` : "Loaded", "ok");
+      return true;
+    } catch(err){
+      console.error(err);
+      setSyncStatus("Load failed", quiet ? "muted" : "error");
+      if(!quiet) alert(`Could not load board inventory inputs.\n\n${err.message || err}`);
+      return false;
+    } finally {
+      isSyncing = false;
+      setSyncButtonsDisabled(false);
+    }
+  }
 
   function getInputs(){
     const start = parseISODate(document.getElementById("startDate").value);
@@ -809,6 +1010,7 @@
         }
         renderPondChips();
         rebuildChart();
+        markInputsUnsaved();
       });
       wrap.appendChild(chip);
     });
@@ -840,28 +1042,57 @@
       selectedPonds = new Set(POND_OPTIONS);
       renderPondChips();
       rebuildChart();
+      markInputsUnsaved();
     });
     document.getElementById("btnNonePonds").addEventListener("click", ()=>{
       selectedPonds = new Set();
       renderPondChips();
       rebuildChart();
+      markInputsUnsaved();
     });
 
-    document.getElementById("modePresets").addEventListener("click", ()=> setControlMode("presets"));
-    document.getElementById("modeHorizon").addEventListener("click", ()=> setControlMode("horizon"));
+    document.getElementById("modePresets").addEventListener("click", ()=>{
+      setControlMode("presets");
+      markInputsUnsaved();
+    });
+    document.getElementById("modeHorizon").addEventListener("click", ()=>{
+      setControlMode("horizon");
+      markInputsUnsaved();
+    });
 
     document.querySelectorAll('[data-preset]').forEach(btn=>{
       btn.addEventListener("click", ()=>{
         applyPresetClick(btn.dataset.preset);
         markPresetButtons();
+        markInputsUnsaved();
       });
+    });
+
+    function stopSummaryToggle(e){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    document.getElementById("btnLoadLatestTop").addEventListener("click", (e)=>{
+      stopSummaryToggle(e);
+      loadLatestInputsFromSupabase();
+    });
+    document.getElementById("btnSaveInputsTop").addEventListener("click", (e)=>{
+      stopSummaryToggle(e);
+      saveInputsToSupabase();
     });
 
     // prevent summary click from toggling details when clicking recalc in summary
     document.getElementById("btnRecalcTop").addEventListener("click", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
+      stopSummaryToggle(e);
       recalcAll({ preserveView: true });
+    });
+
+    document.getElementById("btnLoadLatest").addEventListener("click", ()=>{
+      loadLatestInputsFromSupabase();
+    });
+    document.getElementById("btnSaveInputs").addEventListener("click", ()=>{
+      saveInputsToSupabase();
     });
 
     document.getElementById("btnRecalc").addEventListener("click", ()=>{
@@ -871,15 +1102,18 @@
     document.getElementById("horizonWeeks").addEventListener("change", ()=>{
       if(controlMode === "horizon") recalcAll({ preserveView: true });
       else recalcAll({ preserveView: false });
+      markInputsUnsaved();
     });
 
     document.getElementById("bufferDays").addEventListener("change", ()=>{
       rebuildChart();
+      markInputsUnsaved();
     });
 
     ["startDate","startInventory","boardsPerPond","brokenBest","brokenWorst"].forEach(id=>{
       document.getElementById(id).addEventListener("change", ()=>{
         recalcAll({ preserveView: false });
+        markInputsUnsaved();
       });
     });
   }
@@ -904,6 +1138,7 @@
     setControlMode("presets");
     activePreset = "1y";
     recalcAll({ preserveView: false });
+    loadLatestInputsFromSupabase({ quiet: true });
   })();
 </script>
 </body>

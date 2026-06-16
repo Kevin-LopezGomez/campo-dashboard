@@ -10,6 +10,7 @@
 
   <style>
     :root{
+      color-scheme: dark;
       --bg:#020617;
       --panel:#0b1222;
       --border:#1f2937;
@@ -20,10 +21,17 @@
       --warn:#f59e0b;
     }
     *{box-sizing:border-box;}
+    html{
+      min-height:100%;
+      background:#020617;
+      color:var(--text);
+    }
     body{
       margin:0;
+      min-height:100vh;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      background-color:#020617;
+      background-image: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
       color:var(--text);
     }
     .wrap{max-width:1200px;margin:20px auto;padding:16px;}
@@ -366,6 +374,7 @@ const PUBLIC_SEED_INVENTORY_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/stor
 const PUBLIC_LEAF_GROWTH_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json";
 const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
 const SUPABASE_SALES_TABLE = "master_pack";
+const SUPABASE_BOARD_TABLE = "board_inventory_runway_inputs";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
 
 
@@ -463,6 +472,14 @@ const SALES_FORWARD_STATUS_BOOLEAN_HEADERS = new Set([
   "Order Complete",
   "Order Shipped"
 ]);
+const BOARD_RUNWAY_DEFAULTS = {
+  boards_per_pond: 2700,
+  buffer_days: 0,
+  horizon_weeks: 52,
+  selected_ponds: [10, 11, 12, 13],
+  timeline_mode: "presets",
+  active_preset: "1y"
+};
 
   // IndexedDB cache (Pack-only migration)
 const LOCAL_DB_NAME = "campo_local_cache_v1";
@@ -1121,6 +1138,184 @@ function refreshBadges(){
     return formatLocalDateForSql(parsed);
   }
 
+  function parseBoardDateValue(value){
+    const sql = parseSalesDate(value);
+    if(!sql) return null;
+    const [y, m, d] = sql.split("-").map(Number);
+    if(!y || !m || !d) return null;
+    const dt = new Date(y, m - 1, d);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  }
+
+  function addBoardDays(dt, days){
+    const d = new Date(dt);
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  function boardWeekStart(dt){
+    const d = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const day = d.getDay();
+    d.setDate(d.getDate() - ((day + 6) % 7));
+    return d;
+  }
+
+  function boardIsoDate(dt){
+    return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
+  }
+
+  function normalizeBoardHeader(value){
+    return String(value ?? "")
+      .replace(/^\uFEFF/, "")
+      .replace(/[#]/g, " number ")
+      .replace(/[._/-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  function findBoardHeader(headers, candidates){
+    const normalized = headers.map(header => normalizeBoardHeader(header));
+    const wants = candidates.map(candidate => normalizeBoardHeader(candidate));
+    let index = normalized.findIndex(header => wants.includes(header));
+    if(index >= 0) return index;
+    index = normalized.findIndex(header => wants.some(want => header.includes(want)));
+    return index >= 0 ? index : -1;
+  }
+
+  function boardNumber(row, headers, candidates){
+    const index = findBoardHeader(headers, candidates);
+    return index >= 0 ? (parseSalesNumber(row?.[index]) || 0) : 0;
+  }
+
+  function boardDate(row, headers, candidates){
+    for(const candidate of candidates){
+      const index = findBoardHeader(headers, [candidate]);
+      if(index < 0) continue;
+      const parsed = parseBoardDateValue(row?.[index]);
+      if(parsed) return parsed;
+    }
+    return null;
+  }
+
+  function percentile(sortedValues, p){
+    if(!sortedValues.length) return 0;
+    if(sortedValues.length === 1) return sortedValues[0];
+    const idx = (sortedValues.length - 1) * p;
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if(lo === hi) return sortedValues[lo];
+    const weight = idx - lo;
+    return sortedValues[lo] * (1 - weight) + sortedValues[hi] * weight;
+  }
+
+  function growSheetRecords(payload){
+    const sheet = payload?.sheets?.[CANON_GROW_SHEET];
+    const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
+    const rows = Array.isArray(sheet?.rows) ? sheet.rows : [];
+    return { headers, rows };
+  }
+
+  function buildBoardRunwayInputFromGrowPayload(payload, sourceLabel){
+    const { headers, rows } = growSheetRecords(payload);
+    if(!headers.length || !rows.length) return null;
+
+    const explicitInventoryIndex = findBoardHeader(headers, [
+      "Board Inventory",
+      "Current Board Inventory",
+      "Starting Inventory",
+      "Starting Board Inventory"
+    ]);
+    const datedRows = rows.map(row => {
+      const sanitationDate = boardDate(row, headers, ["Date of Sanitation", "Sanitation Date"]);
+      const activityDate = sanitationDate || boardDate(row, headers, [
+        "Transplant Date",
+        "Harvest Date",
+        "Prop Date",
+        "Seed Date"
+      ]);
+      return { row, sanitationDate, activityDate };
+    }).filter(item => item.activityDate);
+
+    if(!datedRows.length) return null;
+
+    const latestDate = datedRows.reduce((max, item) => item.activityDate > max ? item.activityDate : max, datedRows[0].activityDate);
+    let startingInventory = 0;
+
+    if(explicitInventoryIndex >= 0){
+      const explicit = datedRows
+        .map(item => ({ date: item.activityDate, value: parseSalesNumber(item.row?.[explicitInventoryIndex]) }))
+        .filter(item => Number.isFinite(item.value) && item.value > 0)
+        .sort((a, b) => a.date - b.date);
+      if(explicit.length) startingInventory = explicit[explicit.length - 1].value;
+    }
+
+    if(!startingInventory){
+      const rollingStart = addBoardDays(latestDate, -28);
+      const rollingSanitationRows = datedRows.filter(item =>
+        item.sanitationDate &&
+        item.sanitationDate.getTime() > rollingStart.getTime() &&
+        item.sanitationDate.getTime() <= latestDate.getTime()
+      );
+      const inventoryRows = rollingSanitationRows.length ? rollingSanitationRows : datedRows;
+      const cleaned = inventoryRows.reduce((sum, item) => sum + boardNumber(item.row, headers, [
+        "Total # of Boards Cleaned",
+        "Total Boards Cleaned",
+        "# de Boards Rectas"
+      ]), 0);
+      const sanitationBroken = inventoryRows.reduce((sum, item) => sum + boardNumber(item.row, headers, [
+        "# of Broken Boards"
+      ]), 0);
+      startingInventory = Math.max(0, Math.round(cleaned - sanitationBroken));
+    }
+
+    const latestWeek = boardWeekStart(latestDate);
+    const weeklyBroken = new Map();
+    datedRows.forEach(item => {
+      const week = boardWeekStart(item.activityDate);
+      const productionBroken = boardNumber(item.row, headers, ["Total # of Broken Boards Production"]);
+      const detailedProductionBroken = [
+        "Transplant Broken Boards",
+        "Harvest Boards Broken",
+        "# of Boards Wasted During Growing IPM",
+        "# of Boards Wasted During Growing FS"
+      ].reduce((sum, name) => sum + boardNumber(item.row, headers, [name]), 0);
+      const sanitationBroken = boardNumber(item.row, headers, ["# of Broken Boards"]);
+      const broken = sanitationBroken + Math.max(productionBroken, detailedProductionBroken);
+      if(!broken) return;
+      const key = boardIsoDate(week);
+      weeklyBroken.set(key, (weeklyBroken.get(key) || 0) + broken);
+    });
+
+    const recentCompleteWeeks = [...weeklyBroken.entries()]
+      .map(([key, value]) => ({ key, value, dt: parseBoardDateValue(key) }))
+      .filter(item => item.dt && item.dt.getTime() < latestWeek.getTime() && item.value > 0)
+      .sort((a, b) => a.dt - b.dt)
+      .slice(-12)
+      .map(item => item.value)
+      .sort((a, b) => a - b);
+    const weeklyValues = recentCompleteWeeks.length
+      ? recentCompleteWeeks
+      : [...weeklyBroken.values()].filter(value => value > 0).sort((a, b) => a - b);
+    const brokenBest = Math.max(0, Math.round(percentile(weeklyValues, 0.25))) || 48;
+    const brokenWorst = Math.max(brokenBest, Math.round(percentile(weeklyValues, 0.75)) || 100);
+
+    return {
+      scenario_name: "Board Inventory Runway",
+      notes: `Auto-derived from ${sourceLabel || payload?.sourceLabel || "Master Grow upload"}. Inventory uses the latest 28 sanitation days when no explicit inventory column exists.`,
+      start_date: boardIsoDate(latestDate),
+      starting_inventory: Math.round(startingInventory),
+      boards_per_pond: BOARD_RUNWAY_DEFAULTS.boards_per_pond,
+      broken_boards_per_week_best: brokenBest,
+      broken_boards_per_week_worst: brokenWorst,
+      buffer_days: BOARD_RUNWAY_DEFAULTS.buffer_days,
+      horizon_weeks: BOARD_RUNWAY_DEFAULTS.horizon_weeks,
+      selected_ponds: BOARD_RUNWAY_DEFAULTS.selected_ponds,
+      timeline_mode: BOARD_RUNWAY_DEFAULTS.timeline_mode,
+      active_preset: BOARD_RUNWAY_DEFAULTS.active_preset
+    };
+  }
+
   function buildSalesForwardRowsFromPackPayload(payload){
     const sheet = payload?.sheets?.[CANON_PACK_SHEET];
     const headers = Array.isArray(sheet?.headers) ? sheet.headers : [];
@@ -1147,16 +1342,50 @@ function refreshBadges(){
   }
 
   async function fetchSalesForwardTable(path, options = {}){
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      ...options,
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        ...(options.headers || {})
-      }
-    });
+    const method = options.method || "GET";
+    let res;
+    try {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        ...options,
+        cache: "no-store",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          ...(options.headers || {})
+        }
+      });
+    } catch (err) {
+      throw new Error(`Sales table ${method} network request failed: ${err.message || err}`);
+    }
     const text = await res.text().catch(() => "");
-    if(!res.ok) throw new Error(`Sales table ${options.method || "GET"} failed (${res.status}): ${text || res.statusText}`);
+    if(!res.ok) throw new Error(`Sales table ${method} failed (${res.status}): ${text || res.statusText}`);
+    return text;
+  }
+
+  async function fetchBoardRunwayTable(path, options = {}){
+    const method = options.method || "GET";
+    let res;
+    try {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        ...options,
+        cache: "no-store",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+    } catch (err) {
+      throw new Error(`Board inventory table ${method} network request failed: ${err.message || err}`);
+    }
+    const text = await res.text().catch(() => "");
+    if(!res.ok){
+      const rlsHint = /row-level security|violates row-level security|42501/i.test(text)
+        ? " Run the RLS policies in supabase-board-inventory-runway.sql."
+        : "";
+      throw new Error(`Board inventory table ${method} failed (${res.status}): ${text || res.statusText}.${rlsHint}`);
+    }
     return text;
   }
 
@@ -1249,6 +1478,66 @@ function refreshBadges(){
     return count;
   }
 
+  async function upsertBoardRunwayInput(row){
+    if(!row) return 0;
+    const table = encodeURIComponent(SUPABASE_BOARD_TABLE);
+    const latestText = await fetchBoardRunwayTable(`${table}?select=id&order=updated_at.desc&limit=1`);
+    const latestRows = JSON.parse(latestText || "[]");
+    const latestId = Array.isArray(latestRows) && latestRows[0]?.id ? latestRows[0].id : "";
+    const path = latestId ? `${table}?id=eq.${encodeURIComponent(latestId)}` : table;
+    const method = latestId ? "PATCH" : "POST";
+    await fetchBoardRunwayTable(path, {
+      method,
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(row)
+    });
+    return 1;
+  }
+
+  async function syncBoardRunwayInputFromGrowPayload(payload){
+    const row = buildBoardRunwayInputFromGrowPayload(payload, payload?.sourceLabel || "Master Grow upload");
+    if(!row) return 0;
+    return upsertBoardRunwayInput(row);
+  }
+
+  async function debugBoardRunwayFromCachedGrow(){
+    const raw = localStorage.getItem(MASTER_GROW_KEY);
+    if(!raw) throw new Error(`No cached Master Grow JSON found at localStorage["${MASTER_GROW_KEY}"]. Upload/confirm the grow CSV first.`);
+    let payload;
+    try{
+      payload = JSON.parse(raw);
+    }catch{
+      throw new Error("Cached Master Grow JSON is invalid.");
+    }
+    const row = buildBoardRunwayInputFromGrowPayload(payload, payload?.sourceLabel || "cached Master Grow");
+    if(!row) throw new Error("Could not derive a Board Inventory Runway row from cached Master Grow.");
+    return row;
+  }
+
+  async function debugBoardRunwayReadSupabase(){
+    const table = encodeURIComponent(SUPABASE_BOARD_TABLE);
+    const text = await fetchBoardRunwayTable(`${table}?select=*&order=updated_at.desc&limit=5`);
+    return JSON.parse(text || "[]");
+  }
+
+  async function debugBoardRunwayWriteFromCachedGrow(){
+    const row = await debugBoardRunwayFromCachedGrow();
+    const count = await upsertBoardRunwayInput(row);
+    return {
+      wrote: count,
+      row,
+      latestRows: await debugBoardRunwayReadSupabase()
+    };
+  }
+
+  window.campoBoardRunwayDebug = {
+    cachedGrowKey: MASTER_GROW_KEY,
+    table: SUPABASE_BOARD_TABLE,
+    derivedRow: debugBoardRunwayFromCachedGrow,
+    readSupabase: debugBoardRunwayReadSupabase,
+    writeFromCachedGrow: debugBoardRunwayWriteFromCachedGrow
+  };
+
   // =========================================================
   // SAVE (overwrite) with contract guarantees + update signals
   // =========================================================
@@ -1262,7 +1551,7 @@ function refreshBadges(){
       localStorage.setItem(MASTER_GROW_PING, now);
       emit(MSG_GROW, MASTER_GROW_KEY);
       saved = true;
-      setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}`);
+      setStatus(`Saved Master Grow (JSON overwritten): ${sourceLabel}. Click Publish to update grow.json and board_inventory_runway_inputs.`);
     } else if(which === "pack"){
       if (!payload?.sheets?.[CANON_PACK_SHEET]) throw new Error(`Pack payload missing sheets["${CANON_PACK_SHEET}"]`);
       await idbSetJson(MASTER_PACK_KEY, payload);
@@ -1663,7 +1952,7 @@ function normalizeMasterPayload(raw, kind){
     catch { throw new Error("Worker returned non-JSON."); }
   }
 
-  async function pullFromSupabase(){
+async function pullFromSupabase(){
   pullBtn.disabled = true;
   setStatus("Pulling from Supabase (via Worker)…");
   showContractWarning("");
@@ -1765,8 +2054,33 @@ function normalizeMasterPayload(raw, kind){
   }
 }
 
+async function putJsonToWorker(label, url, body, resultsName){
+  const maxAttempts = 2;
+  for(let attempt = 1; attempt <= maxAttempts; attempt++){
+    try{
+      setStatus(`Publishing ${label} to Supabase${attempt > 1 ? " (retry)" : ""}...`);
+      const res = await fetch(url, {
+        method: "PUT",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body
+      });
+      const text = await res.text().catch(() => "");
+      if(!res.ok) throw new Error(`${label} publish failed (${res.status}): ${text || res.statusText}`);
+      return resultsName;
+    }catch(err){
+      if(attempt < maxAttempts) continue;
+      const msg = err.message || String(err);
+      if(msg.includes("publish failed")) throw err;
+      throw new Error(`${label} publish network request failed: ${msg}`);
+    }
+  }
+}
+
 async function publishToSupabase(){
     const growStr = localStorage.getItem(MASTER_GROW_KEY);
+    let growPayloadForPublish = null;
     let packStr = localStorage.getItem(MASTER_PACK_KEY);
     let packPayloadForPublish = null;
     const expStr  = localStorage.getItem(MASTER_EXP_KEY);
@@ -1782,7 +2096,7 @@ async function publishToSupabase(){
     }
 
     // validate JSON early
-    try { if(growStr) JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
+    try { if(growStr) growPayloadForPublish = JSON.parse(growStr); } catch { return setStatus("Grow JSON is invalid (cannot publish)."); }
     try {
       if(packStr){
         const parsedPack = JSON.parse(packStr);
@@ -1827,97 +2141,45 @@ async function publishToSupabase(){
       const results = [];
 
       if(growStr){
-        const res = await fetch(WORKER_GROW_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: growStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Grow publish failed (${res.status}): ${text}`);
-        results.push("grow.json");
-      }
-
-      if(packStr){
-        const res = await fetch(WORKER_PACK_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: packStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Pack publish failed (${res.status}): ${text}`);
-        results.push("pack.json");
-
-        if(packPayloadForPublish){
-          const salesRows = await syncSalesForwardTableFromPackPayload(packPayloadForPublish);
-          results.push(`${SUPABASE_SALES_TABLE} (${salesRows.toLocaleString()} rows)`);
+        results.push(await putJsonToWorker("Grow", WORKER_GROW_URL, growStr, "grow.json"));
+        if(growPayloadForPublish){
+          try {
+            setStatus("Syncing Board Inventory Runway inputs from Master Grow...");
+            const boardRows = await syncBoardRunwayInputFromGrowPayload(growPayloadForPublish);
+            results.push(`${SUPABASE_BOARD_TABLE} (${boardRows.toLocaleString()} row)`);
+          } catch (err) {
+            console.warn("Board inventory runway sync skipped:", err);
+            results.push(`${SUPABASE_BOARD_TABLE} skipped (${err.message || err})`);
+          }
         }
       }
 
-      if(expStr){
-        const res = await fetch(WORKER_EXP_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: expStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Experiments publish failed (${res.status}): ${text}`);
-        results.push("experiments.json");
+      if(packStr){
+        results.push(await putJsonToWorker("Pack", WORKER_PACK_URL, packStr, "pack.json"));
+
+        if(packPayloadForPublish){
+          try {
+            setStatus("Syncing Master Pack rows to Supabase table...");
+            const salesRows = await syncSalesForwardTableFromPackPayload(packPayloadForPublish);
+            results.push(`${SUPABASE_SALES_TABLE} (${salesRows.toLocaleString()} rows)`);
+          } catch (err) {
+            console.warn("Master Pack table sync skipped:", err);
+            results.push(`${SUPABASE_SALES_TABLE} skipped (${err.message || err})`);
+          }
+        }
       }
 
-      if(procStr){
-        const res = await fetch(WORKER_PROC_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: procStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Procurement publish failed (${res.status}): ${text}`);
-        results.push("procurement.json");
-      }
+      if(expStr) results.push(await putJsonToWorker("Experiments", WORKER_EXP_URL, expStr, "experiments.json"));
 
-      if(mrpStr){
-        const res = await fetch(WORKER_MRP_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: mrpStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`MRP publish failed (${res.status}): ${text}`);
-        results.push("MRP.json");
-      }
+      if(procStr) results.push(await putJsonToWorker("Procurement", WORKER_PROC_URL, procStr, "procurement.json"));
 
-      if(storeStr){
-        const res = await fetch(WORKER_STORE_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: storeStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Store Visit publish failed (${res.status}): ${text}`);
-        results.push("Store Visits.json");
-      }
+      if(mrpStr) results.push(await putJsonToWorker("MRP", WORKER_MRP_URL, mrpStr, "MRP.json"));
 
-      if(seedStr){
-        const res = await fetch(WORKER_SEED_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: seedStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Seed Inventory publish failed (${res.status}): ${text}`);
-        results.push("Seed Inventory.json");
-      }
+      if(storeStr) results.push(await putJsonToWorker("Store Visit", WORKER_STORE_URL, storeStr, "Store Visits.json"));
 
-      if(leafStr){
-        const res = await fetch(WORKER_LEAF_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: leafStr
-        });
-        const text = await res.text().catch(() => "");
-        if(!res.ok) throw new Error(`Leaf Growth publish failed (${res.status}): ${text}`);
-        results.push("Leaf Growth.json");
-      }
+      if(seedStr) results.push(await putJsonToWorker("Seed Inventory", WORKER_SEED_URL, seedStr, "Seed Inventory.json"));
+
+      if(leafStr) results.push(await putJsonToWorker("Leaf Growth", WORKER_LEAF_URL, leafStr, "Leaf Growth.json"));
 
       setStatus(`✅ Published: ${results.join(" + ")}`);
     }catch(err){
