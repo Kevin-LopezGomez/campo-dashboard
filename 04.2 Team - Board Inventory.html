@@ -47,8 +47,8 @@
       box-shadow: var(--shadow);
       padding: 14px;
     }
-    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px;}
-    .fieldRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px;min-width:0;}
+    .fieldRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;min-width:0;}
 
     .btn{
       cursor:pointer;padding:9px 12px;border-radius:12px;border:1px solid var(--border);
@@ -64,8 +64,8 @@
       padding:9px 10px;border-radius:12px;border:1px solid var(--border);
       background:rgba(255,255,255,.03);color:var(--text);font-weight:800;font-size:12.5px;outline:none;
     }
-    .input.small{width:120px;}
-    .input.med{width:170px;}
+    .input.small{width:92px;}
+    .input.med{width:140px;}
 
     .hint{color:var(--sub);font-size:12px;line-height:1.35}
     .muted{color:var(--muted)}
@@ -109,7 +109,7 @@
       list-style:none;
       cursor:pointer;
       padding:10px 12px;
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
       user-select:none;
     }
     details.inputs > summary::-webkit-details-marker{display:none;}
@@ -122,27 +122,83 @@
       margin-right:2px;
     }
     details.inputs[open] .caret{ transform: rotate(45deg); }
-    .sumMeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .sumMeta{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;min-width:0;}
     .inputsBody{
-      padding: 10px 12px 12px;
+      padding: 8px 10px 10px;
       border-top:1px solid rgba(255,255,255,.06);
     }
     .inputsGrid{
       display:grid;
-      grid-template-columns: repeat(3, minmax(220px, 1fr));
-      gap:10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap:8px;
       align-items:center;
+      justify-content:start;
     }
-    @media (max-width: 980px){
+    @media (max-width: 720px){
       .inputsGrid{grid-template-columns:1fr;}
     }
     .inputGroup{
-      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-      padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:14px;
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+      width:100%;
+      max-width:100%;
+      min-height:42px;
+      padding:6px 8px;border:1px solid rgba(255,255,255,.06);border-radius:999px;
       background: rgba(2,6,23,.25);
     }
+    .inputGroup .pill{
+      max-width:160px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .inputGroup .pill{border-color: rgba(255,255,255,.10);}
-    .actionsRow{display:flex;justify-content:flex-end;gap:10px;margin-top:10px;flex-wrap:wrap;}
+    .inputsBody .hint{font-size:11.5px;}
+    .inputsBody .hint.compactHint{margin-bottom:8px;padding:0;border:0;background:transparent;}
+    .inputsBody .hint.modeHint{margin-top:8px;padding:0;border:0;background:transparent;}
+    .actionsRow{display:flex;justify-content:flex-start;gap:8px;margin-top:8px;flex-wrap:wrap;}
+    .safetyEditor{
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+    .safetyEditorHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+    .safetyLinesList{display:grid;gap:8px;}
+    .safetyLineRow{
+      display:grid;
+      grid-template-columns: minmax(150px, 1.4fr) repeat(4, minmax(92px, .75fr)) auto;
+      gap:8px;
+      align-items:center;
+      padding:8px;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      background:rgba(2,6,23,.25);
+    }
+    .safetyLineRow .input{width:100%;min-width:0;}
+    .safetyColor{
+      width:28px;
+      height:28px;
+      padding:0;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.20);
+      background:transparent;
+      cursor:pointer;
+    }
+    @media (max-width: 980px){
+      .safetyLineRow{grid-template-columns:repeat(2, minmax(0, 1fr));}
+    }
+    @media (max-width: 720px){
+      .inputGroup{width:100%;flex-wrap:wrap;border-radius:14px;}
+      .safetyLineRow{grid-template-columns:1fr;}
+    }
+    @media (max-width: 900px){
+      .panel{padding:10px;}
+      .controls{justify-content:flex-start;}
+      .syncPill{min-width:120px;}
+      .input.small{width:84px;}
+      .input.med{width:128px;}
+      .inputsGrid{grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));}
+      .inputGroup{border-radius:14px;}
+      .inputGroup .pill{max-width:130px;}
+    }
 
     .chartCard{padding:12px;border-radius:16px;border:1px solid var(--border);background: rgba(255,255,255,.02);}
     canvas{width:100% !important;height:460px !important;}
@@ -193,7 +249,7 @@
       <h1>Board Inventory Runway (Calculated)</h1>
       <div class="subtitle">
         Inventory = <b>starting inventory</b> − <b>broken boards/week</b>.
-        Safety line per pond scenario = <b>(boards/pond × ponds)</b> + <b>(120 × ponds × buffer days)</b>.
+        Safety line = <b>(boards/pond × ponds)</b> + <b>(transplant/day × buffer days)</b>.
         Vertical lines mark the week inventory drops below safety (best + worst).
       </div>
     </div>
@@ -249,8 +305,8 @@
       </summary>
 
       <div class="inputsBody">
-        <div class="hint muted" style="margin-bottom:10px;">
-          Buffer uses <b>120 boards/day/pond</b> × ponds × buffer days.
+        <div class="hint muted compactHint">
+          Buffer uses <b>transplant/day</b> × buffer days.
         </div>
 
         <div class="inputsGrid">
@@ -265,8 +321,23 @@
           </div>
 
           <div class="inputGroup">
+            <span class="pill">Bowed boards</span>
+            <input class="input small" id="bowedBoards" type="number" step="1" min="0" />
+          </div>
+
+          <div class="inputGroup">
             <span class="pill">Boards / pond</span>
             <input class="input small" id="boardsPerPond" type="number" step="1" />
+          </div>
+
+          <div class="inputGroup">
+            <span class="pill">Max clean / day</span>
+            <input class="input small" id="maxCleanPerDay" type="number" step="1" min="1" />
+          </div>
+
+          <div class="inputGroup">
+            <span class="pill">Transplant / day</span>
+            <input class="input small" id="transplantPerDay" type="number" step="1" min="0" />
           </div>
 
           <div class="inputGroup">
@@ -289,8 +360,19 @@
           </div>
         </div>
 
-        <div class="hint muted" style="margin-top:10px;" id="modeHint">
+        <div class="hint muted modeHint" id="modeHint">
           Mode: Presets (horizon will follow the preset buttons).
+        </div>
+
+        <div class="safetyEditor">
+          <div class="safetyEditorHead">
+            <div>
+              <span class="pill">Additional safety lines</span>
+              <span class="pill muted">Each line uses ponds × boards/pond + transplant/day × buffer days.</span>
+            </div>
+            <button class="btn" id="btnAddSafetyLine" type="button">Add safety line</button>
+          </div>
+          <div class="safetyLinesList" id="additionalSafetyLines"></div>
         </div>
 
         <div class="actionsRow">
@@ -307,24 +389,24 @@
 
     <div class="kpiRow">
       <div class="kpi">
-        <div class="label">Earliest WORST-case buffer breach (selected ponds)</div>
+        <div class="label">Earliest WORST-case buffer breach</div>
         <div class="value" id="kpiWorst">—</div>
         <div class="sub" id="kpiWorstSub">—</div>
       </div>
       <div class="kpi">
-        <div class="label">Earliest BEST-case buffer breach (selected ponds)</div>
+        <div class="label">Earliest BEST-case buffer breach</div>
         <div class="value" id="kpiBest">—</div>
         <div class="sub" id="kpiBestSub">—</div>
       </div>
     </div>
 
-    <div style="margin-top:12px;" class="pill">Safety Breach Summary (selected ponds)</div>
+    <div style="margin-top:12px;" class="pill">Safety Breach Summary</div>
 
     <!-- TABLE: color coordinated + separate days and weeks -->
     <table>
       <thead>
         <tr>
-          <th style="width:110px;">Ponds</th>
+          <th style="width:180px;">Safety line</th>
           <th style="width:120px;">Best breach</th>
           <th style="width:120px;">Worst breach</th>
           <th class="right" style="width:90px;">Buf (days)</th>
@@ -354,6 +436,8 @@
   const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
   const SUPABASE_BOARD_TABLE = "board_inventory_runway_inputs";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
+  const BOARD_INPUT_DRAFT_KEY = "campo_board_inventory_runway_input_draft_v1";
+  const BOARD_INPUT_OPEN_KEY = "campo_board_inventory_runway_inputs_open_v1";
 
   // Fixed, deterministic colors for safety lines (and table swatches)
   const POND_COLORS = {
@@ -365,10 +449,20 @@
     13: "rgba(96,165,250,.95)",  // blue
     14: "rgba(244,114,182,.95)"  // pink
   };
+  const EXTRA_SAFETY_COLORS = [
+    "#22c55e",
+    "#fb7185",
+    "#38bdf8",
+    "#facc15",
+    "#c084fc",
+    "#f87171"
+  ];
 
   // ===== STATE =====
   let selectedPonds = new Set([10,11,12,13]);
   let lastChipIndex = null;
+  let additionalSafetyLines = [];
+  let nextSafetyLineId = 1;
 
   let controlMode = "presets"; // "presets" | "horizon"
   let activePreset = "1y";
@@ -382,11 +476,31 @@
   // ===== HELPERS =====
   function fmtInt(n){ return Number.isFinite(n) ? Math.round(n).toLocaleString() : "—"; }
   function fmt1(n){ return Number.isFinite(n) ? (Math.round(n*10)/10).toLocaleString() : "—"; }
+  function escapeAttr(value){
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
   function fmtDate(dt){
     const mm = String(dt.getMonth()+1).padStart(2,"0");
     const dd = String(dt.getDate()).padStart(2,"0");
     const yy = dt.getFullYear();
     return `${mm}/${dd}/${yy}`;
+  }
+  function fmtMonthLabel(dt, includeYear = false){
+    const label = dt.toLocaleString("en-US", { month: "short" });
+    return includeYear ? `${label} ${dt.getFullYear()}` : label;
+  }
+  function isFirstVisibleMonthPoint(points, index){
+    const point = points[index];
+    if(!point) return false;
+    if(index === 0) return true;
+    const prev = points[index - 1];
+    return !prev ||
+      point.dt.getMonth() !== prev.dt.getMonth() ||
+      point.dt.getFullYear() !== prev.dt.getFullYear();
   }
   function addDays(dt, days){
     const d = new Date(dt);
@@ -405,6 +519,14 @@
     const m = String(dt.getMonth()+1).padStart(2,"0");
     const d = String(dt.getDate()).padStart(2,"0");
     return `${y}-${m}-${d}`;
+  }
+  function todayISO(){
+    return toISOInput(new Date());
+  }
+  function normalizeStartDate(value, fallback = todayISO()){
+    const date = String(value || "").trim();
+    if(!date || date === "2025-12-26") return fallback;
+    return date;
   }
   function diffDays(a, b){ return (b.getTime() - a.getTime()) / 86400000; }
 
@@ -429,7 +551,107 @@
   }
 
   function markInputsUnsaved(){
-    if(!isSyncing) setSyncStatus("Unsaved changes");
+    if(!isSyncing){
+      saveDraftInputs();
+      setSyncStatus("Unsaved changes");
+    }
+  }
+
+  function readInputValue(id){
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+  }
+
+  function getDraftPayload(){
+    return {
+      id: currentScenarioId,
+      start_date: readInputValue("startDate"),
+      starting_inventory: readInputValue("startInventory"),
+      bowed_boards: readInputValue("bowedBoards"),
+      boards_per_pond: readInputValue("boardsPerPond"),
+      max_clean_per_day: readInputValue("maxCleanPerDay"),
+      transplant_per_day: readInputValue("transplantPerDay"),
+      broken_boards_per_week_best: readInputValue("brokenBest"),
+      broken_boards_per_week_worst: readInputValue("brokenWorst"),
+      buffer_days: readInputValue("bufferDays"),
+      horizon_weeks: readInputValue("horizonWeeks"),
+      selected_ponds: getSelectedPondsArray(),
+      additional_safety_lines: serializeAdditionalSafetyLines(),
+      timeline_mode: controlMode,
+      active_preset: activePreset,
+      saved_at: new Date().toISOString()
+    };
+  }
+
+  function saveDraftInputs(){
+    try{
+      localStorage.setItem(BOARD_INPUT_DRAFT_KEY, JSON.stringify(getDraftPayload()));
+    }catch(_e){}
+  }
+
+  function clearDraftInputs(){
+    try{ localStorage.removeItem(BOARD_INPUT_DRAFT_KEY); }catch(_e){}
+  }
+
+  function applyDraftInputs(row){
+    if(!row || typeof row !== "object") return false;
+    if(row.id) currentScenarioId = row.id;
+
+    document.getElementById("startDate").value = normalizeStartDate(row.start_date, document.getElementById("startDate").value || todayISO());
+    document.getElementById("startInventory").value = row.starting_inventory ?? document.getElementById("startInventory").value;
+    document.getElementById("bowedBoards").value = row.bowed_boards ?? document.getElementById("bowedBoards").value;
+    document.getElementById("boardsPerPond").value = row.boards_per_pond ?? document.getElementById("boardsPerPond").value;
+    document.getElementById("maxCleanPerDay").value = row.max_clean_per_day ?? document.getElementById("maxCleanPerDay").value;
+    document.getElementById("transplantPerDay").value = row.transplant_per_day ?? document.getElementById("transplantPerDay").value;
+    document.getElementById("brokenBest").value = row.broken_boards_per_week_best ?? document.getElementById("brokenBest").value;
+    document.getElementById("brokenWorst").value = row.broken_boards_per_week_worst ?? document.getElementById("brokenWorst").value;
+    document.getElementById("bufferDays").value = row.buffer_days ?? document.getElementById("bufferDays").value;
+    document.getElementById("horizonWeeks").value = row.horizon_weeks ?? document.getElementById("horizonWeeks").value;
+
+    if(Array.isArray(row.selected_ponds)){
+      const rowPonds = row.selected_ponds.map(Number);
+      selectedPonds = new Set(rowPonds.filter(p => POND_OPTIONS.includes(p)));
+    }
+    setAdditionalSafetyLines(row.additional_safety_lines);
+    controlMode = row.timeline_mode === "horizon" ? "horizon" : "presets";
+    activePreset = ["3m","6m","1y","2y","all"].includes(row.active_preset) ? row.active_preset : activePreset;
+
+    renderPondChips();
+    renderAdditionalSafetyLines();
+    setControlMode(controlMode);
+    recalcAll({ preserveView: false });
+    setSyncStatus("Unsaved changes");
+    return true;
+  }
+
+  function loadDraftInputs(){
+    try{
+      const raw = localStorage.getItem(BOARD_INPUT_DRAFT_KEY);
+      if(!raw) return false;
+      return applyDraftInputs(JSON.parse(raw));
+    }catch(_e){
+      clearDraftInputs();
+      return false;
+    }
+  }
+
+  function restoreInputsOpenState(){
+    const el = document.getElementById("inputsDetails");
+    if(!el) return;
+    try{
+      const stored = localStorage.getItem(BOARD_INPUT_OPEN_KEY);
+      el.open = stored === null ? false : stored === "true";
+    }catch(_e){
+      el.open = false;
+    }
+  }
+
+  function saveInputsOpenState(){
+    const el = document.getElementById("inputsDetails");
+    if(!el) return;
+    try{
+      localStorage.setItem(BOARD_INPUT_OPEN_KEY, el.open ? "true" : "false");
+    }catch(_e){}
   }
 
   function getSelectedPondsArray(){
@@ -453,7 +675,10 @@
     if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) throw new Error("Start date is required.");
 
     const startingInventory = readNumberInput("startInventory", { integer: true, min: 0 });
+    const bowedBoards = readNumberInput("bowedBoards", { integer: true, min: 0 });
     const boardsPerPond = readNumberInput("boardsPerPond", { integer: true, min: 1 });
+    const maxCleanPerDay = readNumberInput("maxCleanPerDay", { integer: true, min: 1 });
+    const transplantPerDay = readNumberInput("transplantPerDay", { integer: true, min: 0 });
     const brokenBest = readNumberInput("brokenBest", { integer: true, min: 0 });
     const brokenWorst = readNumberInput("brokenWorst", { integer: true, min: 0 });
     const bufferDays = readNumberInput("bufferDays", { min: 0 });
@@ -467,12 +692,16 @@
       scenario_name: "Board Inventory Runway",
       start_date: startDate,
       starting_inventory: startingInventory,
+      bowed_boards: bowedBoards,
       boards_per_pond: boardsPerPond,
+      max_clean_per_day: maxCleanPerDay,
+      transplant_per_day: transplantPerDay,
       broken_boards_per_week_best: brokenBest,
       broken_boards_per_week_worst: brokenWorst,
       buffer_days: bufferDays,
       horizon_weeks: horizonWeeks,
       selected_ponds: getSelectedPondsArray(),
+      additional_safety_lines: serializeAdditionalSafetyLines(),
       timeline_mode: controlMode,
       active_preset: activePreset
     };
@@ -482,9 +711,12 @@
     if(!row || typeof row !== "object") return;
     if(row.id) currentScenarioId = row.id;
 
-    document.getElementById("startDate").value = row.start_date || "";
+    document.getElementById("startDate").value = normalizeStartDate(row.start_date);
     document.getElementById("startInventory").value = row.starting_inventory ?? "";
+    document.getElementById("bowedBoards").value = row.bowed_boards ?? 0;
     document.getElementById("boardsPerPond").value = row.boards_per_pond ?? "";
+    document.getElementById("maxCleanPerDay").value = row.max_clean_per_day ?? 120;
+    document.getElementById("transplantPerDay").value = row.transplant_per_day ?? 0;
     document.getElementById("brokenBest").value = row.broken_boards_per_week_best ?? "";
     document.getElementById("brokenWorst").value = row.broken_boards_per_week_worst ?? "";
     document.getElementById("bufferDays").value = row.buffer_days ?? 0;
@@ -492,10 +724,12 @@
 
     const rowPonds = Array.isArray(row.selected_ponds) ? row.selected_ponds.map(Number) : [];
     selectedPonds = new Set(rowPonds.filter(p => POND_OPTIONS.includes(p)));
+    setAdditionalSafetyLines(row.additional_safety_lines);
     controlMode = row.timeline_mode === "horizon" ? "horizon" : "presets";
     activePreset = ["3m","6m","1y","2y","all"].includes(row.active_preset) ? row.active_preset : "1y";
 
     renderPondChips();
+    renderAdditionalSafetyLines();
     setControlMode(controlMode);
     recalcAll({ preserveView: false });
   }
@@ -539,6 +773,8 @@
       const saved = Array.isArray(rows) ? rows[0] : null;
       if(!saved) throw new Error("Supabase did not return the saved row.");
       if(saved?.id) currentScenarioId = saved.id;
+      recalcAll({ preserveView: false });
+      clearDraftInputs();
       const stamp = saved?.updated_at || saved?.created_at;
       setSyncStatus(stamp ? `Saved ${new Date(stamp).toLocaleString()}` : "Saved", "ok");
     } catch(err){
@@ -562,12 +798,16 @@
         "id",
         "start_date",
         "starting_inventory",
+        "bowed_boards",
         "boards_per_pond",
+        "max_clean_per_day",
+        "transplant_per_day",
         "broken_boards_per_week_best",
         "broken_boards_per_week_worst",
         "buffer_days",
         "horizon_weeks",
         "selected_ponds",
+        "additional_safety_lines",
         "timeline_mode",
         "active_preset",
         "created_at",
@@ -582,6 +822,7 @@
         return false;
       }
       applyInputPayload(rows[0]);
+      clearDraftInputs();
       const stamp = rows[0].updated_at || rows[0].created_at;
       setSyncStatus(stamp ? `Loaded ${new Date(stamp).toLocaleString()}` : "Loaded", "ok");
       return true;
@@ -599,28 +840,124 @@
   function getInputs(){
     const start = parseISODate(document.getElementById("startDate").value);
     const startInv = Number(document.getElementById("startInventory").value);
+    const bowedBoards = Math.max(0, Number(document.getElementById("bowedBoards").value) || 0);
     const bpp = Number(document.getElementById("boardsPerPond").value);
+    const maxCleanPerDay = Math.max(1, Number(document.getElementById("maxCleanPerDay").value) || 120);
+    const transplantPerDay = Math.max(0, Number(document.getElementById("transplantPerDay").value) || 0);
     const bestWk = Number(document.getElementById("brokenBest").value);
     const worstWk = Number(document.getElementById("brokenWorst").value);
     const horizonWks = Math.max(4, Number(document.getElementById("horizonWeeks").value));
     const bufferDays = Math.max(0, Number(document.getElementById("bufferDays").value));
-    return { start, startInv, bpp, bestWk, worstWk, horizonWks, bufferDays };
+    return { start, startInv, bowedBoards, usableStartInv: Math.max(0, startInv - bowedBoards), bpp, maxCleanPerDay, transplantPerDay, bestWk, worstWk, horizonWks, bufferDays };
+  }
+
+  function sanitizeSafetyLine(line, index = 0){
+    const fallbackColor = EXTRA_SAFETY_COLORS[index % EXTRA_SAFETY_COLORS.length];
+    const color = /^#[0-9a-f]{6}$/i.test(String(line?.color || "")) ? line.color : fallbackColor;
+    const fallbackBoardsPerPond = Number(document.getElementById("boardsPerPond").value) || 1808;
+    const fallbackTransplantPerDay = Number(document.getElementById("transplantPerDay").value) || 0;
+    const fallbackBufferDays = Number(document.getElementById("bufferDays").value) || 0;
+    const ponds = Number(line?.ponds);
+    const boardsPerPond = Number(line?.boards_per_pond);
+    const transplantPerDay = Number(line?.transplant_per_day);
+    const bufferDays = Number(line?.buffer_days);
+    return {
+      id: String(line?.id || `safety-${Date.now()}-${index}`),
+      label: String(line?.label || `Safety ${index + 1}`).trim() || `Safety ${index + 1}`,
+      ponds: Math.max(1, Math.round(Number.isFinite(ponds) ? ponds : 10)),
+      boards_per_pond: Math.max(1, Math.round(Number.isFinite(boardsPerPond) ? boardsPerPond : fallbackBoardsPerPond)),
+      transplant_per_day: Math.max(0, Math.round(Number.isFinite(transplantPerDay) ? transplantPerDay : fallbackTransplantPerDay)),
+      buffer_days: Math.max(0, Number.isFinite(bufferDays) ? bufferDays : fallbackBufferDays),
+      color
+    };
+  }
+
+  function setAdditionalSafetyLines(value){
+    let raw = value;
+    if(typeof raw === "string"){
+      try{ raw = JSON.parse(raw); }catch(_e){ raw = []; }
+    }
+    additionalSafetyLines = Array.isArray(raw)
+      ? raw.map((line, index) => sanitizeSafetyLine(line, index))
+      : [];
+    const numericIds = additionalSafetyLines
+      .map(line => Number(String(line.id).replace(/^safety-/, "")))
+      .filter(Number.isFinite);
+    nextSafetyLineId = Math.max(nextSafetyLineId, numericIds.length ? Math.max(...numericIds) + 1 : nextSafetyLineId);
+  }
+
+  function syncAdditionalSafetyLinesFromDom(){
+    const wrap = document.getElementById("additionalSafetyLines");
+    if(!wrap) return;
+    additionalSafetyLines = additionalSafetyLines.map((line, index) => {
+      const row = Array.from(wrap.children).find(item => item.dataset.safetyLineId === line.id);
+      if(!row) return line;
+      return sanitizeSafetyLine({
+        id: line.id,
+        label: row.querySelector('[data-field="label"]')?.value,
+        ponds: row.querySelector('[data-field="ponds"]')?.value,
+        boards_per_pond: row.querySelector('[data-field="boards_per_pond"]')?.value,
+        transplant_per_day: row.querySelector('[data-field="transplant_per_day"]')?.value,
+        buffer_days: row.querySelector('[data-field="buffer_days"]')?.value,
+        color: row.querySelector('[data-field="color"]')?.value
+      }, index);
+    });
+  }
+
+  function serializeAdditionalSafetyLines(){
+    syncAdditionalSafetyLinesFromDom();
+    return additionalSafetyLines.map(({ id, label, ponds, boards_per_pond, transplant_per_day, buffer_days, color }) => ({
+      id,
+      label,
+      ponds,
+      boards_per_pond,
+      transplant_per_day,
+      buffer_days,
+      color
+    }));
+  }
+
+  function getSafetyScenarios(){
+    const { bpp, bufferDays, transplantPerDay } = getInputs();
+    const base = Array.from(selectedPonds).sort((a,b)=>a-b).map(ponds => ({
+      id: `pond-${ponds}`,
+      label: `${ponds} ponds`,
+      chartLabel: `Safety (${ponds} ponds)`,
+      ponds,
+      boardsPerPond: bpp,
+      bufferDays,
+      transplantPerDay,
+      color: POND_COLORS[ponds] || "rgba(148,163,184,.95)"
+    }));
+    const extra = serializeAdditionalSafetyLines().map(line => ({
+      id: line.id,
+      label: line.label,
+      chartLabel: line.label,
+      ponds: line.ponds,
+      boardsPerPond: line.boards_per_pond,
+      bufferDays: line.buffer_days,
+      transplantPerDay: line.transplant_per_day,
+      color: line.color
+    }));
+    return [...base, ...extra];
   }
 
   // ===== BUFFER MATH =====
-  function bufferBoardsFor(ponds, bufferDays){ return 120 * ponds * bufferDays; }
-  function safetyLine(bpp, ponds, bufferDays){
+  function bufferBoardsFor(bufferDays, transplantPerDay){
+    return transplantPerDay * bufferDays;
+  }
+  function safetyLine(bpp, ponds, bufferDays, transplantPerDay){
     const needed = bpp * ponds;
-    const bufferBoards = bufferBoardsFor(ponds, bufferDays);
+    const bufferBoards = bufferBoardsFor(bufferDays, transplantPerDay);
     return needed + bufferBoards;
   }
 
   function buildSeries(){
-    const { start, startInv, bestWk, worstWk, horizonWks } = getInputs();
+    const { start, usableStartInv, bestWk, worstWk, horizonWks } = getInputs();
     const series = [];
     for(let i=0;i<=horizonWks;i++){
       const dt = addDays(start, i*7);
-      series.push({ weekIndex:i, dt, best: startInv - bestWk*i, worst: startInv - worstWk*i });
+      series.push({ weekIndex:i, dt, best: usableStartInv - bestWk*i, worst: usableStartInv - worstWk*i });
     }
     return series;
   }
@@ -663,49 +1000,48 @@
       : "Mode: Horizon (Horizon input is the max projection; presets only change the viewing window).";
   }
 
-  function firstBreachFor(ponds, type, bufferDays){
-    const { bpp } = getInputs();
-    const safety = safetyLine(bpp, ponds, bufferDays);
+  function firstBreachFor(scenario, type){
+    const safety = safetyLine(scenario.boardsPerPond, scenario.ponds, scenario.bufferDays, scenario.transplantPerDay);
     for(let i=1;i<fullSeries.length;i++){
       const prev = fullSeries[i-1][type];
       const cur  = fullSeries[i][type];
       if(prev >= safety && cur < safety){
-        return { ...fullSeries[i], safety };
+        return { ...fullSeries[i], safety, scenario };
       }
     }
     return null;
   }
 
-  function earliestBreach(bufferDays){
+  function earliestBreach(){
     let bestEarliest = null;
     let worstEarliest = null;
 
-    for(const ponds of Array.from(selectedPonds).sort((a,b)=>a-b)){
-      const bestHit = firstBreachFor(ponds, "best", bufferDays);
+    for(const scenario of getSafetyScenarios()){
+      const bestHit = firstBreachFor(scenario, "best");
       if(bestHit && (!bestEarliest || bestHit.dt < bestEarliest.dt)){
-        bestEarliest = { ponds, dt: bestHit.dt, weekIndex: bestHit.weekIndex, safety: bestHit.safety };
+        bestEarliest = { scenario, dt: bestHit.dt, weekIndex: bestHit.weekIndex, safety: bestHit.safety };
       }
-      const worstHit = firstBreachFor(ponds, "worst", bufferDays);
+      const worstHit = firstBreachFor(scenario, "worst");
       if(worstHit && (!worstEarliest || worstHit.dt < worstEarliest.dt)){
-        worstEarliest = { ponds, dt: worstHit.dt, weekIndex: worstHit.weekIndex, safety: worstHit.safety };
+        worstEarliest = { scenario, dt: worstHit.dt, weekIndex: worstHit.weekIndex, safety: worstHit.safety };
       }
     }
     return { bestEarliest, worstEarliest };
   }
 
-  function findCrossingsInView(bufferDays){
+  function findCrossingsInView(){
     const viewStartT = viewStart.getTime();
     const viewEndT   = viewEnd.getTime();
     const results = [];
 
-    for(const ponds of Array.from(selectedPonds).sort((a,b)=>a-b)){
-      const bestHit = firstBreachFor(ponds, "best", bufferDays);
+    for(const scenario of getSafetyScenarios()){
+      const bestHit = firstBreachFor(scenario, "best");
       if(bestHit && bestHit.dt.getTime() >= viewStartT && bestHit.dt.getTime() <= viewEndT){
-        results.push({ ponds, type:"BEST", dt: bestHit.dt, weekIndex: bestHit.weekIndex });
+        results.push({ scenario, label: scenario.label, type:"BEST", dt: bestHit.dt, weekIndex: bestHit.weekIndex });
       }
-      const worstHit = firstBreachFor(ponds, "worst", bufferDays);
+      const worstHit = firstBreachFor(scenario, "worst");
       if(worstHit && worstHit.dt.getTime() >= viewStartT && worstHit.dt.getTime() <= viewEndT){
-        results.push({ ponds, type:"WORST", dt: worstHit.dt, weekIndex: worstHit.weekIndex });
+        results.push({ scenario, label: scenario.label, type:"WORST", dt: worstHit.dt, weekIndex: worstHit.weekIndex });
       }
     }
     return results;
@@ -736,7 +1072,7 @@
         ctx.stroke();
 
         // label bubble
-        const text = `${line.type} · ${line.ponds}`;
+        const text = `${line.type} · ${line.label}`;
         ctx.setLineDash([]);
         ctx.font = '900 11px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
         const padX = 10;
@@ -774,21 +1110,21 @@
   // ===== TABLE RENDER =====
   function renderBreachTable(){
     const tbody = document.getElementById("breachTblBody");
-    const { start, bpp, bufferDays } = getInputs();
+    const { start } = getInputs();
+    const scenarios = getSafetyScenarios();
 
-    const pondsList = Array.from(selectedPonds).sort((a,b)=>a-b);
-    if(pondsList.length === 0){
-      tbody.innerHTML = `<tr><td class="muted" colspan="10">No pond scenarios selected.</td></tr>`;
+    if(scenarios.length === 0){
+      tbody.innerHTML = `<tr><td class="muted" colspan="10">No safety lines selected.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = "";
-    for(const ponds of pondsList){
-      const bestHit  = firstBreachFor(ponds, "best", bufferDays);
-      const worstHit = firstBreachFor(ponds, "worst", bufferDays);
+    for(const scenario of scenarios){
+      const bestHit  = firstBreachFor(scenario, "best");
+      const worstHit = firstBreachFor(scenario, "worst");
 
-      const bufBoards = bufferBoardsFor(ponds, bufferDays);
-      const safety = safetyLine(bpp, ponds, bufferDays);
+      const bufBoards = bufferBoardsFor(scenario.bufferDays, scenario.transplantPerDay);
+      const safety = safetyLine(scenario.boardsPerPond, scenario.ponds, scenario.bufferDays, scenario.transplantPerDay);
 
       const bestDate = bestHit ? fmtDate(bestHit.dt) : "—";
       const worstDate = worstHit ? fmtDate(worstHit.dt) : "—";
@@ -801,19 +1137,20 @@
       const worstDaysTxt = worstHit ? fmt1(worstDays) : "—";
       const worstWksTxt  = worstHit ? fmt1(worstDays/7) : "—";
 
-      const color = POND_COLORS[ponds] || "rgba(148,163,184,.95)";
+      const color = scenario.color || "rgba(148,163,184,.95)";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>
           <div class="pondCell">
             <span class="pondSwatch" style="background:${color}"></span>
-            <b>${ponds}</b>
+            <b>${escapeAttr(scenario.label)}</b>
           </div>
+          <div class="muted">${scenario.ponds} ponds</div>
         </td>
         <td>${bestDate}</td>
         <td>${worstDate}</td>
-        <td class="right">${fmt1(bufferDays)}</td>
+        <td class="right">${fmt1(scenario.bufferDays)}</td>
         <td class="right">${fmtInt(bufBoards)}</td>
         <td class="right">${fmtInt(safety)}</td>
         <td class="right">${bestDaysTxt}</td>
@@ -826,13 +1163,13 @@
   }
 
   function updateInputsMini(){
-    const { startInv, bestWk, worstWk, bufferDays } = getInputs();
+    const { usableStartInv, bowedBoards, maxCleanPerDay, transplantPerDay, bestWk, worstWk, bufferDays } = getInputs();
     document.getElementById("inputsMini").textContent =
-      `Inv ${fmtInt(startInv)} · Best ${fmtInt(bestWk)}/wk · Worst ${fmtInt(worstWk)}/wk · Buffer ${fmt1(bufferDays)}d`;
+      `Usable ${fmtInt(usableStartInv)} · Bowed ${fmtInt(bowedBoards)} · Clean ${fmtInt(maxCleanPerDay)}/d · Transplant ${fmtInt(transplantPerDay)}/d · Best ${fmtInt(bestWk)}/wk · Worst ${fmtInt(worstWk)}/wk · Buffer ${fmt1(bufferDays)}d`;
   }
 
   function rebuildChart(){
-    const { start, bpp, bufferDays } = getInputs();
+    const { start, bufferDays, transplantPerDay } = getInputs();
 
     const viewStartT = viewStart.getTime();
     const viewEndT = viewEnd.getTime();
@@ -842,11 +1179,11 @@
     const bestData = slice.map(p => p.best);
     const worstData = slice.map(p => p.worst);
 
-    const safetyDatasets = Array.from(selectedPonds).sort((a,b)=>a-b).map((ponds) => {
-      const safety = safetyLine(bpp, ponds, bufferDays);
-      const c = POND_COLORS[ponds] || "rgba(148,163,184,.95)";
+    const safetyDatasets = getSafetyScenarios().map((scenario) => {
+      const safety = safetyLine(scenario.boardsPerPond, scenario.ponds, scenario.bufferDays, scenario.transplantPerDay);
+      const c = scenario.color || "rgba(148,163,184,.95)";
       return {
-        label: `Safety (${ponds} ponds)`,
+        label: scenario.chartLabel,
         data: labels.map(()=>safety),
         borderColor: c,
         borderWidth: 2,
@@ -856,14 +1193,14 @@
       };
     });
 
-    const crossings = findCrossingsInView(bufferDays);
+    const crossings = findCrossingsInView();
     const indexByWeek = new Map();
     slice.forEach((p, idx)=> indexByWeek.set(p.weekIndex, idx));
 
     const vLines = crossings
       .map(c => ({
         xIndex: indexByWeek.get(c.weekIndex),
-        ponds: c.ponds,
+        label: c.label,
         type: c.type,
         stroke: (c.type==="WORST") ? "rgba(244,114,182,.95)" : "rgba(96,165,250,.95)"
       }))
@@ -872,13 +1209,13 @@
     document.getElementById("rangePill").textContent = `${fmtDate(viewStart)} → ${fmtDate(viewEnd)}`;
     document.getElementById("asOfPill").textContent = `Start: ${fmtDate(start)}`;
 
-    document.getElementById("bufferPill").textContent = `${fmt1(bufferDays)} day buffer`;
+    document.getElementById("bufferPill").textContent = `${fmt1(bufferDays)}d @ ${fmtInt(transplantPerDay)}/day`;
     const maxEnd = addDays(start, (fullSeries.length-1)*7);
     document.getElementById("horizonPill").textContent = `${fullSeries.length-1} weeks (to ${fmtDate(maxEnd)})`;
 
     updateInputsMini();
 
-    const { bestEarliest, worstEarliest } = earliestBreach(bufferDays);
+    const { bestEarliest, worstEarliest } = earliestBreach();
     const kWorst = document.getElementById("kpiWorst");
     const kWorstSub = document.getElementById("kpiWorstSub");
     const kBest = document.getElementById("kpiBest");
@@ -886,7 +1223,7 @@
 
     if(worstEarliest){
       const days = diffDays(start, worstEarliest.dt);
-      kWorst.textContent = `${fmtDate(worstEarliest.dt)} (ponds: ${worstEarliest.ponds})`;
+      kWorst.textContent = `${fmtDate(worstEarliest.dt)} (${worstEarliest.scenario.label})`;
       kWorstSub.textContent = `Week ${worstEarliest.weekIndex} · ${fmt1(days)}d (${fmt1(days/7)}w) · Safety ≈ ${fmtInt(worstEarliest.safety)} boards`;
     } else {
       kWorst.textContent = "No breach in horizon";
@@ -895,7 +1232,7 @@
 
     if(bestEarliest){
       const days = diffDays(start, bestEarliest.dt);
-      kBest.textContent = `${fmtDate(bestEarliest.dt)} (ponds: ${bestEarliest.ponds})`;
+      kBest.textContent = `${fmtDate(bestEarliest.dt)} (${bestEarliest.scenario.label})`;
       kBestSub.textContent = `Week ${bestEarliest.weekIndex} · ${fmt1(days)}d (${fmt1(days/7)}w) · Safety ≈ ${fmtInt(bestEarliest.safety)} boards`;
     } else {
       kBest.textContent = "No breach in horizon";
@@ -945,8 +1282,24 @@
       },
       scales: {
         x: {
-          ticks: { color: "#9ca3af", maxTicksLimit: 10 },
-          grid: { color: "rgba(148,163,184,.08)" }
+          ticks: {
+            color: "#9ca3af",
+            autoSkip: false,
+            maxRotation: 0,
+            callback(value){
+              const index = Number(value);
+              if(!isFirstVisibleMonthPoint(slice, index)) return "";
+              const point = slice[index];
+              const prev = slice[index - 1];
+              const includeYear = index === 0 || (prev && point.dt.getFullYear() !== prev.dt.getFullYear());
+              return fmtMonthLabel(point.dt, includeYear);
+            }
+          },
+          grid: {
+            color: (ctx) => isFirstVisibleMonthPoint(slice, ctx.index)
+              ? "rgba(148,163,184,.14)"
+              : "rgba(148,163,184,.04)"
+          }
         },
         y: {
           ticks: { color: "#9ca3af", callback: (v)=> Number(v).toLocaleString() },
@@ -989,6 +1342,79 @@
     }
 
     rebuildChart();
+  }
+
+  // ===== UI: Additional safety lines =====
+  function renderAdditionalSafetyLines(){
+    const wrap = document.getElementById("additionalSafetyLines");
+    if(!wrap) return;
+    wrap.innerHTML = "";
+
+    if(additionalSafetyLines.length === 0){
+      wrap.innerHTML = `<div class="hint muted">No additional safety lines.</div>`;
+      return;
+    }
+
+    additionalSafetyLines.forEach((line) => {
+      const row = document.createElement("div");
+      row.className = "safetyLineRow";
+      row.dataset.safetyLineId = line.id;
+      row.innerHTML = `
+        <input class="input" data-field="label" type="text" value="${escapeAttr(line.label)}" aria-label="Safety line label" />
+        <label class="inputGroup">
+          <span class="pill">Ponds</span>
+          <input class="input small" data-field="ponds" type="number" step="1" min="1" value="${line.ponds}" />
+        </label>
+        <label class="inputGroup">
+          <span class="pill">Boards / pond</span>
+          <input class="input small" data-field="boards_per_pond" type="number" step="1" min="1" value="${line.boards_per_pond}" />
+        </label>
+        <label class="inputGroup">
+          <span class="pill">Transplant / day</span>
+          <input class="input small" data-field="transplant_per_day" type="number" step="1" min="0" value="${line.transplant_per_day}" />
+        </label>
+        <label class="inputGroup">
+          <span class="pill">Buffer</span>
+          <input class="input small" data-field="buffer_days" type="number" step="0.5" min="0" value="${line.buffer_days}" />
+        </label>
+        <div class="fieldRow">
+          <input class="safetyColor" data-field="color" type="color" value="${line.color}" aria-label="Safety line color" />
+          <button class="btn ghost" data-action="remove-safety-line" type="button">Remove</button>
+        </div>
+      `;
+
+      row.querySelectorAll("input").forEach(input => {
+        input.addEventListener("change", () => {
+          syncAdditionalSafetyLinesFromDom();
+          renderAdditionalSafetyLines();
+          markInputsUnsaved();
+        });
+      });
+      row.querySelector('[data-action="remove-safety-line"]').addEventListener("click", () => {
+        additionalSafetyLines = additionalSafetyLines.filter(item => item.id !== line.id);
+        renderAdditionalSafetyLines();
+        recalcAll({ preserveView: true });
+        markInputsUnsaved();
+      });
+      wrap.appendChild(row);
+    });
+  }
+
+  function addAdditionalSafetyLine(){
+    const { bpp, transplantPerDay, bufferDays } = getInputs();
+    const id = `safety-${nextSafetyLineId++}`;
+    additionalSafetyLines.push(sanitizeSafetyLine({
+      id,
+      label: `Safety line ${additionalSafetyLines.length + 1}`,
+      ponds: 10,
+      boards_per_pond: bpp,
+      transplant_per_day: transplantPerDay,
+      buffer_days: bufferDays,
+      color: EXTRA_SAFETY_COLORS[additionalSafetyLines.length % EXTRA_SAFETY_COLORS.length]
+    }, additionalSafetyLines.length));
+    renderAdditionalSafetyLines();
+    recalcAll({ preserveView: true });
+    markInputsUnsaved();
   }
 
   // ===== UI: Pond chips =====
@@ -1038,6 +1464,8 @@
   }
 
   function wireEvents(){
+    document.getElementById("inputsDetails").addEventListener("toggle", saveInputsOpenState);
+
     document.getElementById("btnAllPonds").addEventListener("click", ()=>{
       selectedPonds = new Set(POND_OPTIONS);
       renderPondChips();
@@ -1099,20 +1527,12 @@
       recalcAll({ preserveView: true });
     });
 
-    document.getElementById("horizonWeeks").addEventListener("change", ()=>{
-      if(controlMode === "horizon") recalcAll({ preserveView: true });
-      else recalcAll({ preserveView: false });
-      markInputsUnsaved();
+    document.getElementById("btnAddSafetyLine").addEventListener("click", ()=>{
+      addAdditionalSafetyLine();
     });
 
-    document.getElementById("bufferDays").addEventListener("change", ()=>{
-      rebuildChart();
-      markInputsUnsaved();
-    });
-
-    ["startDate","startInventory","boardsPerPond","brokenBest","brokenWorst"].forEach(id=>{
+    ["startDate","startInventory","bowedBoards","boardsPerPond","maxCleanPerDay","transplantPerDay","brokenBest","brokenWorst","bufferDays","horizonWeeks"].forEach(id=>{
       document.getElementById(id).addEventListener("change", ()=>{
-        recalcAll({ preserveView: false });
         markInputsUnsaved();
       });
     });
@@ -1121,24 +1541,28 @@
   // ===== INIT =====
   (function init(){
     // defaults
-    const start = new Date(2025, 11, 26); // 12/26/2025
-    document.getElementById("startDate").value = toISOInput(start);
+    document.getElementById("startDate").value = todayISO();
     document.getElementById("startInventory").value = 26117;
+    document.getElementById("bowedBoards").value = 0;
     document.getElementById("boardsPerPond").value = 1808;
+    document.getElementById("maxCleanPerDay").value = 120;
+    document.getElementById("transplantPerDay").value = 0;
     document.getElementById("brokenBest").value = 48;
     document.getElementById("brokenWorst").value = 100;
     document.getElementById("bufferDays").value = 2;
     document.getElementById("horizonWeeks").value = 52;
 
-    // default collapsed
-    document.getElementById("inputsDetails").open = false;
+    restoreInputsOpenState();
 
     renderPondChips();
+    renderAdditionalSafetyLines();
     wireEvents();
     setControlMode("presets");
     activePreset = "1y";
     recalcAll({ preserveView: false });
-    loadLatestInputsFromSupabase({ quiet: true });
+    if(!loadDraftInputs()){
+      loadLatestInputsFromSupabase({ quiet: true });
+    }
   })();
 </script>
 </body>

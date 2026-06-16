@@ -16,12 +16,16 @@ create table if not exists public.board_inventory_runway_inputs (
 
   start_date date not null,
   starting_inventory integer not null,
+  bowed_boards integer not null default 0,
   boards_per_pond integer not null,
+  max_clean_per_day integer not null default 120,
+  transplant_per_day integer not null default 0,
   broken_boards_per_week_best integer not null,
   broken_boards_per_week_worst integer not null,
   buffer_days numeric(8, 2) not null default 0,
   horizon_weeks integer not null,
   selected_ponds integer[] not null default array[]::integer[],
+  additional_safety_lines jsonb not null default '[]'::jsonb,
 
   timeline_mode text not null default 'presets',
   active_preset text not null default '1y',
@@ -32,8 +36,14 @@ create table if not exists public.board_inventory_runway_inputs (
 
   constraint board_inventory_runway_starting_inventory_nonnegative
     check (starting_inventory >= 0),
+  constraint board_inventory_runway_bowed_boards_nonnegative
+    check (bowed_boards >= 0),
   constraint board_inventory_runway_boards_per_pond_positive
     check (boards_per_pond > 0),
+  constraint board_inventory_runway_max_clean_per_day_positive
+    check (max_clean_per_day > 0),
+  constraint board_inventory_runway_transplant_per_day_nonnegative
+    check (transplant_per_day >= 0),
   constraint board_inventory_runway_broken_best_nonnegative
     check (broken_boards_per_week_best >= 0),
   constraint board_inventory_runway_broken_worst_nonnegative
@@ -52,7 +62,9 @@ create table if not exists public.board_inventory_runway_inputs (
     check (
       selected_ponds <@ array[8, 9, 10, 11, 12, 13, 14]
       and array_position(selected_ponds, null) is null
-    )
+    ),
+  constraint board_inventory_runway_additional_safety_lines_array
+    check (jsonb_typeof(additional_safety_lines) = 'array')
 );
 
 create index if not exists board_inventory_runway_inputs_created_at_idx
@@ -60,6 +72,69 @@ create index if not exists board_inventory_runway_inputs_created_at_idx
 
 create index if not exists board_inventory_runway_inputs_created_by_idx
   on public.board_inventory_runway_inputs (created_by);
+
+alter table public.board_inventory_runway_inputs
+  add column if not exists bowed_boards integer not null default 0;
+
+alter table public.board_inventory_runway_inputs
+  add column if not exists max_clean_per_day integer not null default 120;
+
+alter table public.board_inventory_runway_inputs
+  add column if not exists transplant_per_day integer not null default 0;
+
+alter table public.board_inventory_runway_inputs
+  add column if not exists selected_ponds integer[] not null default array[]::integer[];
+
+alter table public.board_inventory_runway_inputs
+  add column if not exists additional_safety_lines jsonb not null default '[]'::jsonb;
+
+do $$
+begin
+  alter table public.board_inventory_runway_inputs
+    add constraint board_inventory_runway_bowed_boards_nonnegative
+    check (bowed_boards >= 0);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.board_inventory_runway_inputs
+    add constraint board_inventory_runway_max_clean_per_day_positive
+    check (max_clean_per_day > 0);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.board_inventory_runway_inputs
+    add constraint board_inventory_runway_transplant_per_day_nonnegative
+    check (transplant_per_day >= 0);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.board_inventory_runway_inputs
+    add constraint board_inventory_runway_selected_ponds_valid
+    check (
+      selected_ponds <@ array[8, 9, 10, 11, 12, 13, 14]
+      and array_position(selected_ponds, null) is null
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.board_inventory_runway_inputs
+    add constraint board_inventory_runway_additional_safety_lines_array
+    check (jsonb_typeof(additional_safety_lines) = 'array');
+exception
+  when duplicate_object then null;
+end $$;
 
 grant select, insert, update on public.board_inventory_runway_inputs
   to anon, authenticated;

@@ -474,9 +474,13 @@ const SALES_FORWARD_STATUS_BOOLEAN_HEADERS = new Set([
 ]);
 const BOARD_RUNWAY_DEFAULTS = {
   boards_per_pond: 2700,
+  bowed_boards: 0,
+  max_clean_per_day: 120,
+  transplant_per_day: 0,
   buffer_days: 0,
   horizon_weeks: 52,
   selected_ponds: [10, 11, 12, 13],
+  additional_safety_lines: [],
   timeline_mode: "presets",
   active_preset: "1y"
 };
@@ -1241,6 +1245,18 @@ function refreshBadges(){
 
     const latestDate = datedRows.reduce((max, item) => item.activityDate > max ? item.activityDate : max, datedRows[0].activityDate);
     let startingInventory = 0;
+    const rollingStart = addBoardDays(latestDate, -28);
+    const rollingSanitationRows = datedRows.filter(item =>
+      item.sanitationDate &&
+      item.sanitationDate.getTime() > rollingStart.getTime() &&
+      item.sanitationDate.getTime() <= latestDate.getTime()
+    );
+    const inventoryRows = rollingSanitationRows.length ? rollingSanitationRows : datedRows;
+    const bowedBoards = Math.max(0, Math.round(inventoryRows.reduce((sum, item) => sum + boardNumber(item.row, headers, [
+      "# de Boards Deformadas",
+      "Bowed Boards",
+      "Deformed Boards"
+    ]), 0)));
 
     if(explicitInventoryIndex >= 0){
       const explicit = datedRows
@@ -1251,13 +1267,6 @@ function refreshBadges(){
     }
 
     if(!startingInventory){
-      const rollingStart = addBoardDays(latestDate, -28);
-      const rollingSanitationRows = datedRows.filter(item =>
-        item.sanitationDate &&
-        item.sanitationDate.getTime() > rollingStart.getTime() &&
-        item.sanitationDate.getTime() <= latestDate.getTime()
-      );
-      const inventoryRows = rollingSanitationRows.length ? rollingSanitationRows : datedRows;
       const cleaned = inventoryRows.reduce((sum, item) => sum + boardNumber(item.row, headers, [
         "Total # of Boards Cleaned",
         "Total Boards Cleaned",
@@ -1305,12 +1314,16 @@ function refreshBadges(){
       notes: `Auto-derived from ${sourceLabel || payload?.sourceLabel || "Master Grow upload"}. Inventory uses the latest 28 sanitation days when no explicit inventory column exists.`,
       start_date: boardIsoDate(latestDate),
       starting_inventory: Math.round(startingInventory),
+      bowed_boards: bowedBoards || BOARD_RUNWAY_DEFAULTS.bowed_boards,
       boards_per_pond: BOARD_RUNWAY_DEFAULTS.boards_per_pond,
+      max_clean_per_day: BOARD_RUNWAY_DEFAULTS.max_clean_per_day,
+      transplant_per_day: BOARD_RUNWAY_DEFAULTS.transplant_per_day,
       broken_boards_per_week_best: brokenBest,
       broken_boards_per_week_worst: brokenWorst,
       buffer_days: BOARD_RUNWAY_DEFAULTS.buffer_days,
       horizon_weeks: BOARD_RUNWAY_DEFAULTS.horizon_weeks,
       selected_ponds: BOARD_RUNWAY_DEFAULTS.selected_ponds,
+      additional_safety_lines: BOARD_RUNWAY_DEFAULTS.additional_safety_lines,
       timeline_mode: BOARD_RUNWAY_DEFAULTS.timeline_mode,
       active_preset: BOARD_RUNWAY_DEFAULTS.active_preset
     };
