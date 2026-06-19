@@ -261,19 +261,19 @@
 <div class="wrap">
   <h1>Data Input – Grow / Pack / Experiments / Procurement / MRP / Store Visit / Seed Inventory / Leaf Growth</h1>
   <p>
-    Supported: <b>1 XLSX</b> (multiple sheets) or <b>separate CSVs</b> for <b>Grow</b>, <b>Pack</b>, <b>Current Experiments</b>, <b>Procurement</b>, <b>MRP</b>, <b>Store Visit</b>, <b>Seed Inventory</b>, and <b>Leaf Growth</b>. Uploading a new file will <b>overwrite</b> only that dataset’s stored JSON.
+    Supported: <b>XLSX</b> (multiple sheets) and <b>separate CSVs</b> for <b>Grow</b>, <b>Pack</b>, <b>Current Experiments</b>, <b>Procurement</b>, <b>MRP</b>, <b>Store Visit</b>, <b>Seed Inventory</b>, and <b>Leaf Growth</b>. You can select or drop multiple files; confirmed assignments are published together while overwriting only their matching datasets.
   </p>
 
   <div class="panel">
     <div class="row">
       <div class="drop" id="dropzone">
-        <strong>Drop .xlsx or .csv here</strong>
-        <span class="small">Upload, review detected destination, then confirm assignment in the wizard before save.</span>
+        <strong>Drop one or more .xlsx / .csv files here</strong>
+        <span class="small">Review and confirm each detected destination. Confirmed files accumulate in the current publish batch.</span>
 
-        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,text/csv" hidden />
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,text/csv" multiple hidden />
 
         <div class="btnrow topActions">
-          <button class="primary" id="chooseBtn" type="button">📄 Choose File</button>
+          <button class="primary" id="chooseBtn" type="button">📄 Choose Files</button>
           <button class="primary" id="publishBtn" type="button" disabled>🚀 Publish Confirmed Upload</button>
           <button class="info" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
           <button class="danger" id="clearBtn" type="button">✕ Clear Stored Sources</button>
@@ -713,6 +713,8 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
   };
 
   let stagedUpload = null;
+  let pendingFiles = [];
+  let isReadingFile = false;
   let publishKinds = new Set();
 
   function renderPublishScope(){
@@ -725,6 +727,13 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
 
   function setPublishScope(kinds){
     publishKinds = new Set((kinds || []).filter(kind => KIND_LABEL[kind]));
+    renderPublishScope();
+  }
+
+  function addPublishScope(kinds){
+    for(const kind of (kinds || [])){
+      if(KIND_LABEL[kind]) publishKinds.add(kind);
+    }
     renderPublishScope();
   }
 
@@ -1680,7 +1689,6 @@ function refreshBadges(){
 
     lastCsvMatrix = null;
     lastCsvName = "";
-    setPublishScope([]);
     clearWizard();
 
     fileMeta.textContent = `Last file: ${file.name}`;
@@ -1772,6 +1780,32 @@ const plans = [];
     };
     showXlsxWizard(file.name, plans);
     setStatus("XLSX staged. Confirm Import Wizard assignments before saving.");
+  }
+
+  async function stageNextQueuedFile(){
+    if(stagedUpload || isReadingFile || !pendingFiles.length) return;
+    const file = pendingFiles.shift();
+    isReadingFile = true;
+    try{
+      await handleFile(file);
+    }catch(err){
+      console.error(err);
+      setStatus(`Could not read ${file?.name || "file"}: ${err.message || err}`);
+    }finally{
+      isReadingFile = false;
+    }
+    if(!stagedUpload && pendingFiles.length) await stageNextQueuedFile();
+  }
+
+  async function queueFiles(fileList){
+    const files = Array.from(fileList || []).filter(Boolean);
+    if(!files.length) return;
+    pendingFiles.push(...files);
+    if(stagedUpload || isReadingFile){
+      setStatus(`${files.length} file(s) added to the queue. Confirm the current assignment to continue.`);
+      return;
+    }
+    await stageNextQueuedFile();
   }
 
   // =========================================================
@@ -2212,6 +2246,7 @@ async function publishToSupabase(){
 
       if(leafStr) results.push(await putJsonToWorker("Leaf Growth", WORKER_LEAF_URL, leafStr, "Leaf Growth.json"));
 
+      setPublishScope([]);
       setStatus(`✅ Published: ${results.join(" + ")}`);
     }catch(err){
       console.error(err);
@@ -2226,7 +2261,10 @@ async function publishToSupabase(){
   // WIRE EVENTS
   // =========================================================
   chooseBtn.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", (e) => handleFile(e.target.files?.[0] || null));
+  fileInput.addEventListener("change", async (e) => {
+    await queueFiles(e.target.files);
+    e.target.value = "";
+  });
 
   wizConfirmCsvBtn.addEventListener("click", async () => {
     if(!stagedUpload || stagedUpload.type !== "csv"){
@@ -2251,9 +2289,10 @@ async function publishToSupabase(){
     else if(target === "seed") ok = await saveSource("seed", buildPayloadSingleCanonical(CANON_SEED_SHEET, hr, { kind: "seed", sourceLabel }), sourceLabel);
     else if(target === "leaf") ok = await saveSource("leaf", buildPayloadSingleCanonical(CANON_LEAF_SHEET, hr, { kind: "leaf", sourceLabel }), sourceLabel);
     if (ok) {
-      setPublishScope([target]);
+      addPublishScope([target]);
       clearWizard();
-      setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}. Publish will write only this dataset and its related table.`);
+      if(pendingFiles.length) await stageNextQueuedFile();
+      else setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}. The publish batch now contains ${publishKinds.size} dataset(s).`);
     }
   });
 
@@ -2288,30 +2327,33 @@ async function publishToSupabase(){
       if (ok) savedKinds.push(target);
       else allSaved = false;
     }
-    setPublishScope(savedKinds);
+    addPublishScope(savedKinds);
     clearWizard();
     const chosen = selects.map(s => KIND_LABEL[s.value] || s.value);
-    if (allSaved) {
-      setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}. Publish will write only these datasets and their related tables.`);
+    if(pendingFiles.length){
+      await stageNextQueuedFile();
+    } else if (allSaved) {
+      setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}. The publish batch now contains ${publishKinds.size} dataset(s).`);
     } else {
       setStatus("One or more XLSX assignments failed to save. Publish is limited to the assignments that saved successfully.");
     }
   });
 
-  wizCancelBtn.addEventListener("click", () => {
-    setPublishScope([]);
+  wizCancelBtn.addEventListener("click", async () => {
     clearWizard();
-    setStatus("Staged upload cancelled.");
+    if(pendingFiles.length) await stageNextQueuedFile();
+    else setStatus("Staged upload cancelled. Previously confirmed files remain in the publish batch.");
   });
-  wizCancelBtn2.addEventListener("click", () => {
-    setPublishScope([]);
+  wizCancelBtn2.addEventListener("click", async () => {
     clearWizard();
-    setStatus("Staged upload cancelled.");
+    if(pendingFiles.length) await stageNextQueuedFile();
+    else setStatus("Staged upload cancelled. Previously confirmed files remain in the publish batch.");
   });
 
   clearBtn.addEventListener("click", async () => {
     lastCsvMatrix = null;
     lastCsvName = "";
+    pendingFiles = [];
     setPublishScope([]);
     try{
       localStorage.removeItem(MASTER_GROW_KEY);
@@ -2383,8 +2425,7 @@ async function publishToSupabase(){
     });
   });
   dropzone.addEventListener("drop", (e) => {
-    const file = e.dataTransfer?.files?.[0];
-    handleFile(file || null);
+    queueFiles(e.dataTransfer?.files);
   });
 
   // Keep badges fresh if something else updates localStorage
