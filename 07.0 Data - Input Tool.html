@@ -274,7 +274,7 @@
 
         <div class="btnrow topActions">
           <button class="primary" id="chooseBtn" type="button">📄 Choose File</button>
-          <button class="primary" id="publishBtn" type="button">🚀 Publish to Supabase</button>
+          <button class="primary" id="publishBtn" type="button" disabled>🚀 Publish Confirmed Upload</button>
           <button class="info" id="pullBtn" type="button">⬇️ Pull from Supabase</button>
           <button class="danger" id="clearBtn" type="button">✕ Clear Stored Sources</button>
         </div>
@@ -713,6 +713,20 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
   };
 
   let stagedUpload = null;
+  let publishKinds = new Set();
+
+  function renderPublishScope(){
+    const labels = Array.from(publishKinds).map(kind => KIND_LABEL[kind] || kind);
+    publishBtn.disabled = labels.length === 0;
+    publishBtn.textContent = labels.length
+      ? `🚀 Publish Confirmed Upload (${labels.join(", ")})`
+      : "🚀 Publish Confirmed Upload";
+  }
+
+  function setPublishScope(kinds){
+    publishKinds = new Set((kinds || []).filter(kind => KIND_LABEL[kind]));
+    renderPublishScope();
+  }
 
   function showContractWarning(msg){
     if (!contractWarn) return;
@@ -1666,6 +1680,7 @@ function refreshBadges(){
 
     lastCsvMatrix = null;
     lastCsvName = "";
+    setPublishScope([]);
     clearWizard();
 
     fileMeta.textContent = `Last file: ${file.name}`;
@@ -2092,19 +2107,25 @@ async function putJsonToWorker(label, url, body, resultsName){
 }
 
 async function publishToSupabase(){
-    const growStr = localStorage.getItem(MASTER_GROW_KEY);
+    const scope = new Set(publishKinds);
+    if(!scope.size){
+      setStatus("Nothing to publish. Upload and confirm a CSV/XLSX assignment first.");
+      return;
+    }
+
+    const growStr = scope.has("grow") ? localStorage.getItem(MASTER_GROW_KEY) : null;
     let growPayloadForPublish = null;
-    let packStr = localStorage.getItem(MASTER_PACK_KEY);
+    let packStr = scope.has("pack") ? localStorage.getItem(MASTER_PACK_KEY) : null;
     let packPayloadForPublish = null;
-    const expStr  = localStorage.getItem(MASTER_EXP_KEY);
-    const procStr = localStorage.getItem(MASTER_PROC_KEY);
-    const mrpStr = localStorage.getItem(MASTER_MRP_KEY);
-    const storeStr = localStorage.getItem(MASTER_STORE_KEY);
-    const seedStr = localStorage.getItem(MASTER_SEED_KEY);
-    let leafStr = localStorage.getItem(MASTER_LEAF_KEY);
+    const expStr  = scope.has("exp") ? localStorage.getItem(MASTER_EXP_KEY) : null;
+    const procStr = scope.has("proc") ? localStorage.getItem(MASTER_PROC_KEY) : null;
+    const mrpStr = scope.has("mrp") ? localStorage.getItem(MASTER_MRP_KEY) : null;
+    const storeStr = scope.has("store") ? localStorage.getItem(MASTER_STORE_KEY) : null;
+    const seedStr = scope.has("seed") ? localStorage.getItem(MASTER_SEED_KEY) : null;
+    let leafStr = scope.has("leaf") ? localStorage.getItem(MASTER_LEAF_KEY) : null;
 
     if(!growStr && !packStr && !expStr && !procStr && !mrpStr && !storeStr && !seedStr && !leafStr){
-      setStatus("Nothing to publish (Grow / Pack / Exp / Procurement / MRP / Store Visit / Seed Inventory / Leaf Growth).");
+      setStatus("The confirmed upload is no longer available in local storage. Upload and confirm it again.");
       return;
     }
 
@@ -2143,12 +2164,9 @@ async function publishToSupabase(){
       return setStatus("Leaf Growth JSON is invalid (cannot publish).");
     }
 
-    // Contract check (warn but allow publish if you want)
-    const v = validateStorageContract();
-    if (!v.ok) showContractWarning(v.msg);
-
     publishBtn.disabled = true;
-    setStatus("Publishing to Supabase (via Worker PUT /data/...)…");
+    const scopeLabel = Array.from(scope).map(kind => KIND_LABEL[kind] || kind).join(", ");
+    setStatus(`Publishing only the confirmed upload: ${scopeLabel}…`);
 
     try{
       const results = [];
@@ -2199,7 +2217,7 @@ async function publishToSupabase(){
       console.error(err);
       setStatus(`❌ Publish failed: ${err.message}`);
     }finally{
-      publishBtn.disabled = false;
+      renderPublishScope();
       refreshBadges();
     }
   }
@@ -2233,8 +2251,9 @@ async function publishToSupabase(){
     else if(target === "seed") ok = await saveSource("seed", buildPayloadSingleCanonical(CANON_SEED_SHEET, hr, { kind: "seed", sourceLabel }), sourceLabel);
     else if(target === "leaf") ok = await saveSource("leaf", buildPayloadSingleCanonical(CANON_LEAF_SHEET, hr, { kind: "leaf", sourceLabel }), sourceLabel);
     if (ok) {
+      setPublishScope([target]);
       clearWizard();
-      setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}. Click Publish to Supabase when ready.`);
+      setStatus(`CSV confirmed and assigned to ${KIND_LABEL[target]}. Publish will write only this dataset and its related table.`);
     }
   });
 
@@ -2250,6 +2269,7 @@ async function publishToSupabase(){
     }
     const selects = Array.from(wizXlsxList.querySelectorAll("select[data-plan-index]"));
     let allSaved = true;
+    const savedKinds = [];
     for(let i=0; i<plans.length; i++){
       const p = plans[i];
       const sel = selects.find(s => Number(s.getAttribute("data-plan-index")) === i);
@@ -2265,22 +2285,26 @@ async function publishToSupabase(){
         CANON_LEAF_SHEET;
       const payload = buildPayloadSingleCanonical(canonical, p.hr, { kind: target, sourceLabel: p.sourceLabel });
       const ok = await saveSource(target, payload, p.sourceLabel);
-      if (!ok) allSaved = false;
+      if (ok) savedKinds.push(target);
+      else allSaved = false;
     }
+    setPublishScope(savedKinds);
     clearWizard();
     const chosen = selects.map(s => KIND_LABEL[s.value] || s.value);
     if (allSaved) {
-      setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}.`);
+      setStatus(`XLSX confirmed and assigned: ${chosen.join(", ")}. Publish will write only these datasets and their related tables.`);
     } else {
-      setStatus("One or more XLSX assignments failed to save.");
+      setStatus("One or more XLSX assignments failed to save. Publish is limited to the assignments that saved successfully.");
     }
   });
 
   wizCancelBtn.addEventListener("click", () => {
+    setPublishScope([]);
     clearWizard();
     setStatus("Staged upload cancelled.");
   });
   wizCancelBtn2.addEventListener("click", () => {
+    setPublishScope([]);
     clearWizard();
     setStatus("Staged upload cancelled.");
   });
@@ -2288,6 +2312,7 @@ async function publishToSupabase(){
   clearBtn.addEventListener("click", async () => {
     lastCsvMatrix = null;
     lastCsvName = "";
+    setPublishScope([]);
     try{
       localStorage.removeItem(MASTER_GROW_KEY);
   localStorage.removeItem(MASTER_PACK_KEY);
