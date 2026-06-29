@@ -312,7 +312,7 @@
     #yamatoCycles { width: 76px; min-width: 76px; }
     #shiftLength { width: 76px; min-width: 76px; }
     #daysPerWeek { width: 76px; min-width: 76px; }
-    #qcPeople { width: 76px; min-width: 76px; }
+    #qcPeople, #qcProjectionPeople { width: 76px; min-width: 76px; }
     .projectionToggle {
       margin-top: 6px;
       display: flex;
@@ -328,6 +328,25 @@
       margin-top: 0;
       justify-content: flex-end;
       z-index: 2;
+    }
+    .projectionStaffControl {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .projectionStaffControl input {
+      padding: 5px 8px;
+      text-align: right;
+    }
+    .projectionValue {
+      min-height: 20px;
+      margin: 3px 0 0;
+      color: #37d67a;
+      font-size: 13px;
+      font-weight: 800;
     }
     .yamatoValueToggle {
       position: absolute;
@@ -545,6 +564,11 @@
     }
     @media (max-width: 600px) {
       .grid4 { grid-template-columns: 1fr; }
+      .projectionCard .projectionToggle {
+        position: static;
+        justify-content: center;
+        margin-top: 6px;
+      }
     }
   </style>
 </head>
@@ -759,7 +783,12 @@
           </div>
           <div class="card projectionCard">
             <h3 class="performanceTitle" id="qcProjectionTitle">Projected Lbs/Shift</h3>
+            <div class="projectionValue" id="qcProjectionValue">4 employees · —</div>
             <div class="projectionToggle" role="group" aria-label="Projection mode">
+              <label class="projectionStaffControl" for="qcProjectionPeople">
+                QC Employees
+                <input id="qcProjectionPeople" type="number" value="4" step="1" min="0" />
+              </label>
               <button class="projectionBtn active" id="projModeShift" type="button">Shift</button>
               <button class="projectionBtn" id="projModeWeek" type="button">Week</button>
             </div>
@@ -2449,7 +2478,7 @@
       const yamatoCycles = Math.max(readNum("yamatoCycles", 7), 0);
       const shiftLength = Math.max(readNum("shiftLength", 6.5), 0);
       const daysPerWeek = Math.max(readNum("daysPerWeek", 5), 0);
-      const qcPeople = Math.max(readNum("qcPeople", 4), 0);
+      const qcPeople = Math.max(0, Math.round(readNum("qcProjectionPeople", readNum("qcPeople", 4))));
       const qualityFilter = ACTIVE_SUMMARY_QUALITY;
       const rows = filterRowsBySummaryQuality(rowsBase, scale, qualityFilter);
       CURRENT_ROWS = rows;
@@ -2530,15 +2559,21 @@
         const isWeek = ACTIVE_PROJECTION_MODE === "week";
         const modeFactor = isWeek ? daysPerWeek : 1;
         const projectedBase = Number((projectedPerShift * modeFactor).toFixed(2));
+        const selectedCount = Math.max(0, Math.round(qcPeople));
+        const employeeCounts = EMPLOYEE_COUNT_LABELS.map(Number);
+        if (!employeeCounts.includes(selectedCount)) employeeCounts.push(selectedCount);
+        employeeCounts.sort((a, b) => a - b);
+        const selectedProjection = Number((projectedBase * selectedCount).toFixed(2));
         $("qcProjectionTitle").textContent = isWeek ? "Projected Lbs/Week" : "Projected Lbs/Shift";
+        $("qcProjectionValue").textContent = `${selectedCount} ${selectedCount === 1 ? "employee" : "employees"} · ${fmt1(selectedProjection)} lbs/${isWeek ? "week" : "shift"}`;
         chartHourlyQc.data.datasets[0].label = isWeek ? "Projected Lbs/Week" : "Projected Lbs/Shift";
         if (chartHourlyQc.options?.scales?.y?.title) {
           chartHourlyQc.options.scales.y.title.text = isWeek ? "Team Lbs/Week" : "Team Lbs/Shift";
         }
-        chartHourlyQc.data.datasets[0].data = EMPLOYEE_COUNT_LABELS.map((countStr) => {
-          const count = Number(countStr);
-          return Number.isFinite(count) ? Number((projectedBase * count).toFixed(2)) : 0;
-        });
+        chartHourlyQc.data.labels = employeeCounts.map(String);
+        chartHourlyQc.data.datasets[0].data = employeeCounts.map((count) => Number((projectedBase * count).toFixed(2)));
+        chartHourlyQc.data.datasets[0].backgroundColor = employeeCounts.map((count) => count === selectedCount ? "#37d67a" : "#ffb65c");
+        chartHourlyQc.data.datasets[0].borderColor = employeeCounts.map((count) => count === selectedCount ? "#8bf0b1" : "#ffd59a");
         chartHourlyQc.update();
       }
 
@@ -2615,7 +2650,10 @@
       if (Number.isFinite(cycles) && cycles >= 0) $("yamatoCycles").value = String(cycles);
       if (Number.isFinite(shift) && shift >= 0) $("shiftLength").value = String(shift);
       if (Number.isFinite(days) && days >= 0) $("daysPerWeek").value = String(days);
-      if (Number.isFinite(qcPeople) && qcPeople >= 0) $("qcPeople").value = String(qcPeople);
+      if (Number.isFinite(qcPeople) && qcPeople >= 0) {
+        $("qcPeople").value = String(qcPeople);
+        $("qcProjectionPeople").value = String(qcPeople);
+      }
       if (mode === "shift" || mode === "week") {
         ACTIVE_PROJECTION_MODE = mode;
       }
@@ -2656,7 +2694,7 @@
         const cycles = Math.max(readNum("yamatoCycles", 7), 0);
         const shift = Math.max(readNum("shiftLength", 6.5), 0);
         const days = Math.max(readNum("daysPerWeek", 5), 0);
-        const qcPeople = Math.max(readNum("qcPeople", 4), 0);
+        const qcPeople = Math.max(0, Math.round(readNum("qcProjectionPeople", readNum("qcPeople", 4))));
         payloadToSave.settings = (payloadToSave.settings && typeof payloadToSave.settings === "object") ? payloadToSave.settings : {};
         payloadToSave.settings.packTeamPerformance = {
           ...(payloadToSave.settings.packTeamPerformance && typeof payloadToSave.settings.packTeamPerformance === "object"
@@ -2727,10 +2765,22 @@
 
         fillEmployees(ALL_ROWS);
 
-        ["rangeSel", "empSel", "avgCanastaWeight", "yamatoCycles", "shiftLength", "daysPerWeek", "qcPeople", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
+        ["rangeSel", "empSel", "avgCanastaWeight", "yamatoCycles", "shiftLength", "daysPerWeek", "sExcellent", "sGood", "sBad", "sVeryBad"].forEach((id) => {
           if (!$(id).dataset.bound) {
             $(id).addEventListener("input", () => scheduleRender(80));
             $(id).addEventListener("change", () => scheduleRender(0));
+            $(id).dataset.bound = "1";
+          }
+        });
+        ["qcPeople", "qcProjectionPeople"].forEach((id) => {
+          if (!$(id).dataset.bound) {
+            const otherId = id === "qcPeople" ? "qcProjectionPeople" : "qcPeople";
+            const syncAndRender = (delay) => {
+              $(otherId).value = $(id).value;
+              scheduleRender(delay);
+            };
+            $(id).addEventListener("input", () => syncAndRender(80));
+            $(id).addEventListener("change", () => syncAndRender(0));
             $(id).dataset.bound = "1";
           }
         });
