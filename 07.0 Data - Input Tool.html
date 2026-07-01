@@ -1000,32 +1000,36 @@ function refreshBadges(){
   // CSV (robust quotes)
   // =========================================================
   function parseCsvToRows(text){
-    const lines = String(text||"")
-      .replace(/\r\n/g,"\n")
-      .replace(/\r/g,"\n")
-      .split("\n")
-      .filter(l => l.trim().length);
-
+    const input = String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+    const firstLine = input.split("\n", 1)[0] || "";
+    const delim = firstLine.includes("\t") && !firstLine.includes(",") ? "\t" : ",";
     const rows = [];
-    for(const line of lines){
-      const delim = line.includes("\t") ? "\t" : ",";
-      const out = [];
-      let cur = "", inQ = false;
+    let row = [];
+    let cur = "";
+    let inQ = false;
 
-      for(let i=0;i<line.length;i++){
-        const ch = line[i];
-        if(ch === '"'){
-          if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
-          else inQ = !inQ;
-        } else if(!inQ && ch === delim){
-          out.push(cur); cur = "";
-        } else {
-          cur += ch;
-        }
+    const pushRow = () => {
+      const out = row.concat(cur).map(v => String(v ?? "").trim());
+      if(out.some(v => v.length)) rows.push(out);
+      row = [];
+      cur = "";
+    };
+
+    for(let i=0;i<input.length;i++){
+      const ch = input[i];
+      if(ch === '"'){
+        if(inQ && input[i+1] === '"'){ cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if(!inQ && ch === delim){
+        row.push(cur);
+        cur = "";
+      } else if(!inQ && ch === "\n"){
+        pushRow();
+      } else {
+        cur += ch;
       }
-      out.push(cur);
-      rows.push(out.map(v => String(v ?? "").trim()));
     }
+    if(cur.length || row.length) pushRow();
     return trimEmptyTrailingColumns(rows);
   }
 
