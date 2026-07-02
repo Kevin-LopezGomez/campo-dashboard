@@ -795,6 +795,7 @@
     </div>
     <div class="tabs" id="tabsTeam" aria-label="Team Tools">
       <button class="tab" data-target="p-board-inventory">🧮 <span data-i18n="tab.board-inventory">Board Inventory</span></button>
+      <button class="tab" data-target="p-campo-ramp-up">📈 <span data-i18n="tab.campo-ramp-up">Campo Ramp Up</span></button>
     </div>
     <div class="tabs" id="tabsScheduling" aria-label="Scheduling Dashboards">
       <button class="tab" data-target="p-facility-ramp">🏗️ <span data-i18n="tab.facility-ramp">Facility Ramp Tracker</span></button>
@@ -899,6 +900,7 @@
 
                 <div class="cat-grid" id="homeTeam" style="display:none;">
                   <button class="tile" data-home-go="p-board-inventory"><div class="ico">🧮</div><div class="name" data-i18n="tile.board-inventory.name">Board Inventory</div><div class="meta" data-i18n="tile.board-inventory.meta">Current board counts</div></button>
+                  <button class="tile" data-home-go="p-campo-ramp-up"><div class="ico">📈</div><div class="name" data-i18n="tile.campo-ramp-up.name">Campo Ramp Up</div><div class="meta" data-i18n="tile.campo-ramp-up.meta">Customer ramp requirements and staffing model</div></button>
                 </div>
 
                 <div class="cat-grid" id="homeScheduling" style="display:none;">
@@ -1033,6 +1035,12 @@
         </div>
       </section>
 
+      <section class="panel" id="p-campo-ramp-up" data-team="true">
+        <div class="iframe-wrap">
+          <iframe id="ifr-campo-ramp-up" data-file-key="campo-ramp-up"></iframe>
+        </div>
+      </section>
+
       <section class="panel" id="p-pack-team-performance" data-hr="true">
         <div class="iframe-wrap">
           <iframe id="ifr-pack-team-performance" data-file-key="pack-team-performance"></iframe>
@@ -1148,6 +1156,7 @@
 
       <div class="launcher-grid" id="cat-team" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-board-inventory"><div class="app-ico">🧮</div><div class="app-name" data-i18n="tile.board-inventory.name">Board Inventory</div></button>
+        <button class="launch-app" data-action="go-panel" data-target="p-campo-ramp-up"><div class="app-ico">📈</div><div class="app-name" data-i18n="tile.campo-ramp-up.name">Campo Ramp Up</div></button>
       </div>
       <div class="launcher-grid" id="cat-scheduling" style="display:none;">
         <button class="launch-app" data-action="go-panel" data-target="p-facility-ramp"><div class="app-ico">🏗️</div><div class="app-name" data-i18n="tile.facility-ramp.name">Facility Ramp Tracker</div></button>
@@ -1225,6 +1234,7 @@
         "tab.sales-tracking":"Sales Productivity",
         "tab.store-visits":"Store Visits",
         "tab.board-inventory":"Board Inventory",
+        "tab.campo-ramp-up":"Campo Ramp Up",
         "tab.proc-open-orders":"Open Orders",
         "tab.pack-team-performance":"Pack Team Performance",
         "tab.facility-ramp":"Facility Ramp Tracker",
@@ -1246,6 +1256,8 @@
           "tile.expcal.meta":"TSV paste + filters",
           "tile.board-inventory.name":"Board Inventory",
           "tile.board-inventory.meta":"Current board counts",
+          "tile.campo-ramp-up.name":"Campo Ramp Up",
+          "tile.campo-ramp-up.meta":"Customer ramp requirements and staffing model",
           "tile.proc-open-orders.name":"Open Orders",
           "tile.proc-open-orders.meta":"Purchasing workflow",
           "tile.proc-mrp.name":"MRP",
@@ -1358,6 +1370,7 @@
         "tab.sales-tracking":"Productividad de ventas",
         "tab.store-visits":"Visitas a tiendas",
         "tab.board-inventory":"Inventario de tablas",
+        "tab.campo-ramp-up":"Rampa Campo",
         "tab.proc-open-orders":"Órdenes abiertas",
         "tab.pack-team-performance":"Rendimiento del equipo de empaque",
         "tab.facility-ramp":"Seguimiento de rampa de facilidades",
@@ -1379,6 +1392,8 @@
           "tile.expcal.meta":"Pega TSV + filtros",
           "tile.board-inventory.name":"Inventario de tablas",
           "tile.board-inventory.meta":"Conteos actuales de tablas",
+          "tile.campo-ramp-up.name":"Rampa Campo",
+          "tile.campo-ramp-up.meta":"Requisitos del cliente y modelo de personal",
           "tile.proc-open-orders.name":"Órdenes abiertas",
           "tile.proc-open-orders.meta":"Flujo de compras",
           "tile.proc-mrp.name":"MRP",
@@ -1468,6 +1483,7 @@
         foodsafety: "11.0 Food Safety - Traceibility.html",
         mulders: "04.3 Team - Mulders Chart.html",
         "board-inventory": "04.2 Team - Board Inventory.html",
+        "campo-ramp-up": "15.0 Campo Ramp Up.html",
         "pack-team-performance": "03.1 Leadership - Pack Team Incoming Quality Dashboard.html",
         "facility-ramp": "3.2 Facility Ramp Tracker.html",
         "hr-attendances": "HR - Attendances.html"

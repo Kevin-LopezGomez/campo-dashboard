@@ -1,0 +1,3241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sam's Ramp-Up Staffing Model</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d9dee7;
+      --accent: #2563eb;
+      --good: #dcfce7;
+      --warn: #fef3c7;
+      --bad: #fee2e2;
+      --goodText: #166534;
+      --warnText: #92400e;
+      --badText: #991b1b;
+      --header: #111827;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 10px;
+      color: var(--header);
+    }
+
+    h1 {
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    h2 { font-size: 20px; margin-top: 4px; }
+    h3 { font-size: 16px; }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    .hero-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+      padding: 18px;
+    }
+
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 10px;
+      align-items: start;
+    }
+
+    .input-row-start {
+      grid-column-start: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #cfd6e2;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.25;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .save-status {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .view-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 0;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .view-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: #fff;
+      color: #374151;
+      font-size: 13px;
+    }
+
+    .view-pill.active {
+      border-color: var(--accent);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .screen-grid {
+      display: none;
+    }
+
+    .screen-grid.active {
+      display: contents;
+    }
+
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    button.danger {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: #fbfdff;
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .kpi .value {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 6px;
+      color: #111827;
+    }
+
+    .kpi .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .summary-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .summary-badge.clickable {
+      cursor: pointer;
+    }
+
+    .summary-badge.excellent {
+      background: var(--good);
+      border-color: #bbf7d0;
+      color: var(--goodText);
+    }
+
+    .summary-badge.average {
+      background: var(--warn);
+      border-color: #fde68a;
+      color: var(--warnText);
+    }
+
+    .summary-badge.target {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+    }
+
+    .collapsible-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .collapsible-head h2 {
+      margin-bottom: 0;
+    }
+
+    .collapse-toggle {
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: #111827;
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+
+    .collapsible-card.is-collapsed .collapsible-body {
+      display: none;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1220px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px 9px;
+      text-align: right;
+      border-bottom: 1px solid #edf0f5;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #111827;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    th:first-child, td:first-child,
+    th:nth-child(2), td:nth-child(2) {
+      text-align: left;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .ok { background: var(--good); color: var(--goodText); }
+    .watch { background: var(--warn); color: var(--warnText); }
+    .risk { background: var(--bad); color: var(--badText); }
+
+    .note-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 12px;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .small-table {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .small-table th, .small-table td {
+      white-space: normal;
+      text-align: right;
+      font-size: 13px;
+    }
+
+    .small-table th:first-child, .small-table td:first-child {
+      text-align: left;
+    }
+
+    .sku-mix-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 20px 0 10px;
+    }
+
+    .mix-indicator {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--goodText);
+      background: var(--good);
+      white-space: nowrap;
+    }
+
+    .mix-indicator.invalid {
+      color: var(--badText);
+      background: var(--bad);
+      border-color: #fecaca;
+    }
+
+    .sku-mix-table {
+      min-width: 760px;
+    }
+
+    .sku-mix-table input {
+      max-width: 88px;
+      padding: 6px 8px;
+      text-align: right;
+    }
+
+    .reference-table {
+      min-width: 760px;
+    }
+
+    .reference-table th,
+    .reference-table td {
+      white-space: nowrap;
+    }
+
+    .tray-table th:last-child,
+    .tray-table td:last-child {
+      text-align: center;
+    }
+
+    .chart-frame {
+      position: relative;
+    }
+
+    .chart {
+      width: 100%;
+      height: 340px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      display: block;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      min-width: 150px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .12);
+      color: #111827;
+      font-size: 12px;
+      line-height: 1.35;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 12px));
+      visibility: hidden;
+      z-index: 3;
+    }
+
+    .chart-tooltip strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend button {
+      display: inline-flex;
+      align-items: center;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .legend button[aria-pressed="false"] {
+      opacity: .45;
+      text-decoration: line-through;
+    }
+
+    .legend button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .legend button::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .lbs::before { background: #2563eb; }
+    .legend .staff::before { background: #16a34a; }
+    .legend .hours::before { background: #f59e0b; }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 24px 0 0;
+    }
+
+    @media (max-width: 1100px) {
+      .span-8, .span-6, .span-4, .span-3 { grid-column: span 12; }
+      .inputs { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 720px) {
+      .hero-head { flex-direction: column; }
+      .view-pills { justify-content: flex-start; }
+      .inputs { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    }
+
+    .kpi-box {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--header);
+      letter-spacing: -0.02em;
+    }
+
+    .cell-detail {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      white-space: normal;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .wrap { max-width: none; padding: 12px; }
+      .button-row { display: none; }
+      .card { box-shadow: none; break-inside: avoid; }
+      .table-wrap { overflow: visible; }
+      table { min-width: 0; }
+      th, td { font-size: 10px; padding: 5px; }
+      .inputs { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid">
+      <section class="card span-12">
+        <div class="hero-head">
+          <h1>Sam's Ramp-Up Staffing Model</h1>
+          <div class="view-pills" role="tablist" aria-label="Model screens">
+            <button type="button" class="view-pill active" data-screen-target="seedingModelScreen" role="tab" aria-selected="true">Seeding Model</button>
+            <button type="button" class="view-pill" data-screen-target="propogationModelScreen" role="tab" aria-selected="false">Transplant Model</button>
+            <button type="button" class="view-pill" data-screen-target="harvestModelScreen" role="tab" aria-selected="false">Harvest Model</button>
+            <button type="button" class="view-pill" data-screen-target="sanitationModelScreen" role="tab" aria-selected="false">Sanitation Model</button>
+            <button type="button" class="view-pill" data-screen-target="packModelScreen" role="tab" aria-selected="false">Pack Model</button>
+            <button type="button" class="view-pill" data-screen-target="shippingReqScreen" role="tab" aria-selected="false">Sales Requirement Model</button>
+            <button type="button" class="view-pill" data-screen-target="shModelScreen" role="tab" aria-selected="false">S&amp;H Model</button>
+            <button type="button" class="view-pill" data-screen-target="opsRampSummaryScreen" role="tab" aria-selected="false">Ops Ramp Model Summary</button>
+            <button type="button" class="view-pill" data-screen-target="equipmentTimelineScreen" role="tab" aria-selected="false">Equipment Timeline</button>
+          </div>
+        </div>
+        <p>
+          Operating model for ramping from current weekly pounds to 20K/week.
+          Separates QC capacity, Multivac runtime, tray-feeding labor, box makers, and total packing-room staffing.
+        </p>
+        <div class="button-row">
+          <button onclick="recalculate()">Recalculate model</button>
+          <button class="secondary" onclick="copySummary()">Copy summary</button>
+          <button class="secondary" onclick="saveCurrentState()">Save current state</button>
+          <button class="secondary" onclick="restoreCurrentState()">Restore saved state</button>
+          <button class="secondary" onclick="loadSharedState()">Load shared settings</button>
+          <button class="secondary" onclick="saveSharedState()">Save shared settings</button>
+          <button class="secondary" onclick="window.print()">Print / Save PDF</button>
+          <button class="danger" onclick="resetDefaults()">Reset defaults</button>
+          <span class="save-status" id="stateSaveStatus" role="status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <div id="packModelScreen" class="screen-grid">
+      <section class="card span-12 collapsible-card is-collapsed" id="packModelInputCard">
+        <div class="collapsible-head">
+          <h2>Pack Model Input</h2>
+          <button type="button" class="collapse-toggle" aria-expanded="false" aria-controls="packModelInputBody">Show</button>
+        </div>
+        <div class="inputs collapsible-body" id="packModelInputBody">
+          <div>
+            <label>Start date</label>
+            <input id="startDate" type="date" value="2026-06-23" />
+          </div>
+          <div>
+            <label>Target date</label>
+            <input id="targetDate" type="date" value="2026-08-03" />
+          </div>
+          <div>
+            <label>Starting lbs/week</label>
+            <input id="startLbs" type="number" value="13000" step="500" />
+          </div>
+          <div>
+            <label>Final target lbs/week</label>
+            <input id="targetLbs" type="number" value="20000" step="500" />
+          </div>
+
+          <div>
+            <label>% 16 oz RTS / Super Combo</label>
+            <input id="mix16" type="number" value="90" min="0" max="100" step="5" />
+          </div>
+          <div>
+            <label>Sustainable tray-packing speed</label>
+            <input id="sustainablePct" type="number" value="70" min="40" max="100" step="5" />
+          </div>
+
+          <div>
+            <label>Current Multivac lbs/min</label>
+            <input id="lbsPerMin" type="number" value="10" step="0.1" />
+            <div class="hint">Current 16 oz: 2 machines at ~10 lb/min total.</div>
+          </div>
+          <div>
+            <label>Base Multivac crew below threshold</label>
+            <input id="baseCrew" type="number" value="7" step="1" />
+          </div>
+          <div>
+            <label>Base Multivac crew at threshold</label>
+            <input id="baseCrewHigh" type="number" value="7" step="1" />
+          </div>
+          <div>
+            <label>Base Multivac crew threshold lbs/week</label>
+            <input id="baseCrewThreshold" type="number" value="19000" step="500" />
+          </div>
+          <div>
+            <label>Box maker threshold lbs/week</label>
+            <input id="boxThreshold" type="number" value="19000" step="500" />
+          </div>
+          <div>
+            <label>Box makers below threshold</label>
+            <input id="boxMakersLow" type="number" value="1" step="1" />
+          </div>
+          <div>
+            <label>Box makers at threshold</label>
+            <input id="boxMakersHigh" type="number" value="2" step="1" />
+          </div>
+          <div>
+            <label>Box maker hrs/week available</label>
+            <input id="boxMakerHoursAvailable" type="number" value="40" min="1" step="1" />
+          </div>
+
+          <div class="input-row-start">
+            <label>Current 5 oz cycles/min</label>
+            <input id="cyclesCurrent5" type="number" value="16" step="1" />
+          </div>
+          <div>
+            <label>Current 5 oz lbs/min</label>
+            <input id="lbsCurrent5" type="number" value="5.0" step="0.1" />
+          </div>
+          <div>
+            <label>Current 10 oz cycles/min</label>
+            <input id="cyclesCurrent10" type="number" value="10" step="1" />
+          </div>
+          <div>
+            <label>Current 10 oz lbs/min</label>
+            <input id="lbsCurrent10" type="number" value="6.3" step="0.1" />
+          </div>
+          <div>
+            <label>Current 16 oz cycles/min</label>
+            <input id="cyclesCurrent16" type="number" value="10" step="1" />
+          </div>
+          <div>
+            <label>Current 16 oz lbs/min</label>
+            <input id="lbsCurrent16" type="number" value="10.0" step="0.1" />
+          </div>
+          <div>
+            <label>Rated 5 oz cycles/min</label>
+            <input id="cyclesRated5" type="number" value="25" step="1" />
+          </div>
+          <div>
+            <label>Rated 5 oz lbs/min</label>
+            <input id="lbsRated5" type="number" value="7.8" step="0.1" />
+          </div>
+          <div>
+            <label>Rated 10 oz cycles/min</label>
+            <input id="cyclesRated10" type="number" value="14" step="1" />
+          </div>
+          <div>
+            <label>Rated 10 oz lbs/min</label>
+            <input id="lbsRated10" type="number" value="8.8" step="0.1" />
+          </div>
+          <div>
+            <label>Rated 16 oz cycles/min</label>
+            <input id="cyclesRated16" type="number" value="14" step="1" />
+          </div>
+          <div>
+            <label>Rated 16 oz lbs/min</label>
+            <input id="lbsRated16" type="number" value="14.0" step="0.1" />
+          </div>
+          <div>
+            <label>QC basis</label>
+            <select id="qcBasis">
+              <option value="average" selected>Average QC curve</option>
+              <option value="excellent">Excellent-quality QC curve</option>
+            </select>
+          </div>
+          <div>
+            <label>QC included in packing team?</label>
+            <select id="qcSeparate">
+              <option value="separate" selected>QC is separate labor</option>
+              <option value="included">QC is already included</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card span-12">
+        <h2>Current model summary</h2>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Final weekly target</div>
+            <div class="value" id="kpiTarget">20,000</div>
+            <div class="sub">lbs/week</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Weekly Ramp Req.</div>
+            <div class="value" id="kpiWeeklyRamp">1,400</div>
+            <div class="sub">lbs/week increase</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Final Multivac hours</div>
+            <div class="value" id="kpiHours">18.0</div>
+            <div class="sub">hours/week</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Final tray feeders</div>
+            <div class="value" id="kpiFeeders">6</div>
+            <div class="sub">people</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Final packing labor before QC</div>
+            <div class="value" id="kpiPacking">15</div>
+            <div class="sub">people</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Final total incl. QC</div>
+            <div class="value" id="kpiTotal">34</div>
+            <div class="sub">people</div>
+          </div>
+          <div class="kpi">
+            <div class="label">QC Basis</div>
+            <button type="button" class="summary-badge clickable average" id="kpiQcBasisBadge" aria-label="Toggle QC basis">Average QC</button>
+            <div class="sub">click to toggle</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Pack Target</div>
+            <div class="summary-badge target" id="kpiPackTargetBadge">20,000 lbs</div>
+            <div class="sub">final lbs/week</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Peak box prep hrs/wk</div>
+            <div class="value" id="shipKpiBoxHours">—</div>
+            <div class="sub">from shipping SKU mix</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Peak box makers needed</div>
+            <div class="value" id="shipKpiBoxMakers">—</div>
+            <div class="sub">people</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card span-8">
+        <h2>Ramp chart</h2>
+        <div class="chart-frame">
+          <canvas id="chart" class="chart" width="1000" height="360"></canvas>
+          <div id="chartTooltip" class="chart-tooltip" role="status"></div>
+        </div>
+        <div class="legend">
+          <button type="button" class="lbs" data-series="lbs" aria-pressed="true">Target lbs/week</button>
+          <button type="button" class="staff" data-series="staff" aria-pressed="true">Total labor incl. QC</button>
+          <button type="button" class="hours" data-series="hours" aria-pressed="true">Multivac hours/week</button>
+        </div>
+      </section>
+
+      <section class="card span-4">
+        <h2>Decision logic</h2>
+        <div class="note-box">
+          <strong>Planning rule:</strong><br />
+          Use average QC curve, current Multivac speed, and sustainable tray-packing speed for external commitments.
+          Treat excellent QC and rated speed as upside only.
+        </div>
+        <br />
+        <table class="small-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="pill ok">OK</span></td><td>Labor and runtime look manageable.</td></tr>
+            <tr><td><span class="pill watch">WATCH</span></td><td>Volume requires added support or tighter execution.</td></tr>
+            <tr><td><span class="pill risk">RISK</span></td><td>Needs confirmation before external commitment.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card span-12">
+        <h2>Weekly ramp table</h2>
+        <div class="table-wrap">
+          <table id="modelTable">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th>Start date</th>
+                <th>Target lbs/week</th>
+                <th>QC people</th>
+                <th>Multivac hours</th>
+                <th>Base crew</th>
+                <th>Tray feeders</th>
+                <th>Box makers</th>
+                <th>Box prep hrs/wk</th>
+                <th>Box makers needed</th>
+                <th>Packing labor before QC</th>
+                <th>Total incl. QC</th>
+                <th>Status</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card span-12">
+        <h2>Hand Packing</h2>
+        <div class="table-wrap">
+          <table class="small-table reference-table tray-table">
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>Cycles/Min 2 Machines</th>
+                <th>Lbs/Min</th>
+                <th>Cycles/Min/Person</th>
+                <th># of People packing trays to compensate for Multivac</th>
+              </tr>
+            </thead>
+            <tbody id="handPackingTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card span-6">
+        <h2>QC Throughput</h2>
+        <p>QC staffing is interpolated from your actual throughput data. You can edit the function in the script if needed.</p>
+        <table class="small-table">
+          <thead>
+            <tr>
+              <th># Employees</th>
+              <th>Average lbs/week</th>
+              <th>Excellent lbs/week</th>
+            </tr>
+          </thead>
+          <tbody id="qcCurveTable"></tbody>
+        </table>
+      </section>
+
+      <section class="card span-6">
+        <h2>Copy/paste summary</h2>
+        <textarea id="summaryBox" readonly></textarea>
+        <div class="button-row">
+          <button class="secondary" onclick="copySummary()">Copy summary</button>
+        </div>
+      </section>
+      </div>
+
+      <div id="seedingModelScreen" class="screen-grid active">
+        <section class="card span-12 collapsible-card" id="seedingModelInputCard">
+          <div class="collapsible-head">
+            <h2>Seeding Model Input</h2>
+            <button type="button" class="collapse-toggle" aria-expanded="true" aria-controls="seedingModelInputBody">Hide</button>
+          </div>
+          <div class="inputs collapsible-body" id="seedingModelInputBody">
+            <div>
+              <label>Start date</label>
+              <input id="seedingStartDate" type="date" value="2026-06-23" />
+            </div>
+            <div>
+              <label>Target date</label>
+              <input id="seedingTargetDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Starting trays/week</label>
+              <input id="seedingStartTrays" type="number" value="13000" step="500" />
+            </div>
+            <div>
+              <label>Final target trays/week</label>
+              <input id="seedingTargetTrays" type="number" value="20000" step="500" />
+            </div>
+            <div>
+              <label>Lbs/Tray</label>
+              <input id="seedingLbsPerTray" type="number" value="1" min="0" step="0.01" />
+            </div>
+            <div>
+              <label>Starting number of employees</label>
+              <input id="seedingStartEmployees" type="number" value="7" min="0" step="1" />
+            </div>
+            <div>
+              <label>Ending number of employees</label>
+              <input id="seedingEndEmployees" type="number" value="7" min="0" step="1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card span-12">
+          <h2>Weekly ramp table</h2>
+          <div class="table-wrap">
+            <table id="seedingRampTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Start date</th>
+                  <th>Target trays/week</th>
+                  <th>Lbs eq</th>
+                  <th>Weekly tray change</th>
+                  <th>Employees</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <div id="propogationModelScreen" class="screen-grid">
+        <section class="card span-12 collapsible-card" id="propogationModelInputCard">
+          <div class="collapsible-head">
+            <h2>Transplant Model</h2>
+            <button type="button" class="collapse-toggle" aria-expanded="true" aria-controls="propogationModelInputBody">Hide</button>
+          </div>
+          <div class="inputs collapsible-body" id="propogationModelInputBody">
+            <div>
+              <label>Start date</label>
+              <input id="propogationStartDate" type="date" value="2026-06-23" />
+            </div>
+            <div>
+              <label>Transplanter Date</label>
+              <input id="propogationTransplanterDate" type="date" value="2026-07-14" />
+            </div>
+            <div>
+              <label>Target date</label>
+              <input id="propogationTargetDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Starting boards/week</label>
+              <input id="propogationStartTrays" type="number" value="13000" step="500" />
+            </div>
+            <div>
+              <label>Final target boards/week</label>
+              <input id="propogationTargetTrays" type="number" value="20000" step="500" />
+            </div>
+            <div>
+              <label>Lbs/Board</label>
+              <input id="propogationLbsPerBoard" type="number" value="1" min="0" step="0.01" />
+            </div>
+            <div>
+              <label>Starting number of employees</label>
+              <input id="propogationStartEmployees" type="number" value="7" min="0" step="1" />
+            </div>
+            <div>
+              <label>Max Number of Employees</label>
+              <input id="propogationMaxEmployees" type="number" value="7" min="0" step="1" />
+            </div>
+            <div>
+              <label>Ending number of employees</label>
+              <input id="propogationEndEmployees" type="number" value="7" min="0" step="1" />
+            </div>
+            <div>
+              <label>Number of hours per shift</label>
+              <input id="propogationHoursPerShift" type="number" value="8" min="0" step="0.5" />
+            </div>
+            <div>
+              <label>Boards/person/hour</label>
+              <input id="propogationBoardsPerPersonHour" type="number" value="0" min="0" step="0.1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card span-12">
+          <h2>Weekly ramp table</h2>
+          <div class="table-wrap">
+            <table id="propogationRampTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Start date</th>
+                  <th>Target boards/week</th>
+                  <th>Lbs Eq.</th>
+                  <th>Weekly board change</th>
+                  <th>Employees</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <div id="harvestModelScreen" class="screen-grid">
+        <section class="card span-12 collapsible-card" id="harvestModelInputCard">
+          <div class="collapsible-head">
+            <h2>Harvest Model</h2>
+            <button type="button" class="collapse-toggle" aria-expanded="true" aria-controls="harvestModelInputBody">Hide</button>
+          </div>
+          <div class="inputs collapsible-body" id="harvestModelInputBody">
+            <div>
+              <label>Start date</label>
+              <input id="harvestStartDate" type="date" value="2026-06-23" />
+            </div>
+            <div>
+              <label>Target date</label>
+              <input id="harvestTargetDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Starting boards/week</label>
+              <input id="harvestStartBoards" type="number" value="0" min="0" step="100" />
+            </div>
+            <div>
+              <label>Final target boards/week</label>
+              <input id="harvestTargetBoards" type="number" value="0" min="0" step="100" />
+            </div>
+            <div>
+              <label>Lbs/Board</label>
+              <input id="harvestLbsPerBoard" type="number" value="1" min="0" step="0.01" readonly />
+            </div>
+            <div>
+              <label>Starting number of employees</label>
+              <input id="harvestStartEmployees" type="number" value="0" min="0" step="1" />
+            </div>
+            <div>
+              <label>Ending number of employees</label>
+              <input id="harvestEndEmployees" type="number" value="0" min="0" step="1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card span-12">
+          <h2>Weekly ramp table</h2>
+          <div class="table-wrap">
+            <table id="harvestRampTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Start date</th>
+                  <th>Target boards/week</th>
+                  <th data-col="lbs-eq">Lb Eq.</th>
+                  <th>Weekly board change</th>
+                  <th>Employees</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <div id="sanitationModelScreen" class="screen-grid">
+        <section class="card span-12 collapsible-card" id="sanitationModelInputCard">
+          <div class="collapsible-head">
+            <h2>Sanitation Model</h2>
+            <button type="button" class="collapse-toggle" aria-expanded="true" aria-controls="sanitationModelInputBody">Hide</button>
+          </div>
+          <div class="inputs collapsible-body" id="sanitationModelInputBody">
+            <div>
+              <label>Start date</label>
+              <input id="sanitationStartDate" type="date" value="2026-06-23" />
+            </div>
+            <div>
+              <label>Target date</label>
+              <input id="sanitationTargetDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Starting boards/week</label>
+              <input id="sanitationStartBoards" type="number" value="0" min="0" step="100" />
+            </div>
+            <div>
+              <label>Final target boards/week</label>
+              <input id="sanitationTargetBoards" type="number" value="0" min="0" step="100" />
+            </div>
+            <div>
+              <label>Starting number of employees</label>
+              <input id="sanitationStartEmployees" type="number" value="0" min="0" step="1" />
+            </div>
+            <div>
+              <label>Ending number of employees</label>
+              <input id="sanitationEndEmployees" type="number" value="0" min="0" step="1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card span-12">
+          <h2>Weekly ramp table</h2>
+          <div class="table-wrap">
+            <table id="sanitationRampTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Start date</th>
+                  <th>Target boards/week</th>
+                  <th>Weekly board change</th>
+                  <th>Employees</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div id="shippingReqScreen" class="screen-grid">
+
+        <!-- Shipping Inputs -->
+        <section class="card span-12 collapsible-card" id="shippingInputCard">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div>
+              <h2 style="margin-bottom:2px">Sales Requirement Model</h2>
+              <p style="margin:0">Customer volumes and ramp schedule. Pallets calculated from box specs.</p>
+            </div>
+            <button class="collapse-toggle" aria-expanded="true">Hide</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:24px">
+
+            <!-- Sam's Ramp -->
+            <div>
+              <h3 style="margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px">Sam's Club (GMT) Ramp</h3>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
+                <label for="samsBase">Current lbs/week</label>
+                <input id="samsBase" type="number" value="5500" style="width:100%">
+                <label for="samsRampMode">Ramp mode</label>
+                <select id="samsRampMode" style="width:100%">
+                  <option value="incremental" selected>Incremental</option>
+                  <option value="absolute">Absolute</option>
+                </select>
+                <label for="samsStep1Date">Step 1 date</label>
+                <input id="samsStep1Date" type="date" value="2026-06-23" style="width:100%">
+                <label for="samsStep1Add">Step 1 value (lbs)</label>
+                <input id="samsStep1Add" type="number" value="4000" style="width:100%">
+                <label for="samsStep2Date">Step 2 date</label>
+                <input id="samsStep2Date" type="date" value="2026-08-03" style="width:100%">
+                <label for="samsStep2Add">Step 2 value (lbs)</label>
+                <input id="samsStep2Add" type="number" value="4000" style="width:100%">
+                <label for="samsStep3Date">Step 3 date</label>
+                <input id="samsStep3Date" type="date" value="2026-08-21" style="width:100%">
+                <label for="samsStep3Add">Step 3 value (lbs)</label>
+                <input id="samsStep3Add" type="number" value="3000" style="width:100%">
+              </div>
+            </div>
+
+            <!-- Other Accounts -->
+            <div>
+              <h3 style="margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px">Other Accounts (lbs/week)</h3>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
+                <label for="agroLbs">Agro (5 + 10)</label>
+                <input id="agroLbs" type="number" value="1700" style="width:100%">
+                <label for="agroMax">Agro max capacity</label>
+                <input id="agroMax" type="number" value="5000" style="width:100%">
+                <label for="hriLbs">HRI (3 + 1)</label>
+                <input id="hriLbs" type="number" value="340" style="width:100%">
+                <label for="hriMax">HRI max capacity</label>
+                <input id="hriMax" type="number" value="500" style="width:100%">
+                <label for="costcoLbs">Costco trial lbs/week</label>
+                <input id="costcoLbs" type="number" value="1000" style="width:100%">
+                <label for="costcoDate">Costco trial start date</label>
+                <input id="costcoDate" type="date" value="2026-09-01" style="width:100%">
+                <label for="costcoFullLbs">Costco full volume</label>
+                <input id="costcoFullLbs" type="number" value="4500" style="width:100%">
+                <label for="costcoFullDate">Costco full-volume date</label>
+                <input id="costcoFullDate" type="date" value="2026-10-27" style="width:100%">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="sku-mix-head">
+            <div>
+              <h3 style="margin-bottom:2px">Box SKU Mix</h3>
+              <p style="margin:0">Editable shipping mix by SKU. Mix must total 100%.</p>
+            </div>
+            <div id="skuMixIndicator" class="mix-indicator">Mix: 100%</div>
+          </div>
+          <div class="table-wrap">
+            <table class="small-table sku-mix-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Type</th>
+                  <th>Boxes/Pallet</th>
+                  <th>Box Prep Rate</th>
+                  <th>Lbs/Box</th>
+                  <th>% Mix</th>
+                </tr>
+              </thead>
+              <tbody id="skuMixTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Shipping KPIs -->
+        <section class="card span-12">
+          <h2 style="margin-bottom:14px">Customer Requirements Summary</h2>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+            <div class="kpi-box">
+              <div class="kpi-label">PEAK SAM'S LBS/WK</div>
+              <div class="kpi-value" id="shipKpiSams">—</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">PEAK OTHER LBS/WK</div>
+              <div class="kpi-value" id="shipKpiOther">—</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">PEAK TOTAL LBS/WK</div>
+              <div class="kpi-value" id="shipKpiTotal">—</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">PEAK PALLETS/WK</div>
+              <div class="kpi-value" id="shipKpiPallets">—</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">WEIGHTED PREP RATE</div>
+              <div class="kpi-value" id="shipKpiBoxRate">—</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Weekly Shipping Table -->
+        <section class="card span-12">
+          <h2 style="margin-bottom:4px">Weekly Customer Requirements</h2>
+          <p style="margin-bottom:12px">Volumes, pallets, and box prep demand by week. Boxes, pallets, and prep hours are summed from the editable SKU mix.</p>
+          <div class="table-wrap">
+            <table id="shippingTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Start Date</th>
+                  <th>Sam's lbs</th>
+                  <th>Agro lbs</th>
+                  <th>HRI lbs</th>
+                  <th>Costco lbs</th>
+                  <th>Total lbs</th>
+                  <th>Est. Boxes</th>
+                  <th>Est. Pallets</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="shippingTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Weekly Materials Consumption -->
+        <section class="card span-12">
+          <h2 style="margin-bottom:4px">Weekly Materials Consumption</h2>
+          <p style="margin-bottom:12px">Materials demand by week from the SKU mix. Film impressions are one per tray.</p>
+          <div class="table-wrap">
+            <table id="materialsTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Date</th>
+                  <th>Total Trays</th>
+                  <th>Film Impressions</th>
+                  <th>Standard Pallets</th>
+                  <th>Chep Pallets</th>
+                  <th>Total Pallets</th>
+                </tr>
+              </thead>
+              <tbody id="materialsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Copy/paste summary -->
+        <section class="card span-12">
+          <h2 style="margin-bottom:8px">Copy/Paste Summary</h2>
+          <textarea id="shippingSummaryBox" rows="10" style="width:100%;font-family:monospace;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical;background:var(--bg)"></textarea>
+          <button onclick="copyShippingSummary()" style="margin-top:8px;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">Copy summary</button>
+        </section>
+
+      </div>
+
+      <div id="shModelScreen" class="screen-grid">
+        <section class="card span-12 collapsible-card" id="shModelInputCard">
+          <div class="collapsible-head">
+            <h2>S&amp;H Model</h2>
+            <button type="button" class="collapse-toggle" aria-expanded="true" aria-controls="shModelInputBody">Hide</button>
+          </div>
+          <div class="inputs collapsible-body" id="shModelInputBody">
+            <div>
+              <label>Start date</label>
+              <input id="shStartDate" type="date" value="2026-06-23" />
+            </div>
+            <div>
+              <label>Target date</label>
+              <input id="shTargetDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Starting Pallets/Week</label>
+              <input id="shStartPallets" type="number" value="0" min="0" step="1" readonly />
+            </div>
+            <div>
+              <label>Target Pallets/Week</label>
+              <input id="shTargetPallets" type="number" value="0" min="0" step="1" readonly />
+            </div>
+            <div>
+              <label>Starting number of employees</label>
+              <input id="shStartEmployees" type="number" value="0" min="0" step="1" />
+            </div>
+            <div>
+              <label>Ending number of employees</label>
+              <input id="shEndEmployees" type="number" value="0" min="0" step="1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card span-12">
+          <h2>Weekly ramp table</h2>
+          <div class="table-wrap">
+            <table id="shRampTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Start date</th>
+                  <th>Total lbs eq.</th>
+                  <th>Pallets/week</th>
+                  <th>Employees</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div id="opsRampSummaryScreen" class="screen-grid">
+        <section class="card span-12">
+          <h2>Ops Ramp Model Summary</h2>
+          <p style="margin:0 0 12px">
+            <a href="https://campocaribem365-my.sharepoint.com/:x:/r/personal/angelo_soler_campocaribe_com/_layouts/15/Doc.aspx?sourcedoc=%7B8F19A70B-EA31-4CBD-8093-FCA9E7B388FE%7D&amp;file=COSUMPTION%20RATES%20-%2007-01-2026%2030K%20WEEKLY.xlsx&amp;wdLOR=c57DA8D16-304C-784D-BE33-814CC4226CB1&amp;fromShare=true&amp;action=default&amp;mobileredirect=true" target="_blank" rel="noopener">Consumption Rate Req</a>
+          </p>
+          <div class="table-wrap">
+            <table id="opsRampSummaryTable">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Date</th>
+                  <th>Seeding people</th>
+                  <th>Seeding lbs eq</th>
+                  <th>Transplant people</th>
+                  <th>Transplant lbs eq</th>
+                  <th>Harvest people</th>
+                  <th>Harvest lbs eq</th>
+                  <th>Sanitation people</th>
+                  <th>Pack people</th>
+                  <th>S&amp;H people</th>
+                  <th>S&amp;H lbs eq</th>
+                  <th>Total people</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div id="equipmentTimelineScreen" class="screen-grid">
+        <section class="card span-12 collapsible-card" id="equipmentTimelineInputCard">
+          <div class="collapsible-head">
+            <h2>Equipment Timeline</h2>
+            <button type="button" class="collapse-toggle" aria-expanded="true" aria-controls="equipmentTimelineInputBody">Hide</button>
+          </div>
+          <div class="inputs collapsible-body" id="equipmentTimelineInputBody">
+            <div>
+              <label>Indexing Conveyor</label>
+              <input id="indexingConveyorDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Transplanters</label>
+              <input id="transplantersDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Ellepot</label>
+              <input id="ellepotDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Lettuce Washer</label>
+              <input id="lettuceWasherDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Lettuce Dryer</label>
+              <input id="lettuceDryerDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Board Washer</label>
+              <input id="boardWasherDate" type="date" value="2026-08-03" />
+            </div>
+            <div>
+              <label>Lettuce Sanitizer</label>
+              <input id="lettuceSanitizerDate" type="date" value="2026-08-03" />
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="span-12 footer">
+        Built as a planning model. Validate actual attendance, changeovers, downtime, QC release flow, and product quality before making external commitments.
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const storageKey = "samsRampUpStaffingModel:v2";
+    const modelStateKey = "samsRampUpStaffingModel:v2:manualState";
+    const SUPABASE_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eHlzcmhobXRqaWt6cG11cHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODY3NjcsImV4cCI6MjA4MTM2Mjc2N30.LpGVQL060CyTRArVFo3gX0R4OrbKN3QFKc5AtFEzA7c";
+    const sharedSettingsTable = "campo_ramp_up_settings";
+    const sharedSettingsId = "shared";
+    const defaultValues = {
+      startDate: "2026-06-23",
+      targetDate: "2026-08-03",
+      startLbs: 13000,
+      targetLbs: 20000,
+      mix16: 90,
+      sustainablePct: 70,
+      lbsPerMin: 10,
+      baseCrew: 7,
+      baseCrewHigh: 7,
+      baseCrewThreshold: 19000,
+      boxThreshold: 19000,
+      boxMakersLow: 1,
+      boxMakersHigh: 2,
+      boxMakerHoursAvailable: 40,
+      cyclesCurrent5: 16,
+      lbsCurrent5: 5.0,
+      cyclesCurrent10: 10,
+      lbsCurrent10: 6.3,
+      cyclesCurrent16: 10,
+      lbsCurrent16: 10.0,
+      cyclesRated5: 25,
+      lbsRated5: 7.8,
+      cyclesRated10: 14,
+      lbsRated10: 8.8,
+      cyclesRated16: 14,
+      lbsRated16: 14.0,
+      qcBasis: "average",
+      qcSeparate: "separate",
+      seedingStartDate: "2026-06-23",
+      seedingTargetDate: "2026-08-03",
+      seedingStartTrays: 13000,
+      seedingTargetTrays: 20000,
+      seedingLbsPerTray: 1,
+      seedingStartEmployees: 7,
+      seedingEndEmployees: 7,
+      propogationStartDate: "2026-06-23",
+      propogationTransplanterDate: "2026-07-14",
+      propogationTargetDate: "2026-08-03",
+      propogationStartTrays: 13000,
+      propogationTargetTrays: 20000,
+      propogationLbsPerBoard: 1,
+      propogationStartEmployees: 7,
+      propogationMaxEmployees: 7,
+      propogationEndEmployees: 7,
+      propogationHoursPerShift: 8,
+      propogationBoardsPerPersonHour: 0,
+      harvestStartDate: "2026-06-23",
+      harvestTargetDate: "2026-08-03",
+      harvestStartBoards: 0,
+      harvestTargetBoards: 0,
+      harvestLbsPerBoard: 1,
+      harvestStartEmployees: 0,
+      harvestEndEmployees: 0,
+      sanitationStartDate: "2026-06-23",
+      sanitationTargetDate: "2026-08-03",
+      sanitationStartBoards: 0,
+      sanitationTargetBoards: 0,
+      sanitationStartEmployees: 0,
+      sanitationEndEmployees: 0,
+      shStartDate: "2026-06-23",
+      shTargetDate: "2026-08-03",
+      shStartPallets: 0,
+      shTargetPallets: 0,
+      shStartEmployees: 0,
+      shEndEmployees: 0,
+      indexingConveyorDate: "2026-08-03",
+      transplantersDate: "2026-08-03",
+      ellepotDate: "2026-08-03",
+      lettuceWasherDate: "2026-08-03",
+      lettuceDryerDate: "2026-08-03",
+      boardWasherDate: "2026-08-03",
+      lettuceSanitizerDate: "2026-08-03"
+    };
+
+    const handPackingScenarios = [
+      { label: "Cycles/Min right now 5OZ", inputId: "cyclesCurrent5", lbsInputId: "lbsCurrent5", cyclesPerPerson: 11 },
+      { label: "Cycles/Min right now 10OZ", inputId: "cyclesCurrent10", lbsInputId: "lbsCurrent10", cyclesPerPerson: 8 },
+      { label: "Cycles/Min right now 16OZ", inputId: "cyclesCurrent16", lbsInputId: "lbsCurrent16", cyclesPerPerson: 5 },
+      { label: "Cycles/Min Rated 5OZ", inputId: "cyclesRated5", lbsInputId: "lbsRated5", cyclesPerPerson: 11 },
+      { label: "Cycles/Min Rated 10OZ", inputId: "cyclesRated10", lbsInputId: "lbsRated10", cyclesPerPerson: 8 },
+      { label: "Cycles/Min Rated 16OZ", inputId: "cyclesRated16", lbsInputId: "lbsRated16", cyclesPerPerson: 5 }
+    ];
+
+    const qcCurve = [
+      { employees: 8, average: 8642, excellent: 13188 },
+      { employees: 9, average: 9610, excellent: 14836 },
+      { employees: 10, average: 10674, excellent: 16485 },
+      { employees: 11, average: 11746, excellent: 18134 },
+      { employees: 12, average: 12814, excellent: 19783 },
+      { employees: 13, average: 13882, excellent: 21432 },
+      { employees: 14, average: 14949, excellent: 23081 },
+      { employees: 15, average: 16017, excellent: 24730 },
+      { employees: 16, average: 17085, excellent: null },
+      { employees: 17, average: 18153, excellent: null },
+      { employees: 18, average: 19221, excellent: null },
+      { employees: 19, average: 20289, excellent: null },
+      { employees: 20, average: 21357, excellent: null },
+      { employees: 21, average: 22424, excellent: null },
+      { employees: 22, average: 23492, excellent: null },
+      { employees: 23, average: 24560, excellent: null }
+    ];
+
+    let latestRows = [];
+    let latestShippingRows = [];
+    let chartHoverPoints = [];
+    const activeSeries = {
+      lbs: true,
+      staff: true,
+      hours: true
+    };
+
+    let isRestoringSettings = false;
+    let shippingModelReady = false;
+
+    function setStateStatus(message) {
+      const status = document.getElementById("stateSaveStatus");
+      if (status) status.textContent = message;
+    }
+
+    function num(id) {
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function val(id) {
+      return document.getElementById(id).value;
+    }
+
+    function fmt(n, decimals = 0) {
+      return Number(n).toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function addDays(date, days) {
+      const d = new Date(date + "T00:00:00");
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function dateISO(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function datePretty(date) {
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function weeksBetween(startISO, targetISO) {
+      const start = new Date(startISO + "T00:00:00");
+      const target = new Date(targetISO + "T00:00:00");
+      const diffDays = Math.max(0, Math.round((target - start) / (1000 * 60 * 60 * 24)));
+      return Math.max(1, Math.floor(diffDays / 7) + 1);
+    }
+
+    function datePercent(current, start, end) {
+      const total = end - start;
+      if (total <= 0) return 1;
+      return Math.max(0, Math.min(1, (current - start) / total));
+    }
+
+    function qcPeopleNeeded(lbs, basis) {
+      const key = basis === "excellent" ? "excellent" : "average";
+      const usable = qcCurve.filter(r => r[key] !== null && r[key] !== undefined);
+      for (const row of usable) {
+        if (row[key] >= lbs) return row.employees;
+      }
+      // Extrapolate based on last two usable points
+      const a = usable[usable.length - 2];
+      const b = usable[usable.length - 1];
+      const slope = (b[key] - a[key]) / (b.employees - a.employees);
+      return Math.ceil(b.employees + Math.max(0, lbs - b[key]) / slope);
+    }
+
+    function trayFeedersNeeded() {
+      const cyclesTwo = num("cyclesCurrent16") * 2;
+      const cyclesPerson = 5;
+      const sustainable = Math.max(1, num("sustainablePct")) / 100;
+      const ideal = cyclesTwo / Math.max(0.01, cyclesPerson);
+      return Math.ceil(ideal / sustainable);
+    }
+
+    function buildRows() {
+      const startDate = val("startDate");
+      const targetDate = val("targetDate");
+      const startLbs = num("startLbs");
+      const targetLbs = num("targetLbs");
+      const weeks = weeksBetween(startDate, targetDate);
+      const rows = [];
+
+      for (let i = 0; i < weeks; i++) {
+        const date = addDays(startDate, i * 7);
+        const pct = weeks === 1 ? 1 : i / (weeks - 1);
+        let lbs = Math.round((startLbs + (targetLbs - startLbs) * pct) / 500) * 500;
+        if (i === weeks - 1) lbs = targetLbs;
+
+        const qc = qcPeopleNeeded(lbs, val("qcBasis"));
+        const hours = lbs / Math.max(0.1, num("lbsPerMin")) / 60;
+        const baseCrew = lbs >= num("baseCrewThreshold") ? num("baseCrewHigh") : num("baseCrew");
+        const feeders = trayFeedersNeeded();
+        const boxMakers = lbs >= num("boxThreshold") ? num("boxMakersHigh") : num("boxMakersLow");
+        const packingBeforeQc = baseCrew + feeders + boxMakers;
+        const totalInclQc = val("qcSeparate") === "separate" ? packingBeforeQc + qc : packingBeforeQc;
+
+        let status = "OK";
+        let statusClass = "ok";
+        let notes = "Machine runtime manageable; confirm labor attendance and QC flow.";
+
+        if (lbs >= 19000) {
+          status = "RISK";
+          statusClass = "risk";
+          notes = "19K+ requires 2 box makers, strong QC release flow, stable staging, and attendance control.";
+        } else if (lbs >= 16000) {
+          status = "WATCH";
+          statusClass = "watch";
+          notes = "Ramp phase: add support before volume; verify QC and tray-feeding pace.";
+        }
+
+        rows.push({
+          week: i + 1,
+          date,
+          dateISO: dateISO(date),
+          datePretty: datePretty(date),
+          lbs,
+          qc,
+          hours,
+          baseCrew,
+          feeders,
+          boxMakers,
+          packingBeforeQc,
+          totalInclQc,
+          status,
+          statusClass,
+          notes
+        });
+      }
+      return rows;
+    }
+
+    function buildTrayRampRows(prefix) {
+      const startDate = val(`${prefix}StartDate`);
+      const targetDate = val(`${prefix}TargetDate`);
+      const startTrays = num(`${prefix}StartTrays`);
+      const targetTrays = num(`${prefix}TargetTrays`);
+      const lbsPerTrayInput = document.getElementById(`${prefix}LbsPerTray`);
+      const lbsPerTray = lbsPerTrayInput ? num(`${prefix}LbsPerTray`) : null;
+      const startEmployees = num(`${prefix}StartEmployees`);
+      const endEmployees = num(`${prefix}EndEmployees`);
+      const weeks = weeksBetween(startDate, targetDate);
+      const rows = [];
+
+      for (let i = 0; i < weeks; i++) {
+        const date = addDays(startDate, i * 7);
+        const pct = weeks === 1 ? 1 : i / (weeks - 1);
+        let trays = Math.round((startTrays + (targetTrays - startTrays) * pct) / 100) * 100;
+        if (i === weeks - 1) trays = targetTrays;
+        const previousTrays = rows.length ? rows[rows.length - 1].trays : startTrays;
+        const employees = Math.round(startEmployees + (endEmployees - startEmployees) * pct);
+
+        rows.push({
+          week: i + 1,
+          dateISO: dateISO(date),
+          datePretty: datePretty(date),
+          trays,
+          lbsEq: lbsPerTray === null ? null : trays * lbsPerTray,
+          trayChange: i === 0 ? 0 : trays - previousTrays,
+          employees
+        });
+      }
+
+      return rows;
+    }
+
+    function buildSeedingRows() {
+      return buildTrayRampRows("seeding");
+    }
+
+    function buildPropogationRows() {
+      const startDate = val("propogationStartDate");
+      const targetDate = val("propogationTargetDate");
+      const transplanterDate = val("propogationTransplanterDate");
+      const startTrays = num("propogationStartTrays");
+      const targetTrays = num("propogationTargetTrays");
+      const lbsPerBoard = num("propogationLbsPerBoard");
+      const startEmployees = num("propogationStartEmployees");
+      const maxEmployees = num("propogationMaxEmployees");
+      const endEmployees = num("propogationEndEmployees");
+      const hoursPerShift = num("propogationHoursPerShift");
+      const boardsPerPersonHour = num("propogationBoardsPerPersonHour");
+      const weeks = weeksBetween(startDate, targetDate);
+      const start = new Date(startDate + "T00:00:00");
+      const target = new Date(targetDate + "T00:00:00");
+      const transplanterRaw = new Date(transplanterDate + "T00:00:00");
+      const transplanter = new Date(Math.max(start.getTime(), Math.min(target.getTime(), transplanterRaw.getTime())));
+      const boardsPerEmployee = boardsPerPersonHour > 0 && hoursPerShift > 0
+        ? boardsPerPersonHour * hoursPerShift
+        : startEmployees > 0 ? startTrays / startEmployees : 0;
+      const rows = [];
+
+      for (let i = 0; i < weeks; i++) {
+        const date = addDays(startDate, i * 7);
+        const pct = weeks === 1 ? 1 : i / (weeks - 1);
+        let trays = Math.round((startTrays + (targetTrays - startTrays) * pct) / 100) * 100;
+        if (i === weeks - 1) trays = targetTrays;
+        const previousTrays = rows.length ? rows[rows.length - 1].trays : startTrays;
+        const trayBasedEmployees = boardsPerEmployee > 0
+          ? Math.ceil(trays / boardsPerEmployee)
+          : Math.round(startEmployees + (maxEmployees - startEmployees) * datePercent(date, start, transplanter));
+        const employees = date <= transplanter
+          ? Math.min(maxEmployees, Math.max(startEmployees, trayBasedEmployees))
+          : endEmployees;
+        const atMaxCapacity = date <= transplanter && maxEmployees > 0 && employees >= maxEmployees;
+        const status = atMaxCapacity ? "RISK" : "OK";
+        const statusClass = atMaxCapacity ? "risk" : "ok";
+        const notes = atMaxCapacity
+          ? "Max employee capacity reached; additional boards exceed modeled processing capacity."
+          : "Modeled employees can process the weekly board target.";
+
+        rows.push({
+          week: i + 1,
+          dateISO: dateISO(date),
+          datePretty: datePretty(date),
+          trays,
+          lbsEq: trays * lbsPerBoard,
+          trayChange: i === 0 ? 0 : trays - previousTrays,
+          employees,
+          status,
+          statusClass,
+          notes
+        });
+      }
+
+      return rows;
+    }
+
+    function buildBoardRampRows(prefix) {
+      const startDate = val(`${prefix}StartDate`);
+      const targetDate = val(`${prefix}TargetDate`);
+      const startBoards = num(`${prefix}StartBoards`);
+      const targetBoards = num(`${prefix}TargetBoards`);
+      const lbsPerBoardInput = document.getElementById(`${prefix}LbsPerBoard`);
+      const lbsPerBoard = lbsPerBoardInput ? num(`${prefix}LbsPerBoard`) : null;
+      const startEmployees = num(`${prefix}StartEmployees`);
+      const endEmployees = num(`${prefix}EndEmployees`);
+      const weeks = weeksBetween(startDate, targetDate);
+      const rows = [];
+
+      for (let i = 0; i < weeks; i++) {
+        const date = addDays(startDate, i * 7);
+        const pct = weeks === 1 ? 1 : i / (weeks - 1);
+        let boards = Math.round((startBoards + (targetBoards - startBoards) * pct) / 100) * 100;
+        if (i === weeks - 1) boards = targetBoards;
+        const previousBoards = rows.length ? rows[rows.length - 1].boards : startBoards;
+        const employees = Math.round(startEmployees + (endEmployees - startEmployees) * pct);
+
+        rows.push({
+          week: i + 1,
+          dateISO: dateISO(date),
+          datePretty: datePretty(date),
+          boards,
+          lbsEq: lbsPerBoard === null ? null : boards * lbsPerBoard,
+          boardChange: i === 0 ? 0 : boards - previousBoards,
+          employees
+        });
+      }
+
+      return rows;
+    }
+
+    function buildHarvestRows() {
+      return buildBoardRampRows("harvest");
+    }
+
+    function buildSanitationRows() {
+      return buildBoardRampRows("sanitation");
+    }
+
+    function buildSHRows() {
+      const startDate = val("shStartDate");
+      const targetDate = val("shTargetDate");
+      const startPallets = num("shStartPallets");
+      const targetPallets = num("shTargetPallets");
+      const startEmployees = num("shStartEmployees");
+      const endEmployees = num("shEndEmployees");
+      const weeks = weeksBetween(startDate, targetDate);
+      const shippingRows = shippingModelReady ? latestShippingRows : [];
+      const rows = [];
+
+      for (let i = 0; i < weeks; i++) {
+        const date = addDays(startDate, i * 7);
+        const isoDate = dateISO(date);
+        const shipping = activeRowForDate(shippingRows, isoDate);
+        const pct = weeks === 1 ? 1 : i / (weeks - 1);
+        rows.push({
+          week: i + 1,
+          dateISO: isoDate,
+          datePretty: datePretty(date),
+          totalLbsEq: shipping ? shipping.total : 0,
+          pallets: Math.round(startPallets + (targetPallets - startPallets) * pct),
+          employees: Math.round(startEmployees + (endEmployees - startEmployees) * pct)
+        });
+      }
+
+      return rows;
+    }
+
+    function activeRowForDate(rows, isoDate) {
+      if (!rows.length || isoDate < rows[0].dateISO) return null;
+      let active = rows[0];
+      for (const row of rows) {
+        if (row.dateISO > isoDate) break;
+        active = row;
+      }
+      return active;
+    }
+
+    function buildOpsRampSummaryRows() {
+      const seedingRows = buildSeedingRows();
+      const transplantRows = buildPropogationRows();
+      const harvestRows = buildHarvestRows();
+      const sanitationRows = buildSanitationRows();
+      const shRows = buildSHRows();
+      const packRows = buildRows();
+      const shippingRows = buildShippingRows();
+      const dates = [...new Set([
+        ...seedingRows.map(r => r.dateISO),
+        ...transplantRows.map(r => r.dateISO),
+        ...harvestRows.map(r => r.dateISO),
+        ...sanitationRows.map(r => r.dateISO),
+        ...shRows.map(r => r.dateISO),
+        ...packRows.map(r => r.dateISO),
+        ...shippingRows.map(r => r.dateISO)
+      ])].sort();
+
+      return dates.map((isoDate, index) => {
+        const seeding = activeRowForDate(seedingRows, isoDate);
+        const transplant = activeRowForDate(transplantRows, isoDate);
+        const harvest = activeRowForDate(harvestRows, isoDate);
+        const sanitation = activeRowForDate(sanitationRows, isoDate);
+        const sh = activeRowForDate(shRows, isoDate);
+        const pack = activeRowForDate(packRows, isoDate);
+        const shipping = activeRowForDate(shippingRows, isoDate);
+        const packPeople = pack
+          ? pack.totalInclQc - pack.boxMakers + (shipping ? shipping.boxMakersNeeded : pack.boxMakers)
+          : null;
+        const people = {
+          seeding: seeding ? seeding.employees : null,
+          transplant: transplant ? transplant.employees : null,
+          harvest: harvest ? harvest.employees : null,
+          sanitation: sanitation ? sanitation.employees : null,
+          pack: packPeople,
+          shipping: sh ? sh.employees : null
+        };
+        const lbsEq = {
+          seedingLbsEq: seeding ? seeding.lbsEq : null,
+          transplantLbsEq: transplant ? transplant.lbsEq : null,
+          harvestLbsEq: harvest ? harvest.lbsEq : null,
+          shLbsEq: sh ? sh.totalLbsEq : null
+        };
+        const total = Object.values(people).reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
+
+        return {
+          week: index + 1,
+          datePretty: datePretty(new Date(isoDate + "T00:00:00")),
+          ...people,
+          ...lbsEq,
+          total
+        };
+      });
+    }
+
+    function renderTable(rows) {
+      const tbody = document.querySelector("#modelTable tbody");
+      tbody.innerHTML = "";
+      rows.forEach(r => {
+        const shippingDemand = activeRowForDate(latestShippingRows, r.dateISO);
+        const boxPrepHrs = shippingDemand ? fmt(shippingDemand.boxPrepHrs, 1) : "-";
+        const boxMakersNeeded = shippingDemand ? fmt(shippingDemand.boxMakersNeeded) : "-";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${fmt(r.lbs)}</td>
+          <td>${fmt(r.qc)}</td>
+          <td>${fmt(r.hours, 1)}</td>
+          <td>${fmt(r.baseCrew)}</td>
+          <td>${fmt(r.feeders)}</td>
+          <td>${fmt(r.boxMakers)}</td>
+          <td>${boxPrepHrs}</td>
+          <td>${boxMakersNeeded}</td>
+          <td>${fmt(r.packingBeforeQc)}</td>
+          <td>${fmt(r.totalInclQc)}</td>
+          <td><span class="pill ${r.statusClass}">${r.status}</span></td>
+          <td style="text-align:left; white-space:normal; min-width:250px">${r.notes}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderSeedingRampTable() {
+      const tbody = document.querySelector("#seedingRampTable tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      buildSeedingRows().forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${fmt(r.trays)}</td>
+          <td>${r.lbsEq === null ? "-" : fmt(r.lbsEq)}</td>
+          <td>${r.trayChange === 0 ? "-" : fmt(r.trayChange)}</td>
+          <td>${fmt(r.employees)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderPropogationRampTable() {
+      const tbody = document.querySelector("#propogationRampTable tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      buildPropogationRows().forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${fmt(r.trays)}</td>
+          <td>${fmt(r.lbsEq)}</td>
+          <td>${r.trayChange === 0 ? "-" : fmt(r.trayChange)}</td>
+          <td>${fmt(r.employees)}</td>
+          <td><span class="pill ${r.statusClass}">${r.status}</span></td>
+          <td style="text-align:left; white-space:normal; min-width:250px">${r.notes}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderBoardRampTable(tableId, rows) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      const showLbsEq = Boolean(document.querySelector(`#${tableId} th[data-col="lbs-eq"]`));
+      tbody.innerHTML = "";
+
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${fmt(r.boards)}</td>
+          ${showLbsEq ? `<td>${r.lbsEq === null ? "-" : fmt(r.lbsEq)}</td>` : ""}
+          <td>${r.boardChange === 0 ? "-" : fmt(r.boardChange)}</td>
+          <td>${fmt(r.employees)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderHarvestRampTable() {
+      const harvestLbsPerBoard = document.getElementById("harvestLbsPerBoard");
+      if (harvestLbsPerBoard) harvestLbsPerBoard.value = val("propogationLbsPerBoard");
+      renderBoardRampTable("harvestRampTable", buildHarvestRows());
+    }
+
+    function renderSanitationRampTable() {
+      renderBoardRampTable("sanitationRampTable", buildSanitationRows());
+    }
+
+    function renderSHRampTable() {
+      const tbody = document.querySelector("#shRampTable tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      buildSHRows().forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${fmt(r.totalLbsEq)}</td>
+          <td>${fmt(r.pallets)}</td>
+          <td>${fmt(r.employees)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderOpsRampSummaryTable() {
+      const tbody = document.querySelector("#opsRampSummaryTable tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      buildOpsRampSummaryRows().forEach(r => {
+        const cell = value => value === null ? "-" : fmt(value);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>Week ${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${cell(r.seeding)}</td>
+          <td>${cell(r.seedingLbsEq)}</td>
+          <td>${cell(r.transplant)}</td>
+          <td>${cell(r.transplantLbsEq)}</td>
+          <td>${cell(r.harvest)}</td>
+          <td>${cell(r.harvestLbsEq)}</td>
+          <td>${cell(r.sanitation)}</td>
+          <td>${cell(r.pack)}</td>
+          <td>${cell(r.shipping)}</td>
+          <td>${cell(r.shLbsEq)}</td>
+          <td>${fmt(r.total)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderQCCurve() {
+      const tbody = document.getElementById("qcCurveTable");
+      tbody.innerHTML = "";
+      qcCurve.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.employees}</td>
+          <td>${fmt(r.average)}</td>
+          <td>${r.excellent ? fmt(r.excellent) : "—"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderHandPackingTable() {
+      const tbody = document.getElementById("handPackingTable");
+      tbody.innerHTML = "";
+      handPackingScenarios.forEach(scenario => {
+        const cyclesPerMachine = num(scenario.inputId);
+        const cyclesTwoMachines = cyclesPerMachine * 2;
+        const lbsTwoMachines = num(scenario.lbsInputId) * 2;
+        const people = Math.ceil(cyclesTwoMachines / Math.max(0.01, scenario.cyclesPerPerson));
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${scenario.label}</td>
+          <td>${fmt(cyclesTwoMachines, 1)}</td>
+          <td>${fmt(lbsTwoMachines, 1)}</td>
+          <td>${fmt(scenario.cyclesPerPerson)}</td>
+          <td>${fmt(people)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderKPIs(rows) {
+      const final = rows[rows.length - 1];
+      const weeklyRamp = rows.length <= 1 ? 0 : (final.lbs - rows[0].lbs) / (rows.length - 1);
+      const qcBasis = val("qcBasis");
+      const qcBadge = document.getElementById("kpiQcBasisBadge");
+      document.getElementById("kpiTarget").textContent = fmt(final.lbs);
+      document.getElementById("kpiWeeklyRamp").textContent = fmt(weeklyRamp);
+      document.getElementById("kpiHours").textContent = fmt(final.hours, 1);
+      document.getElementById("kpiFeeders").textContent = fmt(final.feeders);
+      document.getElementById("kpiPacking").textContent = fmt(final.packingBeforeQc);
+      document.getElementById("kpiTotal").textContent = fmt(final.totalInclQc);
+      document.getElementById("kpiPackTargetBadge").textContent = `${fmt(final.lbs)} lbs`;
+      qcBadge.textContent = qcBasis === "excellent" ? "Excellent QC" : "Average QC";
+      qcBadge.classList.toggle("excellent", qcBasis === "excellent");
+      qcBadge.classList.toggle("average", qcBasis !== "excellent");
+      qcBadge.setAttribute("aria-pressed", String(qcBasis === "excellent"));
+    }
+
+    function renderSummary(rows) {
+      const final = rows[rows.length - 1];
+      const summary = `Ramp-up model summary:
+Starting ${datePretty(rows[0].date)} at ${fmt(rows[0].lbs)} lb/week, ramping to ${fmt(final.lbs)} lb/week by ${datePretty(final.date)}.
+
+Planning assumptions:
+- Product mix: approximately ${num("mix16")}% 16 oz RTS / Super Combo.
+- QC basis: ${val("qcBasis") === "average" ? "average QC curve" : "excellent-quality QC curve"}.
+- Multivac speed: current setting at ${num("lbsPerMin")} lb/min total.
+- Tray-feeding speed: ${num("sustainablePct")}% sustainable human packing speed.
+- Base Multivac/case crew: ${num("baseCrew")} people below ${fmt(num("baseCrewThreshold"))} lb/week; ${num("baseCrewHigh")} people at threshold and above.
+- Box makers: ${num("boxMakersLow")} people below ${fmt(num("boxThreshold"))} lb/week; ${num("boxMakersHigh")} people at threshold and above.
+
+At ${fmt(final.lbs)} lb/week:
+- QC people needed: ${fmt(final.qc)}
+- Multivac runtime: ${fmt(final.hours, 1)} hours/week
+- Tray feeders: ${fmt(final.feeders)}
+- Box makers: ${fmt(final.boxMakers)}
+- Packing labor before QC: ${fmt(final.packingBeforeQc)}
+- Total labor including QC: ${fmt(final.totalInclQc)}
+
+Read:
+The Multivac machine runtime is manageable. The main constraint is the labor system around the machine: QC release capacity, tray-feeding labor, box-making support, staging, attendance, and maintaining product quality through transplant and harvest.`;
+
+      document.getElementById("summaryBox").value = summary;
+    }
+
+    function buildLbsAxis(rows) {
+      const values = [
+        ...rows.map(r => r.lbs),
+        num("startLbs"),
+        num("targetLbs")
+      ].filter(value => Number.isFinite(value));
+
+      const dataMin = Math.min(...values);
+      const dataMax = Math.max(...values);
+      const min = dataMin < 10000
+        ? Math.floor(dataMin / 500) * 500
+        : 10000;
+      const paddedMax = min + Math.max(1000, dataMax - min) * 1.08;
+      const step = Math.max(500, Math.ceil(((paddedMax - min) / 4) / 500) * 500);
+
+      return {
+        min,
+        max: min + step * 4,
+        step
+      };
+    }
+
+    function drawChart(rows) {
+      const canvas = document.getElementById("chart");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      chartHoverPoints = [];
+
+      const padL = 90, padR = 118, padT = 32, padB = 54;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      const lbsAxis = buildLbsAxis(rows);
+      const minLbs = lbsAxis.min;
+      const maxLbs = lbsAxis.max;
+      const maxStaff = Math.max(...rows.map(r => r.totalInclQc)) * 1.2;
+      const maxHours = Math.max(...rows.map(r => r.hours)) * 1.25;
+
+      function x(i) {
+        return padL + (rows.length === 1 ? plotW / 2 : i * plotW / (rows.length - 1));
+      }
+
+      function y(value, max) {
+        return padT + plotH - (value / max) * plotH;
+      }
+
+      function yRange(value, min, max) {
+        return padT + plotH - ((value - min) / (max - min)) * plotH;
+      }
+
+      ctx.font = "12px Arial";
+      for (let i = 0; i <= 4; i++) {
+        const ratio = i / 4;
+        const yy = padT + (plotH * i / 4);
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, yy);
+        ctx.lineTo(w - padR, yy);
+        ctx.stroke();
+
+        ctx.textBaseline = "middle";
+        const reverseRatio = 1 - ratio;
+        if (activeSeries.lbs) {
+          ctx.fillStyle = "#2563eb";
+          ctx.textAlign = "right";
+          ctx.fillText(fmt(maxLbs - lbsAxis.step * i), padL - 10, yy);
+        }
+
+        if (activeSeries.staff) {
+          ctx.fillStyle = "#16a34a";
+          ctx.textAlign = "left";
+          ctx.fillText(fmt(maxStaff * reverseRatio), w - padR + 10, yy - 7);
+        }
+
+        if (activeSeries.hours) {
+          ctx.fillStyle = "#f59e0b";
+          ctx.textAlign = "left";
+          ctx.fillText(fmt(maxHours * reverseRatio, 1), w - padR + 10, yy + 8);
+        }
+      }
+      ctx.textBaseline = "alphabetic";
+
+      function drawLine(values, max, color, width = 3, series = "", min = 0) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        values.forEach((v, i) => {
+          const xx = x(i);
+          const yy = min ? yRange(v, min, max) : y(v, max);
+          if (i === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = color;
+        values.forEach((v, i) => {
+          const xx = x(i);
+          const yy = min ? yRange(v, min, max) : y(v, max);
+          ctx.beginPath();
+          ctx.arc(xx, yy, 5, 0, Math.PI * 2);
+          ctx.fill();
+          chartHoverPoints.push({ x: xx, y: yy, value: v, series, row: rows[i] });
+        });
+      }
+
+      if (activeSeries.lbs) drawLine(rows.map(r => r.lbs), maxLbs, "#2563eb", 4, "lbs", minLbs);
+      if (activeSeries.staff) drawLine(rows.map(r => r.totalInclQc), maxStaff, "#16a34a", 3, "staff");
+      if (activeSeries.hours) drawLine(rows.map(r => r.hours), maxHours, "#f59e0b", 3, "hours");
+
+      // X labels
+      ctx.fillStyle = "#374151";
+      ctx.font = "12px Arial";
+      rows.forEach((r, i) => {
+        ctx.save();
+        ctx.translate(x(i), h - 28);
+        ctx.rotate(-Math.PI / 5);
+        ctx.textAlign = "right";
+        ctx.fillText(r.datePretty, 0, 0);
+        ctx.restore();
+      });
+
+      // Axis labels
+      ctx.fillStyle = "#111827";
+      ctx.font = "bold 13px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("Ramp progression", padL, h - 8);
+
+      ctx.font = "bold 11px Arial";
+      if (activeSeries.lbs) {
+        ctx.fillStyle = "#2563eb";
+        ctx.textAlign = "right";
+        ctx.fillText("lbs/week", padL - 10, padT - 12);
+      }
+
+      if (activeSeries.staff || activeSeries.hours) {
+        ctx.textAlign = "left";
+        if (activeSeries.staff) {
+          ctx.fillStyle = "#16a34a";
+          ctx.fillText("labor", w - padR + 10, padT - 18);
+        }
+
+        if (activeSeries.hours) {
+          ctx.fillStyle = "#f59e0b";
+          ctx.fillText("hours", w - padR + 10, padT - 5);
+        }
+      }
+
+      ctx.font = "bold 13px Arial";
+      ctx.textAlign = "right";
+      if (activeSeries.lbs) {
+        ctx.fillStyle = "#2563eb";
+        ctx.fillText(`${fmt(rows[rows.length - 1].lbs)} lb/wk`, w - padR, yRange(rows[rows.length - 1].lbs, minLbs, maxLbs) - 8);
+      }
+
+      if (activeSeries.staff) {
+        ctx.fillStyle = "#16a34a";
+        ctx.fillText(`${fmt(rows[rows.length - 1].totalInclQc)} people`, w - padR, y(rows[rows.length - 1].totalInclQc, maxStaff) - 8);
+      }
+
+      if (activeSeries.hours) {
+        ctx.fillStyle = "#f59e0b";
+        ctx.fillText(`${fmt(rows[rows.length - 1].hours, 1)} hrs`, w - padR, y(rows[rows.length - 1].hours, maxHours) - 8);
+      }
+    }
+
+    function chartPointLabel(point) {
+      if (point.series === "lbs") {
+        return {
+          title: "Target lbs/week",
+          value: `${fmt(point.value)} lbs/week`
+        };
+      }
+
+      if (point.series === "staff") {
+        return {
+          title: "Total labor incl. QC",
+          value: `${fmt(point.value)} people`
+        };
+      }
+
+      return {
+        title: "Multivac hours/week",
+        value: `${fmt(point.value, 1)} hours/week`
+      };
+    }
+
+    function hideChartTooltip() {
+      const tooltip = document.getElementById("chartTooltip");
+      tooltip.style.visibility = "hidden";
+      document.getElementById("chart").style.cursor = "default";
+    }
+
+    function handleChartHover(event) {
+      const canvas = document.getElementById("chart");
+      const tooltip = document.getElementById("chartTooltip");
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (event.clientX - rect.left) * scaleX;
+      const my = (event.clientY - rect.top) * scaleY;
+      const hitRadius = 12;
+      let nearest = null;
+      let nearestDistance = Infinity;
+
+      chartHoverPoints.forEach(point => {
+        const distance = Math.hypot(point.x - mx, point.y - my);
+        if (distance < hitRadius && distance < nearestDistance) {
+          nearest = point;
+          nearestDistance = distance;
+        }
+      });
+
+      if (!nearest) {
+        hideChartTooltip();
+        return;
+      }
+
+      const label = chartPointLabel(nearest);
+      tooltip.innerHTML = `<strong>${label.title}</strong>Week ${nearest.row.week} - ${nearest.row.datePretty}<br>${label.value}`;
+      tooltip.style.left = `${nearest.x / scaleX}px`;
+      tooltip.style.top = `${nearest.y / scaleY}px`;
+      tooltip.style.visibility = "visible";
+      canvas.style.cursor = "pointer";
+    }
+
+    function saveSettings() {
+      if (isRestoringSettings) return;
+      const inputs = {};
+      Object.keys(defaultValues).forEach(key => {
+        const el = document.getElementById(key);
+        if (el) inputs[key] = el.value;
+      });
+      const activeScreen = document.querySelector(".screen-grid.active");
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          inputs,
+          activeSeries,
+          activeScreenId: activeScreen ? activeScreen.id : "packModelScreen"
+        }));
+      } catch (error) {
+        // Ignore storage errors so the model still works in restricted browser modes.
+      }
+    }
+
+    function loadSettings() {
+      isRestoringSettings = true;
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (!saved) return;
+
+        if (saved.inputs && typeof saved.inputs === "object") {
+          Object.entries(saved.inputs).forEach(([key, value]) => {
+            const el = document.getElementById(key);
+            if (el && key in defaultValues) el.value = value;
+          });
+        }
+
+        if (saved.activeSeries && typeof saved.activeSeries === "object") {
+          Object.keys(activeSeries).forEach(key => {
+            if (typeof saved.activeSeries[key] === "boolean") {
+              activeSeries[key] = saved.activeSeries[key];
+            }
+          });
+        }
+
+        if (saved.activeScreenId && document.getElementById(saved.activeScreenId)) {
+          showScreen(saved.activeScreenId);
+        }
+      } catch (error) {
+        localStorage.removeItem(storageKey);
+      } finally {
+        isRestoringSettings = false;
+      }
+    }
+
+    function syncLegendButtons() {
+      document.querySelectorAll(".legend button").forEach(button => {
+        button.setAttribute("aria-pressed", String(activeSeries[button.dataset.series]));
+      });
+    }
+
+    function showScreen(screenId) {
+      if (!document.getElementById(screenId)) return;
+      document.querySelectorAll(".screen-grid").forEach(screen => {
+        screen.classList.toggle("active", screen.id === screenId);
+      });
+      document.querySelectorAll(".view-pill").forEach(button => {
+        const active = button.dataset.screenTarget === screenId;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+    }
+
+    function recalculate() {
+      latestRows = buildRows();
+      renderTable(latestRows);
+      renderSeedingRampTable();
+      renderPropogationRampTable();
+      renderHarvestRampTable();
+      renderSanitationRampTable();
+      renderSHRampTable();
+      renderHandPackingTable();
+      renderKPIs(latestRows);
+      renderSummary(latestRows);
+      drawChart(latestRows);
+      hideChartTooltip();
+      if (shippingModelReady) renderOpsRampSummaryTable();
+      saveSettings();
+    }
+
+    function copySummary() {
+      const box = document.getElementById("summaryBox");
+      box.select();
+      box.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(box.value).catch(() => {
+        document.execCommand("copy");
+      });
+    }
+
+    function collectCurrentModelState() {
+      const fields = {};
+      document.querySelectorAll("input[id], select[id]").forEach(el => {
+        fields[el.id] = el.value;
+      });
+      const activeScreen = document.querySelector(".screen-grid.active");
+      return {
+        savedAt: new Date().toISOString(),
+        fields,
+        activeSeries: { ...activeSeries },
+        activeScreenId: activeScreen ? activeScreen.id : "packModelScreen"
+      };
+    }
+
+    function applyCurrentModelState(state) {
+      if (!state || !state.fields || typeof state.fields !== "object") return false;
+      isRestoringSettings = true;
+      Object.entries(state.fields).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+      });
+      isRestoringSettings = false;
+
+      if (state.activeSeries && typeof state.activeSeries === "object") {
+        Object.keys(activeSeries).forEach(key => {
+          if (typeof state.activeSeries[key] === "boolean") {
+            activeSeries[key] = state.activeSeries[key];
+          }
+        });
+        syncLegendButtons();
+      }
+
+      if (state.activeScreenId) showScreen(state.activeScreenId);
+      recalculate();
+      recalculateShipping();
+      return true;
+    }
+
+    function saveCurrentState() {
+      try {
+        localStorage.setItem(modelStateKey, JSON.stringify(collectCurrentModelState()));
+        setStateStatus(`Saved ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`);
+      } catch (error) {
+        setStateStatus("Save failed");
+      }
+    }
+
+    function restoreCurrentState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(modelStateKey) || "null");
+        if (!saved || !applyCurrentModelState(saved)) {
+          setStateStatus("No saved state");
+          return;
+        }
+        const savedAt = saved.savedAt ? new Date(saved.savedAt) : null;
+        const stamp = savedAt && !Number.isNaN(savedAt.getTime())
+          ? savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+          : "saved state";
+        setStateStatus(`Restored ${stamp}`);
+      } catch (error) {
+        setStateStatus("Restore failed");
+      }
+    }
+
+    function supabaseHeaders(extra = {}) {
+      return {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        ...extra
+      };
+    }
+
+    function formatSharedStamp(value) {
+      const stamp = value ? new Date(value) : null;
+      if (!stamp || Number.isNaN(stamp.getTime())) return "";
+      return stamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    }
+
+    async function loadSharedState({ silent = false } = {}) {
+      if (!SUPABASE_ANON_KEY) {
+        if (!silent) setStateStatus("Shared settings unavailable");
+        return false;
+      }
+
+      try {
+        if (!silent) setStateStatus("Loading shared settings...");
+        const table = encodeURIComponent(sharedSettingsTable);
+        const id = encodeURIComponent(sharedSettingsId);
+        const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}&select=settings,updated_at&limit=1`;
+        const res = await fetch(url, {
+          method: "GET",
+          cache: "no-store",
+          headers: supabaseHeaders()
+        });
+        if (!res.ok) throw new Error(`Supabase returned ${res.status}`);
+        const rows = await res.json();
+        if (!Array.isArray(rows) || !rows.length || !rows[0].settings) {
+          if (!silent) setStateStatus("No shared settings saved");
+          return false;
+        }
+        if (!applyCurrentModelState(rows[0].settings)) {
+          if (!silent) setStateStatus("Shared settings invalid");
+          return false;
+        }
+        const stamp = formatSharedStamp(rows[0].updated_at);
+        setStateStatus(`Loaded shared settings${stamp ? ` ${stamp}` : ""}`);
+        return true;
+      } catch (error) {
+        if (!silent) setStateStatus("Shared load failed");
+        return false;
+      }
+    }
+
+    async function saveSharedState() {
+      if (!SUPABASE_ANON_KEY) {
+        setStateStatus("Shared settings unavailable");
+        return;
+      }
+
+      try {
+        setStateStatus("Saving shared settings...");
+        const table = encodeURIComponent(sharedSettingsTable);
+        const payload = {
+          id: sharedSettingsId,
+          settings: collectCurrentModelState(),
+          source_file: "15.0 Campo Ramp Up.html"
+        };
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+          method: "POST",
+          headers: supabaseHeaders({
+            "Content-Type": "application/json",
+            Prefer: "resolution=merge-duplicates,return=representation"
+          }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`Supabase returned ${res.status}`);
+        const rows = await res.json().catch(() => []);
+        const stamp = formatSharedStamp(Array.isArray(rows) && rows[0] ? rows[0].updated_at : null);
+        setStateStatus(`Saved shared settings${stamp ? ` ${stamp}` : ""}`);
+      } catch (error) {
+        setStateStatus("Shared save failed");
+      }
+    }
+
+    function resetDefaults() {
+      for (const [key, value] of Object.entries(defaultValues)) {
+        const el = document.getElementById(key);
+        if (el) el.value = value;
+      }
+      Object.keys(activeSeries).forEach(key => {
+        activeSeries[key] = true;
+      });
+      syncLegendButtons();
+      localStorage.removeItem(storageKey);
+      recalculate();
+    }
+
+    document.querySelectorAll("input, select").forEach(el => {
+      el.addEventListener("input", recalculate);
+      el.addEventListener("change", recalculate);
+    });
+
+    document.getElementById("kpiQcBasisBadge").addEventListener("click", () => {
+      const qcSelect = document.getElementById("qcBasis");
+      qcSelect.value = qcSelect.value === "excellent" ? "average" : "excellent";
+      recalculate();
+    });
+
+    document.querySelectorAll(".legend button").forEach(button => {
+      button.addEventListener("click", () => {
+        const series = button.dataset.series;
+        activeSeries[series] = !activeSeries[series];
+        button.setAttribute("aria-pressed", String(activeSeries[series]));
+        drawChart(latestRows);
+        hideChartTooltip();
+        saveSettings();
+      });
+    });
+
+    document.querySelectorAll(".view-pill").forEach(button => {
+      button.addEventListener("click", () => {
+        showScreen(button.dataset.screenTarget);
+        saveSettings();
+      });
+    });
+
+    document.querySelectorAll(".collapse-toggle").forEach(button => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".collapsible-card");
+        const collapsed = card.classList.toggle("is-collapsed");
+        button.setAttribute("aria-expanded", String(!collapsed));
+        button.textContent = collapsed ? "Show" : "Hide";
+      });
+    });
+
+    document.getElementById("chart").addEventListener("mousemove", handleChartHover);
+    document.getElementById("chart").addEventListener("mouseleave", hideChartTooltip);
+
+    renderQCCurve();
+    loadSettings();
+    syncLegendButtons();
+    recalculate();
+
+    // ─────────────────────────────────────────────
+    // SHIPPING TAB LOGIC
+    // ─────────────────────────────────────────────
+
+    const shippingSkuDefaults = [
+      { sku: "8/10 oz", type: "Self Lock", boxesPerPallet: 40, prepRate: 3, lbsPerBox: 5.0, traysPerBox: 8, palletType: "standard", defaultMix: 2 },
+      { sku: "6/5 oz", type: "Self Lock", boxesPerPallet: 65, prepRate: 4, lbsPerBox: 1.875, traysPerBox: 6, palletType: "standard", defaultMix: 2 },
+      { sku: "9/16 oz RTS", type: "Self Lock", boxesPerPallet: 25, prepRate: 2, lbsPerBox: 9.0, traysPerBox: 9, palletType: "chep", defaultMix: 90 },
+      { sku: "18/5 oz", type: "Generic", boxesPerPallet: 30, prepRate: 4, lbsPerBox: 5.625, traysPerBox: 18, palletType: "standard", defaultMix: 2 },
+      { sku: "12/10 oz", type: "Generic", boxesPerPallet: 30, prepRate: 4, lbsPerBox: 7.5, traysPerBox: 12, palletType: "standard", defaultMix: 2 },
+      { sku: "8/16 oz", type: "Generic", boxesPerPallet: 30, prepRate: 4, lbsPerBox: 8.0, traysPerBox: 8, palletType: "standard", defaultMix: 2 }
+    ];
+
+    function shipNum(id) {
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? value : 0;
+    }
+    function shipVal(id) { return document.getElementById(id).value; }
+
+    function skuMixInputId(index) {
+      return `shipSkuMix${index}`;
+    }
+
+    function renderSkuMixTable() {
+      const tbody = document.getElementById("skuMixTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      shippingSkuDefaults.forEach((sku, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${sku.sku}</td>
+          <td>${sku.type}</td>
+          <td>${fmt(sku.boxesPerPallet)}</td>
+          <td>${fmt(sku.prepRate, 1)} boxes/min</td>
+          <td>${fmt(sku.lbsPerBox, 3)}</td>
+          <td><input id="${skuMixInputId(index)}" class="ship-sku-mix" type="number" value="${sku.defaultMix}" min="0" max="100" step="0.1" aria-label="${sku.sku} percent mix"></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getSkuMixSpecs() {
+      return shippingSkuDefaults.map((sku, index) => {
+        const el = document.getElementById(skuMixInputId(index));
+        const mixPct = el ? Number(el.value) : sku.defaultMix;
+        return {
+          ...sku,
+          mixPct: Number.isFinite(mixPct) ? Math.max(0, mixPct) : 0
+        };
+      });
+    }
+
+    function updateSkuMixIndicator(specs) {
+      const indicator = document.getElementById("skuMixIndicator");
+      if (!indicator) return;
+      const totalMix = specs.reduce((sum, sku) => sum + sku.mixPct, 0);
+      const valid = Math.abs(totalMix - 100) < 0.05;
+      indicator.textContent = `Mix: ${fmt(totalMix, totalMix % 1 === 0 ? 0 : 1)}%${valid ? "" : " - adjust to 100%"}`;
+      indicator.classList.toggle("invalid", !valid);
+    }
+
+    function calculateSkuRollup(totalLbs, specs) {
+      const totalMix = specs.reduce((sum, sku) => sum + sku.mixPct, 0);
+      const activeSpecs = totalMix > 0 ? specs.filter(sku => sku.mixPct > 0) : [];
+      const skuRows = activeSpecs.map(sku => {
+        const skuLbs = totalLbs * (sku.mixPct / totalMix);
+        const boxes = sku.lbsPerBox > 0 ? Math.ceil(skuLbs / sku.lbsPerBox) : 0;
+        const pallets = sku.boxesPerPallet > 0 ? Math.ceil(boxes / sku.boxesPerPallet) : 0;
+        const boxPrepHrs = sku.prepRate > 0 ? boxes / (sku.prepRate * 60) : 0;
+        const trays = boxes * sku.traysPerBox;
+        return { ...sku, skuLbs, boxes, pallets, boxPrepHrs, trays };
+      });
+      const boxes = skuRows.reduce((sum, sku) => sum + sku.boxes, 0);
+      const pallets = skuRows.reduce((sum, sku) => sum + sku.pallets, 0);
+      const boxPrepHrs = skuRows.reduce((sum, sku) => sum + sku.boxPrepHrs, 0);
+      const weightedPrepRate = boxPrepHrs > 0 ? boxes / (boxPrepHrs * 60) : 0;
+      const bottleneck = skuRows
+        .filter(sku => sku.boxes > 0)
+        .reduce((slowest, sku) => !slowest || sku.prepRate < slowest.prepRate ? sku : slowest, null);
+      return { skuRows, boxes, pallets, boxPrepHrs, weightedPrepRate, bottleneck };
+    }
+
+    function calculateSamsRampLbs(curISO, ramp) {
+      let lbs = ramp.base;
+      if (ramp.mode === "absolute") {
+        if (curISO >= ramp.step1Date) lbs = ramp.step1Value;
+        if (curISO >= ramp.step2Date) lbs = ramp.step2Value;
+        if (curISO >= ramp.step3Date) lbs = ramp.step3Value;
+      } else {
+        if (curISO >= ramp.step1Date) lbs += ramp.step1Value;
+        if (curISO >= ramp.step2Date) lbs += ramp.step2Value;
+        if (curISO >= ramp.step3Date) lbs += ramp.step3Value;
+      }
+      return lbs;
+    }
+
+    function buildShippingRows() {
+      const samsBase     = shipNum("samsBase");
+      const samsRampMode = shipVal("samsRampMode");
+      const step1Date    = shipVal("samsStep1Date");
+      const step1Add     = shipNum("samsStep1Add");
+      const step2Date    = shipVal("samsStep2Date");
+      const step2Add     = shipNum("samsStep2Add");
+      const step3Date    = shipVal("samsStep3Date");
+      const step3Add     = shipNum("samsStep3Add");
+      const agroLbs      = shipNum("agroLbs");
+      const hriLbs       = shipNum("hriLbs");
+      const costcoLbs    = shipNum("costcoLbs");
+      const costcoDate   = shipVal("costcoDate");
+      const costcoFullLbs = shipNum("costcoFullLbs");
+      const costcoFullDate = shipVal("costcoFullDate");
+      const makerHoursAvailable = shipNum("boxMakerHoursAvailable");
+      const skuSpecs     = getSkuMixSpecs();
+      updateSkuMixIndicator(skuSpecs);
+
+      // Generate weeks from step1Date through 2 weeks past step3 or costco, whichever later
+      const startD = new Date(step1Date + "T00:00:00");
+      const endRef = new Date(Math.max(
+        new Date(step3Date + "T00:00:00").getTime(),
+        new Date(costcoDate + "T00:00:00").getTime(),
+        new Date(costcoFullDate + "T00:00:00").getTime()
+      ));
+      endRef.setDate(endRef.getDate() + 14);
+
+      const rows = [];
+      let weekNum = 1;
+      let cursor = new Date(startD);
+
+      while (cursor <= endRef) {
+        const curISO = cursor.toISOString().slice(0, 10);
+
+        const samsRamp = calculateSamsRampLbs(curISO, {
+          mode: samsRampMode,
+          base: samsBase,
+          step1Date,
+          step1Value: step1Add,
+          step2Date,
+          step2Value: step2Add,
+          step3Date,
+          step3Value: step3Add
+        });
+        const sams = samsRamp;
+
+        let costco = 0;
+        if (curISO >= costcoFullDate) {
+          costco = costcoFullLbs;
+        } else if (curISO >= costcoDate) {
+          costco = costcoLbs;
+        }
+        const total  = sams + agroLbs + hriLbs + costco;
+        const skuRollup = calculateSkuRollup(total, skuSpecs);
+        const boxMakersNeeded = makerHoursAvailable > 0
+          ? Math.ceil(skuRollup.boxPrepHrs / makerHoursAvailable)
+          : 0;
+        const packModelBoxMakers = total >= num("boxThreshold")
+          ? num("boxMakersHigh")
+          : num("boxMakersLow");
+
+        let status = "OK", statusClass = "ok";
+        let notes = "Volume within current packing capacity. Confirm delivery schedule with GMT.";
+        if (total >= 19000) {
+          status = "RISK"; statusClass = "risk";
+          notes = "19K+ lbs — confirm packing staffing and Multivac runtime before committing.";
+        } else if (total >= 13000) {
+          status = "WATCH"; statusClass = "watch";
+          notes = "Ramp phase — verify Brian's team headcount covers this week's total.";
+        }
+
+        // Flag Costco coming online
+        const costcoStart = costcoDate && curISO >= costcoDate && (new Date(curISO) - new Date(costcoDate)) < 7 * 24 * 60 * 60 * 1000;
+        if (costcoStart) notes = "Costco trial starts this week. Confirm readiness.";
+        const costcoFullStart = costcoFullDate && curISO >= costcoFullDate && (new Date(curISO) - new Date(costcoFullDate)) < 7 * 24 * 60 * 60 * 1000;
+        if (costcoFullStart) notes = "Costco full-volume conversion starts this week. Confirm trial decision and capacity.";
+
+        if (skuRollup.bottleneck) {
+          notes += ` Bottleneck SKU: ${skuRollup.bottleneck.sku} at ${fmt(skuRollup.bottleneck.prepRate, 1)} boxes/min.`;
+        }
+        if (boxMakersNeeded !== packModelBoxMakers) {
+          notes += ` Shipping box makers (${fmt(boxMakersNeeded)}) differs from Pack Model (${fmt(packModelBoxMakers)}).`;
+        }
+
+        rows.push({
+          week: weekNum,
+          dateISO: curISO,
+          datePretty: cursor.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+          sams, agro: agroLbs, hri: hriLbs, costco,
+          total,
+          boxes: skuRollup.boxes,
+          pallets: skuRollup.pallets,
+          boxPrepHrs: skuRollup.boxPrepHrs,
+          boxMakersNeeded,
+          packModelBoxMakers,
+          weightedPrepRate: skuRollup.weightedPrepRate,
+          bottleneck: skuRollup.bottleneck,
+          skuRows: skuRollup.skuRows,
+          status, statusClass, notes
+        });
+
+        cursor.setDate(cursor.getDate() + 7);
+        weekNum++;
+      }
+      return rows;
+    }
+
+    function renderShippingTable(rows) {
+      const tbody = document.getElementById("shippingTableBody");
+      tbody.innerHTML = "";
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>W${r.week}</td>
+          <td>${r.datePretty}</td>
+          <td>${fmt(r.sams)}</td>
+          <td>${fmt(r.agro)}</td>
+          <td>${fmt(r.hri)}</td>
+          <td>${r.costco > 0 ? fmt(r.costco) : "—"}</td>
+          <td><strong>${fmt(r.total)}</strong></td>
+          <td>${fmt(r.boxes)}</td>
+          <td>${fmt(r.pallets)}</td>
+          <td><span class="pill ${r.statusClass}">${r.status}</span></td>
+          <td style="text-align:left;white-space:normal;min-width:220px">${r.notes}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderShippingKPIs(rows) {
+      const peak = rows.reduce((a, b) => b.total > a.total ? b : a, rows[0]);
+
+      document.getElementById("shipKpiSams").textContent    = fmt(peak.sams);
+      document.getElementById("shipKpiOther").textContent   = fmt(peak.agro + peak.hri + peak.costco);
+      document.getElementById("shipKpiTotal").textContent   = fmt(peak.total);
+      document.getElementById("shipKpiPallets").textContent = fmt(peak.pallets);
+      document.getElementById("shipKpiBoxRate").textContent = fmt(peak.weightedPrepRate, 2);
+      document.getElementById("shipKpiBoxHours").textContent = fmt(peak.boxPrepHrs, 1);
+      document.getElementById("shipKpiBoxMakers").textContent = fmt(peak.boxMakersNeeded);
+    }
+
+    function buildMaterialsForRow(row) {
+      return row.skuRows.reduce((materials, sku) => {
+        materials.totalTrays += sku.trays;
+        materials.filmImpressions += sku.trays;
+        materials.traysBySku.push(`${sku.sku}: ${fmt(sku.trays)}`);
+
+        if (sku.palletType === "chep") {
+          materials.chepPallets += sku.pallets;
+        } else {
+          materials.standardPallets += sku.pallets;
+        }
+
+        return materials;
+      }, {
+        totalTrays: 0,
+        filmImpressions: 0,
+        standardPallets: 0,
+        chepPallets: 0,
+        traysBySku: []
+      });
+    }
+
+    function renderMaterialsTable(rows) {
+      const tbody = document.getElementById("materialsTableBody");
+      tbody.innerHTML = "";
+      rows.forEach(row => {
+        const materials = buildMaterialsForRow(row);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>W${row.week}</td>
+          <td>${row.datePretty}</td>
+          <td><strong>${fmt(materials.totalTrays)}</strong><div class="cell-detail">${materials.traysBySku.join(" | ")}</div></td>
+          <td>${fmt(materials.filmImpressions)}</td>
+          <td>${fmt(materials.standardPallets)}</td>
+          <td>${fmt(materials.chepPallets)}</td>
+          <td>${fmt(materials.standardPallets + materials.chepPallets)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderShippingSummary(rows) {
+      const peak = rows.reduce((a, b) => b.total > a.total ? b : a, rows[0]);
+      const samsTarget = shipVal("samsRampMode") === "absolute"
+        ? shipNum("samsStep3Add")
+        : shipNum("samsBase") + shipNum("samsStep1Add") + shipNum("samsStep2Add") + shipNum("samsStep3Add");
+      const skuMix = getSkuMixSpecs();
+      const mixTotal = skuMix.reduce((sum, sku) => sum + sku.mixPct, 0);
+      const lines = [
+        "SHIPPING & CUSTOMER REQUIREMENTS SUMMARY",
+        "Generated: " + new Date().toLocaleDateString(),
+        "",
+        "Model update completed 2026-06-26:",
+        "  Added editable Box SKU Mix table for 6 shipping SKUs.",
+        "  Shipping totals now split lbs by SKU mix and sum SKU-level boxes, pallets, and box prep hours.",
+        "  KPIs now use SKU-mix totals, weighted box prep rate, and bottleneck SKU reporting.",
+        "  Removed Legacy Box & Pallet Specs inputs; shipping specs now come from the SKU mix table only.",
+        "  Added box makers needed using editable box-maker hours/week and flags against Pack Model box makers.",
+        "  Added Weekly Materials Consumption table for trays, film impressions, labels, boxes, and pallet types.",
+        "  Sam's ramp uses incremental mode by default, applying base plus all step values.",
+        "  Updated Costco as a 1,000 lb/week trial with 4,500 lb/week full-volume conversion around Oct 27.",
+        "  Pack Model Input tab, chart, QC curve, and existing localStorage keys were not changed.",
+        "",
+        "Sam's Club ramp (GMT):",
+        `  Ramp mode: ${shipVal("samsRampMode") === "absolute" ? "Absolute" : "Incremental"}`,
+        `  Current:  ${fmt(shipNum("samsBase"))} lbs/week`,
+        `  Step 1 value (${fmt(shipNum("samsStep1Add"))} lbs): ${shipVal("samsStep1Date")}`,
+        `  Step 2 value (${fmt(shipNum("samsStep2Add"))} lbs): ${shipVal("samsStep2Date")}`,
+        `  Step 3 value (${fmt(shipNum("samsStep3Add"))} lbs): ${shipVal("samsStep3Date")}`,
+        `  Full Sam's target: ${fmt(samsTarget)} lbs/week`,
+        "",
+        "Other accounts at full run rate:",
+        `  Agro (5+10): ${fmt(shipNum("agroLbs"))} lbs/week (max ${fmt(shipNum("agroMax"))})`,
+        `  HRI (3+1):   ${fmt(shipNum("hriLbs"))} lbs/week (max ${fmt(shipNum("hriMax"))})`,
+        `  Costco trial: ${fmt(shipNum("costcoLbs"))} lbs/week starting ${shipVal("costcoDate")}`,
+        `  Costco full:  ${fmt(shipNum("costcoFullLbs"))} lbs/week starting ${shipVal("costcoFullDate")}`,
+        "",
+        `Peak week total: ${fmt(peak.total)} lbs (week of ${peak.datePretty})`,
+        `  Estimated boxes: ${fmt(peak.boxes)}`,
+        `  Estimated pallets: ${fmt(peak.pallets)}`,
+        `  Box prep hours needed: ${fmt(peak.boxPrepHrs, 1)} hrs/week`,
+        `  Box makers needed: ${fmt(peak.boxMakersNeeded)} at ${fmt(shipNum("boxMakerHoursAvailable"))} hrs/week each`,
+        `  Weighted box prep rate: ${fmt(peak.weightedPrepRate, 2)} boxes/min`,
+        `  Bottleneck SKU: ${peak.bottleneck ? peak.bottleneck.sku : "n/a"}`,
+        "",
+        `Box SKU mix (total ${fmt(mixTotal, mixTotal % 1 === 0 ? 0 : 1)}%):`,
+        ...skuMix.map(sku => `  ${sku.sku} ${sku.type}: ${fmt(sku.mixPct, sku.mixPct % 1 === 0 ? 0 : 1)}%, ${fmt(sku.boxesPerPallet)} boxes/pallet, ${fmt(sku.prepRate, 1)} boxes/min, ${fmt(sku.lbsPerBox, 3)} lbs/box`),
+        "",
+        "Note: Mix should total 100%. Calculations allocate volume across entered SKU shares.",
+        "Costco trial volume is modeled separately from full-volume conversion; Sep 1 day one puts the 8-week decision around Oct 27."
+      ];
+      document.getElementById("shippingSummaryBox").value = lines.join("\n");
+    }
+
+    function copyShippingSummary() {
+      const box = document.getElementById("shippingSummaryBox");
+      box.select();
+      navigator.clipboard.writeText(box.value).catch(() => document.execCommand("copy"));
+    }
+
+    function syncSHPalletInputs(rows) {
+      const startInput = document.getElementById("shStartPallets");
+      const targetInput = document.getElementById("shTargetPallets");
+      if (!startInput || !targetInput || !rows.length) return;
+      startInput.value = rows[0].pallets;
+      targetInput.value = rows[rows.length - 1].pallets;
+    }
+
+    function recalculateShipping() {
+      const rows = buildShippingRows();
+      latestShippingRows = rows;
+      syncSHPalletInputs(rows);
+      renderSHRampTable();
+      renderShippingTable(rows);
+      renderMaterialsTable(rows);
+      renderShippingKPIs(rows);
+      renderShippingSummary(rows);
+      if (latestRows.length) renderTable(latestRows);
+      renderOpsRampSummaryTable();
+    }
+
+    // Wire shipping inputs
+    shippingModelReady = true;
+    renderSkuMixTable();
+
+    ["samsBase","samsStep1Date","samsStep1Add","samsStep2Date","samsStep2Add",
+     "samsStep3Date","samsStep3Add","agroLbs","agroMax","hriLbs","hriMax",
+     "costcoLbs","costcoDate","costcoFullLbs","costcoFullDate","boxMakerHoursAvailable","samsRampMode"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input", recalculateShipping);
+        el.addEventListener("change", recalculateShipping);
+      }
+    });
+
+    document.querySelectorAll(".ship-sku-mix").forEach(el => {
+      el.addEventListener("input", recalculateShipping);
+      el.addEventListener("change", recalculateShipping);
+    });
+
+    recalculateShipping();
+    loadSharedState({ silent: true });
+
+  </script>
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+  CHANGELOG — Campo Caribe Sam's Ramp-Up Staffing Model
+  ═══════════════════════════════════════════════════════════════
+
+  FILE: sams_ramp_up_staffing_model.html
+  OPERATION: Campo Caribe LLC — Director of Operations & Data
+
+  ── v1 (original, ~2026-06-26) ──────────────────────────────
+  Built by Kevin Lopez Gomez (Director of Operations & Data).
+  Pack Model Input tab:
+  - Inputs: start date, target date, start lbs, target lbs,
+    product mix (% 16 oz), Multivac speed (lbs/min), base crew,
+    tray feeders, box makers, QC basis (average vs excellent),
+    QC counted separately toggle.
+  - Outputs: weekly ramp table (target lbs, QC people, Multivac
+    hours, base crew, tray feeders, box makers, packing labor
+    before QC, total incl. QC, status OK/WATCH/RISK).
+  - Chart: lbs/week, total labor, Multivac hours/week.
+  - Reference tables: hand packing scenarios by SKU (5/10/16 oz,
+    current vs rated speed), QC throughput curve (8–23 employees,
+    average and excellent lbs/week).
+  - Copy/paste summary block.
+  - Settings persist via localStorage.
+  - QC basis: two scenarios — average (35 people at 21K) vs
+    excellent (28 people at 21K). Difference is 7 QC staff.
+
+  Key planning assumptions (v1):
+  - Product mix ~90% 16 oz RTS / Super Combo
+  - Multivac speed: 10 lbs/min (2 machines combined)
+  - Ramp: Jun 23 (8,000 lbs) → Aug 18 (21,000 lbs), 9 weeks
+  - Brian Cruz current team: 16 people
+  - Brian's stated ceiling with 16 people: ~11,000 lbs/week
+  - Kevin's baseline: 13,000 lbs/week needs 21 people
+
+  ── v2 (2026-06-26, Claude Sonnet 4.6) ──────────────────────
+  Added: Shipping to Customer Req. tab (second screen).
+
+  Shipping tab inputs:
+  - Sam's Club ramp: current base lbs + 3 step dates/increments
+    (4K now → +4K Aug 3 → +3K Aug 21 = 13,000 total by Aug 21)
+  - Other accounts: Agro (current + max), HRI (current + max),
+    Costco (lbs + start date, flagged as conditional)
+  - Box/pallet specs: units per box, oz per unit, boxes per
+    pallet, box prep rate (boxes/min), ship days/week
+
+  Shipping tab outputs:
+  - KPI bar: peak Sam's lbs, peak other lbs, peak total lbs,
+    peak pallets/week, boxes/min needed, box maker hours/week
+  - Weekly table: Sam's / Agro / HRI / Costco / Total lbs,
+    estimated boxes, estimated pallets, box prep hrs/week,
+    status (OK/WATCH/RISK), notes
+  - Copy/paste summary block
+
+  Key data inputs used to build this tab (from Kevin, 2026-06-26):
+  - Sam's ramp: +4K now, +4K Aug 3, +3K Aug 21 (starts at ~5,500)
+  - W26 actual sales: 6,956 lbs (5,526 Sam's + 1,430 other)
+  - Sam's SKU is ~90% COMBO-16OZ (confirmed via Aloha weekly matrix)
+  - Box spec 9/16 oz RTS: 5 boxes/level × 5 levels = 25 boxes/pallet
+  - Box prep rate 9/16 oz RTS: 2 boxes/min (slowest SKU, dominant)
+  - Agro current: 1,700 lbs/week (max 5,000 per Aaron)
+  - HRI current: ~340 lbs/week (max 500 per Aaron)
+  - Costco: 1,000 lbs/week trial starting Sep 1; 4,500 lbs/week full
+    volume conversion modeled for Oct 27 after the 8-week trial decision
+  - Aaron's confirmed demand by Aug 24: 18,500 lbs/week committed
+    (13K Sam's + 5K Agro + 500 HRI); Costco additive
+
+  ── v3 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Updated: Shipping to Customer Req. tab SKU modeling.
+
+  Shipping tab changes:
+  - Added editable Box SKU Mix table with hardcoded defaults for
+    8/10 oz, 6/5 oz, 9/16 oz RTS, 18/5 oz, 12/10 oz, and 8/16 oz.
+  - Added live mix validation indicator; entered SKU mix should total
+    100%. Default mix keeps 9/16 oz RTS at 90% and distributes the
+    remaining 10% across the other SKUs.
+  - Updated weekly shipping calculations to split total lbs by SKU mix,
+    calculate SKU-level boxes, pallets, and box prep hours, then sum
+    totals into the weekly customer requirements table.
+  - Updated shipping KPIs to use the SKU-mix rollup and weighted box
+    prep rate for box maker hours.
+  - Added bottleneck SKU reporting in weekly notes based on the slowest
+    prep rate with material volume.
+  - Removed the Legacy Box & Pallet Specs input column so shipping specs
+    are controlled by the Box SKU Mix table only.
+  - Pack Model Input tab, chart, QC curve, and existing localStorage keys
+    left unchanged.
+
+  ── v4 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Updated: Shipping box-maker staffing calculation.
+
+  Shipping tab changes:
+  - Added editable Box maker hrs/week available input, default 40.
+  - Added Box Makers Needed column to the weekly shipping table between
+    Box Prep Hrs/Wk and Status.
+  - Calculated box makers needed from SKU-level box prep hours divided
+    by available box-maker hours/week, rounded up to a whole person.
+  - Added Peak Box Makers KPI tile alongside Box Maker Hours/Wk.
+  - Added weekly notes flag when the shipping SKU-based box-maker count
+    diverges from the Pack Model Input box-maker threshold logic.
+
+  ── v5 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Added: Weekly Materials Consumption table in the Shipping to Customer
+  Req. tab.
+
+  Materials table logic:
+  - Added one row per shipping week with Total Trays, Film Impressions,
+    Standard Pallets, Chep Pallets, and Total Pallets.
+  - Tray mapping by SKU: 8/10 oz = 8 trays/box, 6/5 oz = 6 trays/box,
+    9/16 oz RTS = 9 trays/box, 18/5 oz Generic = 18 trays/box,
+    12/10 oz Generic = 12 trays/box, 8/16 oz Generic = 8 trays/box.
+  - Film mapping: 1 film impression per tray, so Film Impressions equals
+    Total Trays.
+  - Label columns were removed because they duplicate film-impression demand.
+  - Pallet mapping: 9/16 oz RTS uses Chep pallets; all other SKUs use
+    Standard pallets. Total Pallets equals Chep plus Standard.
+
+  ── v6 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Updated: Sam's Club ramp interpretation controls.
+
+  Shipping tab changes:
+  - Added Ramp mode selector to the Sam's Club (GMT) Ramp input section.
+  - Incremental mode keeps prior behavior: base plus step 1, step 2, and
+    step 3 additions after their effective dates.
+  - Absolute mode treats each step value as the full Sam's lbs/week after
+    that step date, replacing the prior Sam's volume instead of adding.
+  - Initial version included a Sam's max lbs/week cap input and cap warning
+    notes. This cap was later removed in v9 so the ramp can run uncapped.
+
+  ── v7 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Updated: Costco trial and full-volume modeling.
+
+  Shipping tab changes:
+  - Changed Costco default volume from 4,500 lbs/week to a 1,000 lbs/week
+    trial volume starting Sep 1, 2026.
+  - Added Costco full volume input, default 4,500 lbs/week, with a separate
+    conversion date defaulted to Oct 27, 2026 for the 8-week trial decision.
+  - Updated weekly Costco lbs to use trial volume from the trial start date
+    and full volume from the conversion date.
+  - Updated shipping notes and copy/paste summary to separate Costco trial
+    volume from full-volume conversion timing.
+
+  ── v8 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Updated: Pack Model summary context when inputs are collapsed.
+
+  Pack Model tab changes:
+  - Added QC Basis badge to the Current model summary KPI bar.
+  - Badge shows Average QC as amber and Excellent QC as green.
+  - Clicking the badge toggles the existing qcBasis select value and
+    recalculates the model immediately.
+  - Added Pack Target badge showing the final weekly target lbs so the
+    collapsed summary remains self-contained.
+  - Existing qcBasis select, chart, QC curve table, Shipping tab, and
+    localStorage keys left unchanged.
+
+  ── v9 (2026-06-26, Codex GPT-5) ───────────────────────────
+  Updated: Sam's ramp cap removal.
+
+  Shipping tab changes:
+  - Removed Sam's max lbs/week cap input from the Shipping Model Input
+    section.
+  - Removed all Sam's cap clamping from buildShippingRows().
+  - Removed CAP WARNING notes and cap references from the weekly notes and
+    copy/paste summary.
+  - Sam's volume now runs freely in both ramp modes: incremental mode uses
+    base + step values and remains the default worst-case scenario; absolute
+    mode uses each step value as the replacement weekly total.
+
+  ── v10 (2026-06-26, Codex GPT-5) ──────────────────────────
+  Added: Manual current-state save and restore.
+
+  Model-wide changes:
+  - Added Save current state and Restore saved state controls in the main
+    action row.
+  - Manual snapshot saves all current input/select values across both tabs,
+    including shipping ramp fields and Box SKU Mix percentages.
+  - Snapshot also saves chart series visibility and active tab.
+  - Existing Pack Model auto-save key remains in place; manual snapshots use
+    a separate localStorage key.
+
+  ── v11 (2026-07-02, Codex GPT-5) ──────────────────────────
+  Added: Shared Supabase settings sync.
+
+  Model-wide changes:
+  - Added Load shared settings and Save shared settings controls to the main
+    action row.
+  - Added direct Supabase REST sync against the campo_ramp_up_settings table,
+    using a single shared row for the latest model state.
+  - Shared state saves all current input/select values, Box SKU Mix
+    percentages, chart series visibility, and active tab so other viewers can
+    load the latest assumptions.
+  - Existing localStorage keys remain unchanged; shared settings are an added
+    sync layer, not a replacement.
+
+  ═══════════════════════════════════════════════════════════════
+  -->
+</body>
+</html>
