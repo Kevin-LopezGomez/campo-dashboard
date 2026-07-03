@@ -708,6 +708,7 @@
                     <th>With Waste</th>
                     <th>Lbs / Board</th>
                     <th>Boards / Hour</th>
+                    <th>% Rejected QC</th>
                     <th>% Potential</th>
                   </tr>
                 </thead>
@@ -716,7 +717,7 @@
                 <tbody id="harvest-tbody-weekly" class="hidden"></tbody>
                 <tfoot>
                   <tr>
-                    <td>Grand Total</td><td>–</td><td>–</td><td>–</td><td>–</td><td>0</td><td>0.0</td><td>0</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td>
+                    <td>Grand Total</td><td>–</td><td>–</td><td>–</td><td>–</td><td>0</td><td>0.0</td><td>0</td><td>0</td><td>0</td><td>0.0</td><td>0.0</td><td>0%</td><td>0%</td>
                   </tr>
                 </tfoot>
               </table>
@@ -780,7 +781,9 @@
       BOARDS: "# of Boards Cut",
       CUT_LBS: "Peso de La Lechuga Cortada",
       WASTE_LBS: "Total Harvest Waste Weight",
-      WITH_WASTE_LBS: "Peso de La Lechuga con Waste"
+      WITH_WASTE_LBS: "Peso de La Lechuga con Waste",
+      GOOD_QC_LBS: "Total Good Weight Q.C'd",
+      LOST_QC_LBS: "Total Weight Lost Q.C'd"
     });
 
     // =========================================================
@@ -873,6 +876,16 @@
       ["waste", H.WASTE_LBS],
       ["desperdicio", H.WASTE_LBS],
       ["peso waste", H.WASTE_LBS],
+
+      // QC weights
+      ["total good weight q.c'd", H.GOOD_QC_LBS],
+      ["total good weight qcd", H.GOOD_QC_LBS],
+      ["total good weight qc", H.GOOD_QC_LBS],
+      ["good weight qc", H.GOOD_QC_LBS],
+      ["total weight lost q.c'd", H.LOST_QC_LBS],
+      ["total weight lost qcd", H.LOST_QC_LBS],
+      ["total weight lost qc", H.LOST_QC_LBS],
+      ["weight lost qc", H.LOST_QC_LBS],
       ["sum of total harvest waste weight", H.WASTE_LBS],
       ["sum waste weight", H.WASTE_LBS],
       ["total waste weight", H.WASTE_LBS],
@@ -1157,7 +1170,10 @@
             boards: 0,
             cut: 0,
             waste: 0,
-            withWaste: 0
+            withWaste: 0,
+            goodQc: 0,
+            lostQc: 0,
+            hasQcWeights: false
           });
         }
         const w = wkMap.get(key);
@@ -1166,6 +1182,9 @@
         w.cut += d.cut;
         w.waste += d.waste;
         w.withWaste += d.withWaste;
+        w.goodQc += d.goodQc || 0;
+        w.lostQc += d.lostQc || 0;
+        w.hasQcWeights = w.hasQcWeights || Boolean(d.hasQcWeights);
       }
 
       const showYear = years.size > 1;
@@ -1190,7 +1209,8 @@
         const bph = w.spanH > 0 ? (w.boards / w.spanH) : 0;
         const lbsPerBoard = w.boards > 0 ? (w.cut / w.boards) : 0;
         const potential = w.withWaste > 0 ? (w.cut / w.withWaste) * 100 : 0;
-        return { ...w, bph, lbsPerBoard, potential };
+        const rejectedQcPct = w.hasQcWeights && w.goodQc + w.lostQc > 0 ? (w.lostQc / (w.goodQc + w.lostQc)) * 100 : NaN;
+        return { ...w, bph, lbsPerBoard, potential, rejectedQcPct };
       });
     }
 
@@ -1657,6 +1677,11 @@
         const boards = parseNumber(r[H.BOARDS]);
         const cut = getCutLbs(r);
         const waste = parseNumber(r[H.WASTE_LBS]);
+        const hasGoodQc = String(r[H.GOOD_QC_LBS] ?? "").trim() !== "";
+        const hasLostQc = String(r[H.LOST_QC_LBS] ?? "").trim() !== "";
+        const hasQcWeights = hasGoodQc || hasLostQc;
+        const goodQc = hasGoodQc ? parseNumber(r[H.GOOD_QC_LBS]) : 0;
+        const lostQc = hasLostQc ? parseNumber(r[H.LOST_QC_LBS]) : 0;
         const workers = parseNumber(r[H.WORKERS]);
 
         const allBlank =
@@ -1672,6 +1697,7 @@
         const lbsPerBoard = boards > 0 ? (cut / boards) : 0;
         const bph = spanH > 0 ? (boards / spanH) : 0;
         const potential = withWaste > 0 ? (cut / withWaste) * 100 : 0;
+        const rejectedQcPct = hasQcWeights && goodQc + lostQc > 0 ? (lostQc / (goodQc + lostQc)) * 100 : NaN;
 
         cuts.push({
           batchCode,
@@ -1682,9 +1708,13 @@
           cut,
           waste,
           withWaste,
+          goodQc,
+          lostQc,
+          hasQcWeights,
           lbsPerBoard,
           bph,
           potential,
+          rejectedQcPct,
           startMin,
           finishMin,
           workers
@@ -1709,6 +1739,9 @@
             cut: 0,
             waste: 0,
             withWaste: 0,
+            goodQc: 0,
+            lostQc: 0,
+            hasQcWeights: false,
             workersSum: 0,
             workersCount: 0
           });
@@ -1722,6 +1755,9 @@
         d.cut += c.cut;
         d.waste += c.waste;
         d.withWaste += c.withWaste;
+        d.goodQc += c.goodQc || 0;
+        d.lostQc += c.lostQc || 0;
+        d.hasQcWeights = d.hasQcWeights || Boolean(c.hasQcWeights);
 
         if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
         if (!d.weekGuess && c.week) d.weekGuess = c.week;
@@ -1734,6 +1770,7 @@
           const bph = spanH > 0 ? (d.boards / spanH) : 0;
           const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
           const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
+          const rejectedQcPct = d.hasQcWeights && d.goodQc + d.lostQc > 0 ? (d.lostQc / (d.goodQc + d.lostQc)) * 100 : NaN;
           const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
           return {
             date: d.date,
@@ -1746,9 +1783,13 @@
             cut: d.cut,
             waste: d.waste,
             withWaste: d.withWaste,
+            goodQc: d.goodQc,
+            lostQc: d.lostQc,
+            hasQcWeights: d.hasQcWeights,
             bph,
             lbsPerBoard,
             potential,
+            rejectedQcPct,
             avgWorkers
           };
         });
@@ -1776,6 +1817,7 @@
     function renderKPIs() {
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
       const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const fmtPct = (n) => Number.isFinite(n) ? `${fmt1(n)}%` : "–";
       const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
       const days = dailyVisible.filter(d => d.spanH > 0 || d.boards > 0 || d.cut > 0 || d.waste > 0);
 
@@ -1795,7 +1837,7 @@
         const tfootRow = document.querySelector("#harvest-table tfoot tr");
         if (tfootRow) {
           const tds = tfootRow.querySelectorAll("td");
-          if (tds.length >= 13) {
+          if (tds.length >= 14) {
             tds[5].textContent = "0";
             tds[6].textContent = "0.0";
             tds[7].textContent = "0";
@@ -1803,7 +1845,8 @@
             tds[9].textContent = "0";
             tds[10].textContent = "0.0";
             tds[11].textContent = "0.0";
-            tds[12].textContent = "0%";
+            tds[12].textContent = "–";
+            tds[13].textContent = "0%";
           }
         }
         return;
@@ -1813,6 +1856,8 @@
       const totalCut = days.reduce((s,d)=>s+d.cut,0);
       const totalWaste = days.reduce((s,d)=>s+d.waste,0);
       const totalWithWaste = days.reduce((s,d)=>s+d.withWaste,0);
+      const totalGoodQc = days.reduce((s,d)=>s+(d.goodQc || 0),0);
+      const totalLostQc = days.reduce((s,d)=>s+(d.lostQc || 0),0);
       const totalSpanH = days.reduce((s,d)=>s+(d.spanH>0?d.spanH:0),0);
 
       const usedSpanDays = days.filter(d => d.spanH > 0);
@@ -1821,6 +1866,7 @@
 
       const overallPotential = totalWithWaste > 0 ? (totalCut / totalWithWaste) * 100 : 0;
       const overallWastePct = 100 - overallPotential;
+      const overallRejectedQc = totalGoodQc + totalLostQc > 0 ? (totalLostQc / (totalGoodQc + totalLostQc)) * 100 : NaN;
 
       let best = null, bestBph = 0;
       for (const d of usedSpanDays) {
@@ -1854,7 +1900,7 @@
       const tfootRow = document.querySelector("#harvest-table tfoot tr");
       if (tfootRow) {
         const tds = tfootRow.querySelectorAll("td");
-        if (tds.length >= 13) {
+        if (tds.length >= 14) {
           const lbsPerBoard = totalBoards > 0 ? totalCut / totalBoards : 0;
           tds[5].textContent = fmtInt(totalBoards);
           tds[6].textContent = fmt1(totalSpanH);
@@ -1863,7 +1909,8 @@
           tds[9].textContent = fmtInt(totalWithWaste);
           tds[10].textContent = fmt1(lbsPerBoard);
           tds[11].textContent = fmt1(avgBph);
-          tds[12].textContent = fmt1(overallPotential) + "%";
+          tds[12].textContent = fmtPct(overallRejectedQc);
+          tds[13].textContent = fmt1(overallPotential) + "%";
         }
       }
     }
@@ -1879,6 +1926,7 @@
 
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
       const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const fmtPct = (n) => Number.isFinite(n) ? `${fmt1(n)}%` : "–";
       const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
       const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
       const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
@@ -1910,6 +1958,7 @@
           <td>${fmtInt(c.withWaste)}</td>
           <td>${fmt1(c.lbsPerBoard)}</td>
           <td>${fmt1(c.bph)}</td>
+          <td>${fmtPct(c.rejectedQcPct)}</td>
           <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
         `;
         cutBody.appendChild(tr);
@@ -1934,6 +1983,7 @@
           <td>${fmtInt(d.withWaste)}</td>
           <td>${fmt1(d.lbsPerBoard)}</td>
           <td>${fmt1(d.bph)}</td>
+          <td>${fmtPct(d.rejectedQcPct)}</td>
           <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
         `;
         dailyBody.appendChild(tr);
@@ -1956,6 +2006,7 @@
           <td>${fmtInt(w.withWaste)}</td>
           <td>${fmt1(w.lbsPerBoard)}</td>
           <td>${fmt1(w.bph)}</td>
+          <td>${fmtPct(w.rejectedQcPct)}</td>
           <td><span class="cell-pill ${pctClass(p)}">${p.toFixed(0)}%</span></td>
         `;
         weeklyBody.appendChild(tr);
