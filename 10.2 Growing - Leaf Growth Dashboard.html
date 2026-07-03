@@ -20,6 +20,7 @@
   --accent-pink: #f778ba;
   --accent-purple: #bc8cff;
   --accent-teal: #39d353;
+  --accent-red: #ff7b72;
   --text: #e6edf3;
   --text-muted: #7d8590;
   --text-dim: #8b949e;
@@ -451,14 +452,19 @@ let charts = {};
 let sortCol = 'collection_date', sortDir = 1;
 
 const PUBLIC_LEAF_GROWTH_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/Leaf%20Growth.json';
+const PUBLIC_GROW_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/grow.json';
 const PUBLIC_PACK_URL = 'https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/pack.json';
+const MASTER_GROW_KEY = 'campo_master_grow_v1';
+const MASTER_GROW_PING_KEY = 'campo_master_grow_push_ping_v1';
 const MASTER_PACK_KEY = 'campo_master_pack_v1';
 const MASTER_PACK_PING_KEY = 'campo_master_pack_push_ping_v1';
 const LOCAL_DB_NAME = 'campo_local_cache_v1';
 const LOCAL_DB_STORE = 'datasets';
 const CANON_LEAF_SHEET = 'Leaf Growth';
+const CANON_GROW_SHEET = 'Master Grow';
 const CANON_PACK_SHEET = 'Master Pack';
 const MSG_LEAF = 'LEAF_GROWTH_UPDATED';
+const MSG_GROW = 'MASTER_GROW_UPDATED';
 const MSG_PACK = 'MASTER_PACK_UPDATED';
 
 const METRIC_LABEL = {
@@ -468,6 +474,7 @@ const METRIC_LABEL = {
 };
 
 let packQualityByBatch = new Map();
+let rejectedQcByBatch = new Map();
 
 // ═══════════════════════════════════════════════
 //  INIT
@@ -495,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', event => {
     const msg = event?.data || {};
     if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('update');
+    if (msg.type === MSG_GROW || msg.type === 'MASTER_GROW_UPDATED') void refreshPackQualityAndRender();
     if (msg.type === MSG_PACK || msg.type === 'MASTER_PACK_UPDATED') void refreshPackQualityAndRender();
   });
   try {
@@ -503,12 +511,13 @@ document.addEventListener('DOMContentLoaded', () => {
       bc.onmessage = ev => {
         const msg = ev?.data || {};
         if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('broadcast');
+        if (msg.type === MSG_GROW || msg.type === 'MASTER_GROW_UPDATED') void refreshPackQualityAndRender();
         if (msg.type === MSG_PACK || msg.type === 'MASTER_PACK_UPDATED') void refreshPackQualityAndRender();
       };
     }
   } catch {}
   window.addEventListener('storage', e => {
-    if ([MASTER_PACK_KEY, MASTER_PACK_PING_KEY].includes(e.key)) void refreshPackQualityAndRender();
+    if ([MASTER_GROW_KEY, MASTER_GROW_PING_KEY, MASTER_PACK_KEY, MASTER_PACK_PING_KEY].includes(e.key)) void refreshPackQualityAndRender();
   });
   void loadSharedLeafGrowthData('startup');
 });
@@ -598,6 +607,21 @@ async function loadMasterPackPayload() {
   return JSON.parse(text);
 }
 
+async function loadMasterGrowPayload() {
+  const raw = (localStorage.getItem(MASTER_GROW_KEY) || '').trim();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.sheets) return parsed;
+    } catch (_e) {}
+  }
+
+  const res = await fetch(`${PUBLIC_GROW_URL}?ts=${Date.now()}`, { cache: 'no-store' });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Grow public JSON failed (${res.status})${text ? `: ${text}` : ''}`);
+  return JSON.parse(text);
+}
+
 function sheetToObjects(sheetObj) {
   const headers = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
   const rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
@@ -650,20 +674,75 @@ function buildPackQualityMap(packPayload) {
   return out;
 }
 
+function buildRejectedQcMap(growPayload) {
+  const sheet = growPayload?.sheets?.[CANON_GROW_SHEET];
+  const map = new Map();
+  if (!sheet) return map;
+
+  for (const row of sheetToObjects(sheet)) {
+    const batch = normalizeBatchCode(firstValueByHeader(row, ['Batch Code']));
+    if (!batch) continue;
+
+    const goodQcWeight = toNum(firstValueByHeader(row, [
+      "Total Good Weight Q.C'd",
+      'Total Good Weight QCd',
+      'Total Good Weight QC',
+      'Good Weight QC'
+    ]));
+    const lostQcWeight = toNum(firstValueByHeader(row, [
+      "Total Weight Lost Q.C'd",
+      'Total Weight Lost QCd',
+      'Total Weight Lost QC',
+      'Weight Lost QC'
+    ]));
+    if (!Number.isFinite(goodQcWeight) && !Number.isFinite(lostQcWeight)) continue;
+
+    if (!map.has(batch)) map.set(batch, { goodQcWeight: 0, lostQcWeight: 0 });
+    const entry = map.get(batch);
+    if (Number.isFinite(goodQcWeight)) entry.goodQcWeight += goodQcWeight;
+    if (Number.isFinite(lostQcWeight)) entry.lostQcWeight += lostQcWeight;
+  }
+
+  const out = new Map();
+  for (const [batch, entry] of map.entries()) {
+    const denominator = entry.goodQcWeight + entry.lostQcWeight;
+    out.set(batch, denominator > 0 ? entry.lostQcWeight / denominator : null);
+  }
+  return out;
+}
+
 async function refreshPackQualityMap() {
-  try {
-    packQualityByBatch = buildPackQualityMap(await loadMasterPackPayload());
-  } catch (err) {
-    console.warn('Master Pack quality load failed:', err);
+  const [packResult, growResult] = await Promise.allSettled([
+    loadMasterPackPayload(),
+    loadMasterGrowPayload()
+  ]);
+
+  if (packResult.status === 'fulfilled') {
+    const packPayload = packResult.value;
+    packQualityByBatch = buildPackQualityMap(packPayload);
+  } else {
+    console.warn('Master Pack quality load failed:', packResult.reason);
     packQualityByBatch = new Map();
+  }
+
+  if (growResult.status === 'fulfilled') {
+    const growPayload = growResult.value;
+    rejectedQcByBatch = buildRejectedQcMap(growPayload);
+  } else {
+    console.warn('Master Grow rejected QC load failed:', growResult.reason);
+    rejectedQcByBatch = new Map();
   }
 }
 
 function applyPackQualityToRawData() {
-  rawData = rawData.map(r => ({
-    ...r,
-    pack_quality: packQualityByBatch.get(normalizeBatchCode(r.batch)) || ''
-  }));
+  rawData = rawData.map(r => {
+    const batch = normalizeBatchCode(r.batch);
+    return {
+      ...r,
+      pack_quality: packQualityByBatch.get(batch) || '',
+      rejected_qc_pct: Number.isFinite(rejectedQcByBatch.get(batch)) ? rejectedQcByBatch.get(batch) : null
+    };
+  });
 }
 
 async function refreshPackQualityAndRender() {
@@ -723,9 +802,11 @@ function loadHeaderRows(headers, rows, name) {
     Object.keys(row).forEach(k => { n[keyMap[k]] = row[k]; });
     return n;
   }).map(r => {
+    const batch = String(r.batch_number ?? r.batch_no ?? r.batch ?? '').trim();
+    const normalizedBatch = normalizeBatchCode(batch);
     // Map to standard internal fields
     return {
-      batch:            String(r.batch_number ?? r.batch_no ?? r.batch ?? '').trim(),
+      batch,
       variety:          String(r.variety ?? r.var ?? '').trim(),
       seed_date:        r.seed_date ?? r.seeding_date ?? r.sow_date ?? '',
       collection_date:  r.data_collection_day ?? r.collection_date ?? r.date ?? '',
@@ -735,7 +816,8 @@ function loadHeaderRows(headers, rows, name) {
       leaf_height:      toNum(r['leaf_height_cm'] ?? r.leaf_height ?? r.height_cm ?? r.height),
       board_weight:     toNum(r.av_board_weight_g ?? r.board_weight ?? null),
       harvest_weight:   toNum(r.harvest_weight_lb ?? r.harvest_weight ?? null),
-      pack_quality:     packQualityByBatch.get(normalizeBatchCode(r.batch_number ?? r.batch_no ?? r.batch ?? '')) || '',
+      pack_quality:     packQualityByBatch.get(normalizedBatch) || '',
+      rejected_qc_pct:  Number.isFinite(rejectedQcByBatch.get(normalizedBatch)) ? rejectedQcByBatch.get(normalizedBatch) : null,
     };
   }).filter(r => r.batch || r.variety); // drop blank rows
 
@@ -1276,6 +1358,7 @@ function renderTable() {
     { k:'variety',         l:'Variety' },
     { k:'batch',           l:'Batch Number' },
     { k:'pack_quality',    l:'Pack Quality/Calidad' },
+    { k:'rejected_qc_pct', l:'% Rejected QC' },
     { k:'seed_date',       l:'Seed Date' },
     { k:'collection_date', l:'Collection Date' },
     { k:'iso_week',        l:'ISO Week' },
@@ -1298,6 +1381,7 @@ function renderTable() {
             <td><span class="vbadge" style="background:${col}22;color:${col};border:1px solid ${col}44">${r.variety}</span></td>
             <td>${r.batch}</td>
             <td style="color:var(--accent-purple)">${r.pack_quality || '—'}</td>
+            <td style="color:var(--accent-red)">${fmtPct(r.rejected_qc_pct)}</td>
             <td>${r.seed_date ?? '—'}</td>
             <td style="color:var(--accent-blue)">${r.collection_date ?? '—'}</td>
             <td style="color:var(--text-muted)">${r.iso_week ?? '—'}</td>
@@ -1316,6 +1400,11 @@ function renderTable() {
 function fmt(v, dp) {
   if (v === null || v === undefined) return '—';
   return Number(v).toFixed(dp);
+}
+
+function fmtPct(v) {
+  if (v === null || v === undefined || !Number.isFinite(Number(v))) return '—';
+  return `${(Number(v) * 100).toFixed(1)}%`;
 }
 
 function sortTable(col) {

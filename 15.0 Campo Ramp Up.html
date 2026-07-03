@@ -1855,6 +1855,20 @@
       return active;
     }
 
+    function closestRowForDate(rows, isoDate) {
+      if (!rows.length) return null;
+      const target = new Date(isoDate + "T00:00:00").getTime();
+      return rows.reduce((closest, row) => {
+        const rowTime = new Date(row.dateISO + "T00:00:00").getTime();
+        const closestTime = new Date(closest.dateISO + "T00:00:00").getTime();
+        return Math.abs(rowTime - target) < Math.abs(closestTime - target) ? row : closest;
+      }, rows[0]);
+    }
+
+    function summaryRowForDate(rows, isoDate) {
+      return activeRowForDate(rows, isoDate) || closestRowForDate(rows, isoDate);
+    }
+
     function buildOpsRampSummaryRows() {
       const seedingRows = buildSeedingRows();
       const transplantRows = buildPropogationRows();
@@ -1874,13 +1888,13 @@
       ])].sort();
 
       return dates.map((isoDate, index) => {
-        const seeding = activeRowForDate(seedingRows, isoDate);
-        const transplant = activeRowForDate(transplantRows, isoDate);
-        const harvest = activeRowForDate(harvestRows, isoDate);
-        const sanitation = activeRowForDate(sanitationRows, isoDate);
-        const sh = activeRowForDate(shRows, isoDate);
-        const pack = activeRowForDate(packRows, isoDate);
-        const shipping = activeRowForDate(shippingRows, isoDate);
+        const seeding = summaryRowForDate(seedingRows, isoDate);
+        const transplant = summaryRowForDate(transplantRows, isoDate);
+        const harvest = summaryRowForDate(harvestRows, isoDate);
+        const sanitation = summaryRowForDate(sanitationRows, isoDate);
+        const sh = summaryRowForDate(shRows, isoDate);
+        const pack = summaryRowForDate(packRows, isoDate);
+        const shipping = summaryRowForDate(shippingRows, isoDate);
         const packPeople = pack
           ? pack.totalInclQc - pack.boxMakers + (shipping ? shipping.boxMakersNeeded : pack.boxMakers)
           : null;
@@ -3234,6 +3248,15 @@ The Multivac machine runtime is manageable. The main constraint is the labor sys
     load the latest assumptions.
   - Existing localStorage keys remain unchanged; shared settings are an added
     sync layer, not a replacement.
+
+  ── v12 (2026-07-03, Codex GPT-5) ──────────────────────────
+  Updated: Ops Ramp Model Summary blank fill behavior.
+
+  Ops Ramp Model Summary changes:
+  - Summary rows now use the closest available model row when a dated value
+    would otherwise be blank.
+  - Existing carry-forward behavior remains in place once a model has started;
+    closest-row fallback only fills missing values before a model's first row.
 
   ═══════════════════════════════════════════════════════════════
   -->
