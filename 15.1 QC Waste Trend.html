@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>15.1 QC Waste Trend</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #030712;
+      --shell: #071322;
+      --card: #0d1728;
+      --card2: #111d33;
+      --ink: #e5e7eb;
+      --muted: #94a3b8;
+      --line: #334155;
+      --lineSoft: rgba(148, 163, 184, 0.18);
+      --accent: #2563eb;
+      --actual: #22c55e;
+      --estimate: #3b82f6;
+      --good: rgba(34, 197, 94, 0.16);
+      --bad: rgba(248, 113, 113, 0.16);
+      --goodText: #4ade80;
+      --badText: #f87171;
+      --header: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.18), transparent 28%),
+        radial-gradient(circle at 82% 0%, rgba(34, 197, 94, 0.14), transparent 32%),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px;
+      min-height: 100vh;
+      background:
+        linear-gradient(115deg, rgba(15, 23, 42, 0.94), rgba(7, 19, 34, 0.96) 58%, rgba(8, 47, 44, 0.74)),
+        var(--shell);
+      border-left: 1px solid #1e3a5f;
+      border-right: 1px solid #1e3a5f;
+    }
+
+    .hero-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1, h2 {
+      margin: 0;
+      color: var(--header);
+    }
+
+    h1 {
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 17px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 1px solid #31507a;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(180deg, #1d4ed8, #1e40af);
+      color: #f8fafc;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    button.secondary {
+      background: rgba(15, 23, 42, 0.8);
+      color: #cbd5e1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-4 { grid-column: span 4; }
+
+    .card {
+      background: linear-gradient(180deg, rgba(17, 29, 51, 0.92), rgba(13, 23, 40, 0.92));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 18px 48px rgba(0, 0, 0, 0.24);
+      padding: 18px;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
+      min-height: 92px;
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+    }
+
+    .kpi .value {
+      font-size: 25px;
+      font-weight: 800;
+      margin-top: 6px;
+      color: #f8fafc;
+    }
+
+    .kpi .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .status {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 11px 12px;
+      color: #cbd5e1;
+      background: rgba(2, 6, 23, 0.42);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: pre-wrap;
+    }
+
+    .chart-box {
+      position: relative;
+      height: 390px;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .legend-note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-right: 5px;
+      vertical-align: -1px;
+    }
+
+    .dot.estimate { background: var(--estimate); }
+    .dot.actual { background: var(--actual); }
+
+    .linked-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .linked-checkbox input {
+      width: auto;
+      margin: 0;
+    }
+
+    .chart-controls {
+      margin-top: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      margin-top: 12px;
+      max-height: 620px;
+      background: rgba(15, 23, 42, 0.48);
+    }
+
+    table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+      background: transparent;
+    }
+
+    th, td {
+      padding: 10px 9px;
+      text-align: right;
+      border-bottom: 1px solid var(--lineSoft);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #060b1a;
+      color: #cbd5e1;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+    }
+
+    .sort-header {
+      width: 100%;
+      border: 0;
+      border-radius: 7px;
+      padding: 6px 7px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #cbd5e1;
+      background: transparent;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    th:first-child .sort-header,
+    th:nth-child(2) .sort-header {
+      justify-content: flex-start;
+    }
+
+    .sort-header:hover,
+    .sort-header:focus-visible {
+      background: rgba(37, 99, 235, 0.2);
+      outline: none;
+    }
+
+    .sort-indicator {
+      color: var(--actual);
+      font-size: 11px;
+      min-width: 10px;
+      text-align: center;
+    }
+
+    .table-head-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .table-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .table-count {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .table-actions button {
+      padding: 7px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+    }
+
+    tbody tr:hover {
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    th:first-child, td:first-child,
+    th:nth-child(2), td:nth-child(2) {
+      text-align: left;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .variance {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 66px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-weight: 800;
+    }
+
+    .variance.bad {
+      color: var(--badText);
+      background: var(--bad);
+    }
+
+    .variance.good {
+      color: var(--goodText);
+      background: var(--good);
+    }
+
+    .empty {
+      padding: 30px 12px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .wrap { padding: 18px; }
+      .hero-head { display: block; }
+      .button-row { justify-content: flex-start; margin-top: 12px; }
+      .span-8, .span-4 { grid-column: span 12; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chart-box { height: 330px; }
+    }
+
+    @media (max-width: 560px) {
+      .kpis { grid-template-columns: 1fr; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero-head">
+      <div>
+        <h1>QC Waste Trend</h1>
+        <p>Grow Team pre-harvest loss estimate compared with actual post-harvest QC loss by batch and harvest week.</p>
+      </div>
+      <div class="button-row">
+        <button type="button" id="refreshBtn">Refresh Data</button>
+        <button type="button" class="secondary" id="downloadBtn">Download CSV</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card span-12">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">QC Batches</div>
+            <div class="value" id="kBatches">--</div>
+            <div class="sub">Rows with numeric QC weights</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Avg Actual Loss</div>
+            <div class="value" id="kActual">--</div>
+            <div class="sub">Across qualifying batches</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Avg Estimated Loss</div>
+            <div class="value" id="kEstimate">--</div>
+            <div class="sub">Estimate blanks excluded</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Avg Variance</div>
+            <div class="value" id="kVariance">--</div>
+            <div class="sub">Actual minus estimate</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Harvest Weeks</div>
+            <div class="value" id="kWeeks">--</div>
+            <div class="sub" id="kWeekRange">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-8">
+        <h2>Weekly Trend</h2>
+        <p>Each point is the average across qualifying batches harvested in that week.</p>
+        <label class="linked-checkbox chart-controls">
+          <input type="checkbox" id="excludeHundredActualTrendToggle" checked>
+          Exclude 100% actual loss from weekly trend
+        </label>
+        <div class="chart-box">
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="legend-note">
+          <span><span class="dot estimate"></span>Estimated Loss %</span>
+          <span><span class="dot actual"></span>Actual Loss %</span>
+        </div>
+      </div>
+
+      <aside class="card span-4">
+        <h2>Data Status</h2>
+        <div class="status" id="status">Loading Master Grow data...</div>
+        <div class="small" id="qualityNote"></div>
+      </aside>
+
+      <div class="card span-12">
+        <div class="table-head-row">
+          <div>
+            <h2>Batch-Level Table</h2>
+            <p>Click a header to sort ascending or descending. Positive variance means actual loss was worse than estimated.</p>
+          </div>
+          <div class="table-actions">
+            <label class="linked-checkbox">
+              <input type="checkbox" id="excludeHundredActualTableToggle" checked>
+              Exclude 100% actual loss from table
+            </label>
+            <span class="table-count" id="tableCount">--</span>
+            <button type="button" class="secondary" id="resetSortBtn">Reset Sort</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th aria-sort="none">
+                  <button class="sort-header" type="button" data-sort="batchCode">Batch Code <span class="sort-indicator"></span></button>
+                </th>
+                <th aria-sort="none">
+                  <button class="sort-header" type="button" data-sort="variety">Variety <span class="sort-indicator"></span></button>
+                </th>
+                <th aria-sort="descending">
+                  <button class="sort-header" type="button" data-sort="dateObj">Harvest Date <span class="sort-indicator">v</span></button>
+                </th>
+                <th aria-sort="none">
+                  <button class="sort-header" type="button" data-sort="week">Harvest Week <span class="sort-indicator"></span></button>
+                </th>
+                <th aria-sort="none">
+                  <button class="sort-header" type="button" data-sort="estimatePct">Estimated Loss % <span class="sort-indicator"></span></button>
+                </th>
+                <th aria-sort="none">
+                  <button class="sort-header" type="button" data-sort="actualPct">Actual Loss % <span class="sort-indicator"></span></button>
+                </th>
+                <th aria-sort="none">
+                  <button class="sort-header" type="button" data-sort="variance">Variance <span class="sort-indicator"></span></button>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="batchBody">
+              <tr><td colspan="7" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const PUBLIC_GROW_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/grow.json";
+    const CANON_GROW_SHEET = "Master Grow";
+
+    const H = Object.freeze({
+      BATCH: "Batch Code",
+      VARIETY: "Veriaty",
+      WEEK: "Harvest Week",
+      DATE: "Harvest Date",
+      ESTIMATE: "Grow Team Lost Estimate",
+      GOOD_QC_LBS: "Total Good Weight Q.C'd",
+      LOST_QC_LBS: "Total Weight Lost Q.C'd"
+    });
+
+    const SHEET_CANDIDATES = [
+      "Master Grow",
+      "master grow",
+      "MASTER GROW",
+      "Grow",
+      "grow",
+      "MG",
+      "mg"
+    ];
+
+    const HEADER_ALIASES = new Map([
+      ["batch code", H.BATCH],
+      ["batch", H.BATCH],
+      ["batchcode", H.BATCH],
+      ["veriaty", H.VARIETY],
+      ["variety", H.VARIETY],
+      ["varity", H.VARIETY],
+      ["harvest week", H.WEEK],
+      ["week", H.WEEK],
+      ["harvest date", H.DATE],
+      ["date", H.DATE],
+      ["grow team lost estimate", H.ESTIMATE],
+      ["grow team loss estimate", H.ESTIMATE],
+      ["grow lost estimate", H.ESTIMATE],
+      ["grow loss estimate", H.ESTIMATE],
+      ["estimated loss", H.ESTIMATE],
+      ["estimated loss %", H.ESTIMATE],
+      ["estimated % loss", H.ESTIMATE],
+      ["pre harvest loss estimate", H.ESTIMATE],
+      ["pre-harvest loss estimate", H.ESTIMATE],
+      ["total good weight q.c'd", H.GOOD_QC_LBS],
+      ["total good weight qcd", H.GOOD_QC_LBS],
+      ["total good weight qc", H.GOOD_QC_LBS],
+      ["good weight qc", H.GOOD_QC_LBS],
+      ["total weight lost q.c'd", H.LOST_QC_LBS],
+      ["total weight lost qcd", H.LOST_QC_LBS],
+      ["total weight lost qc", H.LOST_QC_LBS],
+      ["weight lost qc", H.LOST_QC_LBS]
+    ]);
+
+    let batchRows = [];
+    let weeklyRows = [];
+    let trendChart = null;
+    let excludeHundredActualTrend = true;
+    let excludeHundredActualTable = true;
+    let sortState = { key: "dateObj", direction: "desc" };
+    let lastRenderMeta = { stats: null, sheetName: "--", totalRows: 0, source: "--" };
+
+    const $ = id => document.getElementById(id);
+
+    function normHeader(s) {
+      return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    function isObject(v) {
+      return !!v && typeof v === "object" && !Array.isArray(v);
+    }
+
+    function looksLikeSheetShape(v) {
+      return isObject(v) && Array.isArray(v.rows);
+    }
+
+    function setStatus(msg) {
+      $("status").textContent = msg || "";
+    }
+
+    function fmtInt(n) {
+      return Number.isFinite(n) ? Math.round(n).toLocaleString() : "--";
+    }
+
+    function fmtPct(n) {
+      return Number.isFinite(n) ? `${n.toFixed(1)}%` : "--";
+    }
+
+    function fmtSignedPct(n) {
+      if (!Number.isFinite(n)) return "--";
+      return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+    }
+
+    function escapeHtml(v) {
+      return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function isMissingToken(s) {
+      const t = String(s ?? "").trim().toLowerCase();
+      return !t ||
+        t === "n/a" ||
+        t === "na" ||
+        t === "nan" ||
+        t === "null" ||
+        t === "undefined" ||
+        t.includes("#value") ||
+        t.includes("#div/0") ||
+        t.includes("#n/a");
+    }
+
+    function parseNumberOrNull(v) {
+      if (v === null || v === undefined) return null;
+      if (typeof v === "number") return Number.isFinite(v) ? v : null;
+      const raw = String(v).trim();
+      if (isMissingToken(raw)) return null;
+      const cleaned = raw.replace(/[$,%\s]/g, "").replace(/,/g, "");
+      if (!cleaned || !/[0-9]/.test(cleaned)) return null;
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function parseEstimatePct(v) {
+      const n = parseNumberOrNull(v);
+      if (n === null) return null;
+      return Math.abs(n) <= 1 && String(v ?? "").includes("%") === false ? n * 100 : n;
+    }
+
+    function parseMonthNameDate(s) {
+      const raw = String(s || "").trim();
+      if (!raw) return null;
+      const parts = raw.split(",");
+      const cleaned = (parts.length >= 2) ? parts.slice(1).join(",").trim() : raw;
+      const m = cleaned.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+      if (!m) return null;
+      const months = {
+        january:0, february:1, march:2, april:3, may:4, june:5,
+        july:6, august:7, september:8, october:9, november:10, december:11
+      };
+      const month = months[m[1].toLowerCase()];
+      const day = parseInt(m[2], 10);
+      const year = parseInt(m[3], 10);
+      if (!Number.isInteger(month) || !day || !year) return null;
+      const d = new Date(Date.UTC(year, month, day));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function parseAnyDate(v) {
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !Number.isNaN(v.getTime())) return v;
+      if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const d = new Date(excelEpoch.getTime() + v * 86400000);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      const s = String(v).trim();
+      if (!s || isMissingToken(s)) return null;
+      const monthName = parseMonthNameDate(s);
+      if (monthName) return monthName;
+
+      let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (m) {
+        let year = parseInt(m[3], 10);
+        if (year < 100) year += 2000;
+        const d = new Date(Date.UTC(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10)));
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) {
+        const d = new Date(Date.UTC(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10)));
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      const fallback = new Date(s);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+
+    function normalizeDate(d) {
+      if (!d) return null;
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    }
+
+    function formatDate(d) {
+      if (!d) return "--";
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      return `${mm}/${dd}/${d.getUTCFullYear()}`;
+    }
+
+    function weekSortValue(week) {
+      const s = String(week ?? "").trim();
+      const nums = s.match(/\d+/g);
+      if (!nums) return Number.POSITIVE_INFINITY;
+      if (nums.length >= 2) return Number(nums[0]) * 100 + Number(nums[1]);
+      return Number(nums[0]);
+    }
+
+    function avg(values) {
+      const clean = values.filter(Number.isFinite);
+      return clean.length ? clean.reduce((a, b) => a + b, 0) / clean.length : NaN;
+    }
+
+    function sortValue(row, key) {
+      if (key === "dateObj") return row.dateObj ? row.dateObj.getTime() : NaN;
+      if (key === "week") return weekSortValue(row.week);
+      if (key === "estimatePct") return row.estimatePct;
+      if (key === "actualPct") return row.actualPct;
+      if (key === "variance") return row.variance;
+      return String(row[key] ?? "").trim().toLowerCase();
+    }
+
+    function isMissingSortValue(value) {
+      return value === null ||
+        value === undefined ||
+        value === "" ||
+        (typeof value === "number" && !Number.isFinite(value));
+    }
+
+    function getSortedBatchRows() {
+      const key = sortState.key;
+      const direction = sortState.direction === "asc" ? 1 : -1;
+      const tableRows = excludeHundredActualTable
+        ? batchRows.filter(row => !isActualLossHundred(row.actualPct))
+        : batchRows;
+      return [...tableRows].sort((a, b) => {
+        const av = sortValue(a, key);
+        const bv = sortValue(b, key);
+        const aMissing = isMissingSortValue(av);
+        const bMissing = isMissingSortValue(bv);
+        if (aMissing && bMissing) return String(a.batchCode).localeCompare(String(b.batchCode));
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+        let cmp = 0;
+        if (typeof av === "number" && typeof bv === "number") {
+          cmp = av - bv;
+        } else {
+          cmp = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: "base" });
+        }
+        if (cmp === 0) cmp = String(a.batchCode).localeCompare(String(b.batchCode));
+        return cmp * direction;
+      });
+    }
+
+    function updateSortHeaders() {
+      document.querySelectorAll(".sort-header").forEach(button => {
+        const isActive = button.dataset.sort === sortState.key;
+        const direction = sortState.direction === "asc" ? "ascending" : "descending";
+        const th = button.closest("th");
+        const indicator = button.querySelector(".sort-indicator");
+        if (th) th.setAttribute("aria-sort", isActive ? direction : "none");
+        if (indicator) indicator.textContent = isActive ? (sortState.direction === "asc" ? "^" : "v") : "";
+      });
+    }
+
+    async function fetchJson(url) {
+      const bust = url + (url.includes("?") ? "&" : "?") + "ts=" + Date.now();
+      const res = await fetch(bust, { cache: "no-store" });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 180)}`);
+      return JSON.parse(text);
+    }
+
+    function normalizeMasterGrowPayload(raw) {
+      if (!isObject(raw)) return raw;
+      if (isObject(raw.sheets) && raw.sheets[CANON_GROW_SHEET]) return raw;
+      if (isObject(raw.sheets)) {
+        const keys = Object.keys(raw.sheets);
+        const match = keys.find(k => String(k).trim().toLowerCase() === CANON_GROW_SHEET.toLowerCase()) ||
+          keys.find(k => String(k).toLowerCase().includes("grow"));
+        if (match) {
+          const clone = JSON.parse(JSON.stringify(raw));
+          clone.sheets[CANON_GROW_SHEET] = clone.sheets[match];
+          return clone;
+        }
+      }
+      if (Array.isArray(raw.headers) && Array.isArray(raw.rows)) {
+        return {
+          version: raw.version || "v1",
+          updatedAt: raw.updatedAt || new Date().toISOString(),
+          kind: raw.kind || "grow",
+          sourceLabel: raw.sourceLabel || "raw headers/rows",
+          sheets: { [CANON_GROW_SHEET]: { headers: raw.headers, rows: raw.rows } }
+        };
+      }
+      return raw;
+    }
+
+    async function loadMasterGrowPayload() {
+      const json = normalizeMasterGrowPayload(await fetchJson(PUBLIC_GROW_URL));
+      return { payload: json, source: "Supabase public storage: master/grow.json" };
+    }
+
+    function parseDelimitedLine(line, delimiter) {
+      const out = [];
+      let cur = "";
+      let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQ && line[i + 1] === '"') { cur += '"'; i++; continue; }
+          inQ = !inQ;
+          continue;
+        }
+        if (!inQ && ch === delimiter) {
+          out.push(cur);
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      out.push(cur);
+      return out.map(v => String(v ?? "").trim());
+    }
+
+    function parseTextToSheet(text) {
+      const src = String(text || "").replace(/^\uFEFF/, "").trim();
+      if (!src) return null;
+      const lines = src.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      if (!lines.length) return null;
+      const delimiter = lines[0].includes("\t") ? "\t" : ",";
+      const matrix = lines.map(line => parseDelimitedLine(line, delimiter));
+      if (!matrix.length) return null;
+      const headers = matrix[0] || [];
+      const rows = matrix.slice(1);
+      if (!headers.length || !rows.length) return null;
+      return { headers, rows };
+    }
+
+    function pickSheet(payload) {
+      const sheetMaps = [
+        payload?.sheets,
+        payload?.data?.sheets,
+        payload?.payload?.sheets,
+        payload?.result?.sheets
+      ].filter(isObject);
+
+      for (const sheets of sheetMaps) {
+        for (const name of SHEET_CANDIDATES) {
+          if (name in sheets && looksLikeSheetShape(sheets[name])) return { name, sheet: sheets[name] };
+        }
+        const keys = Object.keys(sheets);
+        const normKeys = keys.map(k => ({ k, nk: String(k).trim().toLowerCase() }));
+        for (const want of SHEET_CANDIDATES.map(s => String(s).trim().toLowerCase())) {
+          const hit = normKeys.find(x => x.nk === want) || normKeys.find(x => x.nk.includes(want));
+          if (hit && looksLikeSheetShape(sheets[hit.k])) return { name: hit.k, sheet: sheets[hit.k] };
+        }
+        for (const k of keys) {
+          if (looksLikeSheetShape(sheets[k])) return { name: k, sheet: sheets[k] };
+        }
+      }
+
+      const flatCandidates = [
+        { name: CANON_GROW_SHEET, sheet: payload },
+        { name: CANON_GROW_SHEET, sheet: payload?.data },
+        { name: CANON_GROW_SHEET, sheet: payload?.payload },
+        { name: CANON_GROW_SHEET, sheet: payload?.result },
+        { name: CANON_GROW_SHEET, sheet: payload?.masterGrow },
+        { name: CANON_GROW_SHEET, sheet: payload?.master_grow },
+        { name: CANON_GROW_SHEET, sheet: payload?.grow },
+        { name: CANON_GROW_SHEET, sheet: payload?.harvest }
+      ];
+      for (const c of flatCandidates) {
+        if (looksLikeSheetShape(c.sheet)) return c;
+      }
+
+      const textCandidates = [payload?.rawText, payload?.data, payload?.raw, payload?.text, payload?.csv, payload?.tsv, payload?.content];
+      for (const txt of textCandidates) {
+        if (typeof txt !== "string") continue;
+        const parsed = parseTextToSheet(txt);
+        if (parsed) return { name: CANON_GROW_SHEET, sheet: parsed };
+      }
+
+      return null;
+    }
+
+    function canonicalizeHeaders(headersRaw) {
+      const canonHeaders = [];
+      headersRaw.forEach((h, idx) => {
+        const raw = String(h ?? "");
+        const canon = HEADER_ALIASES.get(normHeader(raw)) || raw.trim();
+        canonHeaders[idx] = canon;
+      });
+      return canonHeaders;
+    }
+
+    function sheetToRowObjects(sheetObj) {
+      let headersRaw = Array.isArray(sheetObj?.headers) ? sheetObj.headers : [];
+      let rows = Array.isArray(sheetObj?.rows) ? sheetObj.rows : [];
+
+      if (!headersRaw.length && rows.length && Array.isArray(rows[0])) {
+        headersRaw = rows[0];
+        rows = rows.slice(1);
+      }
+
+      const objectRows = rows.filter(isObject);
+      if (!headersRaw.length && objectRows.length) {
+        const seen = new Set();
+        headersRaw = [];
+        for (const r of objectRows) {
+          for (const k of Object.keys(r)) {
+            const key = String(k || "").trim();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            headersRaw.push(key);
+          }
+        }
+      }
+
+      const canonHeaders = canonicalizeHeaders(headersRaw);
+      const out = [];
+
+      for (const r of rows) {
+        if (!r) continue;
+        const obj = {};
+        if (Array.isArray(r)) {
+          for (let i = 0; i < canonHeaders.length; i++) {
+            const key = String(canonHeaders[i] ?? "").trim();
+            if (key) obj[key] = i < r.length ? r[i] : "";
+          }
+          out.push(obj);
+          continue;
+        }
+        if (isObject(r)) {
+          const byNorm = new Map();
+          for (const [rk, rv] of Object.entries(r)) byNorm.set(normHeader(rk), rv);
+          for (let i = 0; i < headersRaw.length; i++) {
+            const rawKey = String(headersRaw[i] ?? "").trim();
+            const canonKey = String(canonHeaders[i] ?? "").trim();
+            if (!canonKey) continue;
+            let value = r[rawKey];
+            if (value === undefined) value = byNorm.get(normHeader(rawKey));
+            if (value === undefined && canonKey !== rawKey) value = r[canonKey];
+            if (value === undefined && canonKey !== rawKey) value = byNorm.get(normHeader(canonKey));
+            obj[canonKey] = value === undefined ? "" : value;
+          }
+          out.push(obj);
+        }
+      }
+
+      return { rows: out, canonHeaders };
+    }
+
+    function buildBatchRows(rows) {
+      const out = [];
+      let skippedBlankBatch = 0;
+      let skippedNoQc = 0;
+      let skippedBadActual = 0;
+
+      for (const r of rows) {
+        const batchCode = String(r[H.BATCH] ?? "").trim();
+        if (!batchCode) { skippedBlankBatch++; continue; }
+
+        const good = parseNumberOrNull(r[H.GOOD_QC_LBS]);
+        const lost = parseNumberOrNull(r[H.LOST_QC_LBS]);
+        const hasQcData = good !== null || lost !== null;
+        if (!hasQcData) { skippedNoQc++; continue; }
+
+        const goodForCalc = good ?? 0;
+        const lostForCalc = lost ?? 0;
+        const totalQc = goodForCalc + lostForCalc;
+        const actualPct = totalQc > 0 ? (lostForCalc / totalQc) * 100 : NaN;
+        if (!Number.isFinite(actualPct)) skippedBadActual++;
+
+        const estimatePct = parseEstimatePct(r[H.ESTIMATE]);
+        const variance = Number.isFinite(actualPct) && estimatePct !== null ? actualPct - estimatePct : NaN;
+        const dateObj = normalizeDate(parseAnyDate(r[H.DATE]));
+        const week = String(r[H.WEEK] ?? "").trim();
+
+        out.push({
+          batchCode,
+          variety: String(r[H.VARIETY] ?? "").trim(),
+          dateObj,
+          dateLabel: formatDate(dateObj),
+          week,
+          estimatePct,
+          actualPct,
+          variance
+        });
+      }
+
+      out.sort((a, b) => {
+        const at = a.dateObj ? a.dateObj.getTime() : -Infinity;
+        const bt = b.dateObj ? b.dateObj.getTime() : -Infinity;
+        return bt - at || String(b.batchCode).localeCompare(String(a.batchCode));
+      });
+
+      return { rows: out, skippedBlankBatch, skippedNoQc, skippedBadActual };
+    }
+
+    function buildWeeklyRows(rows) {
+      const trendRows = excludeHundredActualTrend
+        ? rows.filter(row => !isActualLossHundred(row.actualPct))
+        : rows;
+      const byWeek = new Map();
+      for (const row of trendRows) {
+        const week = row.week || "No Week";
+        if (!byWeek.has(week)) {
+          byWeek.set(week, { week, batchCount: 0, actualValues: [], estimateValues: [] });
+        }
+        const rec = byWeek.get(week);
+        rec.batchCount++;
+        if (Number.isFinite(row.actualPct)) rec.actualValues.push(row.actualPct);
+        if (row.estimatePct !== null && Number.isFinite(row.estimatePct)) rec.estimateValues.push(row.estimatePct);
+      }
+
+      return [...byWeek.values()]
+        .map(rec => ({
+          week: rec.week,
+          batchCount: rec.batchCount,
+          actualAvg: avg(rec.actualValues),
+          estimateAvg: avg(rec.estimateValues),
+          actualCount: rec.actualValues.length,
+          estimateCount: rec.estimateValues.length
+        }))
+        .sort((a, b) => weekSortValue(a.week) - weekSortValue(b.week) || String(a.week).localeCompare(String(b.week)));
+    }
+
+    function isActualLossHundred(value) {
+      return Number.isFinite(value) && Math.abs(value - 100) < 0.0001;
+    }
+
+    function renderKpis() {
+      $("kBatches").textContent = fmtInt(batchRows.length);
+      $("kActual").textContent = fmtPct(avg(batchRows.map(r => r.actualPct)));
+      $("kEstimate").textContent = fmtPct(avg(batchRows.map(r => r.estimatePct ?? NaN)));
+      $("kVariance").textContent = fmtSignedPct(avg(batchRows.map(r => r.variance)));
+      $("kWeeks").textContent = fmtInt(weeklyRows.length);
+      $("kWeekRange").textContent = weeklyRows.length
+        ? `${weeklyRows[0].week} to ${weeklyRows[weeklyRows.length - 1].week}`
+        : "--";
+    }
+
+    function renderTable() {
+      if (!batchRows.length) {
+        $("batchBody").innerHTML = `<tr><td colspan="7" class="empty">No qualifying QC batches found.</td></tr>`;
+        $("tableCount").textContent = "0 of 0 batches";
+        return;
+      }
+
+      const visibleRows = getSortedBatchRows();
+      $("tableCount").textContent = `${visibleRows.length.toLocaleString()} of ${batchRows.length.toLocaleString()} batches`;
+
+      if (!visibleRows.length) {
+        $("batchBody").innerHTML = `<tr><td colspan="7" class="empty">No batches match the current table setting.</td></tr>`;
+        return;
+      }
+
+      $("batchBody").innerHTML = visibleRows.map(row => {
+        const varianceClass = !Number.isFinite(row.variance) ? "" : (row.variance > 0 ? "bad" : "good");
+        return `
+          <tr>
+            <td>${escapeHtml(row.batchCode)}</td>
+            <td>${escapeHtml(row.variety || "--")}</td>
+            <td>${escapeHtml(row.dateLabel)}</td>
+            <td>${escapeHtml(row.week || "--")}</td>
+            <td>${row.estimatePct === null ? "--" : fmtPct(row.estimatePct)}</td>
+            <td>${fmtPct(row.actualPct)}</td>
+            <td><span class="variance ${varianceClass}">${fmtSignedPct(row.variance)}</span></td>
+          </tr>
+        `;
+      }).join("");
+      updateSortHeaders();
+    }
+
+    function renderChart() {
+      const canvas = $("trendChart");
+      if (!canvas || !window.Chart) return;
+      const labels = weeklyRows.map(r => r.week);
+      const estimateData = weeklyRows.map(r => Number.isFinite(r.estimateAvg) ? r.estimateAvg : null);
+      const actualData = weeklyRows.map(r => Number.isFinite(r.actualAvg) ? r.actualAvg : null);
+
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Estimated Loss %",
+              data: estimateData,
+              borderColor: getComputedStyle(document.documentElement).getPropertyValue("--estimate").trim(),
+              backgroundColor: "rgba(59, 130, 246, 0.16)",
+              borderWidth: 3,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              tension: 0.25,
+              spanGaps: false
+            },
+            {
+              label: "Actual Loss %",
+              data: actualData,
+              borderColor: getComputedStyle(document.documentElement).getPropertyValue("--actual").trim(),
+              backgroundColor: "rgba(34, 197, 94, 0.16)",
+              borderWidth: 3,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              tension: 0.25,
+              spanGaps: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(2, 6, 23, 0.94)",
+              borderColor: "rgba(148, 163, 184, 0.35)",
+              borderWidth: 1,
+              titleColor: "#f8fafc",
+              bodyColor: "#cbd5e1",
+              callbacks: {
+                title(items) {
+                  const idx = items?.[0]?.dataIndex ?? 0;
+                  const row = weeklyRows[idx];
+                  return row ? `Harvest Week ${row.week}` : "";
+                },
+                label(ctx) {
+                  const row = weeklyRows[ctx.dataIndex];
+                  const label = ctx.dataset.label || "";
+                  const value = ctx.parsed.y;
+                  const count = label.startsWith("Estimated") ? row.estimateCount : row.actualCount;
+                  return `${label}: ${Number.isFinite(value) ? value.toFixed(2) + "%" : "--"} (${count} values)`;
+                },
+                afterBody(items) {
+                  const idx = items?.[0]?.dataIndex ?? 0;
+                  const row = weeklyRows[idx];
+                  return row ? [`Batch count: ${row.batchCount}`] : [];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "Harvest Week", color: "#94a3b8", font: { weight: "bold" } },
+              ticks: { color: "#94a3b8" },
+              grid: { color: "rgba(148, 163, 184, 0.12)" }
+            },
+            y: {
+              title: { display: true, text: "Loss %", color: "#94a3b8", font: { weight: "bold" } },
+              beginAtZero: true,
+              ticks: { color: "#94a3b8", callback: value => `${value}%` },
+              grid: { color: "rgba(148, 163, 184, 0.14)" }
+            }
+          }
+        }
+      });
+    }
+
+    function renderQualityNote(stats, sheetName, totalRows, source) {
+      const estimateMissing = batchRows.filter(r => r.estimatePct === null).length;
+      const actualValid = batchRows.filter(r => Number.isFinite(r.actualPct)).length;
+      const actualHundred = batchRows.filter(r => isActualLossHundred(r.actualPct)).length;
+      $("qualityNote").textContent =
+        `Source: ${source}\n` +
+        `Sheet: ${sheetName}. Source rows: ${totalRows.toLocaleString()}.\n` +
+        `Skipped blank Batch Code: ${stats.skippedBlankBatch.toLocaleString()}.\n` +
+        `Skipped without numeric QC data: ${stats.skippedNoQc.toLocaleString()}.\n` +
+        `QC batches with blank estimate: ${estimateMissing.toLocaleString()}.\n` +
+        `QC batches with calculable actual loss: ${actualValid.toLocaleString()}.\n` +
+        `QC batches with 100% actual loss: ${actualHundred.toLocaleString()}${excludeHundredActualTrend ? " (excluded from weekly trend)." : "."}`;
+    }
+
+    function renderAll(stats, sheetName, totalRows, source) {
+      lastRenderMeta = { stats, sheetName, totalRows, source };
+      renderKpis();
+      renderTable();
+      renderChart();
+      renderQualityNote(stats, sheetName, totalRows, source);
+    }
+
+    function applyExcludeHundredActualTrend(checked) {
+      excludeHundredActualTrend = checked;
+      $("excludeHundredActualTrendToggle").checked = checked;
+      weeklyRows = buildWeeklyRows(batchRows);
+      renderKpis();
+      renderChart();
+      if (lastRenderMeta.stats) {
+        renderQualityNote(
+          lastRenderMeta.stats,
+          lastRenderMeta.sheetName,
+          lastRenderMeta.totalRows,
+          lastRenderMeta.source
+        );
+      }
+    }
+
+    function applyExcludeHundredActualTable(checked) {
+      excludeHundredActualTable = checked;
+      $("excludeHundredActualTableToggle").checked = checked;
+      renderTable();
+    }
+
+    async function loadAndRender() {
+      setStatus("Loading Master Grow data...");
+      try {
+        const { payload, source } = await loadMasterGrowPayload();
+        const picked = pickSheet(payload);
+        if (!picked) throw new Error("Master Grow payload loaded, but no readable sheet was found.");
+        const { rows, canonHeaders } = sheetToRowObjects(picked.sheet);
+        const missingHeaders = [H.BATCH, H.DATE, H.WEEK, H.GOOD_QC_LBS, H.LOST_QC_LBS]
+          .filter(h => !canonHeaders.includes(h));
+        if (!rows.length) throw new Error(`Sheet "${picked.name}" loaded with 0 rows.`);
+
+        const built = buildBatchRows(rows);
+        batchRows = built.rows;
+        weeklyRows = buildWeeklyRows(batchRows);
+
+        const warnings = [];
+        if (missingHeaders.length) warnings.push(`Missing expected headers: ${missingHeaders.join(", ")}`);
+        if (!canonHeaders.includes(H.ESTIMATE)) warnings.push("Grow Team Lost Estimate header not found; estimates will stay blank.");
+        if (!canonHeaders.includes(H.VARIETY)) warnings.push("Veriaty/Variety header not found.");
+
+        setStatus(
+          `Loaded ${batchRows.length.toLocaleString()} qualifying QC batches across ${weeklyRows.length.toLocaleString()} harvest weeks.` +
+          (warnings.length ? `\n${warnings.join("\n")}` : "")
+        );
+        renderAll(built, picked.name, rows.length, source);
+      } catch (err) {
+        batchRows = [];
+        weeklyRows = [];
+        renderAll({ skippedBlankBatch: 0, skippedNoQc: 0, skippedBadActual: 0 }, "--", 0, "--");
+        setStatus(`Unable to load Master Grow data.\n${err.message || err}`);
+      }
+    }
+
+    function csvEscapeCell(value) {
+      const s = String(value ?? "");
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    function downloadCsv() {
+      const headers = ["Batch Code", "Variety", "Harvest Date", "Harvest Week", "Estimated Loss %", "Actual Loss %", "Variance"];
+      const rows = getSortedBatchRows().map(r => [
+        r.batchCode,
+        r.variety,
+        r.dateLabel,
+        r.week,
+        r.estimatePct === null ? "" : r.estimatePct.toFixed(3),
+        Number.isFinite(r.actualPct) ? r.actualPct.toFixed(3) : "",
+        Number.isFinite(r.variance) ? r.variance.toFixed(3) : ""
+      ]);
+      const csv = [headers, ...rows].map(row => row.map(csvEscapeCell).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `qc-waste-trend-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      link.remove();
+    }
+
+    $("refreshBtn").addEventListener("click", loadAndRender);
+    $("downloadBtn").addEventListener("click", downloadCsv);
+    $("excludeHundredActualTrendToggle").addEventListener("change", event => {
+      applyExcludeHundredActualTrend(event.target.checked);
+    });
+    $("excludeHundredActualTableToggle").addEventListener("change", event => {
+      applyExcludeHundredActualTable(event.target.checked);
+    });
+    document.querySelectorAll(".sort-header").forEach(button => {
+      button.addEventListener("click", () => {
+        const key = button.dataset.sort;
+        sortState = {
+          key,
+          direction: sortState.key === key && sortState.direction === "desc" ? "asc" : "desc"
+        };
+        renderTable();
+      });
+    });
+    $("resetSortBtn").addEventListener("click", () => {
+      sortState = { key: "dateObj", direction: "desc" };
+      renderTable();
+    });
+
+    loadAndRender();
+  </script>
+</body>
+</html>
