@@ -420,9 +420,9 @@
             <div class="sub">Rows with numeric QC weights</div>
           </div>
           <div class="kpi">
-            <div class="label">Avg Actual Loss</div>
+            <div class="label">Average Loss</div>
             <div class="value" id="kActual">--</div>
-            <div class="sub">Across qualifying batches</div>
+            <div class="sub">Follows table 100% exclusion</div>
           </div>
           <div class="kpi">
             <div class="label">Avg Estimated Loss</div>
@@ -1042,9 +1042,15 @@
       return Number.isFinite(value) && Math.abs(value - 100) < 0.0001;
     }
 
+    function getAverageLossRows() {
+      return excludeHundredActualTable
+        ? batchRows.filter(row => !isActualLossHundred(row.actualPct))
+        : batchRows;
+    }
+
     function renderKpis() {
       $("kBatches").textContent = fmtInt(batchRows.length);
-      $("kActual").textContent = fmtPct(avg(batchRows.map(r => r.actualPct)));
+      $("kActual").textContent = fmtPct(avg(getAverageLossRows().map(r => r.actualPct)));
       $("kEstimate").textContent = fmtPct(avg(batchRows.map(r => r.estimatePct ?? NaN)));
       $("kVariance").textContent = fmtSignedPct(avg(batchRows.map(r => r.variance)));
       $("kWeeks").textContent = fmtInt(weeklyRows.length);
@@ -1213,6 +1219,7 @@
     function applyExcludeHundredActualTable(checked) {
       excludeHundredActualTable = checked;
       $("excludeHundredActualTableToggle").checked = checked;
+      renderKpis();
       renderTable();
     }
 
