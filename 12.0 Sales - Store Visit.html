@@ -548,6 +548,9 @@
 
   const STORE_VISITS_KEY = "campo_store_visits_v1";
   const LEGACY_STORE_VISITS_KEY = "campo_master_store_visit_v1";
+  const STORE_VISITS_PING_KEY = "campo_store_visits_push_ping_v1";
+  const LEGACY_STORE_VISITS_PING_KEY = "campo_master_store_visit_push_ping_v1";
+  const MSG_STORE_VISITS = "STORE_VISITS_UPDATED";
 
   function getStoreVisitsRawFromStorage(){
     const canonical = (localStorage.getItem(STORE_VISITS_KEY) || "").trim();
@@ -1277,19 +1280,38 @@
   // -------------------------
   function init(){
     wireFilters();
+    const reloadLocal = () => {
+      try{
+        setStatus("Loading local data…");
+        loadFromLocalStorage();
+        setStatus(`Loaded ${rows.length.toLocaleString()} rows from local storage`);
+      }catch(e){
+        console.warn("Local load failed:", e);
+        setStatus("No local data loaded (open Data Input and upload Store Visits).");
+        rows = [];
+        filtered = [];
+        renderAll();
+      }
+    };
 
     // Auto-load from localStorage (preferred)
+    reloadLocal();
+    window.addEventListener("storage", (ev)=>{
+      if([STORE_VISITS_KEY, STORE_VISITS_PING_KEY, LEGACY_STORE_VISITS_KEY, LEGACY_STORE_VISITS_PING_KEY].includes(ev.key)) reloadLocal();
+    });
+    window.addEventListener("message", (ev)=>{
+      const msg = ev?.data || {};
+      if(msg.type === MSG_STORE_VISITS || msg.type === "STORE_VISITS_UPDATED") reloadLocal();
+    });
     try{
-      setStatus("Loading local data…");
-      loadFromLocalStorage();
-      setStatus(`Loaded ${rows.length.toLocaleString()} rows from local storage`);
-    }catch(e){
-      console.warn("Local load failed:", e);
-      setStatus("No local data loaded (open Data Input and upload Store Visits).");
-      rows = [];
-      filtered = [];
-      renderAll();
-    }
+      if("BroadcastChannel" in window){
+        const bc = new BroadcastChannel("campo_updates_v1");
+        bc.onmessage = ev => {
+          const msg = ev?.data || {};
+          if(msg.type === MSG_STORE_VISITS || msg.type === "STORE_VISITS_UPDATED") reloadLocal();
+        };
+      }
+    }catch(_e){}
   }
 
   document.addEventListener("DOMContentLoaded", init);

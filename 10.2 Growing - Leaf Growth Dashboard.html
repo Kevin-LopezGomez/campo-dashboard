@@ -458,6 +458,8 @@ const MASTER_GROW_KEY = 'campo_master_grow_v1';
 const MASTER_GROW_PING_KEY = 'campo_master_grow_push_ping_v1';
 const MASTER_PACK_KEY = 'campo_master_pack_v1';
 const MASTER_PACK_PING_KEY = 'campo_master_pack_push_ping_v1';
+const MASTER_LEAF_KEY = 'campo_leaf_growth_v1';
+const MASTER_LEAF_PING_KEY = 'campo_leaf_growth_push_ping_v1';
 const LOCAL_DB_NAME = 'campo_local_cache_v1';
 const LOCAL_DB_STORE = 'datasets';
 const CANON_LEAF_SHEET = 'Leaf Growth';
@@ -501,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   window.addEventListener('message', event => {
     const msg = event?.data || {};
-    if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('update');
+    if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('update', { preferLocal: true });
     if (msg.type === MSG_GROW || msg.type === 'MASTER_GROW_UPDATED') void refreshPackQualityAndRender();
     if (msg.type === MSG_PACK || msg.type === 'MASTER_PACK_UPDATED') void refreshPackQualityAndRender();
   });
@@ -510,13 +512,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const bc = new BroadcastChannel('campo_updates_v1');
       bc.onmessage = ev => {
         const msg = ev?.data || {};
-        if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('broadcast');
+        if (msg.type === MSG_LEAF || msg.type === 'LEAF_GROWTH_UPDATED') void loadSharedLeafGrowthData('broadcast', { preferLocal: true });
         if (msg.type === MSG_GROW || msg.type === 'MASTER_GROW_UPDATED') void refreshPackQualityAndRender();
         if (msg.type === MSG_PACK || msg.type === 'MASTER_PACK_UPDATED') void refreshPackQualityAndRender();
       };
     }
   } catch {}
   window.addEventListener('storage', e => {
+    if ([MASTER_LEAF_KEY, MASTER_LEAF_PING_KEY].includes(e.key)) void loadSharedLeafGrowthData('storage', { preferLocal: true });
     if ([MASTER_GROW_KEY, MASTER_GROW_PING_KEY, MASTER_PACK_KEY, MASTER_PACK_PING_KEY].includes(e.key)) void refreshPackQualityAndRender();
   });
   void loadSharedLeafGrowthData('startup');
@@ -751,8 +754,45 @@ async function refreshPackQualityAndRender() {
   applyFilters();
 }
 
-async function loadSharedLeafGrowthData(reason = 'startup') {
+async function loadLocalLeafGrowthPayload() {
+  try {
+    const idbPayload = await idbGetJson(MASTER_LEAF_KEY);
+    if (idbPayload?.sheets && typeof idbPayload === 'object') return idbPayload;
+  } catch (_e) {}
+
+  const raw = (localStorage.getItem(MASTER_LEAF_KEY) || '').trim();
+  if (!raw) return null;
+
+  const parsed = JSON.parse(raw);
+  if (parsed && parsed._storage === 'indexeddb' && parsed._idbKey === MASTER_LEAF_KEY) {
+    const idbPayload = await idbGetJson(MASTER_LEAF_KEY);
+    if (idbPayload?.sheets) return idbPayload;
+    return null;
+  }
+  return parsed?.sheets ? parsed : null;
+}
+
+async function loadLocalLeafGrowthData(reason = 'local') {
+  const payload = await loadLocalLeafGrowthPayload();
+  const sheet = payload?.sheets?.[CANON_LEAF_SHEET] || null;
+  if (!sheet || !Array.isArray(sheet.headers) || !Array.isArray(sheet.rows)) return false;
+  await refreshPackQualityMap();
+  loadHeaderRows(sheet.headers, sheet.rows, payload.sourceLabel || `Local Leaf Growth (${reason})`);
+  return true;
+}
+
+async function loadSharedLeafGrowthData(reason = 'startup', { preferLocal = false } = {}) {
   const status = document.getElementById('data-status');
+  if (preferLocal) {
+    status.textContent = 'Loading local upload…';
+    status.classList.remove('loaded');
+    try {
+      if (await loadLocalLeafGrowthData(reason)) return;
+    } catch (err) {
+      console.warn('Leaf Growth local load failed:', err);
+    }
+  }
+
   status.textContent = 'Loading Supabase…';
   status.classList.remove('loaded');
 

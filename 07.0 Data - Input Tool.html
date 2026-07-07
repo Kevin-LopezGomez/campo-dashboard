@@ -792,28 +792,13 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
     if(wizXlsxList) wizXlsxList.innerHTML = "";
   }
 
-  function detectCsvKind(fileName){
-    const n = norm(fileName);
-    if(n.includes("mrp")) return { kind:"mrp", confidence:"high" };
-    if(n.includes("store") && n.includes("visit")) return { kind:"store", confidence:"high" };
-    if(n.includes("seed") && n.includes("inventory")) return { kind:"seed", confidence:"high" };
-    if(n.includes("leaf") || n.includes("forecasting") || n.includes("production data")) return { kind:"leaf", confidence:"high" };
-    if(n.includes("procure") || n.includes("procurement") || n.includes("purch")) return { kind:"proc", confidence:"high" };
-    if(n.includes("experiment") || n.includes("experiments") || n.includes("exp")) return { kind:"exp", confidence:"high" };
-    if(n.includes("pack")) return { kind:"pack", confidence:"high" };
-    if(n.includes("grow")) return { kind:"grow", confidence:"high" };
-    return { kind:"", confidence:"low" };
-  }
-
   function showCsvWizard(fileName){
-    const detection = detectCsvKind(fileName);
-    const guess = detection.kind ? (KIND_LABEL[detection.kind] || detection.kind) : "No strong guess";
     if(!importWizard) return;
     importWizard.style.display = "grid";
     wizCsvRow.style.display = "flex";
     wizXlsxRow.style.display = "none";
-    wizDetect.textContent = `Detected CSV: ${fileName} | Suggested: ${guess} (${detection.confidence})`;
-    wizTarget.value = detection.kind || "";
+    wizDetect.textContent = `CSV staged: ${fileName} | Pick the destination dataset manually.`;
+    wizTarget.value = "";
   }
 
   function showXlsxWizard(fileName, plans){
@@ -821,9 +806,10 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
     importWizard.style.display = "grid";
     wizCsvRow.style.display = "none";
     wizXlsxRow.style.display = "block";
-    wizDetect.textContent = `Detected XLSX: ${fileName} · ${plans.length} dataset assignment(s) ready.`;
+    wizDetect.textContent = `XLSX staged: ${fileName} · Pick the destination dataset for each sheet manually.`;
     wizXlsxList.innerHTML = plans.map((p, i) => {
       const opts = [
+        ["","Select dataset"],
         ["grow","Master Grow"],
         ["pack","Master Pack"],
         ["exp","Current Experiments"],
@@ -832,7 +818,7 @@ const wizCancelBtn2 = document.getElementById("wizCancelBtn2");
         ["store","Store Visit"],
         ["seed","Seed Inventory"],
         ["leaf","Leaf Growth"]
-      ].map(([val,label]) => `<option value="${val}" ${p.kind===val ? "selected" : ""}>${label}</option>`).join("");
+      ].map(([val,label]) => `<option value="${val}">${label}</option>`).join("");
       return `<li>
         <span>Sheet "${escapeHtml(p.sheetName)}" \u2192</span>
         <select class="wsel" data-plan-index="${i}">${opts}</select>
@@ -1606,7 +1592,9 @@ function refreshBadges(){
     } else if(which === "exp"){
       if (!payload?.sheets?.[CANON_EXP_SHEET]) throw new Error(`Experiments payload missing sheets["${CANON_EXP_SHEET}"]`);
       localStorage.setItem(MASTER_EXP_KEY, JSON.stringify(payload));
+      localStorage.setItem(LEGACY_MASTER_EXP_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_EXP_PING, now);
+      localStorage.setItem(LEGACY_MASTER_EXP_PING, now);
       emit(MSG_EXP, MASTER_EXP_KEY);
       saved = true;
       setStatus(`Saved Current Experiments (JSON overwritten): ${sourceLabel}`);
@@ -1627,7 +1615,9 @@ function refreshBadges(){
     } else if(which === "store"){
       if (!payload?.sheets?.[CANON_STORE_SHEET]) throw new Error(`Store Visit payload missing sheets["${CANON_STORE_SHEET}"]`);
       localStorage.setItem(MASTER_STORE_KEY, JSON.stringify(payload));
+      localStorage.setItem(LEGACY_MASTER_STORE_KEY, JSON.stringify(payload));
       localStorage.setItem(MASTER_STORE_PING, now);
+      localStorage.setItem(LEGACY_MASTER_STORE_PING, now);
       emit(MSG_STORE, MASTER_STORE_KEY);
       saved = true;
       setStatus(`Saved Store Visit (JSON overwritten): ${sourceLabel}`);
@@ -2311,12 +2301,20 @@ async function publishToSupabase(){
       return;
     }
     const selects = Array.from(wizXlsxList.querySelectorAll("select[data-plan-index]"));
+    if(selects.some(sel => !sel.value)){
+      setStatus("Pick a destination dataset for every staged XLSX sheet before confirming.");
+      return;
+    }
     let allSaved = true;
     const savedKinds = [];
     for(let i=0; i<plans.length; i++){
       const p = plans[i];
       const sel = selects.find(s => Number(s.getAttribute("data-plan-index")) === i);
-      const target = sel ? sel.value : p.kind;
+      const target = sel ? sel.value : "";
+      if(!target){
+        setStatus("Pick a destination dataset for every staged XLSX sheet before confirming.");
+        return;
+      }
       const canonical =
         target === "grow" ? CANON_GROW_SHEET :
         target === "pack" ? CANON_PACK_SHEET :

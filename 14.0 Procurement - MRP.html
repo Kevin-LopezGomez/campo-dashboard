@@ -1245,14 +1245,14 @@ window.addEventListener('storage', (event) => {
 });
 
 window.addEventListener('message', (event) => {
-  if (event?.data?.type === MSG_MRP) void hydrateMRP({ silent: true });
+  if (event?.data?.type === MSG_MRP) loadStoredMRP({ silent: true });
 });
 
 try {
   if ('BroadcastChannel' in window) {
     const bc = new BroadcastChannel(BC_NAME);
     bc.onmessage = (event) => {
-      if (event?.data?.type === MSG_MRP) void hydrateMRP({ silent: true });
+      if (event?.data?.type === MSG_MRP) loadStoredMRP({ silent: true });
     };
   }
 } catch {}

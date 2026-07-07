@@ -1252,6 +1252,11 @@
     // Supabase loader + normalization (object-based format)
     // =========================================================
     const SUPABASE_EXPERIMENTS_URL = "https://lxxysrhhmtjikzpmupqb.supabase.co/storage/v1/object/public/campo-data/master/experiments.json";
+    const EXPERIMENTS_KEY = "campo_experiments_v1";
+    const EXPERIMENTS_PING_KEY = "campo_experiments_push_ping_v1";
+    const LEGACY_EXPERIMENTS_KEY = "campo_master_experiments_v1";
+    const LEGACY_EXPERIMENTS_PING_KEY = "campo_master_experiments_push_ping_v1";
+    const MSG_EXPERIMENTS = "EXPERIMENTS_UPDATED";
 
     function showError(msg){
       const el = $("errorBanner");
@@ -1481,57 +1486,81 @@
       return [];
     }
 
-    async function loadData(){
+    function applyExperimentsPayload(raw, sourceLabel){
+      const normalized = normalizeExperiments(raw);
+
+      if(!normalized.length){
+        showError("Experiments loaded but no rows were found in the payload.");
+      }
+
+      // Compatibility fields for existing UI
+      const rows = normalized.map(r => ({
+        ...r,
+        experiment: r.experiment_name || "",
+        seedDate: r.dates?.germination || null,
+        propDate: r.dates?.propagation || null,
+        transDate: r.dates?.transplant || null,
+        harvestDate: r.dates?.harvest || null,
+        propPond: r.propPond || "",
+        growPond: r.growPond || "",
+        pos: r.pos || "",
+        experimentalDescriptionGoal: r.experimentalDescriptionGoal || "",
+        growersNeeds: r.growersNeeds || "",
+        salesSamplesNeeds: r.salesSamplesNeeds || "",
+        foodSafetyNeeds: r.foodSafetyNeeds || "",
+        seededPlugs: r.meta?.seededPlugs ?? null,
+        transplantedPlugs: r.meta?.transplantedPlugs ?? null,
+        actualBoards: r.meta?.boards ?? null,
+      }));
+
+      state.rows = rows;
+      state.events = expandEvents(state.rows);
+      rebuildFilterOptions();
+
+      const byKind = { seed:0, prop:0, trans:0, harv:0 };
+      for(const e of state.events) byKind[e.kind]++;
+
+      $("buildSummary").innerHTML =
+        `Loaded from ${sourceLabel}<br/>` +
+        `Rows: ${state.rows.length}<br/>` +
+        `Events: ${state.events.length} (Seed ${byKind.seed}, Prop ${byKind.prop}, Trans ${byKind.trans}, Harvest ${byKind.harv})`;
+
+      if(!state.selectedSetKey){
+        const sets = buildSetsFromRows(state.rows);
+        if(sets[0]) state.selectedSetKey = sets[0].key;
+      }
+
+      render();
+    }
+
+    function loadLocalExperiments(){
+      const rawPrimary = localStorage.getItem(EXPERIMENTS_KEY) || "";
+      const rawLegacy = localStorage.getItem(LEGACY_EXPERIMENTS_KEY) || "";
+      const raw = rawPrimary || rawLegacy;
+      if(!raw) return false;
+      const payload = JSON.parse(raw);
+      if(!rawPrimary && rawLegacy){
+        try{ localStorage.setItem(EXPERIMENTS_KEY, rawLegacy); }catch(_e){}
+      }
+      applyExperimentsPayload(payload, payload?.sourceLabel || "local upload");
+      return true;
+    }
+
+    async function loadData({ preferLocal = false } = {}){
       showError("");
+      if(preferLocal){
+        try{
+          if(loadLocalExperiments()) return;
+        }catch(err){
+          console.warn("Experiments local load failed", err);
+        }
+      }
       try{
         const bust = SUPABASE_EXPERIMENTS_URL + (SUPABASE_EXPERIMENTS_URL.includes("?") ? "&" : "?") + "ts=" + Date.now();
         const res = await fetch(bust, { cache: "no-store" });
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw = await res.json();
-        const normalized = normalizeExperiments(raw);
-
-        if(!normalized.length){
-          showError("Experiments loaded but no rows were found in the payload.");
-        }
-
-        // Compatibility fields for existing UI
-        const rows = normalized.map(r => ({
-          ...r,
-          experiment: r.experiment_name || "",
-          seedDate: r.dates?.germination || null,
-          propDate: r.dates?.propagation || null,
-          transDate: r.dates?.transplant || null,
-          harvestDate: r.dates?.harvest || null,
-          propPond: r.propPond || "",
-          growPond: r.growPond || "",
-          pos: r.pos || "",
-          experimentalDescriptionGoal: r.experimentalDescriptionGoal || "",
-          growersNeeds: r.growersNeeds || "",
-          salesSamplesNeeds: r.salesSamplesNeeds || "",
-          foodSafetyNeeds: r.foodSafetyNeeds || "",
-          seededPlugs: r.meta?.seededPlugs ?? null,
-          transplantedPlugs: r.meta?.transplantedPlugs ?? null,
-          actualBoards: r.meta?.boards ?? null,
-        }));
-
-        state.rows = rows;
-        state.events = expandEvents(state.rows);
-        rebuildFilterOptions();
-
-        const byKind = { seed:0, prop:0, trans:0, harv:0 };
-        for(const e of state.events) byKind[e.kind]++;
-
-        $("buildSummary").innerHTML =
-          `Loaded from Supabase<br/>` +
-          `Rows: ${state.rows.length}<br/>` +
-          `Events: ${state.events.length} (Seed ${byKind.seed}, Prop ${byKind.prop}, Trans ${byKind.trans}, Harvest ${byKind.harv})`;
-
-        if(!state.selectedSetKey){
-          const sets = buildSetsFromRows(state.rows);
-          if(sets[0]) state.selectedSetKey = sets[0].key;
-        }
-
-        render();
+        applyExperimentsPayload(raw, "Supabase");
       }catch(err){
         console.error(err);
         showError(`Failed to load experiments.json from Supabase. ${err.message || err}`);
@@ -2731,6 +2760,24 @@
       });
 
       $("buildBtn").addEventListener("click", loadData);
+      window.addEventListener("storage", (ev)=>{
+        if([EXPERIMENTS_KEY, EXPERIMENTS_PING_KEY, LEGACY_EXPERIMENTS_KEY, LEGACY_EXPERIMENTS_PING_KEY].includes(ev.key)){
+          loadData({ preferLocal: true });
+        }
+      });
+      window.addEventListener("message", (ev)=>{
+        const msg = ev?.data || {};
+        if(msg.type === MSG_EXPERIMENTS || msg.type === "EXPERIMENTS_UPDATED") loadData({ preferLocal: true });
+      });
+      try{
+        if("BroadcastChannel" in window){
+          const bc = new BroadcastChannel("campo_updates_v1");
+          bc.onmessage = ev => {
+            const msg = ev?.data || {};
+            if(msg.type === MSG_EXPERIMENTS || msg.type === "EXPERIMENTS_UPDATED") loadData({ preferLocal: true });
+          };
+        }
+      }catch(_e){}
 
       document.addEventListener("keydown", (e)=>{
         const isCmd = e.metaKey || e.ctrlKey;

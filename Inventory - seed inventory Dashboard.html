@@ -680,8 +680,16 @@
       sourceLabel = parsed?.sourceLabel || "localStorage fallback";
       return rows;
     }
-    async function loadDataRows() {
+    async function loadDataRows({ preferLocal = false } = {}) {
       lastLoadError = "";
+      if (preferLocal) {
+        try {
+          const fromLocal = loadLocalSeedRows();
+          if (fromLocal.length) return fromLocal;
+        } catch (err) {
+          lastLoadError = `Local load failed: ${err?.message || err}`;
+        }
+      }
       try {
         const res = await fetch(`${PUBLIC_SEED_URL}?ts=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) throw new Error(`Supabase public JSON failed (${res.status})`);
@@ -1542,12 +1550,12 @@
       render();
     });
 
-    async function reloadAndRender() {
+    async function reloadAndRender(options = {}) {
       productionMinimums = loadProductionMinimums();
       showMinQtyColumn = loadMinQtyColumnVisible();
       usageIgnoreMap = loadUsageIgnoreMap();
       showUsageIgnoreColumn = loadUsageIgnoreColumnVisible();
-      dataRows = await loadDataRows();
+      dataRows = await loadDataRows(options);
       render();
     }
 
@@ -1555,11 +1563,12 @@
       $("status").textContent = `Runtime error: ${e?.message || 'unknown error'}`;
     });
     window.addEventListener("storage", (e) => {
-      if (e?.key === MASTER_SEED_KEY || e?.key === PROD_MINIMUMS_KEY || e?.key === MIN_QTY_COL_VISIBLE_KEY || e?.key === USAGE_IGNORE_KEY || e?.key === USAGE_IGNORE_COL_VISIBLE_KEY) reloadAndRender();
+      if (e?.key === MASTER_SEED_KEY) reloadAndRender({ preferLocal: true });
+      else if (e?.key === PROD_MINIMUMS_KEY || e?.key === MIN_QTY_COL_VISIBLE_KEY || e?.key === USAGE_IGNORE_KEY || e?.key === USAGE_IGNORE_COL_VISIBLE_KEY) reloadAndRender();
     });
     window.addEventListener("message", (e) => {
       const type = e?.data?.type;
-      if (type === "SEED_INVENTORY_UPDATED") reloadAndRender();
+      if (type === "SEED_INVENTORY_UPDATED") reloadAndRender({ preferLocal: true });
     });
 
     applyView();
