@@ -1509,6 +1509,7 @@
         data: "?v=mrp-json-20260529",
         "proc-mrp": "?v=mrp-header-filter-20260529"
       };
+      const APP_ASSET_VERSION = "20260707-cache-bust";
 
       const LANG_KEY = "campo_lang";
 
@@ -1684,7 +1685,12 @@
       function fileWithQuery(key){
         const base = FILES[key];
         if (!base) return "";
-        return base + (FILE_QUERIES[key] || "");
+        const explicitQuery = FILE_QUERIES[key] || "";
+        const versionParam = `shell=${encodeURIComponent(APP_ASSET_VERSION)}`;
+        if (explicitQuery) {
+          return base + explicitQuery + (explicitQuery.includes("?") ? "&" : "?") + versionParam;
+        }
+        return base + `?${versionParam}`;
       }
 
       function applyFileBindings(){
