@@ -419,6 +419,79 @@
       min-width: 190px;
     }
 
+    .global-filter-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .global-filter-controls label {
+      font-size: 1rem;
+      color: rgba(241, 245, 249, 0.95);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .global-filter-input,
+    .multi-filter summary {
+      border: 1px solid rgba(100, 116, 139, 0.95);
+      background: rgba(2, 6, 23, 0.98);
+      color: rgba(248, 250, 252, 0.98);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-family: inherit;
+      min-width: 170px;
+    }
+
+    .multi-filter {
+      position: relative;
+      z-index: 20;
+    }
+
+    .multi-filter summary {
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    .multi-filter summary::-webkit-details-marker { display: none; }
+
+    .multi-filter-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      width: min(320px, 78vw);
+      max-height: 300px;
+      overflow: auto;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(71, 85, 105, 0.95);
+      background: rgba(2, 6, 23, 0.98);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.75);
+    }
+
+    .multi-filter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      color: rgba(226, 232, 240, 0.96);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .multi-filter-option:hover { background: rgba(30, 41, 59, 0.92); }
+
+    .multi-filter-option input { margin: 0; }
+
     .harvest-search-input {
       border: 1px solid rgba(100, 116, 139, 0.95);
       background: rgba(2, 6, 23, 0.98);
@@ -705,6 +778,18 @@
               <select id="global-week-end" class="date-range-input"></select>
             </span>
           </div>
+          <div class="global-filter-controls">
+            <label for="global-exp-filter">Crop type</label>
+            <select id="global-exp-filter" class="global-filter-input">
+              <option value="all">All</option>
+              <option value="production">Production</option>
+              <option value="experiments">Experiments</option>
+            </select>
+            <details id="global-variety-filter" class="multi-filter">
+              <summary><span id="global-variety-summary">All varieties</span></summary>
+              <div id="global-variety-options" class="multi-filter-menu"></div>
+            </details>
+          </div>
         </div>
 
         <section id="panel-performance" class="panel">
@@ -818,6 +903,8 @@
     const HARVEST_LOG_OPEN_KEY_SS = "campo_harvest_log_open_ss_v1";
     const HARVEST_PILL_STATES_KEY = "campo_harvest_pill_states_v1";
     const HARVEST_PILL_STATES_KEY_SS = "campo_harvest_pill_states_ss_v1";
+    const HARVEST_EXP_FILTER_KEY = "campo_harvest_exp_filter_v1";
+    const HARVEST_VARIETY_FILTER_KEY = "campo_harvest_variety_filter_v1";
     const WORKER_BASE = "https://campo-publisher.kevin-lopezgomez.workers.dev";
     const WORKER_HEALTH_URL = `${WORKER_BASE}/health`;
     const WORKER_GROW_URL = `${WORKER_BASE}/data/master/grow.json`;
@@ -1092,6 +1179,7 @@
           byBatch.set(batch, {
             batch,
             variety: item.variety,
+            expOrProd: item.expOrProd,
             dateObj: item.dateObj,
             date: item.date,
             week: item.week,
@@ -1102,6 +1190,8 @@
           });
         }
         const agg = byBatch.get(batch);
+        if (!agg.variety && item.variety) agg.variety = item.variety;
+        if (!agg.expOrProd && item.expOrProd) agg.expOrProd = item.expOrProd;
         if (!agg.dateObj && item.dateObj) {
           agg.dateObj = item.dateObj;
           agg.date = item.date;
@@ -1123,6 +1213,8 @@
     function applyForecastToCuts(){
       for (const cut of CUTS) {
         const forecast = FORECAST_BY_BATCH.get(String(cut.batchCode || "").trim());
+        cut.variety = forecast ? forecast.variety : "";
+        cut.expOrProd = forecast ? forecast.expOrProd : "";
         cut.estimatedYldPond = forecast && forecast.estimatedCount > 0 ? forecast.estimatedYldPond : null;
         cut.forecastedYldPond = forecast && forecast.forecastedCount > 0 ? forecast.forecastedYldPond : null;
       }
@@ -1151,6 +1243,8 @@
     let PACK_QUALITY_BY_BATCH = new Map();
     let RANGE_START_YMD = "";
     let RANGE_END_YMD = "";
+    let EXP_FILTER = "all";
+    let VARIETY_FILTERS = new Set();
 
     // =========================================================
     // HELPERS
@@ -1166,6 +1260,113 @@
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;");
+    }
+
+    function normalizeFilterValue(value) {
+      return String(value ?? "").trim().toLowerCase();
+    }
+
+    function classifyExpOrProd(value) {
+      const s = normalizeFilterValue(value).replace(/[^a-z]/g, "");
+      if (!s) return "";
+      if (s.includes("exp")) return "experiments";
+      if (s.includes("prod")) return "production";
+      return "";
+    }
+
+    function sanitizeExpFilter(value) {
+      return ["all", "production", "experiments"].includes(value) ? value : "all";
+    }
+
+    function readSavedGlobalFilters() {
+      let exp = "all";
+      let varieties = [];
+      try { exp = sanitizeExpFilter(localStorage.getItem(HARVEST_EXP_FILTER_KEY)); } catch {}
+      try {
+        const parsed = JSON.parse(localStorage.getItem(HARVEST_VARIETY_FILTER_KEY) || "[]");
+        if (Array.isArray(parsed)) varieties = parsed.map(normalizeFilterValue).filter(Boolean);
+      } catch {}
+      EXP_FILTER = exp;
+      VARIETY_FILTERS = new Set(varieties);
+    }
+
+    function persistGlobalFilters() {
+      try { localStorage.setItem(HARVEST_EXP_FILTER_KEY, EXP_FILTER); } catch {}
+      try { localStorage.setItem(HARVEST_VARIETY_FILTER_KEY, JSON.stringify(Array.from(VARIETY_FILTERS))); } catch {}
+    }
+
+    function rowMatchesGlobalFilters(row) {
+      if (!row) return false;
+      if (EXP_FILTER !== "all" && classifyExpOrProd(row.expOrProd) !== EXP_FILTER) return false;
+      if (VARIETY_FILTERS.size && !VARIETY_FILTERS.has(normalizeFilterValue(row.variety))) return false;
+      return true;
+    }
+
+    function visibleCuts() {
+      return CUTS.filter(c => isDateInRange(c.dateObj) && rowMatchesGlobalFilters(c));
+    }
+
+    function visibleForecastRows() {
+      return FORECAST_ROWS.filter(row => {
+        const inRange = row.dateObj ? isDateInRange(row.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD);
+        return inRange && rowMatchesGlobalFilters(row);
+      });
+    }
+
+    function availableVarieties() {
+      const byKey = new Map();
+      const add = (value) => {
+        const label = String(value ?? "").trim();
+        const key = normalizeFilterValue(label);
+        if (key && !byKey.has(key)) byKey.set(key, label);
+      };
+      CUTS.forEach(c => add(c.variety));
+      FORECAST_ROWS.forEach(row => add(row.variety));
+      return Array.from(byKey.entries())
+        .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+        .map(([key, label]) => ({ key, label }));
+    }
+
+    function syncGlobalFilterControls() {
+      const expSelect = document.getElementById("global-exp-filter");
+      if (expSelect) expSelect.value = EXP_FILTER;
+
+      const optionsEl = document.getElementById("global-variety-options");
+      const summaryEl = document.getElementById("global-variety-summary");
+      const varieties = availableVarieties();
+      const validKeys = new Set(varieties.map(v => v.key));
+      let changed = false;
+      VARIETY_FILTERS.forEach(key => {
+        if (!validKeys.has(key)) {
+          VARIETY_FILTERS.delete(key);
+          changed = true;
+        }
+      });
+      if (changed) persistGlobalFilters();
+
+      if (summaryEl) {
+        summaryEl.textContent = VARIETY_FILTERS.size
+          ? `${VARIETY_FILTERS.size} variet${VARIETY_FILTERS.size === 1 ? "y" : "ies"}`
+          : "All varieties";
+      }
+      if (!optionsEl) return;
+      if (!varieties.length) {
+        optionsEl.innerHTML = `<div class="multi-filter-option">No varieties loaded</div>`;
+        return;
+      }
+      optionsEl.innerHTML = [
+        `<label class="multi-filter-option"><input type="checkbox" data-variety-filter="__all__" ${VARIETY_FILTERS.size ? "" : "checked"} /> All varieties</label>`,
+        ...varieties.map(v => (
+          `<label class="multi-filter-option"><input type="checkbox" data-variety-filter="${escapeHtml(v.key)}" ${VARIETY_FILTERS.has(v.key) ? "checked" : ""} /> ${escapeHtml(v.label)}</label>`
+        ))
+      ].join("");
+    }
+
+    function refreshDashboard() {
+      syncGlobalFilterControls();
+      renderKPIs();
+      renderTable();
+      renderCharts();
     }
 
     function setEmpty(msg) {
@@ -1622,6 +1823,111 @@
       if (RANGE_START_YMD && ymd < RANGE_START_YMD) return false;
       if (RANGE_END_YMD && ymd > RANGE_END_YMD) return false;
       return true;
+    }
+
+    function aggregateDailyFromCuts(cuts) {
+      const dayMap = new Map();
+      for (const c of cuts) {
+        const key = c.date;
+        if (!dayMap.has(key)) {
+          dayMap.set(key, {
+            date: key,
+            dateObj: c.dateObj,
+            weekGuess: c.week || isoWeekFromUTC(c.dateObj),
+            minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
+            maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
+            boards: 0,
+            cut: 0,
+            waste: 0,
+            withWaste: 0,
+            lsySum: 0,
+            lsyCount: 0,
+            workersSum: 0,
+            workersCount: 0,
+            harvestDaysToHarvestSum: 0,
+            harvestDaysToHarvestCount: 0,
+            propagationDaysSum: 0,
+            propagationDaysCount: 0,
+            productionDaysSum: 0,
+            productionDaysCount: 0,
+            bladeHeightWeightedSum: 0,
+            bladeHeightWeight: 0,
+            growForecastedWeightLbs: 0
+          });
+        }
+        const d = dayMap.get(key);
+        if (!d.packQualitySet) d.packQualitySet = new Set();
+        if (c.packQuality) {
+          String(c.packQuality).split(",").map(v => v.trim()).filter(Boolean).forEach(v => d.packQualitySet.add(v));
+        }
+
+        if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
+        if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
+
+        d.boards += c.boards;
+        d.cut += c.cut;
+        d.waste += c.waste;
+        d.withWaste += c.withWaste;
+        if (Number.isFinite(c.lsy)) {
+          d.lsySum += c.lsy;
+          d.lsyCount += 1;
+        }
+
+        if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
+        if (Number.isFinite(c.harvestDaysToHarvest) && c.harvestDaysToHarvest > 0) {
+          d.harvestDaysToHarvestSum += c.harvestDaysToHarvest;
+          d.harvestDaysToHarvestCount += 1;
+        }
+        if (Number.isFinite(c.propagationDays) && c.propagationDays > 0) {
+          d.propagationDaysSum += c.propagationDays;
+          d.propagationDaysCount += 1;
+        }
+        if (Number.isFinite(c.productionDays) && c.productionDays > 0) {
+          d.productionDaysSum += c.productionDays;
+          d.productionDaysCount += 1;
+        }
+        if (Number.isFinite(c.bladeHeight) && c.bladeHeight > 0 && c.boards > 0) {
+          d.bladeHeightWeightedSum += c.bladeHeight * c.boards;
+          d.bladeHeightWeight += c.boards;
+        }
+        d.growForecastedWeightLbs += (Number.isFinite(c.growForecastedWeightLbs) ? c.growForecastedWeightLbs : 0);
+        if (!d.weekGuess && c.week) d.weekGuess = c.week;
+      }
+
+      return Array.from(dayMap.values())
+        .sort((a,b) => a.dateObj - b.dateObj)
+        .map(d => {
+          const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
+          const bph = spanH > 0 ? (d.boards / spanH) : 0;
+          const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
+          const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
+          const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
+          return {
+            date: d.date,
+            dateObj: d.dateObj,
+            week: d.weekGuess || isoWeekFromUTC(d.dateObj),
+            startMin: d.minStartMin,
+            finishMin: d.maxFinishMin,
+            spanH,
+            boards: d.boards,
+            cut: d.cut,
+            waste: d.waste,
+            withWaste: d.withWaste,
+            lsy: d.lsyCount > 0 ? (d.lsySum / d.lsyCount) : 0,
+            bph,
+            lbsPerBoard,
+            potential,
+            avgWorkers,
+            harvestDaysToHarvest: d.harvestDaysToHarvestCount > 0 ? (d.harvestDaysToHarvestSum / d.harvestDaysToHarvestCount) : 0,
+            propagationDays: d.propagationDaysCount > 0 ? (d.propagationDaysSum / d.propagationDaysCount) : 0,
+            productionDays: d.productionDaysCount > 0 ? (d.productionDaysSum / d.productionDaysCount) : 0,
+            bladeHeight: d.bladeHeightWeight > 0 ? (d.bladeHeightWeightedSum / d.bladeHeightWeight) : 0,
+            bladeHeightWeightedSum: d.bladeHeightWeightedSum,
+            bladeHeightWeight: d.bladeHeightWeight,
+            growForecastedWeightLbs: d.growForecastedWeightLbs,
+            packQuality: d.packQualitySet ? Array.from(d.packQualitySet).sort().join(", ") : ""
+          };
+        });
     }
 
     function aggregateWeeklyFromDaily(dailyRows) {
@@ -2388,109 +2694,7 @@
       // Sort cuts by date then by start time
       cuts.sort((a,b) => (a.dateObj - b.dateObj) || ((a.startMin||0)-(b.startMin||0)));
 
-      // DAILY: aggregate by date; span uses earliest start -> latest finish for that day.
-      const dayMap = new Map();
-      for (const c of cuts) {
-        const key = c.date;
-        if (!dayMap.has(key)) {
-          dayMap.set(key, {
-            date: key,
-            dateObj: c.dateObj,
-            weekGuess: c.week || isoWeekFromUTC(c.dateObj),
-            minStartMin: Number.isFinite(c.startMin) ? c.startMin : NaN,
-            maxFinishMin: Number.isFinite(c.finishMin) ? c.finishMin : NaN,
-            boards: 0,
-            cut: 0,
-            waste: 0,
-            withWaste: 0,
-            lsySum: 0,
-            lsyCount: 0,
-            workersSum: 0,
-            workersCount: 0,
-            harvestDaysToHarvestSum: 0,
-            harvestDaysToHarvestCount: 0,
-            propagationDaysSum: 0,
-            propagationDaysCount: 0,
-            productionDaysSum: 0,
-            productionDaysCount: 0,
-            bladeHeightWeightedSum: 0,
-            bladeHeightWeight: 0,
-            growForecastedWeightLbs: 0
-          });
-        }
-        const d = dayMap.get(key);
-        if (!d.packQualitySet) d.packQualitySet = new Set();
-        if (c.packQuality) {
-          String(c.packQuality).split(",").map(v => v.trim()).filter(Boolean).forEach(v => d.packQualitySet.add(v));
-        }
-
-        if (Number.isFinite(c.startMin)) d.minStartMin = Number.isFinite(d.minStartMin) ? Math.min(d.minStartMin, c.startMin) : c.startMin;
-        if (Number.isFinite(c.finishMin)) d.maxFinishMin = Number.isFinite(d.maxFinishMin) ? Math.max(d.maxFinishMin, c.finishMin) : c.finishMin;
-
-        d.boards += c.boards;
-        d.cut += c.cut;
-        d.waste += c.waste;
-        d.withWaste += c.withWaste;
-        if (Number.isFinite(c.lsy)) {
-          d.lsySum += c.lsy;
-          d.lsyCount += 1;
-        }
-
-        if (c.workers > 0) { d.workersSum += c.workers; d.workersCount += 1; }
-        if (Number.isFinite(c.harvestDaysToHarvest) && c.harvestDaysToHarvest > 0) {
-          d.harvestDaysToHarvestSum += c.harvestDaysToHarvest;
-          d.harvestDaysToHarvestCount += 1;
-        }
-        if (Number.isFinite(c.propagationDays) && c.propagationDays > 0) {
-          d.propagationDaysSum += c.propagationDays;
-          d.propagationDaysCount += 1;
-        }
-        if (Number.isFinite(c.productionDays) && c.productionDays > 0) {
-          d.productionDaysSum += c.productionDays;
-          d.productionDaysCount += 1;
-        }
-        if (Number.isFinite(c.bladeHeight) && c.bladeHeight > 0 && c.boards > 0) {
-          d.bladeHeightWeightedSum += c.bladeHeight * c.boards;
-          d.bladeHeightWeight += c.boards;
-        }
-        d.growForecastedWeightLbs += (Number.isFinite(c.growForecastedWeightLbs) ? c.growForecastedWeightLbs : 0);
-        if (!d.weekGuess && c.week) d.weekGuess = c.week;
-      }
-
-      const daily = Array.from(dayMap.values())
-        .sort((a,b) => a.dateObj - b.dateObj) // chronological for charts
-        .map(d => {
-          const spanH = spanHoursFromMinMax(d.minStartMin, d.maxFinishMin);
-          const bph = spanH > 0 ? (d.boards / spanH) : 0;
-          const lbsPerBoard = d.boards > 0 ? (d.cut / d.boards) : 0;
-          const potential = d.withWaste > 0 ? (d.cut / d.withWaste) * 100 : 0;
-          const avgWorkers = d.workersCount > 0 ? (d.workersSum / d.workersCount) : 0;
-          return {
-            date: d.date,
-            dateObj: d.dateObj,
-            week: d.weekGuess || isoWeekFromUTC(d.dateObj),
-            startMin: d.minStartMin,
-            finishMin: d.maxFinishMin,
-            spanH,
-            boards: d.boards,
-            cut: d.cut,
-            waste: d.waste,
-            withWaste: d.withWaste,
-            lsy: d.lsyCount > 0 ? (d.lsySum / d.lsyCount) : 0,
-            bph,
-            lbsPerBoard,
-            potential,
-            avgWorkers,
-            harvestDaysToHarvest: d.harvestDaysToHarvestCount > 0 ? (d.harvestDaysToHarvestSum / d.harvestDaysToHarvestCount) : 0,
-            propagationDays: d.propagationDaysCount > 0 ? (d.propagationDaysSum / d.propagationDaysCount) : 0,
-            productionDays: d.productionDaysCount > 0 ? (d.productionDaysSum / d.productionDaysCount) : 0,
-            bladeHeight: d.bladeHeightWeight > 0 ? (d.bladeHeightWeightedSum / d.bladeHeightWeight) : 0,
-            bladeHeightWeightedSum: d.bladeHeightWeightedSum,
-            bladeHeightWeight: d.bladeHeightWeight,
-            growForecastedWeightLbs: d.growForecastedWeightLbs,
-            packQuality: d.packQualitySet ? Array.from(d.packQualitySet).sort().join(", ") : ""
-          };
-        });
+      const daily = aggregateDailyFromCuts(cuts);
 
       const weekly = aggregateWeeklyFromDaily(daily);
 
@@ -2516,7 +2720,7 @@
     function renderKPIs() {
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
       const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const dailyVisible = aggregateDailyFromCuts(visibleCuts());
       const days = dailyVisible.filter(d =>
         d.spanH > 0 ||
         d.boards > 0 ||
@@ -2626,8 +2830,8 @@
 
       const fmtInt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
       const fmt1 = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-      const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
-      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const cutsVisible = visibleCuts();
+      const dailyVisible = aggregateDailyFromCuts(cutsVisible);
       const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
       const batchSearch = String(document.getElementById("harvest-batch-search")?.value || "").trim().toLowerCase();
       const cutMatchesSearch = (c) => {
@@ -2808,8 +3012,8 @@
     }
 
     function renderCharts() {
-      const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
-      const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
+      const cutsVisible = visibleCuts();
+      const dailyVisible = aggregateDailyFromCuts(cutsVisible);
       const weeklyVisible = aggregateWeeklyFromDaily(dailyVisible);
 
       const isTimeline = middleViewMode === "timeline";
@@ -2863,11 +3067,12 @@
       const productionDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.productionDays) ? w.productionDays : 0);
       const bladeHeightByWeek = weeklyVisible.map(w => Number.isFinite(w.bladeHeight) && w.bladeHeight > 0 ? w.bladeHeight : null);
 
-      const forecastRowsVisible = FORECAST_ROWS.filter(row => row.dateObj ? isDateInRange(row.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD));
+      const forecastRowsVisible = visibleForecastRows();
       const estimatedCutoffYmd = estimatedYieldCutoffYmd();
       const forecastBatchKeysInCuts = new Set(cutsVisible.map(c => String(c.batchCode || "").trim()).filter(Boolean));
       const forecastOnlyBatches = Array.from(FORECAST_BY_BATCH.values())
         .filter(item => item?.batch && !forecastBatchKeysInCuts.has(item.batch))
+        .filter(item => rowMatchesGlobalFilters(item))
         .filter(item => item.dateObj ? isDateInRange(item.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD))
         .sort((a, b) => {
           const ad = a.dateObj instanceof Date ? a.dateObj.getTime() : Number.MAX_SAFE_INTEGER;
@@ -3442,12 +3647,11 @@
       setChartMode(chartMode);
       setTableMode(tableMode, { fromChart: true });
       setHarvestLogOpen(harvestLogOpen, { persist: false });
-      renderKPIs();
-      renderTable();
-      renderCharts();
+      refreshDashboard();
     }
 
     function setupUI() {
+      readSavedGlobalFilters();
       const legacyChartMode = readSavedChartMode();
       const legacyDateRange = readSavedDateRange();
       const legacyLogOpen = readSavedLogOpen();
@@ -3484,6 +3688,7 @@
       pillStates = readSavedPillStates(seed);
       loadPillState(middleViewMode);
       syncRangeControlMode();
+      syncGlobalFilterControls();
 
       document.getElementById("global-view-cut")?.addEventListener("click", () => setChartMode("cut"));
       document.getElementById("global-view-date")?.addEventListener("click", () => setChartMode("date"));
@@ -3501,6 +3706,8 @@
 
       const weekStartInput = document.getElementById("global-week-start");
       const weekEndInput = document.getElementById("global-week-end");
+      const expFilterInput = document.getElementById("global-exp-filter");
+      const varietyOptions = document.getElementById("global-variety-options");
       const onWeekRangeChange = () => {
         let start = String(weekStartInput?.value || "");
         let end = String(weekEndInput?.value || "");
@@ -3516,12 +3723,30 @@
         persistDateRange(start, end);
         saveActivePillState();
         syncRangeControlMode();
-        renderKPIs();
-        renderTable();
-        renderCharts();
+        refreshDashboard();
       };
       weekStartInput?.addEventListener("change", onWeekRangeChange);
       weekEndInput?.addEventListener("change", onWeekRangeChange);
+      expFilterInput?.addEventListener("change", () => {
+        EXP_FILTER = sanitizeExpFilter(expFilterInput.value);
+        persistGlobalFilters();
+        refreshDashboard();
+      });
+      varietyOptions?.addEventListener("change", (event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement)) return;
+        const key = String(input.dataset.varietyFilter || "");
+        if (!key) return;
+        if (key === "__all__") {
+          VARIETY_FILTERS.clear();
+        } else if (input.checked) {
+          VARIETY_FILTERS.add(key);
+        } else {
+          VARIETY_FILTERS.delete(key);
+        }
+        persistGlobalFilters();
+        refreshDashboard();
+      });
 
       setChartMode(chartMode);
       setTableMode(tableMode);
@@ -3542,9 +3767,7 @@
         if (opts.refreshPackQuality) await refreshPackQualityMap();
         buildModels();
         syncRangeControlMode({ normalizeWeekRange: true });
-        renderKPIs();
-        renderTable();
-        renderCharts();
+        refreshDashboard();
         // console.log("🔄 Harvest reload", reason || "");
       }, 60);
     }
