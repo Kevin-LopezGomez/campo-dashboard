@@ -390,6 +390,13 @@
       flex-wrap: wrap;
     }
 
+    .date-range-controls > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
     .date-range-controls label {
       font-size: 1rem;
       color: rgba(241, 245, 249, 0.95);
@@ -409,6 +416,7 @@
       font-weight: 700;
       letter-spacing: 0.02em;
       font-family: inherit;
+      min-width: 190px;
     }
 
     .harvest-search-input {
@@ -690,10 +698,18 @@
             <button id="blade-height-toggle" class="view-toggle-btn blade-height-toggle" type="button" aria-pressed="false">Blade Height</button>
           </div>
           <div class="date-range-controls">
-            <label for="global-date-start">From</label>
-            <input id="global-date-start" class="date-range-input" type="date" />
-            <label for="global-date-end">To</label>
-            <input id="global-date-end" class="date-range-input" type="date" />
+            <span id="date-range-fields">
+              <label for="global-date-start">From</label>
+              <input id="global-date-start" class="date-range-input" type="date" />
+              <label for="global-date-end">To</label>
+              <input id="global-date-end" class="date-range-input" type="date" />
+            </span>
+            <span id="week-range-fields" class="hidden">
+              <label for="global-week-start">From week</label>
+              <select id="global-week-start" class="date-range-input"></select>
+              <label for="global-week-end">To week</label>
+              <select id="global-week-end" class="date-range-input"></select>
+            </span>
           </div>
         </div>
 
@@ -1497,6 +1513,108 @@
       const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
       const d = String(dateObj.getUTCDate()).padStart(2, "0");
       return `${y}-${m}-${d}`;
+    }
+
+    function addUtcDays(dateObj, days) {
+      return new Date(Date.UTC(
+        dateObj.getUTCFullYear(),
+        dateObj.getUTCMonth(),
+        dateObj.getUTCDate() + days
+      ));
+    }
+
+    function startOfIsoWeekUTC(dateObj) {
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return null;
+      const d = normalizeToUTCMidnight(dateObj);
+      const day = d.getUTCDay() || 7;
+      return addUtcDays(d, 1 - day);
+    }
+
+    function formatWeekRangeLabel(startObj, endObj) {
+      const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+      return `${fmt(startObj)} - ${fmt(endObj)}`;
+    }
+
+    function buildWeekRangeOptions() {
+      const map = new Map();
+      const addDate = (dateObj) => {
+        if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return;
+        const startObj = startOfIsoWeekUTC(dateObj);
+        if (!startObj) return;
+        const endObj = addUtcDays(startObj, 6);
+        const startYmd = ymdFromDateUTC(startObj);
+        const endYmd = ymdFromDateUTC(endObj);
+        const week = isoWeekFromUTC(dateObj);
+        const year = startObj.getUTCFullYear();
+        if (!map.has(startYmd)) {
+          map.set(startYmd, {
+            startYmd,
+            endYmd,
+            order: startObj.getTime(),
+            label: `Week ${week} (${year}) · ${formatWeekRangeLabel(startObj, endObj)}`
+          });
+        }
+      };
+
+      DAILY.forEach(d => addDate(d.dateObj));
+      FORECAST_ROWS.forEach(row => addDate(row.dateObj));
+      return Array.from(map.values()).sort((a, b) => a.order - b.order);
+    }
+
+    function optionForDate(options, ymd) {
+      if (!ymd) return null;
+      return options.find(opt => opt.startYmd <= ymd && opt.endYmd >= ymd) || null;
+    }
+
+    function syncWeekRangeControls({ normalizeRange = false } = {}) {
+      const startSelect = document.getElementById("global-week-start");
+      const endSelect = document.getElementById("global-week-end");
+      if (!startSelect || !endSelect) return;
+
+      const options = buildWeekRangeOptions();
+      const startMatch = optionForDate(options, RANGE_START_YMD);
+      const endMatch = optionForDate(options, RANGE_END_YMD);
+
+      if (normalizeRange && options.length) {
+        RANGE_START_YMD = startMatch ? startMatch.startYmd : "";
+        RANGE_END_YMD = endMatch ? endMatch.endYmd : "";
+      }
+
+      const startValue = startMatch ? startMatch.startYmd : "";
+      const endValue = endMatch ? endMatch.endYmd : "";
+      const startHtml = ['<option value="">All weeks</option>']
+        .concat(options.map(opt => `<option value="${opt.startYmd}">${escapeHtml(opt.label)}</option>`))
+        .join("");
+      const endHtml = ['<option value="">All weeks</option>']
+        .concat(options.map(opt => `<option value="${opt.endYmd}">${escapeHtml(opt.label)}</option>`))
+        .join("");
+      startSelect.innerHTML = startHtml;
+      endSelect.innerHTML = endHtml;
+      startSelect.value = startValue;
+      endSelect.value = endValue;
+    }
+
+    function syncDateRangeControls() {
+      const startInput = document.getElementById("global-date-start");
+      const endInput = document.getElementById("global-date-end");
+      if (startInput) startInput.value = RANGE_START_YMD;
+      if (endInput) endInput.value = RANGE_END_YMD;
+    }
+
+    function syncRangeControlMode({ normalizeWeekRange = false } = {}) {
+      const useWeekDropdown = chartMode === "week";
+      const dateFields = document.getElementById("date-range-fields");
+      const weekFields = document.getElementById("week-range-fields");
+      if (dateFields) {
+        dateFields.classList.toggle("hidden", useWeekDropdown);
+        dateFields.hidden = useWeekDropdown;
+      }
+      if (weekFields) {
+        weekFields.classList.toggle("hidden", !useWeekDropdown);
+        weekFields.hidden = !useWeekDropdown;
+      }
+      syncWeekRangeControls({ normalizeRange: normalizeWeekRange && useWeekDropdown });
+      syncDateRangeControls();
     }
 
     function isDateInRange(dateObj) {
@@ -3248,6 +3366,7 @@
       document.getElementById("global-view-cut")?.classList.toggle("active", chartMode === "cut");
       document.getElementById("global-view-date")?.classList.toggle("active", chartMode === "date");
       document.getElementById("global-view-week")?.classList.toggle("active", chartMode === "week");
+      syncRangeControlMode({ normalizeWeekRange: true });
 
       if (!fromTable) {
         setTableMode(chartModeToTableMode(chartMode), { fromChart: true });
@@ -3322,10 +3441,7 @@
       tableEl?.classList.toggle("timeline-mode", middleViewMode === "timeline");
       tableEl?.classList.toggle("harvestable-mode", middleViewMode === "harvestable");
       tableEl?.classList.toggle("all-cols-mode", middleViewMode === "table");
-      const startInput = document.getElementById("global-date-start");
-      const endInput = document.getElementById("global-date-end");
-      if (startInput) startInput.value = RANGE_START_YMD;
-      if (endInput) endInput.value = RANGE_END_YMD;
+      syncRangeControlMode({ normalizeWeekRange: true });
       syncBladeHeightToggle();
       setChartMode(chartMode);
       setTableMode(tableMode, { fromChart: true });
@@ -3371,11 +3487,7 @@
       };
       pillStates = readSavedPillStates(seed);
       loadPillState(middleViewMode);
-
-      const startInput = document.getElementById("global-date-start");
-      const endInput = document.getElementById("global-date-end");
-      if (startInput) startInput.value = RANGE_START_YMD;
-      if (endInput) endInput.value = RANGE_END_YMD;
+      syncRangeControlMode();
 
       document.getElementById("global-view-cut")?.addEventListener("click", () => setChartMode("cut"));
       document.getElementById("global-view-date")?.addEventListener("click", () => setChartMode("date"));
@@ -3391,24 +3503,48 @@
         setBladeHeightOverlay(!bladeHeightOverlay);
       });
 
-      const onRangeChange = () => {
+      const startInput = document.getElementById("global-date-start");
+      const endInput = document.getElementById("global-date-end");
+      const weekStartInput = document.getElementById("global-week-start");
+      const weekEndInput = document.getElementById("global-week-end");
+      const onDateRangeChange = () => {
         let start = String(startInput?.value || "");
         let end = String(endInput?.value || "");
         if (start && end && start > end) {
           const t = start; start = end; end = t;
-          if (startInput) startInput.value = start;
-          if (endInput) endInput.value = end;
         }
         RANGE_START_YMD = start;
         RANGE_END_YMD = end;
         persistDateRange(start, end);
         saveActivePillState();
+        syncRangeControlMode();
         renderKPIs();
         renderTable();
         renderCharts();
       };
-      startInput?.addEventListener("change", onRangeChange);
-      endInput?.addEventListener("change", onRangeChange);
+      const onWeekRangeChange = () => {
+        let start = String(weekStartInput?.value || "");
+        let end = String(weekEndInput?.value || "");
+        if (start && end && start > end) {
+          const options = buildWeekRangeOptions();
+          const startWeek = optionForDate(options, start);
+          const endWeek = optionForDate(options, end);
+          start = endWeek ? endWeek.startYmd : "";
+          end = startWeek ? startWeek.endYmd : "";
+        }
+        RANGE_START_YMD = start;
+        RANGE_END_YMD = end;
+        persistDateRange(start, end);
+        saveActivePillState();
+        syncRangeControlMode();
+        renderKPIs();
+        renderTable();
+        renderCharts();
+      };
+      startInput?.addEventListener("change", onDateRangeChange);
+      endInput?.addEventListener("change", onDateRangeChange);
+      weekStartInput?.addEventListener("change", onWeekRangeChange);
+      weekEndInput?.addEventListener("change", onWeekRangeChange);
 
       setChartMode(chartMode);
       setTableMode(tableMode);
@@ -3428,6 +3564,7 @@
         reloadTimer = null;
         if (opts.refreshPackQuality) await refreshPackQualityMap();
         buildModels();
+        syncRangeControlMode({ normalizeWeekRange: true });
         renderKPIs();
         renderTable();
         renderCharts();
