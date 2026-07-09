@@ -3077,7 +3077,7 @@
       } : {};
       if (isHarvestable) {
         if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Grow Frecasted · Actual Harvested`;
-        if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Estimated Yld/Pond · Forecasted Yld/Pond`;
+        if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Estimated Yield · Forecasted Yield`;
         if (legendBottom) legendBottom.classList.add("hidden");
       } else {
         if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Top: ${isTimeline ? "Harvest Days to Harvest" : "LSY (lbs/sqft/yr)"}`;
@@ -3118,7 +3118,7 @@
                   backgroundColor: "rgba(234, 179, 8, 0.92)"
                 },
                 {
-                  label: "Estimated Yld/Pond",
+                  label: "Estimated Yield",
                   data: estimatedYldPondValues,
                   borderWidth: isBatchMode ? 0 : 2.2,
                   borderRadius: isBatchMode ? 4 : 0,
@@ -3130,7 +3130,7 @@
                   backgroundColor: "rgba(168, 85, 247, 0.85)"
                 },
                 {
-                  label: "Forecasted Yld/Pond",
+                  label: "Forecasted Yield",
                   data: forecastedYldPondValues,
                   borderWidth: isBatchMode ? 0 : 2.2,
                   borderRadius: isBatchMode ? 4 : 0,
