@@ -859,6 +859,17 @@
       LSY: "LSY (lbs/sqft/yr)"
     });
 
+    const FH = Object.freeze({
+      BATCH: "FBatch",
+      VARIETY: "FVariety",
+      EXP_OR_PROD: "FEXPORPROD",
+      DATE: "FHarvest Date",
+      EXPECTED_YLD_BOARD: "FExpected YLD/BRD (lbs)",
+      FORECASTED_YLD_BOARD: "FForecasted yield/board (lbs)",
+      ESTIMATED_YLD_POND: "FEstimated yld/pond",
+      FORECASTED_YLD_POND: "FForecasted yld/pond"
+    });
+
     // =========================================================
     // HEADER ALIASES (tolerant like Seeding)
     // Add anything you ever see here.
@@ -975,7 +986,25 @@
 
       // LSY
       ["lsy (lbs/sqft/yr)", H.LSY],
-      ["lsy", H.LSY]
+      ["lsy", H.LSY],
+
+      // Forecast columns carried in Master Grow
+      ["fbatch", FH.BATCH],
+      ["f batch", FH.BATCH],
+      ["fvariety", FH.VARIETY],
+      ["f variety", FH.VARIETY],
+      ["fexporprod", FH.EXP_OR_PROD],
+      ["f exporprod", FH.EXP_OR_PROD],
+      ["fharvest date", FH.DATE],
+      ["f harvest date", FH.DATE],
+      ["fexpected yld/brd (lbs)", FH.EXPECTED_YLD_BOARD],
+      ["f expected yld/brd (lbs)", FH.EXPECTED_YLD_BOARD],
+      ["fforecasted yield/board (lbs)", FH.FORECASTED_YLD_BOARD],
+      ["f forecasted yield/board (lbs)", FH.FORECASTED_YLD_BOARD],
+      ["festimated yld/pond", FH.ESTIMATED_YLD_POND],
+      ["f estimated yld/pond", FH.ESTIMATED_YLD_POND],
+      ["fforecasted yld/pond", FH.FORECASTED_YLD_POND],
+      ["f forecasted yld/pond", FH.FORECASTED_YLD_POND]
     ]);
 
     function canonicalizeHeaders(headersRaw){
@@ -989,6 +1018,104 @@
         if (canon && !canonIndexByName.has(canon)) canonIndexByName.set(canon, idx);
       });
       return { canonHeaders, canonIndexByName };
+    }
+
+    function cleanForecastCell(value){
+      const s = String(value ?? "").trim();
+      if (!s) return "";
+      if (s.toUpperCase().includes("#REF!")) return "";
+      return s;
+    }
+
+    function parseForecastNumber(value){
+      const s = cleanForecastCell(value);
+      if (!s) return null;
+      const cleaned = s.replace(/,/g, "");
+      const n = Number(cleaned);
+      if (Number.isFinite(n)) return n;
+      const fallback = parseFloat(cleaned);
+      return Number.isFinite(fallback) ? fallback : null;
+    }
+
+    function isPlaceholderForecastDate(rawValue, dateObj){
+      const s = String(rawValue ?? "").trim().toLowerCase();
+      if (!s) return true;
+      if (s.includes("january 0, 1900") || s.includes("jan 0, 1900")) return true;
+      if (dateObj instanceof Date && !isNaN(dateObj.getTime()) && dateObj.getUTCFullYear() < 2000) return true;
+      return false;
+    }
+
+    function buildForecastModels(rows){
+      const forecastRows = [];
+      const byBatch = new Map();
+      let skippedPlaceholder = 0;
+      let skippedNoBatch = 0;
+
+      for (const row of rows) {
+        const batch = cleanForecastCell(row[FH.BATCH]);
+        const rawDate = cleanForecastCell(row[FH.DATE]);
+        const parsedDate = parseAnyDate(rawDate);
+        const dateObj = parsedDate ? normalizeToUTCMidnight(parsedDate) : null;
+        const hasPlaceholderDate = isPlaceholderForecastDate(rawDate, dateObj);
+
+        if (!batch || batch === "0") {
+          if (hasPlaceholderDate) skippedPlaceholder++;
+          else skippedNoBatch++;
+          continue;
+        }
+
+        const estimatedYldPond = parseForecastNumber(row[FH.ESTIMATED_YLD_POND]);
+        const forecastedYldPond = parseForecastNumber(row[FH.FORECASTED_YLD_POND]);
+        const item = {
+          batch,
+          variety: cleanForecastCell(row[FH.VARIETY]),
+          expOrProd: cleanForecastCell(row[FH.EXP_OR_PROD]),
+          dateObj,
+          date: dateObj ? formatDateMMDDYYYY(dateObj) : "",
+          week: dateObj ? isoWeekFromUTC(dateObj) : "",
+          estimatedYldPond,
+          forecastedYldPond
+        };
+        forecastRows.push(item);
+
+        if (!byBatch.has(batch)) {
+          byBatch.set(batch, {
+            batch,
+            variety: item.variety,
+            dateObj: item.dateObj,
+            date: item.date,
+            week: item.week,
+            estimatedYldPond: 0,
+            forecastedYldPond: 0,
+            estimatedCount: 0,
+            forecastedCount: 0
+          });
+        }
+        const agg = byBatch.get(batch);
+        if (!agg.dateObj && item.dateObj) {
+          agg.dateObj = item.dateObj;
+          agg.date = item.date;
+          agg.week = item.week;
+        }
+        if (Number.isFinite(item.estimatedYldPond)) {
+          agg.estimatedYldPond += item.estimatedYldPond;
+          agg.estimatedCount += 1;
+        }
+        if (Number.isFinite(item.forecastedYldPond)) {
+          agg.forecastedYldPond += item.forecastedYldPond;
+          agg.forecastedCount += 1;
+        }
+      }
+
+      return { rows: forecastRows, byBatch, skippedPlaceholder, skippedNoBatch };
+    }
+
+    function applyForecastToCuts(){
+      for (const cut of CUTS) {
+        const forecast = FORECAST_BY_BATCH.get(String(cut.batchCode || "").trim());
+        cut.estimatedYldPond = forecast && forecast.estimatedCount > 0 ? forecast.estimatedYldPond : null;
+        cut.forecastedYldPond = forecast && forecast.forecastedCount > 0 ? forecast.forecastedYldPond : null;
+      }
     }
 
     // =========================================================
@@ -1009,6 +1136,8 @@
     let CUTS = [];
     let DAILY = [];
     let WEEKLY = [];
+    let FORECAST_ROWS = [];
+    let FORECAST_BY_BATCH = new Map();
     let PACK_QUALITY_BY_BATCH = new Map();
     let RANGE_START_YMD = "";
     let RANGE_END_YMD = "";
@@ -1016,6 +1145,11 @@
     // =========================================================
     // HELPERS
     // =========================================================
+    function resetForecastModels(){
+      FORECAST_ROWS = [];
+      FORECAST_BY_BATCH = new Map();
+    }
+
     function setEmpty(msg) {
       const el = document.getElementById("empty-hint");
       if (el) el.textContent = msg || "";
@@ -1986,6 +2120,7 @@
       const payload = loadMasterGrowPayload();
       if (!payload) {
         CUTS = []; DAILY = []; WEEKLY = [];
+        resetForecastModels();
         const reason = LAST_HYDRATE_REASON ? `\n\nHydrate status:\n- ${LAST_HYDRATE_REASON}` : "";
         setEmpty("No Master Grow payload in localStorage.\n\nFix:\n- Open Data Input\n- Upload Master Grow\n- Confirm it saves to campo_master_grow_v1" + reason);
         setSourceLine(`Source: none (no payload found${LAST_HYDRATE_REASON ? `; ${LAST_HYDRATE_REASON}` : ""})`);
@@ -1996,6 +2131,7 @@
       const picked = pickSheet(payload);
       if (!picked || !picked.sheet) {
         CUTS = []; DAILY = []; WEEKLY = [];
+        resetForecastModels();
         setEmpty("Master Grow payload loaded, but no readable rows/sheets were found.");
         setSourceLine("Source: payload found, but no readable sheet");
         setDebug("Sheets keys:\n- " + Object.keys(payload?.sheets || {}).join("\n- "));
@@ -2009,6 +2145,7 @@
 
       if (!rows.length) {
         CUTS = []; DAILY = []; WEEKLY = [];
+        resetForecastModels();
         setEmpty(`Sheet "${picked.name}" loaded, but it has 0 rows.`);
         setSourceLine(`Source: ${sourceTag} → sheet "${picked.name}" (0 rows)`);
         setDebug("");
@@ -2030,6 +2167,7 @@
         headerSet.has(H.WITH_WASTE_LBS);
       if (usingFallback && (!headerSet.has(H.DATE) || !hasMetricHeader)) {
         CUTS = []; DAILY = []; WEEKLY = [];
+        resetForecastModels();
         setEmpty(
           "Fallback harvest payload found, but minimum harvest headers are missing.\n\n" +
           "Required for fallback:\n- Harvest Date\n- At least one metric column (Boards/Cut/Waste/With Waste)\n\n" +
@@ -2052,6 +2190,10 @@
         `Rows: ${rows.length.toLocaleString()}\n` +
         `Sheets available: ${(Object.keys(payload.sheets||{}).length)}`
       );
+
+      const forecastBuilt = buildForecastModels(rows);
+      FORECAST_ROWS = forecastBuilt.rows;
+      FORECAST_BY_BATCH = forecastBuilt.byBatch;
 
       // CUTS
       const cuts = [];
@@ -2236,6 +2378,7 @@
       CUTS = cuts;
       DAILY = daily;
       WEEKLY = weekly;
+      applyForecastToCuts();
 
       // If we built nothing, provide diagnostics
       if (!CUTS.length) {
@@ -2480,6 +2623,77 @@
     // =========================================================
     // CHARTS
     // =========================================================
+    function forecastValueOrNull(value, count){
+      return count > 0 && Number.isFinite(value) ? value : null;
+    }
+
+    function makeWeekMetaFromDate(dateObj){
+      const week = isoWeekFromUTC(dateObj);
+      const year = dateObj.getUTCFullYear();
+      const weekNum = Number(week);
+      return {
+        key: `${year}-W${week}`,
+        label: `Week ${week} (${year})`,
+        order: year * 100 + weekNum
+      };
+    }
+
+    function aggregateForecastRowsByDate(rows){
+      const map = new Map();
+      for (const row of rows) {
+        if (!(row.dateObj instanceof Date) || isNaN(row.dateObj.getTime())) continue;
+        const key = row.date;
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            date: row.date,
+            dateObj: row.dateObj,
+            estimatedYldPond: 0,
+            forecastedYldPond: 0,
+            estimatedCount: 0,
+            forecastedCount: 0
+          });
+        }
+        const item = map.get(key);
+        if (Number.isFinite(row.estimatedYldPond)) {
+          item.estimatedYldPond += row.estimatedYldPond;
+          item.estimatedCount += 1;
+        }
+        if (Number.isFinite(row.forecastedYldPond)) {
+          item.forecastedYldPond += row.forecastedYldPond;
+          item.forecastedCount += 1;
+        }
+      }
+      return map;
+    }
+
+    function aggregateForecastRowsByWeek(rows){
+      const map = new Map();
+      for (const row of rows) {
+        if (!(row.dateObj instanceof Date) || isNaN(row.dateObj.getTime())) continue;
+        const meta = makeWeekMetaFromDate(row.dateObj);
+        if (!map.has(meta.key)) {
+          map.set(meta.key, {
+            ...meta,
+            estimatedYldPond: 0,
+            forecastedYldPond: 0,
+            estimatedCount: 0,
+            forecastedCount: 0
+          });
+        }
+        const item = map.get(meta.key);
+        if (Number.isFinite(row.estimatedYldPond)) {
+          item.estimatedYldPond += row.estimatedYldPond;
+          item.estimatedCount += 1;
+        }
+        if (Number.isFinite(row.forecastedYldPond)) {
+          item.forecastedYldPond += row.forecastedYldPond;
+          item.forecastedCount += 1;
+        }
+      }
+      return map;
+    }
+
     function renderCharts() {
       const cutsVisible = CUTS.filter(c => isDateInRange(c.dateObj));
       const dailyVisible = DAILY.filter(d => isDateInRange(d.dateObj));
@@ -2536,45 +2750,146 @@
       const productionDaysByWeek = weeklyVisible.map(w => Number.isFinite(w.productionDays) ? w.productionDays : 0);
       const bladeHeightByWeek = weeklyVisible.map(w => Number.isFinite(w.bladeHeight) && w.bladeHeight > 0 ? w.bladeHeight : null);
 
-      let labels, topValues, middleValues, bottomValues, forecastValues, withWasteValues, bladeHeightValues;
+      const forecastRowsVisible = FORECAST_ROWS.filter(row => row.dateObj ? isDateInRange(row.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD));
+      const forecastBatchKeysInCuts = new Set(cutsVisible.map(c => String(c.batchCode || "").trim()).filter(Boolean));
+      const forecastOnlyBatches = Array.from(FORECAST_BY_BATCH.values())
+        .filter(item => item?.batch && !forecastBatchKeysInCuts.has(item.batch))
+        .filter(item => item.dateObj ? isDateInRange(item.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD))
+        .sort((a, b) => {
+          const ad = a.dateObj instanceof Date ? a.dateObj.getTime() : Number.MAX_SAFE_INTEGER;
+          const bd = b.dateObj instanceof Date ? b.dateObj.getTime() : Number.MAX_SAFE_INTEGER;
+          return ad - bd || String(a.batch).localeCompare(String(b.batch));
+        });
+      const labelsCutHarvestable = [
+        ...labelsCut,
+        ...forecastOnlyBatches.map(item => item.batch)
+      ];
+      const batchTooltipTitlesHarvestable = [
+        ...batchTooltipTitles,
+        ...forecastOnlyBatches.map(item => {
+          const date = item.date || "";
+          return date ? `Forecast · ${item.batch} · ${date}` : `Forecast · ${item.batch}`;
+        })
+      ];
+      const growForecastByCutHarvestable = [
+        ...growForecastByCut,
+        ...forecastOnlyBatches.map(() => null)
+      ];
+      const withWasteByCutHarvestable = [
+        ...withWasteByCut,
+        ...forecastOnlyBatches.map(() => null)
+      ];
+      const estimatedYldPondByCut = [
+        ...cutsVisible.map(c => Number.isFinite(c.estimatedYldPond) ? c.estimatedYldPond : null),
+        ...forecastOnlyBatches.map(item => forecastValueOrNull(item.estimatedYldPond, item.estimatedCount))
+      ];
+      const forecastedYldPondByCut = [
+        ...cutsVisible.map(c => Number.isFinite(c.forecastedYldPond) ? c.forecastedYldPond : null),
+        ...forecastOnlyBatches.map(item => forecastValueOrNull(item.forecastedYldPond, item.forecastedCount))
+      ];
+
+      const forecastByDate = aggregateForecastRowsByDate(forecastRowsVisible);
+      const dailyByDate = new Map(dailyChrono.map(d => [d.date, d]));
+      const dateAxis = new Map();
+      dailyChrono.forEach(d => dateAxis.set(d.date, { key: d.date, date: d.date, dateObj: d.dateObj }));
+      forecastByDate.forEach((item, key) => dateAxis.set(key, { key, date: item.date, dateObj: item.dateObj }));
+      const harvestableDateAxis = Array.from(dateAxis.values()).sort((a, b) => a.dateObj - b.dateObj);
+      const labelsByDateHarvestable = harvestableDateAxis.map(item => formatDayMonthLabel(item.date));
+      const growForecastByDateHarvestable = harvestableDateAxis.map(item => {
+        const d = dailyByDate.get(item.key);
+        return d ? (Number.isFinite(d.growForecastedWeightLbs) ? d.growForecastedWeightLbs : 0) : null;
+      });
+      const withWasteByDateHarvestable = harvestableDateAxis.map(item => {
+        const d = dailyByDate.get(item.key);
+        return d ? (Number.isFinite(d.withWaste) ? d.withWaste : 0) : null;
+      });
+      const estimatedYldPondByDate = harvestableDateAxis.map(item => {
+        const f = forecastByDate.get(item.key);
+        return f ? forecastValueOrNull(f.estimatedYldPond, f.estimatedCount) : null;
+      });
+      const forecastedYldPondByDate = harvestableDateAxis.map(item => {
+        const f = forecastByDate.get(item.key);
+        return f ? forecastValueOrNull(f.forecastedYldPond, f.forecastedCount) : null;
+      });
+
+      const forecastByWeek = aggregateForecastRowsByWeek(forecastRowsVisible);
+      const weeklyByKey = new Map();
+      weeklyVisible.forEach(w => {
+        const key = w.year ? `${w.year}-W${w.week}` : String(w.week || "");
+        if (key) weeklyByKey.set(key, w);
+      });
+      const weekAxis = new Map();
+      weeklyVisible.forEach(w => {
+        const key = w.year ? `${w.year}-W${w.week}` : String(w.week || "");
+        if (key) weekAxis.set(key, { key, label: w.label, order: Number.isFinite(w.order) ? w.order : Number.MAX_SAFE_INTEGER });
+      });
+      forecastByWeek.forEach((item, key) => {
+        if (!weekAxis.has(key)) weekAxis.set(key, { key, label: item.label, order: item.order });
+      });
+      const harvestableWeekAxis = Array.from(weekAxis.values()).sort((a, b) => a.order - b.order || String(a.label).localeCompare(String(b.label)));
+      const labelsByWeekHarvestable = harvestableWeekAxis.map(item => item.label);
+      const growForecastByWeekHarvestable = harvestableWeekAxis.map(item => {
+        const w = weeklyByKey.get(item.key);
+        return w ? (Number.isFinite(w.growForecastedWeightLbs) ? w.growForecastedWeightLbs : 0) : null;
+      });
+      const withWasteByWeekHarvestable = harvestableWeekAxis.map(item => {
+        const w = weeklyByKey.get(item.key);
+        return w ? (Number.isFinite(w.withWaste) ? w.withWaste : 0) : null;
+      });
+      const estimatedYldPondByWeek = harvestableWeekAxis.map(item => {
+        const f = forecastByWeek.get(item.key);
+        return f ? forecastValueOrNull(f.estimatedYldPond, f.estimatedCount) : null;
+      });
+      const forecastedYldPondByWeek = harvestableWeekAxis.map(item => {
+        const f = forecastByWeek.get(item.key);
+        return f ? forecastValueOrNull(f.forecastedYldPond, f.forecastedCount) : null;
+      });
+
+      let labels, topValues, middleValues, bottomValues, forecastValues, withWasteValues, estimatedYldPondValues, forecastedYldPondValues, bladeHeightValues;
       if (chartMode === "cut") {
-        labels = labelsCut;
+        labels = isHarvestable ? labelsCutHarvestable : labelsCut;
         bladeHeightValues = bladeHeightByCut;
         if (isTimeline) {
           topValues = harvestDaysByCut;
           middleValues = propagationDaysByCut;
           bottomValues = productionDaysByCut;
         } else if (isHarvestable) {
-          forecastValues = growForecastByCut;
-          withWasteValues = withWasteByCut;
+          forecastValues = growForecastByCutHarvestable;
+          withWasteValues = withWasteByCutHarvestable;
+          estimatedYldPondValues = estimatedYldPondByCut;
+          forecastedYldPondValues = forecastedYldPondByCut;
         } else {
           topValues = lsyByCut;
           middleValues = withWastePerBoardByCut;
         }
       } else if (chartMode === "week") {
-        labels = labelsByWeek;
+        labels = isHarvestable ? labelsByWeekHarvestable : labelsByWeek;
         bladeHeightValues = bladeHeightByWeek;
         if (isTimeline) {
           topValues = harvestDaysByWeek;
           middleValues = propagationDaysByWeek;
           bottomValues = productionDaysByWeek;
         } else if (isHarvestable) {
-          forecastValues = growForecastByWeek;
-          withWasteValues = withWasteByWeek;
+          forecastValues = growForecastByWeekHarvestable;
+          withWasteValues = withWasteByWeekHarvestable;
+          estimatedYldPondValues = estimatedYldPondByWeek;
+          forecastedYldPondValues = forecastedYldPondByWeek;
         } else {
           topValues = lsyByWeek;
           middleValues = withWastePerBoardByWeek;
         }
       } else {
-        labels = labelsByDate;
+        labels = isHarvestable ? labelsByDateHarvestable : labelsByDate;
         bladeHeightValues = bladeHeightByDate;
         if (isTimeline) {
           topValues = harvestDaysByDate;
           middleValues = propagationDaysByDate;
           bottomValues = productionDaysByDate;
         } else if (isHarvestable) {
-          forecastValues = growForecastByDate;
-          withWasteValues = withWasteByDate;
+          forecastValues = growForecastByDateHarvestable;
+          withWasteValues = withWasteByDateHarvestable;
+          estimatedYldPondValues = estimatedYldPondByDate;
+          forecastedYldPondValues = forecastedYldPondByDate;
         } else {
           topValues = lsyByDate;
           middleValues = withWastePerBoardByDate;
@@ -2603,6 +2918,7 @@
       const xTitle = chartMode === "cut" ? "Batch" : chartMode === "week" ? "Harvest Week" : "Date";
       const xTickRotation = chartMode === "cut" ? 0 : 45;
       const isBatchMode = chartMode === "cut";
+      const activeBatchTooltipTitles = isHarvestable ? batchTooltipTitlesHarvestable : batchTooltipTitles;
       const topLabel = isTimeline
         ? (chartMode === "cut" ? "Harvest Days to Harvest per batch" : chartMode === "week" ? "Harvest Days to Harvest per week" : "Harvest Days to Harvest per day")
         : (chartMode === "cut" ? "LSY per batch" : chartMode === "week" ? "LSY per week" : "LSY per day");
@@ -2642,8 +2958,8 @@
         }
       } : {};
       if (isHarvestable) {
-        if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Grow Frecasted`;
-        if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Actual Harvested`;
+        if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Grow Frecasted · Actual Harvested`;
+        if (legendMiddle) legendMiddle.innerHTML = `<span class="legend-box boards"></span> Estimated Yld/Pond · Forecasted Yld/Pond`;
         if (legendBottom) legendBottom.classList.add("hidden");
       } else {
         if (legendTop) legendTop.innerHTML = `<span class="legend-box boards"></span> Top: ${isTimeline ? "Harvest Days to Harvest" : "LSY (lbs/sqft/yr)"}`;
@@ -2667,6 +2983,7 @@
                   tension: isBatchMode ? 0 : 0.35,
                   pointRadius: isBatchMode ? 0 : 2.8,
                   fill: false,
+                  spanGaps: true,
                   borderColor: "rgba(52, 211, 153, 0.98)",
                   backgroundColor: "rgba(52, 211, 153, 0.88)"
                 },
@@ -2678,8 +2995,33 @@
                   tension: isBatchMode ? 0 : 0.35,
                   pointRadius: isBatchMode ? 0 : 2.8,
                   fill: false,
+                  spanGaps: true,
                   borderColor: "rgba(234, 179, 8, 0.98)",
                   backgroundColor: "rgba(234, 179, 8, 0.92)"
+                },
+                {
+                  label: "Estimated Yld/Pond",
+                  data: estimatedYldPondValues,
+                  borderWidth: isBatchMode ? 0 : 2.2,
+                  borderRadius: isBatchMode ? 4 : 0,
+                  tension: isBatchMode ? 0 : 0.35,
+                  pointRadius: isBatchMode ? 0 : 2.8,
+                  fill: false,
+                  spanGaps: true,
+                  borderColor: "rgba(168, 85, 247, 0.98)",
+                  backgroundColor: "rgba(168, 85, 247, 0.85)"
+                },
+                {
+                  label: "Forecasted Yld/Pond",
+                  data: forecastedYldPondValues,
+                  borderWidth: isBatchMode ? 0 : 2.2,
+                  borderRadius: isBatchMode ? 4 : 0,
+                  tension: isBatchMode ? 0 : 0.35,
+                  pointRadius: isBatchMode ? 0 : 2.8,
+                  fill: false,
+                  spanGaps: true,
+                  borderColor: "rgba(244, 114, 182, 0.98)",
+                  backgroundColor: "rgba(244, 114, 182, 0.85)"
                 }
               ]
             : [
@@ -2745,7 +3087,7 @@
                 font: axisTickFont,
                 callback: (v) => fmtTick(v, 1)
               },
-              title: { display: true, text: isHarvestable ? "GROW FORECASTED WEIGHT LBS / WITH WASTE" : topYAxisTitle, color: axisTitleColor, font: axisTitleFont }
+              title: { display: true, text: isHarvestable ? "HARVESTABLE / FORECAST YIELD LBS" : topYAxisTitle, color: axisTitleColor, font: axisTitleFont }
             },
             ...bladeHeightAxis
           }
@@ -2858,7 +3200,7 @@
                     if (!items?.length) return "";
                     if (chartMode !== "cut") return String(items[0].label || "");
                     const i = items[0].dataIndex;
-                    return batchTooltipTitles[i] || String(items[0].label || "");
+                    return activeBatchTooltipTitles[i] || String(items[0].label || "");
                   }
                 }
               }
