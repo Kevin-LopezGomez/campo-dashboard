@@ -1537,6 +1537,17 @@
       return `${fmt(startObj)} - ${fmt(endObj)}`;
     }
 
+    function estimatedYieldCutoffYmd() {
+      const currentWeekStart = startOfIsoWeekUTC(new Date());
+      if (!currentWeekStart) return "";
+      return ymdFromDateUTC(addUtcDays(currentWeekStart, -7));
+    }
+
+    function showEstimatedYieldFromCutoff(dateObj, cutoffYmd) {
+      const ymd = ymdFromDateUTC(dateObj);
+      return Boolean(ymd && cutoffYmd && ymd >= cutoffYmd);
+    }
+
     function buildWeekRangeOptions() {
       const map = new Map();
       const addDate = (dateObj) => {
@@ -1626,9 +1637,11 @@
 
         const key = year ? `${year}-W${wkStr}` : wkStr;
         if (!wkMap.has(key)) {
+          const startObj = startOfIsoWeekUTC(d.dateObj);
           wkMap.set(key, {
             week: wkStr,
             year,
+            startYmd: startObj ? ymdFromDateUTC(startObj) : "",
             weekNum: parseFloat(wkStr),
             label: "",
             spanH: 0,
@@ -2727,10 +2740,12 @@
 
     function makeWeekMetaFromDate(dateObj){
       const week = isoWeekFromUTC(dateObj);
+      const startObj = startOfIsoWeekUTC(dateObj);
       const year = dateObj.getUTCFullYear();
       const weekNum = Number(week);
       return {
         key: `${year}-W${week}`,
+        startYmd: startObj ? ymdFromDateUTC(startObj) : "",
         label: `Week ${week} (${year})`,
         order: year * 100 + weekNum
       };
@@ -2849,6 +2864,7 @@
       const bladeHeightByWeek = weeklyVisible.map(w => Number.isFinite(w.bladeHeight) && w.bladeHeight > 0 ? w.bladeHeight : null);
 
       const forecastRowsVisible = FORECAST_ROWS.filter(row => row.dateObj ? isDateInRange(row.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD));
+      const estimatedCutoffYmd = estimatedYieldCutoffYmd();
       const forecastBatchKeysInCuts = new Set(cutsVisible.map(c => String(c.batchCode || "").trim()).filter(Boolean));
       const forecastOnlyBatches = Array.from(FORECAST_BY_BATCH.values())
         .filter(item => item?.batch && !forecastBatchKeysInCuts.has(item.batch))
@@ -2878,8 +2894,8 @@
         ...forecastOnlyBatches.map(() => null)
       ];
       const estimatedYldPondByCut = [
-        ...cutsVisible.map(c => Number.isFinite(c.estimatedYldPond) ? c.estimatedYldPond : null),
-        ...forecastOnlyBatches.map(item => forecastValueOrNull(item.estimatedYldPond, item.estimatedCount))
+        ...cutsVisible.map(c => showEstimatedYieldFromCutoff(c.dateObj, estimatedCutoffYmd) && Number.isFinite(c.estimatedYldPond) ? c.estimatedYldPond : null),
+        ...forecastOnlyBatches.map(item => showEstimatedYieldFromCutoff(item.dateObj, estimatedCutoffYmd) ? forecastValueOrNull(item.estimatedYldPond, item.estimatedCount) : null)
       ];
       const forecastedYldPondByCut = [
         ...cutsVisible.map(c => Number.isFinite(c.forecastedYldPond) ? c.forecastedYldPond : null),
@@ -2903,7 +2919,7 @@
       });
       const estimatedYldPondByDate = harvestableDateAxis.map(item => {
         const f = forecastByDate.get(item.key);
-        return f ? forecastValueOrNull(f.estimatedYldPond, f.estimatedCount) : null;
+        return f && showEstimatedYieldFromCutoff(item.dateObj, estimatedCutoffYmd) ? forecastValueOrNull(f.estimatedYldPond, f.estimatedCount) : null;
       });
       const forecastedYldPondByDate = harvestableDateAxis.map(item => {
         const f = forecastByDate.get(item.key);
@@ -2919,10 +2935,10 @@
       const weekAxis = new Map();
       weeklyVisible.forEach(w => {
         const key = w.year ? `${w.year}-W${w.week}` : String(w.week || "");
-        if (key) weekAxis.set(key, { key, label: w.label, order: Number.isFinite(w.order) ? w.order : Number.MAX_SAFE_INTEGER });
+        if (key) weekAxis.set(key, { key, startYmd: w.startYmd || "", label: w.label, order: Number.isFinite(w.order) ? w.order : Number.MAX_SAFE_INTEGER });
       });
       forecastByWeek.forEach((item, key) => {
-        if (!weekAxis.has(key)) weekAxis.set(key, { key, label: item.label, order: item.order });
+        if (!weekAxis.has(key)) weekAxis.set(key, { key, startYmd: item.startYmd || "", label: item.label, order: item.order });
       });
       const harvestableWeekAxis = Array.from(weekAxis.values()).sort((a, b) => a.order - b.order || String(a.label).localeCompare(String(b.label)));
       const labelsByWeekHarvestable = harvestableWeekAxis.map(item => item.label);
@@ -2936,7 +2952,7 @@
       });
       const estimatedYldPondByWeek = harvestableWeekAxis.map(item => {
         const f = forecastByWeek.get(item.key);
-        return f ? forecastValueOrNull(f.estimatedYldPond, f.estimatedCount) : null;
+        return f && item.startYmd && estimatedCutoffYmd && item.startYmd >= estimatedCutoffYmd ? forecastValueOrNull(f.estimatedYldPond, f.estimatedCount) : null;
       });
       const forecastedYldPondByWeek = harvestableWeekAxis.map(item => {
         const f = forecastByWeek.get(item.key);
