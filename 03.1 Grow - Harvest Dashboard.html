@@ -1333,6 +1333,24 @@
       return true;
     }
 
+    function isFutureProjectionDate(dateObj) {
+      const ymd = ymdFromDateUTC(dateObj);
+      const todayYmd = ymdFromDateUTC(normalizeToUTCMidnight(new Date()));
+      return Boolean(ymd && todayYmd && ymd > todayYmd);
+    }
+
+    function rowMatchesForecastProjectionFilters(row) {
+      if (!row) return false;
+      const batchKey = String(row.batch || row.batchCode || "").trim();
+      const batchMeta = batchKey ? BATCH_META_BY_BATCH.get(batchKey) : null;
+      const expOrProd = isFutureProjectionDate(row.dateObj)
+        ? (row.expOrProd || "")
+        : (batchMeta?.expOrProd || row.expOrProd || "");
+      if (EXP_FILTER !== "all" && classifyExpOrProd(expOrProd) !== EXP_FILTER) return false;
+      if (VARIETY_FILTERS.size && !VARIETY_FILTERS.has(normalizeFilterValue(row.variety))) return false;
+      return true;
+    }
+
     function visibleCuts() {
       return CUTS.filter(c => isDateInRange(c.dateObj) && rowMatchesGlobalFilters(c));
     }
@@ -1340,7 +1358,7 @@
     function visibleForecastRows() {
       return FORECAST_ROWS.filter(row => {
         const inRange = row.dateObj ? isDateInRange(row.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD);
-        return inRange && rowMatchesGlobalFilters(row);
+        return inRange && rowMatchesForecastProjectionFilters(row);
       });
     }
 
@@ -3106,7 +3124,7 @@
       const forecastBatchKeysInCuts = new Set(cutsVisible.map(c => String(c.batchCode || "").trim()).filter(Boolean));
       const forecastOnlyBatches = Array.from(FORECAST_BY_BATCH.values())
         .filter(item => item?.batch && !forecastBatchKeysInCuts.has(item.batch))
-        .filter(item => rowMatchesGlobalFilters(item))
+        .filter(item => rowMatchesForecastProjectionFilters(item))
         .filter(item => item.dateObj ? isDateInRange(item.dateObj) : (!RANGE_START_YMD && !RANGE_END_YMD))
         .sort((a, b) => {
           const ad = a.dateObj instanceof Date ? a.dateObj.getTime() : Number.MAX_SAFE_INTEGER;
