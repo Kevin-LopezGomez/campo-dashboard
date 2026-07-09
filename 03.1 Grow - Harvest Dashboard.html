@@ -942,6 +942,7 @@
       HARVEST_DAYS_TO_HARVEST: "Harvest Days to Harvest",
       PROPAGATION_DAYS: "Propagation Days",
       PRODUCTION_DAYS: "Production Days",
+      EXP_OR_PROD: "Experiment or Production",
       GROW_FORECASTED_WEIGHT_LBS: "Grow Forecasted Weight Lbs",
       BLADE_HEIGHT: "Blade Height",
       DATE: "Harvest Date",
@@ -985,6 +986,12 @@
       ["harvest days to harvest", H.HARVEST_DAYS_TO_HARVEST],
       ["propagation days", H.PROPAGATION_DAYS],
       ["production days", H.PRODUCTION_DAYS],
+      ["experiment or production", H.EXP_OR_PROD],
+      ["experiments or production", H.EXP_OR_PROD],
+      ["experiment / production", H.EXP_OR_PROD],
+      ["experiment/production", H.EXP_OR_PROD],
+      ["exp or prod", H.EXP_OR_PROD],
+      ["exporprod", H.EXP_OR_PROD],
       ["grow forecasted weight lbs", H.GROW_FORECASTED_WEIGHT_LBS],
       ["blade height", H.BLADE_HEIGHT],
       ["blade height cm", H.BLADE_HEIGHT],
@@ -1210,11 +1217,30 @@
       return { rows: forecastRows, byBatch, skippedPlaceholder, skippedNoBatch };
     }
 
+    function buildBatchMetaByBatch(rows) {
+      const byBatch = new Map();
+      for (const row of rows) {
+        const batch = cleanForecastCell(row[H.BATCH]);
+        if (!batch) continue;
+        if (!byBatch.has(batch)) {
+          byBatch.set(batch, {
+            batch,
+            expOrProd: cleanForecastCell(row[H.EXP_OR_PROD])
+          });
+        } else {
+          const item = byBatch.get(batch);
+          if (!item.expOrProd) item.expOrProd = cleanForecastCell(row[H.EXP_OR_PROD]);
+        }
+      }
+      return byBatch;
+    }
+
     function applyForecastToCuts(){
       for (const cut of CUTS) {
         const forecast = FORECAST_BY_BATCH.get(String(cut.batchCode || "").trim());
+        const meta = BATCH_META_BY_BATCH.get(String(cut.batchCode || "").trim());
         cut.variety = forecast ? forecast.variety : "";
-        cut.expOrProd = forecast ? forecast.expOrProd : "";
+        cut.expOrProd = meta?.expOrProd || cut.expOrProd || forecast?.expOrProd || "";
         cut.estimatedYldPond = forecast && forecast.estimatedCount > 0 ? forecast.estimatedYldPond : null;
         cut.forecastedYldPond = forecast && forecast.forecastedCount > 0 ? forecast.forecastedYldPond : null;
       }
@@ -1240,6 +1266,7 @@
     let WEEKLY = [];
     let FORECAST_ROWS = [];
     let FORECAST_BY_BATCH = new Map();
+    let BATCH_META_BY_BATCH = new Map();
     let PACK_QUALITY_BY_BATCH = new Map();
     let RANGE_START_YMD = "";
     let RANGE_END_YMD = "";
@@ -1252,6 +1279,7 @@
     function resetForecastModels(){
       FORECAST_ROWS = [];
       FORECAST_BY_BATCH = new Map();
+      BATCH_META_BY_BATCH = new Map();
     }
 
     function escapeHtml(value) {
@@ -1297,7 +1325,10 @@
 
     function rowMatchesGlobalFilters(row) {
       if (!row) return false;
-      if (EXP_FILTER !== "all" && classifyExpOrProd(row.expOrProd) !== EXP_FILTER) return false;
+      const batchKey = String(row.batchCode || row.batch || "").trim();
+      const batchMeta = batchKey ? BATCH_META_BY_BATCH.get(batchKey) : null;
+      const expOrProd = batchMeta?.expOrProd || row.expOrProd || "";
+      if (EXP_FILTER !== "all" && classifyExpOrProd(expOrProd) !== EXP_FILTER) return false;
       if (VARIETY_FILTERS.size && !VARIETY_FILTERS.has(normalizeFilterValue(row.variety))) return false;
       return true;
     }
@@ -2619,6 +2650,7 @@
       const forecastBuilt = buildForecastModels(rows);
       FORECAST_ROWS = forecastBuilt.rows;
       FORECAST_BY_BATCH = forecastBuilt.byBatch;
+      BATCH_META_BY_BATCH = buildBatchMetaByBatch(rows);
 
       // CUTS
       const cuts = [];
@@ -2648,6 +2680,7 @@
         const harvestDaysToHarvest = parseNumber(r[H.HARVEST_DAYS_TO_HARVEST]);
         const propagationDays = parseNumber(r[H.PROPAGATION_DAYS]);
         const productionDays = parseNumber(r[H.PRODUCTION_DAYS]);
+        const expOrProd = cleanForecastCell(r[H.EXP_OR_PROD]);
         const growForecastedWeightLbs = parseNumber(r[H.GROW_FORECASTED_WEIGHT_LBS]);
         const bladeHeight = parseNumber(r[H.BLADE_HEIGHT]);
 
@@ -2669,6 +2702,7 @@
         cuts.push({
           batchCode,
           packQuality: getPackQualityForBatch(batchCode),
+          expOrProd,
           dateObj,
           date,
           week,
