@@ -698,13 +698,7 @@
             <button id="blade-height-toggle" class="view-toggle-btn blade-height-toggle" type="button" aria-pressed="false">Blade Height</button>
           </div>
           <div class="date-range-controls">
-            <span id="date-range-fields">
-              <label for="global-date-start">From</label>
-              <input id="global-date-start" class="date-range-input" type="date" />
-              <label for="global-date-end">To</label>
-              <input id="global-date-end" class="date-range-input" type="date" />
-            </span>
-            <span id="week-range-fields" class="hidden">
+            <span id="week-range-fields">
               <label for="global-week-start">From week</label>
               <select id="global-week-start" class="date-range-input"></select>
               <label for="global-week-end">To week</label>
@@ -1602,27 +1596,13 @@
       endSelect.value = endValue;
     }
 
-    function syncDateRangeControls() {
-      const startInput = document.getElementById("global-date-start");
-      const endInput = document.getElementById("global-date-end");
-      if (startInput) startInput.value = RANGE_START_YMD;
-      if (endInput) endInput.value = RANGE_END_YMD;
-    }
-
     function syncRangeControlMode({ normalizeWeekRange = false } = {}) {
-      const useWeekDropdown = chartMode === "week";
-      const dateFields = document.getElementById("date-range-fields");
       const weekFields = document.getElementById("week-range-fields");
-      if (dateFields) {
-        dateFields.classList.toggle("hidden", useWeekDropdown);
-        dateFields.hidden = useWeekDropdown;
-      }
       if (weekFields) {
-        weekFields.classList.toggle("hidden", !useWeekDropdown);
-        weekFields.hidden = !useWeekDropdown;
+        weekFields.classList.remove("hidden");
+        weekFields.hidden = false;
       }
-      syncWeekRangeControls({ normalizeRange: normalizeWeekRange && useWeekDropdown });
-      syncDateRangeControls();
+      syncWeekRangeControls({ normalizeRange: normalizeWeekRange });
     }
 
     function isDateInRange(dateObj) {
@@ -3503,25 +3483,8 @@
         setBladeHeightOverlay(!bladeHeightOverlay);
       });
 
-      const startInput = document.getElementById("global-date-start");
-      const endInput = document.getElementById("global-date-end");
       const weekStartInput = document.getElementById("global-week-start");
       const weekEndInput = document.getElementById("global-week-end");
-      const onDateRangeChange = () => {
-        let start = String(startInput?.value || "");
-        let end = String(endInput?.value || "");
-        if (start && end && start > end) {
-          const t = start; start = end; end = t;
-        }
-        RANGE_START_YMD = start;
-        RANGE_END_YMD = end;
-        persistDateRange(start, end);
-        saveActivePillState();
-        syncRangeControlMode();
-        renderKPIs();
-        renderTable();
-        renderCharts();
-      };
       const onWeekRangeChange = () => {
         let start = String(weekStartInput?.value || "");
         let end = String(weekEndInput?.value || "");
@@ -3541,8 +3504,6 @@
         renderTable();
         renderCharts();
       };
-      startInput?.addEventListener("change", onDateRangeChange);
-      endInput?.addEventListener("change", onDateRangeChange);
       weekStartInput?.addEventListener("change", onWeekRangeChange);
       weekEndInput?.addEventListener("change", onWeekRangeChange);
 
