@@ -1166,6 +1166,14 @@
       FORECAST_BY_BATCH = new Map();
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
     function setEmpty(msg) {
       const el = document.getElementById("empty-hint");
       if (el) el.textContent = msg || "";
@@ -2648,14 +2656,6 @@
         if (p >= 95) return "cell-percent-good";
         if (p < 85) return "cell-percent-low";
         return "cell-percent-warn";
-      }
-
-      function escapeHtml(value) {
-        return String(value ?? "")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;");
       }
 
       cutBody.innerHTML = "";
