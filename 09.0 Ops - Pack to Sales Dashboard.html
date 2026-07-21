@@ -1127,31 +1127,38 @@
       return out;
     }
 
+    function firstPresent(...values) {
+      for (const value of values) {
+        if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+      }
+      return "";
+    }
+
     function normalizeSalesRecord(o) {
-      const rowId = o.id ?? o.ID ?? "";
-      const shippingDate = o[SHIPPING.DATE] ?? "";
-      const shippingSku = o[SHIPPING.SKU] ?? "";
-      const shippingCases = o[SHIPPING.CASES] ?? "";
-      const shippingLbs = o[SHIPPING.LBS] ?? "";
-      const shippingLocation = o[SHIPPING.LOCATION] ?? "";
-      const shippingRunBatch = o[SHIPPING.RUN_BATCH] ?? "";
-      const shippingWeek = o[SHIPPING.WEEK] ?? "";
-      const shippingComments = o[SHIPPING.COMMENTS] ?? "";
-      const invoiceDate = o[SALES.INVOICE_DATE] ?? shippingDate;
-      const poDate = o[SALES.PO_DATE] ?? "";
-      const shipVia = o[SALES.SHIP_VIA] ?? "";
-      const salesWeek = o[SALES.WEEK] ?? "";
-      const shipWeek = o[SALES.SHIP_WEEK] ?? shippingWeek;
-      const shipDate = o[SALES.SHIP_DATE] ?? shippingDate;
-      const invoiceNo = o[SALES.INVOICE_NO] ?? shippingRunBatch;
-      const sku = o[SALES.SKU] ?? shippingSku;
-      const cases = o[SALES.CASES] ?? shippingCases;
-      const lbsPerCaseRaw = o[SALES.LBS_PER_CASE] ?? "";
-      const lbsEqRaw = o[SALES.LBS_EQ] ?? shippingLbs;
-      const destination = o[SALES.DESTINATION] ?? "";
-      const customer = o[SALES.CUSTOMER] ?? shippingLocation;
-      const term = o[SALES.TERM] ?? "";
-      const extra = o[SALES.EXTRA] ?? shippingComments;
+      const rowId = firstPresent(o.id, o.ID);
+      const shippingDate = firstPresent(o[SHIPPING.DATE]);
+      const shippingSku = firstPresent(o[SHIPPING.SKU]);
+      const shippingCases = firstPresent(o[SHIPPING.CASES]);
+      const shippingLbs = firstPresent(o[SHIPPING.LBS]);
+      const shippingLocation = firstPresent(o[SHIPPING.LOCATION]);
+      const shippingRunBatch = firstPresent(o[SHIPPING.RUN_BATCH]);
+      const shippingWeek = firstPresent(o[SHIPPING.WEEK]);
+      const shippingComments = firstPresent(o[SHIPPING.COMMENTS]);
+      const invoiceDate = firstPresent(o[SALES.INVOICE_DATE], shippingDate);
+      const poDate = firstPresent(o[SALES.PO_DATE]);
+      const shipVia = firstPresent(o[SALES.SHIP_VIA]);
+      const salesWeek = firstPresent(o[SALES.WEEK]);
+      const shipWeek = firstPresent(o[SALES.SHIP_WEEK], shippingWeek);
+      const shipDate = firstPresent(o[SALES.SHIP_DATE], shippingDate);
+      const invoiceNo = firstPresent(o[SALES.INVOICE_NO], shippingRunBatch);
+      const sku = firstPresent(o[SALES.SKU], shippingSku);
+      const cases = firstPresent(o[SALES.CASES], shippingCases);
+      const lbsPerCaseRaw = firstPresent(o[SALES.LBS_PER_CASE]);
+      const lbsEqRaw = firstPresent(o[SALES.LBS_EQ], shippingLbs);
+      const destination = firstPresent(o[SALES.DESTINATION]);
+      const customer = firstPresent(o[SALES.CUSTOMER], shippingLocation);
+      const term = firstPresent(o[SALES.TERM]);
+      const extra = firstPresent(o[SALES.EXTRA], shippingComments);
 
       const invoiceDateObj = safeDateParse(invoiceDate);
       const shipDateObj = safeDateParse(shipDate);
