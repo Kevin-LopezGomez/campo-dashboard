@@ -948,10 +948,18 @@
       if (!SUPABASE_ANON_KEY) {
         throw new Error("Missing SUPABASE_ANON_KEY for Supabase table reads.");
       }
-      const url = `${SUPABASE_URL}/rest/v1/${encodeURIComponent(SUPABASE_SALES_TABLE)}?select=*`;
-      const rows = await fetchJsonWithTimeout(url);
-      if (!Array.isArray(rows)) throw new Error("Supabase table response was not an array.");
-      return rows;
+      const allRows = [];
+      const pageSize = 1000;
+
+      for (let offset = 0; ; offset += pageSize) {
+        const url = `${SUPABASE_URL}/rest/v1/${encodeURIComponent(SUPABASE_SALES_TABLE)}?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`;
+        const rows = await fetchJsonWithTimeout(url);
+        if (!Array.isArray(rows)) throw new Error("Supabase table response was not an array.");
+        allRows.push(...rows);
+        if (rows.length < pageSize) break;
+      }
+
+      return allRows;
     }
 
     async function patchSalesTableRowsByIds(ids, patch) {
