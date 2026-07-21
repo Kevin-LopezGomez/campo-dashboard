@@ -1122,7 +1122,10 @@
       if (!row || typeof row !== "object") return out;
       for (const [key, value] of Object.entries(row)) {
         const canon = HEADER_ALIASES.get(normHeader(key)) || String(key ?? "").trim();
-        if (canon && out[canon] === undefined) out[canon] = value;
+        if (!canon) continue;
+        const hasExisting = out[canon] !== undefined && String(out[canon] ?? "").trim() !== "";
+        const hasIncoming = value !== null && value !== undefined && String(value).trim() !== "";
+        if (out[canon] === undefined || (!hasExisting && hasIncoming)) out[canon] = value;
       }
       return out;
     }
