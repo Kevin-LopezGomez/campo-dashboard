@@ -860,6 +860,17 @@
       TERM: "Sales Term",
       EXTRA: "Sales Extra"
     });
+    const SHIPPING = Object.freeze({
+      WEEK: "Shipping Week",
+      DATE: "Shipping Date",
+      RUN_BATCH: "Run Batch Shipped/Received",
+      STATUS: "Shipped or Received",
+      SKU: "Shipping SKU",
+      LOCATION: "Location Shipped",
+      CASES: "# of Cases Shipped",
+      LBS: "# Lbs Shipped",
+      COMMENTS: "Shipping Comments"
+    });
 
     function normHeader(s){
       return String(s ?? "")
@@ -885,7 +896,16 @@
       ["sales destination", SALES.DESTINATION], ["destination", SALES.DESTINATION],
       ["sales customer", SALES.CUSTOMER], ["customer", SALES.CUSTOMER], ["cliente", SALES.CUSTOMER],
       ["sales term", SALES.TERM], ["term", SALES.TERM],
-      ["sales extra", SALES.EXTRA], ["extra", SALES.EXTRA], ["notes", SALES.EXTRA]
+      ["sales extra", SALES.EXTRA], ["extra", SALES.EXTRA], ["notes", SALES.EXTRA],
+      ["shipping week", SHIPPING.WEEK],
+      ["shipping date", SHIPPING.DATE],
+      ["run batch shipped received", SHIPPING.RUN_BATCH],
+      ["shipped or received", SHIPPING.STATUS],
+      ["shipping sku", SHIPPING.SKU],
+      ["location shipped", SHIPPING.LOCATION],
+      ["# of cases shipped", SHIPPING.CASES], ["number of cases shipped", SHIPPING.CASES], ["cases shipped", SHIPPING.CASES],
+      ["# lbs shipped", SHIPPING.LBS], ["number lbs shipped", SHIPPING.LBS], ["lbs shipped", SHIPPING.LBS],
+      ["shipping comments", SHIPPING.COMMENTS]
     ]);
 
     function canonicalizeHeaders(headersRaw){
@@ -1109,21 +1129,29 @@
 
     function normalizeSalesRecord(o) {
       const rowId = o.id ?? o.ID ?? "";
-      const invoiceDate = o[SALES.INVOICE_DATE] ?? "";
+      const shippingDate = o[SHIPPING.DATE] ?? "";
+      const shippingSku = o[SHIPPING.SKU] ?? "";
+      const shippingCases = o[SHIPPING.CASES] ?? "";
+      const shippingLbs = o[SHIPPING.LBS] ?? "";
+      const shippingLocation = o[SHIPPING.LOCATION] ?? "";
+      const shippingRunBatch = o[SHIPPING.RUN_BATCH] ?? "";
+      const shippingWeek = o[SHIPPING.WEEK] ?? "";
+      const shippingComments = o[SHIPPING.COMMENTS] ?? "";
+      const invoiceDate = o[SALES.INVOICE_DATE] ?? shippingDate;
       const poDate = o[SALES.PO_DATE] ?? "";
       const shipVia = o[SALES.SHIP_VIA] ?? "";
       const salesWeek = o[SALES.WEEK] ?? "";
-      const shipWeek = o[SALES.SHIP_WEEK] ?? "";
-      const shipDate = o[SALES.SHIP_DATE] ?? "";
-      const invoiceNo = o[SALES.INVOICE_NO] ?? "";
-      const sku = o[SALES.SKU] ?? "";
-      const cases = o[SALES.CASES] ?? "";
+      const shipWeek = o[SALES.SHIP_WEEK] ?? shippingWeek;
+      const shipDate = o[SALES.SHIP_DATE] ?? shippingDate;
+      const invoiceNo = o[SALES.INVOICE_NO] ?? shippingRunBatch;
+      const sku = o[SALES.SKU] ?? shippingSku;
+      const cases = o[SALES.CASES] ?? shippingCases;
       const lbsPerCaseRaw = o[SALES.LBS_PER_CASE] ?? "";
-      const lbsEqRaw = o[SALES.LBS_EQ] ?? "";
+      const lbsEqRaw = o[SALES.LBS_EQ] ?? shippingLbs;
       const destination = o[SALES.DESTINATION] ?? "";
-      const customer = o[SALES.CUSTOMER] ?? "";
+      const customer = o[SALES.CUSTOMER] ?? shippingLocation;
       const term = o[SALES.TERM] ?? "";
-      const extra = o[SALES.EXTRA] ?? "";
+      const extra = o[SALES.EXTRA] ?? shippingComments;
 
       const invoiceDateObj = safeDateParse(invoiceDate);
       const shipDateObj = safeDateParse(shipDate);
@@ -1134,7 +1162,9 @@
       const casesNum = parseNumber(cases);
       const lbsPerCaseFromTable = parseNumber(lbsPerCaseRaw);
       const lbsEq = parseNumber(lbsEqRaw);
-      const lbsPerCase = lbsPerCaseFromTable > 0 ? lbsPerCaseFromTable : inferLbsPerCase(skuClean);
+      const lbsPerCase = lbsPerCaseFromTable > 0
+        ? lbsPerCaseFromTable
+        : (lbsEq > 0 && casesNum > 0 ? lbsEq / casesNum : inferLbsPerCase(skuClean));
 
       return {
         id: rowId,
